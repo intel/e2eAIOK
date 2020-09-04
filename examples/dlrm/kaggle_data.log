@@ -1,0 +1,34 @@
+python data_utils.py --raw-data-file /mnt/DP_disk1/dlrm/kaggle/tmp/train.txt
+Reading raw data=/mnt/DP_disk1/dlrm/kaggle/tmp/train.txt
+2020-08-10 11:02:09
+Reading data from path=/mnt/DP_disk1/dlrm/kaggle/tmp/train.txt
+Load 6548659/6548660  Split: 0  Label True: 0  Stored: 0
+Saved /mnt/DP_disk1/dlrm/kaggle/tmp/train_day_0.npz!
+Load 6548659/6548660  Split: 1  Label True: 1  Stored: 1
+Saved /mnt/DP_disk1/dlrm/kaggle/tmp/train_day_1.npz!
+Load 6548659/6548660  Split: 2  Label True: 1  Stored: 1
+Saved /mnt/DP_disk1/dlrm/kaggle/tmp/train_day_2.npz!
+Load 6548659/6548660  Split: 3  Label True: 0  Stored: 0
+Saved /mnt/DP_disk1/dlrm/kaggle/tmp/train_day_3.npz!
+Load 6548658/6548659  Split: 4  Label True: 0  Stored: 0
+Saved /mnt/DP_disk1/dlrm/kaggle/tmp/train_day_4.npz!
+Load 6548658/6548659  Split: 5  Label True: 1  Stored: 1
+Saved /mnt/DP_disk1/dlrm/kaggle/tmp/train_day_5.npz!
+Load 6548658/6548659  Split: 6  Label True: 0  Stored: 0
+Saved /mnt/DP_disk1/dlrm/kaggle/tmp/train_day_6.npz!
+Total number of samples: 45840617
+Divided into days/splits:
+ [6548660, 6548660, 6548660, 6548660, 6548659, 6548659, 6548659]
+Processed /mnt/DP_disk1/dlrm/kaggle/tmp/train_day_4_processed.npz
+
+Processed /mnt/DP_disk1/dlrm/kaggle/tmp/train_day_6_processed.npz
+Concatenating multiple days into /mnt/DP_disk1/dlrm/kaggle/tmp/kaggleAdDisplayChallenge_processed.npz file
+Loaded day: 0 y = 1: 1627580 y = 0: 4921080
+Loaded day: 1 y = 1: 3308373 y = 0: 9788947
+Loaded day: 2 y = 1: 4978779 y = 0: 14667201
+Loaded day: 3 y = 1: 6638644 y = 0: 19555996
+Loaded day: 4 y = 1: 8362163 y = 0: 24381136
+Loaded day: 5 y = 1: 10044816 y = 0: 29247142
+Loaded day: 6 y = 1: 11745438 y = 0: 34095179
+Loaded counts!
+

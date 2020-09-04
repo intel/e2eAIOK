@@ -1,0 +1,9 @@
+nohup: ignoring input
+Traceback (most recent call last):
+  File "/home/xianyang/sw/miniconda3/envs/hvd/bin/horovodrun", line 21, in <module>
+    run_commandline()
+  File "/home/xianyang/sw/miniconda3/envs/hvd/lib/python3.7/site-packages/horovod/run/run.py", line 867, in run_commandline
+    _run(args)
+  File "/home/xianyang/sw/miniconda3/envs/hvd/lib/python3.7/site-packages/horovod/run/run.py", line 805, in _run
+    raise ValueError('No interface is found for address 127.0.0.1.')
+ValueError: No interface is found for address 127.0.0.1.

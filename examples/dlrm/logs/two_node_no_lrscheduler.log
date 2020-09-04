@@ -1,0 +1,1009 @@
+nohup: ignoring input
+Begin Process:
+Begin Process:
+command line args:  {"arch_sparse_feature_size": 16, "arch_embedding_size": "4-3-2", "arch_mlp_bot": "13-512-256-64-16", "arch_mlp_top": "512-256-1", "arch_interaction_op": "dot", "arch_interaction_itself": false, "md_flag": false, "md_threshold": 200, "md_temperature": 0.3, "md_round_dims": false, "qr_flag": false, "qr_threshold": 200, "qr_operation": "mult", "qr_collisions": 4, "activation_function": "relu", "loss_function": "bce", "loss_weights": "1.0-1.0", "loss_threshold": 0.0, "round_targets": true, "data_size": 1, "num_batches": 0, "data_generation": "dataset", "data_trace_file": "./input/dist_emb_j.log", "data_set": "kaggle", "raw_data_file": "/mnt/DP_disk1/dlrm/kaggle/backup/train.txt", "processed_data_file": "/mnt/DP_disk1/dlrm/kaggle/backup/kaggleAdDisplayChallenge_processed.npz", "data_randomize": "total", "data_trace_enable_padding": false, "max_ind_range": -1, "data_sub_sample_rate": 0.0, "num_indices_per_lookup": 10, "num_indices_per_lookup_fixed": false, "num_workers": 0, "memory_map": false, "mini_batch_size": 128, "nepochs": 1, "learning_rate": 0.1, "print_precision": 5, "numpy_rand_seed": 123, "sync_dense_params": true, "inference_only": false, "save_onnx": false, "use_gpu": false, "print_freq": 1000, "test_freq": 5000, "test_mini_batch_size": 128, "test_num_workers": 16, "print_time": true, "debug_mode": false, "enable_profiling": false, "plot_compute_graph": false, "save_model": "", "load_model": "", "mlperf_logging": true, "mlperf_acc_threshold": 0.0, "mlperf_auc_threshold": 0.8025, "mlperf_bin_loader": true, "mlperf_bin_shuffle": false, "lr_num_warmup_steps": 0, "lr_decay_start_step": 0, "lr_num_decay_steps": 0}
+command line args:  {"arch_sparse_feature_size": 16, "arch_embedding_size": "4-3-2", "arch_mlp_bot": "13-512-256-64-16", "arch_mlp_top": "512-256-1", "arch_interaction_op": "dot", "arch_interaction_itself": false, "md_flag": false, "md_threshold": 200, "md_temperature": 0.3, "md_round_dims": false, "qr_flag": false, "qr_threshold": 200, "qr_operation": "mult", "qr_collisions": 4, "activation_function": "relu", "loss_function": "bce", "loss_weights": "1.0-1.0", "loss_threshold": 0.0, "round_targets": true, "data_size": 1, "num_batches": 0, "data_generation": "dataset", "data_trace_file": "./input/dist_emb_j.log", "data_set": "kaggle", "raw_data_file": "/mnt/DP_disk1/dlrm/kaggle/backup/train.txt", "processed_data_file": "/mnt/DP_disk1/dlrm/kaggle/backup/kaggleAdDisplayChallenge_processed.npz", "data_randomize": "total", "data_trace_enable_padding": false, "max_ind_range": -1, "data_sub_sample_rate": 0.0, "num_indices_per_lookup": 10, "num_indices_per_lookup_fixed": false, "num_workers": 0, "memory_map": false, "mini_batch_size": 128, "nepochs": 1, "learning_rate": 0.1, "print_precision": 5, "numpy_rand_seed": 123, "sync_dense_params": true, "inference_only": false, "save_onnx": false, "use_gpu": false, "print_freq": 1000, "test_freq": 5000, "test_mini_batch_size": 128, "test_num_workers": 16, "print_time": true, "debug_mode": false, "enable_profiling": false, "plot_compute_graph": false, "save_model": "", "load_model": "", "mlperf_logging": true, "mlperf_acc_threshold": 0.0, "mlperf_auc_threshold": 0.8025, "mlperf_bin_loader": true, "mlperf_bin_shuffle": false, "lr_num_warmup_steps": 0, "lr_decay_start_step": 0, "lr_num_decay_steps": 0}
+Using CPU...
+Begin data pre-processing
+Reading pre-processed data=/mnt/DP_disk1/dlrm/kaggle/backup/kaggleAdDisplayChallenge_processed.npz
+Using CPU...
+Begin data pre-processing
+Reading pre-processed data=/mnt/DP_disk1/dlrm/kaggle/backup/kaggleAdDisplayChallenge_processed.npz
+Sparse fea = 26, Dense fea = 13
+Defined train indices...
+Sparse fea = 26, Dense fea = 13
+Defined train indices...
+Randomized indices across days ...
+Randomized indices across days ...
+Split data according to indices...
+Reading pre-processed data=/mnt/DP_disk1/dlrm/kaggle/backup/kaggleAdDisplayChallenge_processed.npz
+Split data according to indices...
+Reading pre-processed data=/mnt/DP_disk1/dlrm/kaggle/backup/kaggleAdDisplayChallenge_processed.npz
+Sparse fea = 26, Dense fea = 13
+Defined test indices...
+Randomized indices across days ...
+Split data according to indices...
+Begin commandline parse
+Sparse fea = 26, Dense fea = 13
+Defined test indices...
+Randomized indices across days ...
+Split data according to indices...
+Begin commandline parse
+Begin Mainloop
+time/loss/accuracy (if enabled):
+before forward:5.7220458984375e-06
+forward time:0.004375457763671875
+Compute loss time:0.0004379749298095703
+Begin Mainloop
+time/loss/accuracy (if enabled):
+before forward:6.4373016357421875e-06
+forward time:0.0050737857818603516
+Compute loss time:0.0005431175231933594
+optimizer zero grad time:0.22206902503967285
+optimizer backward time:0.011754751205444336
+optimizer zero grad time:0.23169517517089844
+optimizer backward time:0.018083572387695312
+optimizer step time:3.7918612957000732
+learning rate step time:4.792213439941406e-05
+after loss time:4.025843620300293
+print output time:1.52587890625e-05
+test time:9.5367431640625e-06
+training iter1,this iter consuming time:4.030687570571899
+before forward:4.5299530029296875e-06
+forward time:0.0034742355346679688
+Compute loss time:0.00027489662170410156
+optimizer step time:3.766465187072754
+learning rate step time:4.0531158447265625e-05
+after loss time:4.0164220333099365
+print output time:6.151199340820312e-05
+test time:8.58306884765625e-06
+training iter1,this iter consuming time:4.022115468978882
+before forward:4.0531158447265625e-06
+forward time:0.003779888153076172
+Compute loss time:0.0002913475036621094
+optimizer zero grad time:0.22379517555236816
+optimizer backward time:0.009236335754394531
+optimizer zero grad time:0.2314586639404297
+optimizer backward time:0.012612581253051758
+optimizer step time:3.5163068771362305
+learning rate step time:4.57763671875e-05
+after loss time:3.760502338409424
+print output time:1.2159347534179688e-05
+test time:6.4373016357421875e-06
+training iter2,this iter consuming time:3.7645962238311768
+before forward:5.7220458984375e-06
+forward time:0.003560304641723633
+Compute loss time:0.000263214111328125
+optimizer step time:3.6359634399414062
+learning rate step time:5.4836273193359375e-05
+after loss time:3.8691446781158447
+print output time:1.6689300537109375e-05
+test time:1.1444091796875e-05
+training iter2,this iter consuming time:3.8729264736175537
+before forward:4.5299530029296875e-06
+forward time:0.004438161849975586
+Compute loss time:0.00030612945556640625
+optimizer zero grad time:0.2303943634033203
+optimizer backward time:0.009805917739868164
+optimizer zero grad time:0.23375844955444336
+optimizer backward time:0.013228416442871094
+optimizer step time:3.6105217933654785
+learning rate step time:4.2438507080078125e-05
+after loss time:3.8508284091949463
+print output time:1.1920928955078125e-05
+test time:6.67572021484375e-06
+training iter3,this iter consuming time:3.8546762466430664
+optimizer step time:3.5126118659973145
+learning rate step time:4.696846008300781e-05
+after loss time:3.759713888168335
+print output time:1.049041748046875e-05
+test time:8.58306884765625e-06
+training iter3,this iter consuming time:3.764481782913208
+before forward:4.76837158203125e-06
+before forward:4.291534423828125e-06
+forward time:0.003617525100708008
+Compute loss time:0.00024819374084472656
+forward time:0.003720998764038086
+Compute loss time:0.00030732154846191406
+optimizer zero grad time:0.23193931579589844
+optimizer zero grad time:0.23880863189697266
+optimizer backward time:0.010159015655517578
+optimizer backward time:0.013364791870117188
+optimizer step time:3.284332036972046
+learning rate step time:4.649162292480469e-05
+after loss time:3.5265467166900635
+print output time:1.2159347534179688e-05
+test time:7.3909759521484375e-06
+training iter4,this iter consuming time:3.5305988788604736
+before forward:4.0531158447265625e-06
+forward time:0.003492593765258789
+Compute loss time:0.00029397010803222656
+optimizer step time:3.2995502948760986
+learning rate step time:7.05718994140625e-05
+after loss time:3.5519046783447266
+print output time:4.649162292480469e-05
+test time:1.3828277587890625e-05
+training iter4,this iter consuming time:3.555835485458374
+before forward:6.9141387939453125e-06
+forward time:0.004530906677246094
+Compute loss time:0.0004012584686279297
+optimizer zero grad time:0.22438859939575195
+optimizer backward time:0.010128259658813477
+optimizer zero grad time:0.23910951614379883
+optimizer backward time:0.013140201568603516
+optimizer step time:3.159749746322632
+learning rate step time:4.863739013671875e-05
+after loss time:3.3943965435028076
+print output time:1.1205673217773438e-05
+test time:6.4373016357421875e-06
+training iter5,this iter consuming time:3.398204803466797
+before forward:3.814697265625e-06
+forward time:0.0034971237182617188
+Compute loss time:0.00024509429931640625
+optimizer step time:3.1633238792419434
+learning rate step time:3.838539123535156e-05
+after loss time:3.4156742095947266
+print output time:1.1920928955078125e-05
+test time:6.4373016357421875e-06
+training iter5,this iter consuming time:3.4206316471099854
+before forward:4.291534423828125e-06
+forward time:0.003835439682006836
+Compute loss time:0.0002605915069580078
+optimizer zero grad time:0.2223658561706543
+optimizer backward time:0.00906825065612793
+optimizer zero grad time:0.24021315574645996
+optimizer backward time:0.012322664260864258
+optimizer step time:3.007699489593506
+learning rate step time:4.5299530029296875e-05
+after loss time:3.2392444610595703
+print output time:1.049041748046875e-05
+test time:6.67572021484375e-06
+training iter6,this iter consuming time:3.2430076599121094
+before forward:4.291534423828125e-06
+forward time:0.0034928321838378906
+Compute loss time:0.0002422332763671875
+optimizer step time:2.9950461387634277
+learning rate step time:7.319450378417969e-05
+after loss time:3.2477245330810547
+print output time:1.6927719116210938e-05
+test time:1.1205673217773438e-05
+training iter6,this iter consuming time:3.2518529891967773
+before forward:5.0067901611328125e-06
+forward time:0.0042266845703125
+Compute loss time:0.0002372264862060547
+optimizer zero grad time:0.22159624099731445
+optimizer backward time:0.009250402450561523
+optimizer zero grad time:0.24631738662719727
+optimizer backward time:0.012738704681396484
+optimizer step time:3.8249967098236084
+learning rate step time:4.2438507080078125e-05
+after loss time:4.08415961265564
+print output time:1.4066696166992188e-05
+test time:6.67572021484375e-06
+training iter7,this iter consuming time:4.088649272918701
+before forward:4.5299530029296875e-06
+forward time:0.0036673545837402344
+Compute loss time:0.0002429485321044922
+optimizer step time:3.9164931774139404
+learning rate step time:4.506111145019531e-05
+after loss time:4.147449493408203
+print output time:1.0967254638671875e-05
+test time:6.198883056640625e-06
+training iter7,this iter consuming time:4.151206016540527
+before forward:4.0531158447265625e-06
+forward time:0.00388336181640625
+Compute loss time:0.00024271011352539062
+optimizer zero grad time:0.23878836631774902
+optimizer zero grad time:0.24035382270812988
+optimizer backward time:0.010066747665405273
+optimizer backward time:0.01323390007019043
+optimizer step time:3.0085082054138184
+learning rate step time:4.2438507080078125e-05
+after loss time:3.257483720779419
+print output time:1.3589859008789062e-05
+test time:7.867813110351562e-06
+training iter8,this iter consuming time:3.2614200115203857
+before forward:4.291534423828125e-06
+forward time:0.0037403106689453125
+Compute loss time:0.0002505779266357422
+optimizer step time:3.0088233947753906
+learning rate step time:5.3882598876953125e-05
+after loss time:3.26253604888916
+print output time:1.2874603271484375e-05
+test time:7.867813110351562e-06
+training iter8,this iter consuming time:3.2666869163513184
+before forward:3.814697265625e-06
+forward time:0.004312753677368164
+Compute loss time:0.00027823448181152344
+optimizer zero grad time:0.2400951385498047
+optimizer backward time:0.009616851806640625
+optimizer zero grad time:0.24991917610168457
+optimizer backward time:0.013412952423095703
+optimizer step time:2.945570707321167
+learning rate step time:6.4849853515625e-05
+after loss time:3.209077835083008
+print output time:1.5735626220703125e-05
+test time:9.059906005859375e-06
+training iter9,this iter consuming time:3.2136974334716797
+before forward:6.9141387939453125e-06
+forward time:0.0039048194885253906
+Compute loss time:0.00033473968505859375
+optimizer step time:2.982806921005249
+learning rate step time:4.029273986816406e-05
+after loss time:3.232624053955078
+print output time:1.3113021850585938e-05
+test time:7.3909759521484375e-06
+training iter9,this iter consuming time:3.2366397380828857
+before forward:4.291534423828125e-06
+forward time:0.003646373748779297
+Compute loss time:0.00024175643920898438
+optimizer zero grad time:0.23903870582580566
+optimizer backward time:0.009649276733398438
+optimizer zero grad time:0.23878002166748047
+optimizer backward time:0.012492656707763672
+optimizer step time:3.015092611312866
+learning rate step time:4.2438507080078125e-05
+after loss time:3.2664873600006104
+print output time:1.1920928955078125e-05
+test time:6.198883056640625e-06
+training iter10,this iter consuming time:3.270397901535034
+optimizer step time:3.029632806777954
+learning rate step time:5.412101745605469e-05
+after loss time:3.2784717082977295
+print output time:1.621246337890625e-05
+test time:9.775161743164062e-06
+training iter10,this iter consuming time:3.2827441692352295
+before forward:4.291534423828125e-06
+before forward:4.76837158203125e-06
+forward time:0.003805875778198242
+Compute loss time:0.00022530555725097656
+forward time:0.004659175872802734
+Compute loss time:0.0002834796905517578
+optimizer zero grad time:0.2389678955078125
+optimizer zero grad time:0.2424767017364502
+optimizer backward time:0.009499549865722656
+optimizer backward time:0.017142057418823242
+optimizer step time:2.9441416263580322
+learning rate step time:5.364418029785156e-05
+after loss time:3.2038824558258057
+print output time:1.0728836059570312e-05
+test time:6.67572021484375e-06
+training iter11,this iter consuming time:3.2088472843170166
+before forward:4.291534423828125e-06
+forward time:0.0035893917083740234
+Compute loss time:0.00024366378784179688
+optimizer step time:2.9721317291259766
+learning rate step time:4.696846008300781e-05
+after loss time:3.2207159996032715
+print output time:3.838539123535156e-05
+test time:1.0013580322265625e-05
+training iter11,this iter consuming time:3.224799871444702
+before forward:3.814697265625e-06
+forward time:0.003758668899536133
+Compute loss time:0.00024437904357910156
+optimizer zero grad time:0.2363295555114746
+optimizer backward time:0.00916743278503418
+optimizer zero grad time:0.24034667015075684
+optimizer backward time:0.012744665145874023
+optimizer step time:3.730008602142334
+learning rate step time:7.462501525878906e-05
+after loss time:3.9833099842071533
+print output time:2.2649765014648438e-05
+test time:1.1682510375976562e-05
+training iter12,this iter consuming time:3.987351179122925
+before forward:6.4373016357421875e-06
+forward time:0.004404783248901367
+Compute loss time:0.00037860870361328125
+optimizer step time:3.7725276947021484
+learning rate step time:4.887580871582031e-05
+after loss time:4.018160104751587
+print output time:1.0967254638671875e-05
+test time:6.9141387939453125e-06
+training iter12,this iter consuming time:4.022015333175659
+before forward:4.76837158203125e-06
+forward time:0.0045604705810546875
+Compute loss time:0.00024771690368652344
+optimizer zero grad time:0.2408146858215332
+optimizer backward time:0.009547948837280273
+optimizer zero grad time:0.2426919937133789
+optimizer backward time:0.012468576431274414
+optimizer step time:3.2518720626831055
+learning rate step time:5.269050598144531e-05
+after loss time:3.5071523189544678
+print output time:1.3589859008789062e-05
+test time:6.9141387939453125e-06
+training iter13,this iter consuming time:3.5119857788085938
+before forward:4.5299530029296875e-06
+forward time:0.0035254955291748047
+Compute loss time:0.00025343894958496094
+optimizer step time:3.295943260192871
+learning rate step time:3.981590270996094e-05
+after loss time:3.5464255809783936
+print output time:1.1444091796875e-05
+test time:6.198883056640625e-06
+training iter13,this iter consuming time:3.5512330532073975
+before forward:4.76837158203125e-06
+forward time:0.0038366317749023438
+Compute loss time:0.0002434253692626953
+optimizer zero grad time:0.23600053787231445
+optimizer backward time:0.009760141372680664
+optimizer zero grad time:0.24049019813537598
+optimizer backward time:0.014389991760253906
+optimizer step time:2.952669143676758
+learning rate step time:4.6253204345703125e-05
+after loss time:3.198559284210205
+print output time:1.049041748046875e-05
+test time:4.291534423828125e-05
+training iter14,this iter consuming time:3.2023961544036865
+before forward:4.5299530029296875e-06
+forward time:0.003576517105102539
+Compute loss time:0.0002505779266357422
+optimizer step time:2.9680731296539307
+learning rate step time:4.0531158447265625e-05
+after loss time:3.2230710983276367
+print output time:1.1920928955078125e-05
+test time:6.4373016357421875e-06
+training iter14,this iter consuming time:3.2271742820739746
+before forward:4.76837158203125e-06
+forward time:0.0037271976470947266
+Compute loss time:0.00025153160095214844
+optimizer zero grad time:0.22243356704711914
+optimizer backward time:0.009294509887695312
+optimizer zero grad time:0.24026203155517578
+optimizer backward time:0.014210224151611328
+optimizer step time:3.4444615840911865
+learning rate step time:4.792213439941406e-05
+after loss time:3.6763038635253906
+print output time:1.0728836059570312e-05
+test time:6.9141387939453125e-06
+training iter15,this iter consuming time:3.6801531314849854
+before forward:4.291534423828125e-06
+forward time:0.003477811813354492
+Compute loss time:0.0002505779266357422
+optimizer step time:3.4162869453430176
+learning rate step time:4.029273986816406e-05
+after loss time:3.6708641052246094
+print output time:1.5735626220703125e-05
+test time:4.8160552978515625e-05
+training iter15,this iter consuming time:3.6749114990234375
+before forward:5.245208740234375e-06
+forward time:0.0037360191345214844
+Compute loss time:0.0002536773681640625
+optimizer zero grad time:0.22144007682800293
+optimizer backward time:0.009158849716186523
+optimizer zero grad time:0.24661922454833984
+optimizer backward time:0.01430058479309082
+optimizer step time:3.3967034816741943
+learning rate step time:4.673004150390625e-05
+after loss time:3.6274216175079346
+print output time:1.0013580322265625e-05
+test time:6.67572021484375e-06
+training iter16,this iter consuming time:3.6311709880828857
+before forward:4.5299530029296875e-06
+forward time:0.0036780834197998047
+Compute loss time:0.00030350685119628906
+optimizer step time:3.35115385055542
+learning rate step time:4.2438507080078125e-05
+after loss time:3.6121773719787598
+print output time:1.2874603271484375e-05
+test time:8.821487426757812e-06
+training iter16,this iter consuming time:3.616194009780884
+before forward:4.0531158447265625e-06
+forward time:0.003520965576171875
+Compute loss time:0.00024247169494628906
+optimizer zero grad time:0.23591876029968262
+optimizer backward time:0.010020256042480469
+optimizer zero grad time:0.23943209648132324
+optimizer backward time:0.013614416122436523
+optimizer step time:2.9594035148620605
+learning rate step time:4.744529724121094e-05
+after loss time:3.2054567337036133
+print output time:1.049041748046875e-05
+test time:6.67572021484375e-06
+training iter17,this iter consuming time:3.2094600200653076
+before forward:4.291534423828125e-06
+forward time:0.003568887710571289
+Compute loss time:0.00024175643920898438
+optimizer step time:2.965994119644165
+learning rate step time:4.0531158447265625e-05
+after loss time:3.219176769256592
+print output time:1.1920928955078125e-05
+test time:6.9141387939453125e-06
+training iter17,this iter consuming time:3.2229630947113037
+before forward:5.245208740234375e-06
+forward time:0.003814220428466797
+Compute loss time:0.00023889541625976562
+optimizer zero grad time:0.22987055778503418
+optimizer backward time:0.009354114532470703
+optimizer zero grad time:0.24083757400512695
+optimizer backward time:0.013011932373046875
+optimizer step time:2.9793708324432373
+learning rate step time:4.744529724121094e-05
+after loss time:3.218724489212036
+print output time:1.0728836059570312e-05
+test time:6.67572021484375e-06
+training iter18,this iter consuming time:3.2225568294525146
+before forward:3.814697265625e-06
+forward time:0.003539562225341797
+Compute loss time:0.0002474784851074219
+optimizer step time:2.9651312828063965
+learning rate step time:4.38690185546875e-05
+after loss time:3.219104051589966
+print output time:1.33514404296875e-05
+test time:6.9141387939453125e-06
+training iter18,this iter consuming time:3.2231826782226562
+before forward:4.0531158447265625e-06
+forward time:0.003671407699584961
+Compute loss time:0.00024628639221191406
+optimizer zero grad time:0.22972536087036133
+optimizer backward time:0.009238719940185547
+optimizer zero grad time:0.24050045013427734
+optimizer backward time:0.012883901596069336
+optimizer step time:3.5012314319610596
+learning rate step time:7.677078247070312e-05
+after loss time:3.740370988845825
+print output time:1.6689300537109375e-05
+test time:8.58306884765625e-06
+training iter19,this iter consuming time:3.744187116622925
+before forward:6.67572021484375e-06
+forward time:0.004443645477294922
+Compute loss time:0.0003752708435058594
+optimizer step time:3.491295337677002
+learning rate step time:4.1484832763671875e-05
+after loss time:3.744790554046631
+print output time:1.2159347534179688e-05
+test time:4.267692565917969e-05
+training iter19,this iter consuming time:3.748767137527466
+before forward:2.0742416381835938e-05
+forward time:0.0037016868591308594
+Compute loss time:0.00025463104248046875
+optimizer zero grad time:0.22333025932312012
+optimizer backward time:0.009354829788208008
+optimizer zero grad time:0.2398824691772461
+optimizer backward time:0.012928962707519531
+optimizer step time:2.9805171489715576
+learning rate step time:4.839897155761719e-05
+after loss time:3.2133162021636963
+print output time:1.0013580322265625e-05
+test time:7.152557373046875e-06
+training iter20,this iter consuming time:3.2181589603424072
+before forward:4.0531158447265625e-06
+forward time:0.003686666488647461
+Compute loss time:0.00024628639221191406
+optimizer step time:2.960987091064453
+learning rate step time:3.9577484130859375e-05
+after loss time:3.2139077186584473
+print output time:1.239776611328125e-05
+test time:6.198883056640625e-06
+training iter20,this iter consuming time:3.2179033756256104
+before forward:5.245208740234375e-06
+forward time:0.0036516189575195312
+Compute loss time:0.00024080276489257812
+optimizer zero grad time:0.2214512825012207
+optimizer backward time:0.009101152420043945
+optimizer zero grad time:0.24039459228515625
+optimizer backward time:0.014127969741821289
+optimizer step time:3.020463228225708
+learning rate step time:5.030632019042969e-05
+after loss time:3.2511508464813232
+print output time:1.2159347534179688e-05
+test time:1.0967254638671875e-05
+training iter21,this iter consuming time:3.2551109790802
+before forward:4.5299530029296875e-06
+optimizer step time:2.9568369388580322
+learning rate step time:5.555152893066406e-05
+after loss time:3.2114949226379395
+print output time:1.1682510375976562e-05
+test time:6.4373016357421875e-06
+training iter21,this iter consuming time:3.2154107093811035
+before forward:4.0531158447265625e-06
+forward time:0.0035936832427978516
+Compute loss time:0.00024199485778808594
+forward time:0.0037474632263183594
+Compute loss time:0.0002770423889160156
+optimizer zero grad time:0.2247312068939209
+optimizer backward time:0.009719610214233398
+optimizer zero grad time:0.23902010917663574
+optimizer backward time:0.012842893600463867
+optimizer step time:3.0058109760284424
+learning rate step time:4.744529724121094e-05
+after loss time:3.240372657775879
+print output time:2.0503997802734375e-05
+test time:1.1682510375976562e-05
+training iter22,this iter consuming time:3.2442450523376465
+before forward:4.5299530029296875e-06
+forward time:0.0035254955291748047
+Compute loss time:0.000244140625
+optimizer step time:3.0902771949768066
+learning rate step time:6.985664367675781e-05
+after loss time:3.3423380851745605
+print output time:2.3126602172851562e-05
+test time:1.1444091796875e-05
+training iter22,this iter consuming time:3.3464012145996094
+before forward:6.9141387939453125e-06
+forward time:0.0050737857818603516
+Compute loss time:0.00040340423583984375
+optimizer zero grad time:0.2302992343902588
+optimizer backward time:0.009091615676879883
+optimizer zero grad time:0.2484736442565918
+optimizer backward time:0.016756772994995117
+optimizer step time:3.505290985107422
+learning rate step time:4.696846008300781e-05
+after loss time:3.7447986602783203
+print output time:9.775161743164062e-06
+test time:6.9141387939453125e-06
+training iter23,this iter consuming time:3.748589515686035
+before forward:4.291534423828125e-06
+forward time:0.0034945011138916016
+Compute loss time:0.0002620220184326172
+optimizer step time:3.417217493057251
+learning rate step time:3.838539123535156e-05
+after loss time:3.682551622390747
+print output time:1.3828277587890625e-05
+test time:8.58306884765625e-06
+training iter23,this iter consuming time:3.6880581378936768
+before forward:4.76837158203125e-06
+forward time:0.004065990447998047
+Compute loss time:0.00027060508728027344
+optimizer zero grad time:0.22131586074829102
+optimizer backward time:0.009800195693969727
+optimizer zero grad time:0.2405261993408203
+optimizer backward time:0.012822151184082031
+optimizer step time:3.039416551589966
+learning rate step time:4.9114227294921875e-05
+after loss time:3.2706491947174072
+print output time:1.1920928955078125e-05
+test time:8.821487426757812e-06
+training iter24,this iter consuming time:3.274430751800537
+before forward:4.5299530029296875e-06
+forward time:0.003553152084350586
+Compute loss time:0.0002434253692626953
+optimizer step time:2.9933083057403564
+learning rate step time:3.933906555175781e-05
+after loss time:3.2467617988586426
+print output time:1.4543533325195312e-05
+test time:6.67572021484375e-06
+training iter24,this iter consuming time:3.251124382019043
+before forward:3.814697265625e-06
+forward time:0.003858804702758789
+Compute loss time:0.00024056434631347656
+optimizer zero grad time:0.23917722702026367
+optimizer backward time:0.009174346923828125
+optimizer zero grad time:0.24320721626281738
+optimizer backward time:0.012589454650878906
+optimizer step time:3.2810943126678467
+learning rate step time:4.863739013671875e-05
+after loss time:3.5295591354370117
+print output time:1.0251998901367188e-05
+test time:7.152557373046875e-06
+training iter25,this iter consuming time:3.5333776473999023
+before forward:3.814697265625e-06
+forward time:0.0035600662231445312
+Compute loss time:0.0002453327178955078
+optimizer step time:3.2721896171569824
+learning rate step time:4.100799560546875e-05
+after loss time:3.5281052589416504
+print output time:1.5020370483398438e-05
+test time:1.049041748046875e-05
+training iter25,this iter consuming time:3.532233953475952
+before forward:4.5299530029296875e-06
+forward time:0.0037424564361572266
+Compute loss time:0.0002353191375732422
+optimizer zero grad time:0.23945879936218262
+optimizer backward time:0.009258747100830078
+optimizer zero grad time:0.2401447296142578
+optimizer backward time:0.012686014175415039
+optimizer step time:2.965588092803955
+learning rate step time:4.673004150390625e-05
+after loss time:3.2185287475585938
+print output time:1.1682510375976562e-05
+test time:6.4373016357421875e-06
+training iter26,this iter consuming time:3.222529172897339
+before forward:3.814697265625e-06
+forward time:0.0036842823028564453
+Compute loss time:0.00024580955505371094
+optimizer step time:3.1021199226379395
+learning rate step time:5.5789947509765625e-05
+after loss time:3.350968360900879
+print output time:1.3589859008789062e-05
+test time:4.553794860839844e-05
+training iter26,this iter consuming time:3.3548367023468018
+before forward:5.0067901611328125e-06
+forward time:0.004529714584350586
+Compute loss time:0.0002987384796142578
+optimizer zero grad time:0.23871970176696777
+optimizer backward time:0.00974273681640625
+optimizer zero grad time:0.25294017791748047
+optimizer backward time:0.013960123062133789
+optimizer step time:2.9628512859344482
+learning rate step time:5.507469177246094e-05
+after loss time:3.2298738956451416
+print output time:1.2636184692382812e-05
+test time:8.344650268554688e-06
+training iter27,this iter consuming time:3.2347283363342285
+before forward:4.5299530029296875e-06
+forward time:0.0035386085510253906
+Compute loss time:0.00022602081298828125
+optimizer step time:3.1102871894836426
+learning rate step time:3.910064697265625e-05
+after loss time:3.358851671218872
+print output time:1.1920928955078125e-05
+test time:8.106231689453125e-06
+training iter27,this iter consuming time:3.3628056049346924
+before forward:3.814697265625e-06
+forward time:0.003883838653564453
+Compute loss time:0.000263214111328125
+optimizer zero grad time:0.23946404457092285
+optimizer backward time:0.009345054626464844
+optimizer zero grad time:0.24042487144470215
+optimizer backward time:0.012647390365600586
+optimizer step time:2.985365152359009
+learning rate step time:4.601478576660156e-05
+after loss time:3.2342865467071533
+print output time:1.0251998901367188e-05
+test time:8.821487426757812e-06
+training iter28,this iter consuming time:3.238074779510498
+before forward:5.0067901611328125e-06
+forward time:0.003588438034057617
+Compute loss time:0.0002493858337402344
+optimizer step time:2.9771316051483154
+learning rate step time:4.100799560546875e-05
+after loss time:3.2303309440612793
+print output time:1.2874603271484375e-05
+test time:8.821487426757812e-06
+training iter28,this iter consuming time:3.2345035076141357
+before forward:3.814697265625e-06
+forward time:0.003736257553100586
+Compute loss time:0.0002422332763671875
+optimizer zero grad time:0.2403268814086914
+optimizer zero grad time:0.2584505081176758
+optimizer backward time:0.009980440139770508
+optimizer backward time:0.01450490951538086
+optimizer step time:3.1004254817962646
+learning rate step time:4.410743713378906e-05
+after loss time:3.350841760635376
+print output time:1.1682510375976562e-05
+test time:6.67572021484375e-06
+training iter29,this iter consuming time:3.3548424243927
+before forward:5.4836273193359375e-06
+forward time:0.003660917282104492
+Compute loss time:0.0002410411834716797
+optimizer step time:3.1103179454803467
+learning rate step time:7.748603820800781e-05
+after loss time:3.3834521770477295
+print output time:1.811981201171875e-05
+test time:8.821487426757812e-06
+training iter29,this iter consuming time:3.387321949005127
+before forward:5.9604644775390625e-06
+forward time:0.0049703121185302734
+Compute loss time:0.0003733634948730469
+optimizer zero grad time:0.2385413646697998
+optimizer backward time:0.009733915328979492
+optimizer zero grad time:0.2618885040283203
+optimizer backward time:0.012388467788696289
+optimizer step time:3.062408447265625
+learning rate step time:4.8160552978515625e-05
+after loss time:3.310821294784546
+print output time:1.4781951904296875e-05
+test time:8.58306884765625e-06
+training iter30,this iter consuming time:3.3147521018981934
+optimizer step time:3.0142314434051514
+learning rate step time:4.673004150390625e-05
+after loss time:3.2886250019073486
+print output time:1.1682510375976562e-05
+test time:1.049041748046875e-05
+training iter30,this iter consuming time:3.293996810913086
+before forward:4.76837158203125e-06
+before forward:5.0067901611328125e-06
+forward time:0.003717660903930664
+Compute loss time:0.0002319812774658203
+forward time:0.003840208053588867
+Compute loss time:0.0002372264862060547
+optimizer zero grad time:0.24192309379577637
+optimizer backward time:0.010091066360473633
+optimizer zero grad time:0.25847625732421875
+optimizer backward time:0.01372075080871582
+optimizer step time:2.9875903129577637
+learning rate step time:4.38690185546875e-05
+after loss time:3.239739179611206
+print output time:5.555152893066406e-05
+test time:6.67572021484375e-06
+training iter31,this iter consuming time:3.2438838481903076
+before forward:5.245208740234375e-06
+forward time:0.0036330223083496094
+Compute loss time:0.0002422332763671875
+optimizer step time:3.0005688667297363
+learning rate step time:5.435943603515625e-05
+after loss time:3.2728943824768066
+print output time:1.621246337890625e-05
+test time:1.52587890625e-05
+training iter31,this iter consuming time:3.2768802642822266
+before forward:4.0531158447265625e-06
+forward time:0.004034519195556641
+Compute loss time:0.00022721290588378906
+optimizer zero grad time:0.23926973342895508
+optimizer backward time:0.009432315826416016
+optimizer zero grad time:0.2661290168762207
+optimizer backward time:0.013048410415649414
+optimizer step time:3.347249984741211
+learning rate step time:4.482269287109375e-05
+after loss time:3.626537799835205
+print output time:1.4066696166992188e-05
+test time:1.1920928955078125e-05
+training iter32,this iter consuming time:3.6308295726776123
+optimizer step time:3.411168336868286
+learning rate step time:7.486343383789062e-05
+after loss time:3.6600465774536133
+print output time:2.5272369384765625e-05
+test time:1.2159347534179688e-05
+training iter32,this iter consuming time:3.6639645099639893
+before forward:5.0067901611328125e-06
+before forward:5.4836273193359375e-06
+forward time:0.0036203861236572266
+Compute loss time:0.00022792816162109375
+forward time:0.004494905471801758
+Compute loss time:0.0003948211669921875
+optimizer zero grad time:0.23746156692504883
+optimizer backward time:0.009925603866577148
+optimizer zero grad time:0.2711906433105469
+optimizer backward time:0.01343083381652832
+optimizer step time:2.989224910736084
+learning rate step time:4.553794860839844e-05
+after loss time:3.2739577293395996
+print output time:1.1920928955078125e-05
+test time:8.106231689453125e-06
+training iter33,this iter consuming time:3.2778310775756836
+before forward:4.291534423828125e-06
+optimizer step time:3.026780843734741
+learning rate step time:4.172325134277344e-05
+after loss time:3.2742741107940674
+print output time:1.4066696166992188e-05
+test time:9.775161743164062e-06
+training iter33,this iter consuming time:3.279193162918091
+before forward:5.7220458984375e-06
+forward time:0.003440380096435547
+Compute loss time:0.00025343894958496094
+forward time:0.003743410110473633
+Compute loss time:0.00023412704467773438
+optimizer zero grad time:0.23851919174194336
+optimizer backward time:0.009776115417480469
+optimizer zero grad time:0.2585463523864746
+optimizer backward time:0.013586044311523438
+optimizer step time:3.178696393966675
+learning rate step time:4.863739013671875e-05
+after loss time:3.4509546756744385
+print output time:1.2159347534179688e-05
+test time:7.867813110351562e-06
+training iter34,this iter consuming time:3.4546728134155273
+before forward:4.0531158447265625e-06
+forward time:0.0037415027618408203
+Compute loss time:0.00024366378784179688
+optimizer step time:3.206062078475952
+learning rate step time:4.291534423828125e-05
+after loss time:3.4544639587402344
+print output time:4.863739013671875e-05
+test time:3.4809112548828125e-05
+training iter34,this iter consuming time:3.4585306644439697
+before forward:4.5299530029296875e-06
+forward time:0.003998279571533203
+Compute loss time:0.0002372264862060547
+optimizer zero grad time:0.23865389823913574
+optimizer backward time:0.009440183639526367
+optimizer zero grad time:0.25846266746520996
+optimizer backward time:0.012466192245483398
+optimizer step time:3.47920298576355
+learning rate step time:4.76837158203125e-05
+after loss time:3.7502474784851074
+print output time:1.239776611328125e-05
+test time:9.775161743164062e-06
+training iter35,this iter consuming time:3.754258871078491
+optimizer step time:3.497279167175293
+learning rate step time:4.029273986816406e-05
+after loss time:3.7454898357391357
+print output time:1.6689300537109375e-05
+test time:7.3909759521484375e-06
+training iter35,this iter consuming time:3.749753952026367
+before forward:4.5299530029296875e-06
+before forward:4.5299530029296875e-06
+forward time:0.003509521484375
+Compute loss time:0.0002346038818359375
+forward time:0.003942728042602539
+Compute loss time:0.00024080276489257812
+optimizer zero grad time:0.2462599277496338
+optimizer backward time:0.009478092193603516
+optimizer zero grad time:0.2594304084777832
+optimizer backward time:0.01247859001159668
+optimizer step time:3.274049997329712
+learning rate step time:4.482269287109375e-05
+after loss time:3.529914617538452
+print output time:1.2874603271484375e-05
+test time:6.198883056640625e-06
+training iter36,this iter consuming time:3.5341217517852783
+optimizer step time:3.2616190910339355
+learning rate step time:4.4345855712890625e-05
+after loss time:3.533639907836914
+print output time:1.2636184692382812e-05
+test time:5.125999450683594e-05
+training iter36,this iter consuming time:3.537452459335327
+before forward:4.5299530029296875e-06
+before forward:4.5299530029296875e-06
+forward time:0.0038514137268066406
+Compute loss time:0.00025391578674316406
+forward time:0.0035223960876464844
+Compute loss time:0.00025391578674316406
+optimizer zero grad time:0.23732972145080566
+optimizer backward time:0.010394573211669922
+optimizer zero grad time:0.261777400970459
+optimizer backward time:0.012577533721923828
+optimizer step time:3.051828145980835
+learning rate step time:4.4345855712890625e-05
+after loss time:3.299678087234497
+print output time:1.239776611328125e-05
+test time:6.4373016357421875e-06
+training iter37,this iter consuming time:3.303806781768799
+before forward:4.291534423828125e-06
+optimizer step time:3.027383804321289
+learning rate step time:4.553794860839844e-05
+after loss time:3.3018529415130615
+print output time:1.239776611328125e-05
+test time:9.5367431640625e-06
+training iter37,this iter consuming time:3.3056557178497314
+forward time:0.003838062286376953
+Compute loss time:0.0002415180206298828
+before forward:4.0531158447265625e-06
+forward time:0.003843069076538086
+Compute loss time:0.00022912025451660156
+optimizer zero grad time:0.23700571060180664
+optimizer backward time:0.00948786735534668
+optimizer zero grad time:0.2615511417388916
+optimizer backward time:0.012992143630981445
+optimizer step time:2.995933771133423
+learning rate step time:4.172325134277344e-05
+after loss time:3.2425475120544434
+print output time:1.2874603271484375e-05
+test time:8.821487426757812e-06
+training iter38,this iter consuming time:3.2466530799865723
+before forward:4.5299530029296875e-06
+optimizer step time:2.967223882675171
+learning rate step time:4.6253204345703125e-05
+after loss time:3.2419028282165527
+print output time:1.33514404296875e-05
+test time:8.58306884765625e-06
+training iter38,this iter consuming time:3.2460010051727295
+before forward:3.814697265625e-06
+forward time:0.003798246383666992
+Compute loss time:0.0002872943878173828
+forward time:0.003573179244995117
+Compute loss time:0.0002391338348388672
+optimizer zero grad time:0.23702311515808105
+optimizer backward time:0.009412288665771484
+optimizer zero grad time:0.2590460777282715
+optimizer backward time:0.012051582336425781
+optimizer step time:3.554150104522705
+learning rate step time:4.363059997558594e-05
+after loss time:3.8006980419158936
+print output time:5.173683166503906e-05
+test time:8.58306884765625e-06
+training iter39,this iter consuming time:3.8048484325408936
+before forward:4.291534423828125e-06
+forward time:0.003683805465698242
+Compute loss time:0.00024175643920898438
+optimizer step time:3.5370726585388184
+learning rate step time:7.867813110351562e-05
+after loss time:3.808389902114868
+print output time:1.7642974853515625e-05
+test time:9.059906005859375e-06
+training iter39,this iter consuming time:3.812232732772827
+before forward:6.67572021484375e-06
+forward time:0.004433631896972656
+Compute loss time:0.00036787986755371094
+optimizer zero grad time:0.2365736961364746
+optimizer backward time:0.009325027465820312
+optimizer zero grad time:0.2587466239929199
+optimizer backward time:0.012306690216064453
+optimizer step time:2.986626148223877
+learning rate step time:4.3392181396484375e-05
+after loss time:3.2326321601867676
+print output time:1.1682510375976562e-05
+test time:8.344650268554688e-06
+training iter40,this iter consuming time:3.236582040786743
+before forward:5.0067901611328125e-06
+forward time:0.003670930862426758
+Compute loss time:0.0002410411834716797
+optimizer step time:2.9628453254699707
+learning rate step time:5.054473876953125e-05
+after loss time:3.234020233154297
+print output time:1.0728836059570312e-05
+test time:7.867813110351562e-06
+training iter40,this iter consuming time:3.238847017288208
+before forward:5.4836273193359375e-06
+forward time:0.0036230087280273438
+Compute loss time:0.00022721290588378906
+optimizer zero grad time:0.23581647872924805
+optimizer backward time:0.009432554244995117
+optimizer zero grad time:0.25840306282043457
+optimizer backward time:0.012325525283813477
+optimizer step time:2.9596989154815674
+learning rate step time:4.029273986816406e-05
+after loss time:3.205052137374878
+print output time:1.239776611328125e-05
+test time:7.152557373046875e-06
+training iter41,this iter consuming time:3.208988666534424
+before forward:4.5299530029296875e-06
+forward time:0.0037114620208740234
+Compute loss time:0.0002448558807373047
+optimizer step time:2.961369752883911
+learning rate step time:4.887580871582031e-05
+after loss time:3.2322194576263428
+print output time:1.1444091796875e-05
+test time:7.867813110351562e-06
+training iter41,this iter consuming time:3.2360944747924805
+before forward:4.291534423828125e-06
+forward time:0.003637552261352539
+Compute loss time:0.00023055076599121094
+optimizer zero grad time:0.22387075424194336
+optimizer backward time:0.009843587875366211
+optimizer zero grad time:0.25936245918273926
+optimizer backward time:0.012243986129760742
+optimizer step time:3.3337173461914062
+learning rate step time:7.510185241699219e-05
+after loss time:3.5676047801971436
+print output time:2.1457672119140625e-05
+test time:1.0967254638671875e-05
+training iter42,this iter consuming time:3.5715980529785156
+before forward:6.67572021484375e-06
+forward time:0.0039598941802978516
+Compute loss time:0.0003867149353027344
+optimizer step time:3.3421192169189453
+learning rate step time:4.5299530029296875e-05
+after loss time:3.6138367652893066
+print output time:1.4066696166992188e-05
+test time:7.867813110351562e-06
+training iter42,this iter consuming time:3.6177310943603516
+before forward:3.814697265625e-06
+forward time:0.0038976669311523438
+Compute loss time:0.00024509429931640625
+optimizer zero grad time:0.22913599014282227
+optimizer backward time:0.009577035903930664
+optimizer zero grad time:0.26500630378723145
+optimizer backward time:0.013301372528076172
+optimizer step time:3.2818667888641357
+learning rate step time:4.100799560546875e-05
+after loss time:3.520704746246338
+print output time:1.2636184692382812e-05
+test time:8.58306884765625e-06
+training iter43,this iter consuming time:3.5250792503356934
+before forward:5.245208740234375e-06
+forward time:0.004170417785644531
+Compute loss time:0.00022912025451660156
+optimizer step time:3.188718557357788
+learning rate step time:4.982948303222656e-05
+after loss time:3.4671437740325928
+print output time:1.1444091796875e-05
+test time:5.125999450683594e-05
+training iter43,this iter consuming time:3.471353054046631
+before forward:4.5299530029296875e-06
+forward time:0.0034546852111816406
+Compute loss time:0.0002551078796386719
+optimizer zero grad time:0.22232985496520996
+optimizer backward time:0.009470701217651367
+optimizer zero grad time:0.25837278366088867
+optimizer backward time:0.013076543807983398
+optimizer step time:3.461148738861084
+learning rate step time:4.076957702636719e-05
+after loss time:3.693068027496338
+print output time:1.2159347534179688e-05
+test time:8.344650268554688e-06
+training iter44,this iter consuming time:3.697493314743042
+before forward:5.0067901611328125e-06
+forward time:0.003552675247192383
+Compute loss time:0.00025916099548339844
+optimizer step time:3.421736717224121
+learning rate step time:4.5299530029296875e-05
+after loss time:3.693298101425171
+print output time:1.049041748046875e-05
+test time:7.62939453125e-06
+training iter44,this iter consuming time:3.697030544281006
+before forward:4.291534423828125e-06
+forward time:0.0034863948822021484
+Compute loss time:0.00022840499877929688
