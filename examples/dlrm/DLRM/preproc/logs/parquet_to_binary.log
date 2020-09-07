@@ -1,7 +1,0 @@
-python parquet_to_binary_kaggle.py --src_dir /mnt/DP_d                                                                                isk4/dlrm/tmp/ --dst_dir /mnt/DP_disk4/dlrm/tmp/dst --intermediate_dir /mnt/DP_d                                                                                                        isk4/dlrm/inter
-Processing train files...
-100%|█████████████████████████████████████████| 175/175 [00:03<00:00, 47.07it/s]
-Train files conversion done
-Concatenating train files
-Total Consuming Time: 11.4500253200531
-Done
