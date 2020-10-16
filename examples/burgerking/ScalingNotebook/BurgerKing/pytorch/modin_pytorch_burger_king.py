@@ -178,6 +178,7 @@ class BiRNN(nn.Module):
         output=self.fc(dropout1)
         return output
 
+optimizer = torch.optim.Adagrad(model.parameters(), lr=learning_rate)
 
 optimizer= hvd.DistributedOptimizer(optimizer,
                                          named_parameters=model.named_parameters(),
@@ -190,10 +191,6 @@ model=BiRNN(50, 50, 1,100,522).to(device)
 learning_rate=0.01
 
 criterion = nn.CrossEntropyLoss()
-
-optimizer = torch.optim.Adagrad(model.parameters(), lr=learning_rate)
-
-
 
 
 time3=datetime.now()
