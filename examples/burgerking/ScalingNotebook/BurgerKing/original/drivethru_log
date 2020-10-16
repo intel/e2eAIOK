@@ -1,0 +1,10 @@
+INFO:root:Epoch[0] Batch [0-500]	Speed: 154.41 samples/sec	accuracy=0.502994
+INFO:root:Epoch[0] Train-accuracy=0.497854
+INFO:root:Epoch[0] Time cost=9.054
+INFO:root:Epoch[0] Validation-accuracy=0.500000
+INFO:root:Epoch[0] Validation-top_k_accuracy_3=1.000000
+INFO:root:Epoch[0] Train-accuracy=0.483943
+INFO:root:Epoch[0] Time cost=5.647
+INFO:root:Epoch[0] Train-accuracy=0.485143
+INFO:root:Epoch[0] Time cost=4.338
+DEBUG:ray:[ray] Forcing OMP_NUM_THREADS=1 to avoid performance degradation with many workers (issue #6998). You can override this by explicitly setting OMP_NUM_THREADS.
