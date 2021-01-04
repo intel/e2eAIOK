@@ -1,0 +1,8 @@
+future
+numpy
+onnx
+pydot
+torch
+torchviz
+scikit-learn
+-e git://github.com/mlperf/logging@0.7.0-rc2#egg=logging

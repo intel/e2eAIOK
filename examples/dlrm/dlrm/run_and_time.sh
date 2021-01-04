@@ -1,0 +1,20 @@
+DATA_PATH="/mnt/DP_disk6/binary_dataset/"
+
+seed_num=$(date +%s)
+export MASTER_ADDR="10.1.0.131"
+
+#Config="mpiexec.hydra -np 2 -genv OMP_NUM_THREADS=24"
+#Config="mpiexec.hydra -np 8 -ppn 2 -hosts sr232,sr237,sr231,sr408 -genv OMP_NUM_THREADS=24"
+Config="mpiexec.hydra -np 4 -ppn 2 -hosts sr231,sr408 -genv OMP_NUM_THREADS=24"
+
+$Config ~/sw/miniconda3/envs/dlrm/bin/python -u /home/xianyang/BlueWhale-poc/mlperf2/dlrm2/dlrm3/dlrm_s_pytorch_bn_dropout.py --arch-sparse-feature-size=128 --arch-mlp-bot="13-512-256-128" --arch-mlp-top="1024-1024-512-256-1" --max-ind-range=40000000  --data-generation=dataset --data-set=terabyte --raw-data-file=$DATA_PATH/day --processed-data-file=$DATA_PATH/terabyte_processed.npz --loss-function=bce --round-targets=True --num-workers=0 --test-num-workers=0   --use-ipex --dist-backend=ccl --learning-rate=18.0 --mini-batch-size=32768 --print-freq=128 --print-time --test-freq=6400 --test-mini-batch-size=65536 --lr-num-warmup-steps=8000 --lr-decay-start-step=51200 --lr-num-decay-steps=80000 --memory-map --mlperf-logging --mlperf-auc-threshold=0.8025 --mlperf-bin-loader --mlperf-bin-shuffle --numpy-rand-seed=$seed_num $dlrm_extra_option 2>&1 | tee run_terabyte_mlperf_32k_4_sockets_saprk_etl_new_emb_two_nodes_bn_${seed_num}_12_3_2020.log
+
+
+# $Config ~/sw/miniconda3/envs/dlrm/bin/python -u /home/xianyang/BlueWhale-poc/mlperf2/dlrm2/dlrm/dlrm_s_pytorch.py --arch-sparse-feature-size=128 --arch-mlp-bot="13-512-256-128" --arch-mlp-top="1024-1024-512-256-1" --max-ind-range=40000000  --data-generation=dataset --data-set=terabyte --raw-data-file=$DATA_PATH/day --processed-data-file=$DATA_PATH/terabyte_processed.npz --loss-function=bce --round-targets=True --num-workers=0 --test-num-workers=0 --use-ipex  --dist-backend=ccl --learning-rate=18.0 --mini-batch-size=32768 --print-freq=128 --print-time --test-freq=6400 --test-mini-batch-size=65536 --lr-num-warmup-steps=8000 --lr-decay-start-step=70000 --lr-num-decay-steps=30000 --memory-map --mlperf-logging --mlperf-auc-threshold=0.8025 --mlperf-bin-loader --mlperf-bin-shuffle --numpy-rand-seed=$seed_num $dlrm_extra_option 2>&1 | tee run_terabyte_mlperf_32k_4_sockets_numpy_data_${seed_num}_11_11_2020.log
+
+
+
+
+# $Config ~/sw/miniconda3/envs/dlrm/bin/python -u /home/xianyang/BlueWhale-poc/mlperf2/dlrm2/dlrm3/dlrm_s_pytorch5.py --arch-sparse-feature-size=128 --arch-mlp-bot="13-512-256-128" --arch-mlp-top="1024-1024-512-256-1" --max-ind-range=40000000  --data-generation=dataset --data-set=terabyte --raw-data-file=$DATA_PATH/day --processed-data-file=$DATA_PATH/terabyte_processed.npz --loss-function=bce --round-targets=True --num-workers=0 --test-num-workers=0 --use-ipex  --dist-backend=ccl --learning-rate=.0 --mini-batch-size=32768 --print-freq=128 --print-time --test-freq=6400 --test-mini-batch-size=65536 --lr-num-warmup-steps=8000 --lr-decay-start-step=70000 --lr-num-decay-steps=30000 --memory-map --mlperf-logging --mlperf-auc-threshold=0.8025 --mlperf-bin-loader --mlperf-bin-shuffle --numpy-rand-seed=$seed_num $dlrm_extra_option 2>&1 | tee run_terabyte_mlperf_32k_4_sockets_saprk_etl_original_emb_${seed_num}_11_26_2020.log
+
+#$Config ~/sw/miniconda3/envs/dlrm/bin/python -u /home/xianyang/BlueWhale-poc/mlperf2/dlrm2/dlrm3/dlrm_s_pytorch_bn_dropout.py --arch-sparse-feature-size=128 --arch-mlp-bot="13-512-256-128" --arch-mlp-top="1024-1024-512-256-1" --max-ind-range=40000000  --data-generation=dataset --data-set=terabyte --raw-data-file=$DATA_PATH/day --processed-data-file=$DATA_PATH/terabyte_processed.npz --loss-function=bce --round-targets=True --num-workers=0 --test-num-workers=0   --use-ipex --dist-backend=ccl --learning-rate=18.0 --mini-batch-size=32768 --print-freq=128 --print-time --test-freq=6400 --test-mini-batch-size=65536 --lr-num-warmup-steps=8000 --lr-decay-start-step=70000 --lr-num-decay-steps=50000 --memory-map --mlperf-logging --mlperf-auc-threshold=0.8025 --mlperf-bin-loader --mlperf-bin-shuffle --numpy-rand-seed=$seed_num $dlrm_extra_option 2>&1 | tee run_terabyte_mlperf_32k_4_sockets_saprk_etl_new_emb_two_nodes_bn_${seed_num}_12_2_2020.log

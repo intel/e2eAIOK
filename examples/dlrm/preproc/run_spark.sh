@@ -35,10 +35,10 @@ export OUTPUT_PATH=${2:-'/dlrm/output'}
 
 # below numbers should be adjusted according to the resource of your running environment
 # set the total number of CPU cores, spark can use
-export TOTAL_CORES=288
+export TOTAL_CORES=192
 
 # set the number of executors
-export NUM_EXECUTORS=24
+export NUM_EXECUTORS=8
 
 # the cores for each executor, it'll be calculated
 export NUM_EXECUTOR_CORES=$((${TOTAL_CORES}/${NUM_EXECUTORS}))
@@ -47,14 +47,14 @@ export NUM_EXECUTOR_CORES=$((${TOTAL_CORES}/${NUM_EXECUTORS}))
 export TOTAL_MEMORY=1500
 
 # unit: GB, set the memory for driver
-export DRIVER_MEMORY=36
+export DRIVER_MEMORY=100
 
 # the memory per executor
 export EXECUTOR_MEMORY=$(((${TOTAL_MEMORY})/${NUM_EXECUTORS}))
 
 # use frequency_limit=15 or not
 # by default use a frequency limit of 15
-USE_FREQUENCY_LIMIT=1
+USE_FREQUENCY_LIMIT=0
 OPTS=""
 if [[ $USE_FREQUENCY_LIMIT == 1 ]]; then
     OPTS="--frequency_limit 15"
@@ -79,20 +79,23 @@ spark-submit --master $MASTER \
    	--conf spark.cores.max=$TOTAL_CORES \
    	--conf spark.task.cpus=1 \
     --conf spark.sql.files.maxPartitionBytes=1073741824 \
+    --conf spark.driver.maxResultSize=10G \
    	--conf spark.sql.shuffle.partitions=600 \
-   	--conf spark.driver.maxResultSize=2G \
    	--conf spark.locality.wait=0s \
-    --conf spark.sql.autoBroadcastJoinThreshold=5242880 \
+    --conf spark.sql.autoBroadcastJoinThreshold=500M \
    	--conf spark.network.timeout=1800s \
-   	spark_data_utils.py --mode generate_models \
+   	spark_data_utils6_bin.py --mode generate_models \
    	$OPTS \
    	--input_folder $INPUT_PATH \
     --test_input_folder $temp_test \
     --validation_input_folder $temp_validation \
     --output_folder $OUTPUT_PATH/ \
-    --model_size_file /mnt/DP_disk2/model_size.json \
+    --model_size_file /mnt/DP_disk7/model_size.json \
    	--days 0-23 \
     --train_days 0-22 \
     --remain_days 23-23 \
-   	--model_folder $OUTPUT_PATH/models\
-   	--write_mode overwrite --low_mem 2>&1 | tee ./logs/submit_total_log.txt
+   	--model_folder $OUTPUT_PATH/models_tmp\
+   	--write_mode overwrite --low_mem 2>&1 | tee ./logs/submit_total_log_new_11_26_frequence_5.txt
+    
+    
+
