@@ -1009,8 +1009,6 @@ def getCriteoAdData(
                     convertDicts[j][X_cat[i][j]] = 1
 
                 # debug prints
-        # [Jian]: this is time consuming, disable it.
-                '''
                 print(
                     "Load %d/%d  Split: %d  Label True: %d  Stored: %d"
                     % (
@@ -1022,7 +1020,6 @@ def getCriteoAdData(
                     ),
                     end="\r",
                 )
-                '''
                 i += 1
 
             # store num_data_in_split samples or extras at the end of file
@@ -1164,7 +1161,6 @@ def loadDataset(
 
     # pre-process data if needed
     # WARNNING: when memory mapping is used we get a collection of files
-    print("data_ready is %s" % (str(data_ready)))
     if data_ready:
         print("Reading pre-processed data=%s" % (str(pro_data)))
         file = str(pro_data)
@@ -1188,8 +1184,7 @@ def loadDataset(
 if __name__ == "__main__":
     ### import packages ###
     import argparse
-    from time import time
-    time1 = time()
+
     ### parse arguments ###
     parser = argparse.ArgumentParser(
         description="Preprocess Criteo dataset"
@@ -1214,6 +1209,3 @@ if __name__ == "__main__":
         args.processed_data_file,
         args.memory_map
     )
-    time2=time()
-    total_time=time2-time1
-    print("Total consuming time:",total_time)

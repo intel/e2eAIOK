@@ -54,7 +54,6 @@ def get_column_counts_with_frequency_limit(df, frequency_limit = None):
         .filter('data is not null')
         .groupBy('column_id', 'data')
         .count())
-
     if frequency_limit:
         frequency_limit = frequency_limit.split(",")
         exclude = []
@@ -66,6 +65,7 @@ def get_column_counts_with_frequency_limit(df, frequency_limit = None):
             elif len(frequency_pair) == 2:
                 df = df.filter((col('column_id') != int(frequency_pair[0]) - CAT_COLS[0]) | (col('count') >= int(frequency_pair[1])))
                 exclude.append(int(frequency_pair[0]))
+        print(F"default_limit:{default_limit}")
         if default_limit:
             remain = [x - CAT_COLS[0] for x in CAT_COLS if x not in exclude]
             df = df.filter((~col('column_id').isin(remain)) | (col('count') >= default_limit))
@@ -430,13 +430,13 @@ def _main():
                 pdf = pdf.tobytes()
                 f.write(pdf)
             yield temp_df
-        
+    print("Start generate models")
     df = load_raw(spark, args.input_folder, args.day_range)
     args.mode = 'generate_models'
     if args.mode == 'generate_models':
         time_start = time()
         # might be too small?? partitions # should be close to total cores) 
-        spark.conf.set('spark.sql.shuffle.partitions', args.days * args.dict_build_shuffle_parallel_per_day*4)
+        #spark.conf.set('spark.sql.shuffle.partitions', args.days * args.dict_build_shuffle_parallel_per_day*4)
         with _timed('generate models'):
             col_counts = get_column_counts_with_frequency_limit(df, args.frequency_limit)
             if args.low_mem:
@@ -477,7 +477,9 @@ def _main():
             args.model_size_file,
             args.write_mode)
     models = [(i, df, agg.sum, flag) for i, df, agg, flag in models]
-
+    print("Start transform train data")
+    df.unpersist(True)
+    df = load_raw(spark, args.input_folder, args.train_day_range)
     args.mode = 'transform'
     args.day_range = args.train_day_range
     args.days =args.train_days
@@ -485,7 +487,7 @@ def _main():
     convert_output_folder = "/mnt/DP_disk5/train/"
     if args.mode == 'transform':
         time_start = time()
-        spark.conf.set('spark.sql.shuffle.partitions', args.days * args.apply_shuffle_parallel_per_day*8)
+        #spark.conf.set('spark.sql.shuffle.partitions', args.days * args.apply_shuffle_parallel_per_day*8)
         with _timed('transform'):
             if args.output_ordering == 'total_random':
                 df = rand_ordinal(df)
@@ -544,6 +546,7 @@ def _main():
             df.mapInPandas(func, schema=df.schema).describe()
         time_end = time()
         print(F"Transform train data cosuming time:{time_end-time_start}")
+    print("Start transform test data")
     args.low_mem = False
     args.mode = 'transform'
     args.day_range = args.remain_day_range
@@ -554,7 +557,7 @@ def _main():
     convert_output_folder = "/mnt/DP_disk5/test/"
     if args.mode == 'transform':
         time_start = time()
-        spark.conf.set('spark.sql.shuffle.partitions', args.days * args.apply_shuffle_parallel_per_day*8)
+        #spark.conf.set('spark.sql.shuffle.partitions', args.days * args.apply_shuffle_parallel_per_day*8)
         with _timed('transform'):
             if args.output_ordering == 'total_random':
                 df = rand_ordinal(df)
@@ -612,7 +615,7 @@ def _main():
             df.mapInPandas(func, schema=df.schema).describe()
         time_end = time()
         print(F"Transform test data cosuming time:{time_end-time_start}")
-    
+    print("Start transform validation data")
     args.mode = 'transform'
     df.unpersist(True)
     args.input_folder = args.validation_input_folder
