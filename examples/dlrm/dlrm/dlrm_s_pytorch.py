@@ -1,5 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-#
+# Modifications copyright Intel
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 #
@@ -84,8 +84,12 @@ from torch.nn.parallel.scatter_gather import gather, scatter
 # For distributed run
 import extend_distributed as ext_dist
 
-import intel_pytorch_extension as ipex
-from intel_pytorch_extension import core
+try:
+    import intel_pytorch_extension as ipex
+    from intel_pytorch_extension import core
+except:
+    pass
+from lamb_bin import Lamb, log_lamb_rs
 
 # quotient-remainder trick
 from tricks.qr_embedding_bag import QREmbeddingBag
@@ -113,7 +117,11 @@ class LRPolicyScheduler(_LRScheduler):
         if self.decay_start_step < self.num_warmup_steps:
             sys.exit("Learning rate warmup must finish before the decay starts")
 
-        super(LRPolicyScheduler, self).__init__(optimizer)
+        if isinstance(optimizer, tuple):
+            for opt in optimizer:
+                super(LRPolicyScheduler, self).__init__(opt)
+        else:
+            super(LRPolicyScheduler, self).__init__(optimizer)
 
     def get_lr(self):
         step_count = self._step_count
@@ -249,8 +257,16 @@ class DLRM_Net(nn.Module):
                 ).astype(np.float32)
                 # approach 1
                 if n >= self.sparse_dense_boundary:
-                    EE = nn.EmbeddingBag(n, m, mode="sum", sparse=True, _weight=torch.tensor(W, requires_grad=True))
+                    #n = 39979771
+                    m_sparse = 16
+                    W = np.random.uniform(
+                        low=-np.sqrt(1 / n), high=np.sqrt(1 / n), size=(n, m_sparse)
+                    ).astype(np.float32)
+                    EE = nn.EmbeddingBag(n, m_sparse, mode="sum", sparse=True, _weight=torch.tensor(W, requires_grad=True))
                 else:
+                    W = np.random.uniform(
+                        low=-np.sqrt(1 / n), high=np.sqrt(1 / n), size=(n, m)
+                    ).astype(np.float32)
                     EE = nn.EmbeddingBag(n, m, mode="sum", sparse=False, _weight=torch.tensor(W, requires_grad=True))
                 # approach 2
                 # EE.weight.data.copy_(torch.tensor(W))
@@ -385,10 +401,7 @@ class DLRM_Net(nn.Module):
             V = E(sparse_index_group_batch, sparse_offset_group_batch)
 
             ly.append(V)
-
-        # print(ly)
         return ly
-
     def interact_features(self, x, ly):
         x = x.to(ly[0].dtype)
         if self.arch_interaction_op == "dot":
@@ -415,9 +428,7 @@ class DLRM_Net(nn.Module):
                 lj = torch.tensor([j for i in range(nj) for j in range(i + offset)])
                 Zflat = Z[:, li, lj]
                 # concatenate dense features and interactions
-                #R = torch.cat([x] + [Zflat], dim=1)
-                zeros_padding = torch.zeros(batch_size, 1, dtype=ly[0].dtype)
-                R = torch.cat((x, Zflat, zeros_padding), dim=1)
+                R = torch.cat([x] + [Zflat], dim=1)
         elif self.arch_interaction_op == "cat":
             # concatenation features (into a row vector)
             R = torch.cat([x] + ly, dim=1)
@@ -493,7 +504,11 @@ class DLRM_Net(nn.Module):
         # dense embeddings
         ly_dense = self.apply_emb(lS_o_dense, lS_i_dense, self.emb_dense)
         ly_sparse = a2a_req.wait()
-        ly = ly_dense + list(ly_sparse)
+        ly_sparse2 = []
+        for i in range(len(ly_sparse)):
+            ly_sparse2.append(ly_sparse[i].repeat(1,4))
+        del ly_sparse
+        ly = ly_dense + list(ly_sparse2)
         # interactions
         z = self.interact_features(x, ly)
         # top mlp
@@ -626,6 +641,7 @@ if __name__ == "__main__":
 
     ### import packages ###
     import sys
+    import os
     import argparse
 
     ### parse arguments ###
@@ -697,7 +713,10 @@ if __name__ == "__main__":
     parser.add_argument("--debug-mode", action="store_true", default=False)
     parser.add_argument("--enable-profiling", action="store_true", default=False)
     parser.add_argument("--plot-compute-graph", action="store_true", default=False)
+    parser.add_argument("--profiling-start-iter", type=int, default=50)
+    parser.add_argument("--profiling-num-iters", type=int, default=100)
     # store/load model
+    parser.add_argument("--out-dir", type=str, default=".")
     parser.add_argument("--save-model", type=str, default="")
     parser.add_argument("--load-model", type=str, default="")
     # mlperf logging (disables other output and stops early)
@@ -718,14 +737,16 @@ if __name__ == "__main__":
     parser.add_argument("--bf16", action='store_true', default=False)
     # ipex option
     parser.add_argument("--use-ipex", action="store_true", default=False)
-  
+    # lamb
+    parser.add_argument("--optimizer", type=int, default=0, help='optimizer:[0:sgd, 1:lamb/sgd, 2:adagrad, 3:sparseadam]')
+
     args = parser.parse_args()
-    time_start = time.time()
+
     ext_dist.init_distributed(backend=args.dist_backend)
 
     if args.mlperf_logging:
         print('command line args: ', json.dumps(vars(args)))
-    
+
     ### some basic setup ###
     np.random.seed(args.numpy_rand_seed)
     np.set_printoptions(precision=args.print_precision)
@@ -818,7 +839,6 @@ if __name__ == "__main__":
             + args.arch_interaction_op
             + " is not supported"
         )
-    num_int = num_int + 1
     arch_mlp_top_adjusted = str(num_int) + "-" + args.arch_mlp_top
     ln_top = np.fromstring(arch_mlp_top_adjusted, dtype=int, sep="-")
 
@@ -997,27 +1017,46 @@ if __name__ == "__main__":
 
     if not args.inference_only:
         # specify the optimizer algorithm
-        if ext_dist.my_size == 1:
-            if args.bf16 and ipex.is_available():
-                optimizer = ipex.SplitSGD(dlrm.parameters(), lr=args.learning_rate)
-            else:
-                optimizer = torch.optim.SGD(dlrm.parameters(), lr=args.learning_rate)
-        else:
-            if args.bf16 and ipex.is_available():
-                optimizer = ipex.SplitSGD([
-                    {"params": [p for emb in dlrm.emb_sparse for p in emb.parameters()], "lr" : args.learning_rate / ext_dist.my_size},
-                    {"params": [p for emb in dlrm.emb_dense for p in emb.parameters()], "lr" : args.learning_rate},
-                    {"params": dlrm.bot_l.parameters(), "lr" : args.learning_rate},
-                    {"params": dlrm.top_l.parameters(), "lr" : args.learning_rate}
-                ], lr=args.learning_rate)
-            else:
-                optimizer = torch.optim.SGD([
-                    {"params": [p for emb in dlrm.emb_sparse for p in emb.parameters()], "lr" : args.learning_rate / ext_dist.my_size},
-                    {"params": [p for emb in dlrm.emb_dense for p in emb.parameters()], "lr" : args.learning_rate},
-                    {"params": dlrm.bot_l.parameters(), "lr" : args.learning_rate},
-                    {"params": dlrm.top_l.parameters(), "lr" : args.learning_rate}
-                ], lr=args.learning_rate)
+        optimizer_list = ([torch.optim.SGD, ([Lamb, False], torch.optim.SGD),
+                           torch.optim.Adagrad, ([torch.optim.Adam, None], torch.optim.SparseAdam)],
+                          [ipex.SplitSGD, ([Lamb, True], ipex.SplitSGD)])
+        optimizers = optimizer_list[args.bf16 and ipex.is_available()][args.optimizer]
+        print('Chosen optimizer(s): %s' % str(optimizers))
 
+        if ext_dist.my_size == 1:
+            if len(optimizers) == 1:
+                optimizer = optimizers(dlrm.parameters(), lr=args.learning_rate)
+            else:
+                optimizer_dense = optimizers[0][0]([
+                    {"params": dlrm.bot_l.parameters(), "lr": args.learning_rate},
+                    {"params": dlrm.top_l.parameters(), "lr": args.learning_rate}
+                ], lr=args.learning_rate)
+                if optimizers[0][1] is not None:
+                    optimizer_dense.set_bf16(optimizers[0][1])
+                optimizer_sparse = optimizers[1]([
+                    {"params": [p for emb in dlrm.emb_l for p in emb.parameters()], "lr": args.learning_rate},
+                ], lr=args.learning_rate)
+                optimizer = (optimizer_dense, optimizer_sparse)
+        else:
+            if len(optimizers) == 1:
+                optimizer = optimizers([
+                    {"params": [p for emb in dlrm.emb_sparse for p in emb.parameters()],
+                     "lr": args.learning_rate / ext_dist.my_size},
+                    {"params": [p for emb in dlrm.emb_dense for p in emb.parameters()], "lr": args.learning_rate},
+                    {"params": dlrm.bot_l.parameters(), "lr": args.learning_rate},
+                    {"params": dlrm.top_l.parameters(), "lr": args.learning_rate}
+                ], lr=args.learning_rate)
+            else:
+                optimizer_dense = optimizers[0][0]([
+                    {"params": [p for emb in dlrm.emb_dense for p in emb.parameters()], "lr": args.learning_rate},
+                    {"params": dlrm.bot_l.parameters(), "lr": args.learning_rate},
+                    {"params": dlrm.top_l.parameters(), "lr": args.learning_rate}
+                ], lr=args.learning_rate, bf16=args.bf16)
+                optimizer_sparse = optimizers[1]([
+                    {"params": [p for emb in dlrm.emb_sparse for p in emb.parameters()],
+                     "lr": args.learning_rate / ext_dist.my_size},
+                ], lr=args.learning_rate)
+                optimizer = (optimizer_dense, optimizer_sparse)
         lr_scheduler = LRPolicyScheduler(optimizer, args.lr_num_warmup_steps, args.lr_decay_start_step,
                                       args.lr_num_decay_steps)
 
@@ -1150,7 +1189,19 @@ if __name__ == "__main__":
     mlperf_logger.log_event(key='lr_decay_start_steps', value=args.lr_decay_start_step)
     mlperf_logger.log_event(key='sgd_opt_learning_rate_decay_steps', value=args.lr_num_decay_steps)
     mlperf_logger.log_event(key='sgd_opt_learning_rate_decay_poly_power', value=2)
-    time_train_start = time.time()
+
+    # record_shapes=True
+    # if hasattr(torch.autograd.profiler.profile, "resume"):
+    #     prof_support_suspend_resume = True
+    #     prof_arg_dict = {"start_suspended": True}
+    # else:
+    #     prof_support_suspend_resume = False
+    #     prof_arg_dict = { }
+
+    # prof_start_iter = args.profiling_start_iter
+    # prof_end_iter = prof_start_iter + args.profiling_num_iters
+    train_start = time.time()
+    # with torch.autograd.profiler.profile(args.enable_profiling, use_gpu, record_shapes=record_shapes, **prof_arg_dict) as prof:
     with torch.autograd.profiler.profile(args.enable_profiling, use_gpu) as prof:
         while k < args.nepochs:
             mlperf_logger.barrier()
@@ -1168,8 +1219,7 @@ if __name__ == "__main__":
 
             if args.mlperf_logging:
                 previous_iteration_time = None
-            time_1_1 = time.time()
-            time_2_1 = time.time()
+
             for j, (X, lS_o, lS_i, T) in enumerate(train_ld):
                 if j == 0 and args.save_onnx:
                     (X_onnx, lS_o_onnx, lS_i_onnx) = (X, lS_o, lS_i)
@@ -1184,8 +1234,11 @@ if __name__ == "__main__":
                     else:
                         iteration_time = 0
                     previous_iteration_time = current_time
+                    # if prof and prof_support_suspend_resume and j == prof_start_iter: prof.resume()
+                    # if prof and prof_support_suspend_resume and j == prof_end_iter: prof.suspend()
                 else:
-                    ext_dist.barrier()
+                    # ext_dist.barrier()
+                    # if prof and prof_support_suspend_resume and j >= prof_start_iter and j < prof_end_iter: prof.resume()
                     t1 = time_wrap(use_gpu)
 
                 # early exit if nbatches was set by the user and has been exceeded
@@ -1222,7 +1275,11 @@ if __name__ == "__main__":
                 if not args.inference_only:
                     # scaled error gradient propagation
                     # (where we do not accumulate gradients across mini-batches)
-                    optimizer.zero_grad()
+                    if args.optimizer == 1 or args.optimizer == 3:
+                        optimizer_dense.zero_grad()
+                        optimizer_sparse.zero_grad()
+                    else:
+                        optimizer.zero_grad()
                     # backward pass
                     E.backward()
                     # debug prints (check gradient norm)
@@ -1231,7 +1288,11 @@ if __name__ == "__main__":
                     #          print(l.weight.grad.norm().item())
 
                     # optimizer
-                    optimizer.step()
+                    if args.optimizer == 1 or args.optimizer == 3:
+                        optimizer_dense.step()
+                        optimizer_sparse.step()
+                    else:
+                        optimizer.step()
                     lr_scheduler.step()
 
                 if args.mlperf_logging:
@@ -1253,8 +1314,6 @@ if __name__ == "__main__":
 
                 # print time, loss and accuracy
                 if should_print or should_test:
-                    time_1_2 = time.time()
-                    print(F"This 128 iteration time:{time_1_2-time_1_1}")
                     gT = 1000.0 * total_time / total_iter if args.print_time else -1
                     total_time = 0
 
@@ -1276,12 +1335,9 @@ if __name__ == "__main__":
                     # .format(time_wrap(use_gpu) - accum_time_begin))
                     total_iter = 0
                     total_samp = 0
-                    time_1_1 = time.time()
 
                 # testing
                 if should_test and not args.inference_only:
-                    time_2_2 = time.time()
-                    print(F"This 6400 iteration time:{time_2_2-time_2_1}")
                     epoch_num_float = (j + 1) / len(train_ld) + k + 1
                     mlperf_logger.barrier()
                     mlperf_logger.log_start(key=mlperf_logger.constants.EVAL_START,
@@ -1454,7 +1510,7 @@ if __name__ == "__main__":
                     # Uncomment the line below to print out the total time with overhead
                     # print("Total test time for this group: {}" \
                     # .format(time_wrap(use_gpu) - accum_test_time_begin))
-                    time_2_1 = time.time()
+
                     if (args.mlperf_logging
                         and (args.mlperf_acc_threshold > 0)
                         and (best_gA_test > args.mlperf_acc_threshold)):
@@ -1469,12 +1525,17 @@ if __name__ == "__main__":
                         print("MLPerf testing auc threshold "
                               + str(args.mlperf_auc_threshold)
                               + " reached, stop training")
+                        train_end = time.time()
+                        total_time = train_end - train_start
+                        print(F"Total Time:{total_time}")
                         mlperf_logger.barrier()
                         mlperf_logger.log_end(key=mlperf_logger.constants.RUN_STOP,
                                               metadata={
                                                   mlperf_logger.constants.STATUS: mlperf_logger.constants.SUCCESS})
+                                
                         break
-                        
+                    #ext_dist.barrier()
+
             mlperf_logger.barrier()
             mlperf_logger.log_end(key=mlperf_logger.constants.EPOCH_STOP,
                                   metadata={mlperf_logger.constants.EPOCH_NUM: k + 1})
@@ -1482,10 +1543,12 @@ if __name__ == "__main__":
             mlperf_logger.log_end(key=mlperf_logger.constants.BLOCK_STOP,
                                   metadata={mlperf_logger.constants.FIRST_EPOCH_NUM: k + 1})
             k += 1  # nepochs
-    time_train_end = time.time()
-    print(F"Train toal time:{time_train_end - time_train_start}")
-    time_end = time.time()
-    print(F"Total Time:{time_end - time_start}")
+    train_end = time.time()
+    total_time = train_end - train_start
+    print(F"Total Time:{total_time}")
+    if args.enable_profiling:
+        print(prof.key_averages().table(sort_by="cpu_time_total"))
+
     if args.mlperf_logging and best_auc_test <= args.mlperf_auc_threshold:
         mlperf_logger.barrier()
         mlperf_logger.log_end(key=mlperf_logger.constants.RUN_STOP,
@@ -1525,4 +1588,3 @@ if __name__ == "__main__":
         dlrm_pytorch_onnx = onnx.load("dlrm_s_pytorch.onnx")
         # check the onnx model
         onnx.checker.check_model(dlrm_pytorch_onnx)
-    

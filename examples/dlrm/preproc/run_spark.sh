@@ -35,19 +35,19 @@ export OUTPUT_PATH=${2:-'/dlrm/output'}
 
 # below numbers should be adjusted according to the resource of your running environment
 # set the total number of CPU cores, spark can use
-export TOTAL_CORES=192
+export TOTAL_CORES=320
 
 # set the number of executors
-export NUM_EXECUTORS=8
+export NUM_EXECUTORS=16
 
 # the cores for each executor, it'll be calculated
 export NUM_EXECUTOR_CORES=$((${TOTAL_CORES}/${NUM_EXECUTORS}))
 
 # unit: GB,  set the max memory you want to use
-export TOTAL_MEMORY=1500
+export TOTAL_MEMORY=2000
 
 # unit: GB, set the memory for driver
-export DRIVER_MEMORY=100
+export DRIVER_MEMORY=40
 
 # the memory per executor
 export EXECUTOR_MEMORY=$(((${TOTAL_MEMORY})/${NUM_EXECUTORS}))
@@ -60,12 +60,12 @@ if [[ $USE_FREQUENCY_LIMIT == 1 ]]; then
     OPTS="--frequency_limit 15"
 fi
 
-export SPARK_HOME=/home/xianyang/sw/spark-3.0.1-bin-hadoop2.7
+export SPARK_HOME=/path/to/spark-3.0.1-bin-hadoop2.7
 export JAVA_HOME=/usr/lib/jvm/java-1.8.0
 export PATH=$SPARK_HOME/bin:$SPARK_HOME/sbin:$PATH
 
 # we use spark standalone to run the job
-export MASTER=spark://sr231:7077
+export MASTER=spark://ip:7077
   #--conf spark.sql.adaptive.enabled True \
 echo "Splitting the last day into 2 parts of test and validation..."
 last_day=$INPUT_PATH/day_23
