@@ -1,18 +1,19 @@
-import findspark
-findspark.init()
-
-import logging
-from timeit import default_timer as timer
-import os
-from pyspark import *
-from pyspark.sql import *
-import pyspark.sql.functions as spk_func
-import pyspark.sql.types as spk_type
-import numpy as np
-import pandas as pd
-from pyspark.ml.feature import *
-from .utils import *
 import uuid
+from .utils import *
+from pyspark.ml.feature import *
+import pandas as pd
+import numpy as np
+import pyspark.sql.types as spk_type
+import pyspark.sql.types as t
+import pyspark.sql.functions as spk_func
+import pyspark.sql.functions as f
+from pyspark.sql import *
+from pyspark import *
+import os
+import sys
+from timeit import default_timer as timer
+import logging
+import shutil
 
 
 class Operation:
@@ -39,8 +40,87 @@ class Operation:
     def collect(self, df):
         raise NotImplementedError(self.op_name + "doesn't support collect")
 
+    def to_dict_dfs(self, df):
+        raise NotImplementedError(self.op_name + "doesn't support to_dict_dfs")
+
     def process(self, df, spark):
         return df
+
+    # some common method
+    def find_dict(self, name, dict_dfs):
+        for i in dict_dfs:
+            if isinstance(i, tuple):
+                for v in i:
+                    if isinstance(v, str):
+                        dict_name = v
+                    else:
+                        dict_df = v
+                if dict_name == name:
+                    return dict_df
+            else:
+                dict_df = i['dict']
+                dict_name = i['col_name']
+                if dict_name == name:
+                    return dict_df
+        return None
+
+    def get_colname_dict_as_tuple(self, i):
+        if isinstance(i, tuple):
+            for v in i:
+                if isinstance(v, str):
+                    dict_name = v
+                else:
+                    dict_df = v
+            return (dict_name, dict_df)
+        else:
+            dict_df = i['dict']
+            dict_name = i['col_name']
+            return (dict_name, dict_df)
+
+    def generate_dict_dfs(self, df, withCount=False):
+        # at least we can cache here to make read much faster
+        df.cache()
+        # handle multiple columns issue
+        for i in self.cols:
+            col_name = ""
+            if isinstance(i, dict):
+                # This is more those need to union columns
+                if 'col_name' in i:
+                    col_name = i['col_name']
+                else:
+                    col_name = 'union_dict'
+                src_cols = []
+                if 'src_cols' in i:
+                    src_cols.extend(i['src_cols'])
+                else:
+                    raise ValueError(
+                        "Union columns must has argument 'src_cols'")
+                first = True
+                dict_df = df
+                for _i in src_cols:
+                    if first:
+                        dict_df = df.select(spk_func.col(_i).alias('dict_col'))
+                        first = False
+                    else:
+                        dict_df = dict_df.union(
+                            df.select(spk_func.col(_i).alias('dict_col')))
+            else:  # if cols are simply col_name
+                col_name = i
+                dict_df = df.select(spk_func.col(i).alias('dict_col'))
+                if self.doSplit:
+                    dict_df = dict_df.select(
+                        spk_func.explode(spk_func.split(spk_func.col('dict_col'), self.sep))).withColumn('dict_col', spk_func.col('col'))
+            dict_df = dict_df.groupBy('dict_col').count()
+            dict_df = dict_df.withColumn('dict_col_id', spk_func.row_number().over(
+                Window.orderBy(spk_func.desc('count')))).withColumn('dict_col_id', spk_func.col('dict_col_id') - 1).select('dict_col', 'dict_col_id', 'count')
+            if withCount:
+                print("generate_dict_dfs withCount = True")
+                self.dict_dfs.append({'col_name': col_name, 'dict': dict_df})
+            else:
+                print("generate_dict_dfs withCount = False")
+                self.dict_dfs.append(
+                    {'col_name': col_name, 'dict': dict_df.drop('count')})
+        return self.dict_dfs
 
 
 class FeatureModification(Operation):
@@ -83,7 +163,6 @@ class FeatureModification(Operation):
             for i in self.cols:
                 df = df.withColumn(i, spk_func.col(
                     i).cast(spk_type.IntegerType()))
-
         return df
 
 
@@ -124,6 +203,7 @@ class FeatureAdd(Operation):
                 df = df.withColumn(after, self.udf_impl(spk_func.col(before)))
         elif self.op == 'inline':
             for after, before in self.cols.items():
+                #print("[DEBUG]: inline script is %s" % before)
                 df = df.withColumn(after, eval(before))
         elif self.op == 'toInt':
             for after, before in self.cols.items():
@@ -160,96 +240,171 @@ class Categorify(Operation):
         cols (list): columns which are be modified
     '''
 
-    def __init__(self, cols, src_cols=None, hint='join'):
+    def __init__(self, cols, dict_dfs=None, hint='auto', doSplit=False, sep='\t', doSortForArray=False, keepMostFrequent=False):
         self.op_name = "Categorify"
         self.cols = cols
-        self.src_cols = src_cols
+        self.dict_dfs = dict_dfs
         self.hint = hint
+        self.doSplit = doSplit
+        self.sep = sep
+        self.doSortForArray = doSortForArray
+        self.keepMostFrequent = keepMostFrequent
+        self.strategy_type = {
+            'udf': 'udf', 'broadcast_join': 'short_dict', 'shuffle_join': 'huge_dict'}
 
     def process(self, df, spark):
-        if self.hint == 'udf':
-            return self.process_with_udf(df, spark)
+        if self.dict_dfs == None:
+            # We should do categorify upon same column
+            self.dict_dfs = self.to_dict_dfs(df)
+            for i in self.dict_dfs:
+                col_name, dict_df = self.get_colname_dict_as_tuple(i)
+                dict_df.cache()
+        strategy = {}
+        if self.hint != "auto" and self.hint in self.strategy_type:
+            strategy[self.strategy_type[self.hint]] = []
+            for i in self.dict_dfs:
+                col_name, dict_df = self.get_colname_dict_as_tuple(i)
+                strategy[self.strategy_type[self.hint]].append(col_name)
         else:
-            return self.process_with_join(df, spark)
+            strategy = self.categorify_strategy_decision_maker(self.dict_dfs)
 
-    def process_with_udf(self, df, spark):
-        if self.src_cols == None:
-            for i in self.cols:
-                sorted_data = df.select(i).groupBy(i).count().orderBy(
-                    spk_func.desc('count'), i).select(i).collect()
-                dict_data = dict((id[i], idx) for (id, idx) in zip(
-                    sorted_data, range(0, len(sorted_data))))
-                udf_impl = self.get_mapping_udf(dict_data, spark)
-                df = df.withColumn(i, udf_impl(spk_func.col(i)))
-        else:
-            first = True
-            dict_df = df
-            for i in self.cols:
-                if first:
-                    dict_df = df.select(spk_func.col(i).alias('dict_col'))
-                    first = False
-                else:
-                    dict_df = dict_df.union(
-                        df.select(spk_func.col(i).alias('dict_col')))
-            sorted_data = dict_df.groupBy('dict_col').count().orderBy(
-                spk_func.desc('count'), 'dict_col').select('dict_col').collect()
-            dict_data = dict((id['dict_col'], idx) for (id, idx) in zip(
-                sorted_data, range(0, len(sorted_data))))
-            udf_impl = self.get_mapping_udf(dict_data, spark)
-            for i in self.cols:
-                df = df.withColumn(i, udf_impl(spk_func.col(i)))
+        # For now, we prepared dict_dfs and strategy
+        for i in self.cols:
+            col_name, src_name = self.get_col_tgt_src(i)
+            dict_df = self.find_dict(src_name, self.dict_dfs)
+            # for udf type, we will do udf to do user-defined categorify
+            if 'udf' in strategy and src_name in strategy['udf']:
+                dict_data = dict((row['dict_col'], row['dict_col_id'])
+                                 for row in dict_df.collect())
+                df = self.categorify_with_udf(df, dict_data, col_name, spark)
+        for i in self.cols:
+            col_name, src_name = self.get_col_tgt_src(i)
+            dict_df = self.find_dict(src_name, self.dict_dfs)
+            # for short dict, we will do bhj
+            if 'short_dict' in strategy and src_name in strategy['short_dict']:
+                df = self.categorify_with_bhj(df, dict_df, col_name, spark)
+        for i in self.cols:
+            col_name, src_name = self.get_col_tgt_src(i)
+            dict_df = self.find_dict(src_name, self.dict_dfs)
+            # for long dict, we will do shj all along
+            if 'long_dict' in strategy and src_name in strategy['long_dict']:
+                df = self.categorify_with_bhj(df, dict_df, col_name, spark)
+        for i in self.cols:
+            col_name, src_name = self.get_col_tgt_src(i)
+            dict_df = self.find_dict(src_name, self.dict_dfs)
+            # for huge dict, we will do shj seperately
+            if 'huge_dict' in strategy and src_name in strategy['huge_dict']:
+                df = self.categorify_with_join(df, dict_df, col_name, spark)
+                df.persist()
         return df
+
+    def get_col_tgt_src(self, i):
+        if isinstance(i, str):
+            col_name = i
+            src_name = i
+            return (col_name, src_name)
+        elif isinstance(i, dict):
+            col_name = next(iter(i.keys()))
+            src_name = next(iter(i.values()))
+            return (col_name, src_name)
 
     def get_mapping_udf(self, broadcast_data, spark, default=None):
-        # check if we support this type
-        first_value = next(iter(broadcast_data.values()))
-        if not isinstance(first_value, int) and not isinstance(first_value, str) and not isinstance(first_value, float):
-            raise NotImplementedError
-
         broadcast_dict = spark.sparkContext.broadcast(
             broadcast_data)
+        sep = self.sep
+        doSortForArray = self.doSortForArray
 
-        def get_mapped(x):
+        def largest_freq_encode(x):
             broadcast_data = broadcast_dict.value
-            if x in broadcast_data:
-                return broadcast_data[x]
-            else:
-                return default
-
-        # switch return type
-        if isinstance(first_value, int):
-            return spk_func.udf(get_mapped, spk_type.IntegerType())
-        if isinstance(first_value, str):
-            return spk_func.udf(get_mapped, spk_type.StringType())
-        if isinstance(first_value, float):
-            return spk_func.udf(get_mapped, spk_type.FloatType())
-
-    def process_with_join(self, df, spark):
-        if self.src_cols == None:
-            for i in self.cols:
-                dict_df = df.select(spk_func.col(i)).groupBy(i).count()
-                dict_df = dict_df.withColumn('dict_col_id', spk_func.row_number().over(
-                    Window.orderBy(spk_func.desc('count')))).withColumn('dict_col_id', spk_func.col('dict_col_id') - 1).select(i, 'dict_col_id')
-                df = df.join(dict_df.hint('shuffle_hash'), i, 'left').withColumn(
-                    i, spk_func.col('dict_col_id')).drop('dict_col_id')
-        else:
-            first = True
-            dict_df = df
-            for i in self.cols:
-                if first:
-                    dict_df = df.select(spk_func.col(i).alias('dict_col'))
-                    first = False
+            if x != '':
+                val = []
+                for v in x.split(sep):
+                    if v != '' and v in broadcast_data:
+                        val.append(broadcast_data[v])
+                if len(val) > 0:
+                    val.sort()
+                    return val[0]
                 else:
-                    dict_df = dict_df.union(
-                        df.select(spk_func.col(i).alias('dict_col')))
-            dict_df = dict_df.groupBy('dict_col').count()
-            dict_df = dict_df.withColumn('dict_col_id', spk_func.row_number().over(
-                Window.orderBy(spk_func.desc('count')))).withColumn('dict_col_id', spk_func.col('dict_col_id') - 1).select('dict_col', 'dict_col_id')
-            for i in self.cols:
-                df = df.join(dict_df.hint('shuffle_hash'), spk_func.col(i) == spk_func.col('dict_col'), 'left').withColumn(
-                    i, spk_func.col('dict_col_id')).drop('dict_col_id', 'dict_col')
+                    return 0
+            else:
+                return 0
 
+        def freq_encode(x):
+            broadcast_data = broadcast_dict.value
+            val = []
+            if x != '':
+                for v in x.split(sep):
+                    if v != '' and v in broadcast_data:
+                        val.append(broadcast_data[v])
+                if doSortForArray and len(val) > 0:
+                    val.sort()
+            return val
+
+        if self.keepMostFrequent:
+            return spk_func.udf(largest_freq_encode, spk_type.IntegerType())
+        else:
+            return spk_func.udf(freq_encode, spk_type.ArrayType(spk_type.IntegerType()))
+
+    def categorify_with_udf(self, df, dict_data, i, spark):
+        udf_impl = self.get_mapping_udf(dict_data, spark)
+        df = df.withColumn(i, udf_impl(spk_func.col(i)))
         return df
+
+    def categorify_with_join(self, df, dict_df, i, spark):
+        if self.doSplit == False:
+            df = df.join(dict_df.hint('shuffle_hash'), spk_func.col(i) == dict_df.dict_col, 'left')\
+                .withColumn(i, dict_df.dict_col_id).drop("dict_col_id", "dict_col")
+        else:
+            df = df.withColumn(
+                'row_id', spk_func.monotonically_increasing_id())
+            tmp_df = df.select('row_id', i).withColumn(
+                i, f.explode(f.split(f.col(i), self.sep)))
+            tmp_df = tmp_df.join(
+                dict_df.hint('shuffle_hash'),
+                spk_func.col(i) == dict_df.dict_col,
+                'left').filter(spk_func.col('dict_col_id').isNotNull())
+            tmp_df = tmp_df.select(
+                'row_id', spk_func.col('dict_col_id'))
+            if self.doSortForArray:
+                if self.keepMostFrequent:
+                    tmp_df = tmp_df.groupby('row_id').agg(spk_func.array_sort(
+                        spk_func.collect_list(spk_func.col('dict_col_id'))).getItem(0).alias('dict_col_id'))
+                else:
+                    tmp_df = tmp_df.groupby('row_id').agg(spk_func.array_sort(
+                        spk_func.collect_list(spk_func.col('dict_col_id'))).alias('dict_col_id'))
+            else:
+                tmp_df = tmp_df.groupby('row_id').agg(
+                    spk_func.collect_list(spk_func.col('dict_col_id')).alias('dict_col_id'))
+            df = df.join(tmp_df.hint('shuffle_hash'),
+                         'row_id', 'left').drop('row_id').drop(i).withColumnRenamed('dict_col_id', i)
+        return df
+
+    def categorify_with_bhj(self, df, dict_df, i, spark):
+        if self.doSplit == False:
+            df = df.join(dict_df.hint('broadcast'), spk_func.col(i) == dict_df.dict_col, 'left')\
+                .withColumn(i, dict_df.dict_col_id).drop("dict_col_id", "dict_col")
+        else:
+            raise NotImplementedError(
+                "We should use udf to handle withSplit + small dict scenario")
+        return df
+
+    def categorify_strategy_decision_maker(self, dict_dfs):
+        small_cols = []
+        long_cols = []
+        huge_cols = []
+        udf_cols = []
+        for i in dict_dfs:
+            col_name, dict_df = self.get_colname_dict_as_tuple(i)
+            if (dict_df.count() > 50000000):
+                huge_cols.append(col_name)
+            elif (dict_df.count() > 50000000):
+                long_cols.append(col_name)
+            else:
+                if self.doSplit:
+                    udf_cols.append(col_name)
+                else:
+                    small_cols.append(col_name)
+        return {'short_dict': small_cols, 'long_dict': long_cols, 'huge_dict': huge_cols, 'udf': udf_cols}
 
 
 class CategorifyMultiItems(Operation):
@@ -336,21 +491,7 @@ class CategorifyMultiItems(Operation):
     def get_mapping_udf_1(self, broadcast_data, spark, sep, skipList, freqRange, default=None):
         broadcast_dict = spark.sparkContext.broadcast(
             broadcast_data)
-# original
-#        def frequence_encode(x):
-#            dict_data = broadcast_dict.value
-#            li = []
-#            lf = []
-#            for v in x.split(sep):
-#                if v not in skipList:
-#                    f, i = dict_data[v]
-#                    if f < freqRange[1] and f > freqRange[0]:
-#                        li.append(str(i))
-#                        lf.append(f)
-#            # li will sort according to lf
-#            return ' '.join(list((np.array(li)[np.argsort(lf)])))
 
-# optimized since idx is orderBy count
         def frequence_encode(x):
             dict_data = broadcast_dict.value
             li = []
@@ -422,6 +563,7 @@ class GenerateDictionary(Operation):
         doSplit (bool): If we need to split data
         sep (str): split seperator
     '''
+    # TODO: We should add an optimization for csv input
 
     def __init__(self, cols, withCount=False, doSplit=False, sep='\t'):
         self.op_name = "GenerateDictionary"
@@ -429,33 +571,28 @@ class GenerateDictionary(Operation):
         self.doSplit = doSplit
         self.sep = sep
         self.withCount = withCount
+        self.dict_dfs = []
 
-    def process(self, df, spark):
-        return df
+    def merge_dict(self, dict_dfs, to_merge_dict_dfs):
+        self.dict_dfs = []
+        for i in dict_dfs:
+            dict_df = i['dict']
+            dict_name = i['col_name']
+            to_merge = self.find_dict(dict_name, to_merge_dict_dfs)
+            if to_merge == None:
+                raise ValueError(
+                    "Expect '%s' in merge_dicts.to_merge_dict_dfs, while find none")
+            max_id_of_to_merge_row = to_merge.agg(
+                {'dict_col_id': 'max'}).collect()[0]
+            max_id_of_to_merge = max_id_of_to_merge_row['max(dict_col_id)']
+            fwd_dict_df = dict_df.join(to_merge, 'dict_col', 'anti').withColumn('dict_col_id', spk_func.row_number().over(
+                Window.orderBy('dict_col_id')) + max_id_of_to_merge)
+            self.dict_dfs.append(
+                {'col_name': dict_name, 'dict': to_merge.union(fwd_dict_df)})
+        return self.dict_dfs
 
-    def collect(self, df):
-        first = True
-        dict_df = df
-        # handle multiple columns issue
-        for i in self.cols:
-            singular_df = df.select(spk_func.col(i).alias('dict_col'))
-            if self.doSplit:
-                singular_df = singular_df.select(
-                    spk_func.explode(spk_func.split(spk_func.col('dict_col'), self.sep))).withColumn('dict_col', spk_func.col('col'))
-            if first:
-                first = False
-                dict_df = singular_df
-            else:
-                dict_df = dict_df.union(singular_df)
-        sorted_data = dict_df.groupBy('dict_col').count().orderBy(
-            spk_func.desc('count'), 'dict_col').select('dict_col', 'count').collect()
-        if self.withCount:
-            return dict((id['dict_col'], [idx, id['count']]) for (id, idx) in zip(
-                sorted_data, range(0, len(sorted_data))))
-        else:
-            return dict((id['dict_col'], idx) for (id, idx) in zip(
-                sorted_data, range(0, len(sorted_data))))
-
+    def to_dict_dfs(self, df):
+        return self.generate_dict_dfs(df, self.withCount)
 
 # class NegativeSample(Operation):
 #    def get_negative_sample_udf(self, broadcast_data):
@@ -483,11 +620,19 @@ class GenerateDictionary(Operation):
 
 
 class DataProcessor:
-    def __init__(self, spark):
+    def __init__(self, spark, path_prefix="hdfs://", current_path="", dicts_path=""):
         self.ops = []
         self.spark = spark
         self.uuid = uuid.uuid1()
         self.tmp_id = 0
+        self.path_prefix = path_prefix
+        self.current_path = current_path
+        self.dicts_path = dicts_path
+        self.tmp_materialzed_list = []
+
+    def __del__(self):
+        for tmp_file in self.tmp_materialzed_list:
+            shutil.rmtree(tmp_file, ignore_errors=True)
 
     def describe(self):
         description = []
@@ -508,14 +653,49 @@ class DataProcessor:
         else:
             tmp_id = self.tmp_id
             self.tmp_id += 1
-            df.write.format('parquet').mode(
-                'overwrite').save("/tmp/" + "%s-%s-%d" % (df_name, self.uuid, tmp_id))
-            return self.spark.read.parquet("/tmp/" + "%s-%s-%d" % (df_name, self.uuid, tmp_id))
+            save_path = ""
+            if df_name == "materialized_tmp":
+                save_path = "%s/%s/tmp/%s-%s-%d" % (
+                    self.path_prefix, self.current_path, df_name, self.uuid, tmp_id)
+                self.tmp_materialzed_list.append(save_path)
+            else:
+                save_path = "%s/%s/%s" % (self.path_prefix,
+                                          self.current_path, df_name)
+            df.write.format('parquet').mode('overwrite').save(save_path)
+            return self.spark.read.parquet(save_path)
 
-    def transform(self, df):
+    def transform(self, df, name="materialized_tmp"):
         for op in self.ops:
             df = op.process(df, self.spark)
-        return self.materialize(df)
+        return self.materialize(df, df_name=name)
+
+    def generate_dicts(self, df):
+        # flat ops to dfs
+        dfs = []
+        materialized_dfs = []
+        for op in self.ops:
+            if op.op_name != "GenerateDictionary":
+                raise NotImplementedError(
+                    "We haven't support apply generate_dict to not GenerateDictionary operator yet.")
+            dfs.extend(op.to_dict_dfs(df))
+        for dict_df in dfs:
+            materialized_dfs.append({'col_name': dict_df['col_name'], 'dict': self.materialize(
+                dict_df['dict'], "%s/%s" % (self.dicts_path, dict_df['col_name']))})
+        return materialized_dfs
+
+    def merge_dicts(self, df, to_merge_dict_dfs):
+        # flat ops to dfs
+        dfs = []
+        materialized_dfs = []
+        for op in self.ops:
+            if op.op_name != "GenerateDictionary":
+                raise NotImplementedError(
+                    "We haven't support apply generate_dict to not GenerateDictionary operator yet.")
+            dfs.extend(op.merge_dict(op.to_dict_dfs(df), to_merge_dict_dfs))
+        for dict_df in dfs:
+            materialized_dfs.append({'col_name': dict_df['col_name'], 'dict': self.materialize(
+                dict_df['dict'], "%s/%s_merged" % (self.dicts_path, dict_df['col_name']))})
+        return materialized_dfs
 
     def collect(self, df):
         for op in self.ops[:-1]:
