@@ -1,15 +1,11 @@
 from .init_spark import *
-from pyspark.sql import SparkSession
-from pyspark.sql.types import *
-from pyspark.sql.functions import *
-from pyspark.sql.window import Window
-import pandas
-import pickle
-import os.path
-import random
-from time import time
-import pandas as pd
-import numpy as np
+
+def convert_to_spark_dict(orig_dict, schema=['dict_col', 'dict_col_id']):
+    ret = []
+    for row_k, row_v in orig_dict.items():
+        ret.append({schema[0]: row_k, schema[1]: row_v})
+    return ret
+
 
 def list_dir(path):
     source_path_dict = {}
@@ -24,5 +20,3 @@ def list_dir(path):
         except:
             source_path_dict[files] = os.path.join(path, files)
     return source_path_dict
-
-
