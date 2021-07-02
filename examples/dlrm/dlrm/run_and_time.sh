@@ -1,5 +1,0 @@
-DATA_PATH="/mnt/DP_disk7s/binary_dataset/"
-seed_num=$(date +%s)
-export KMP_BLOCKTIME=1
-export KMP_AFFINITY="granularity=fine,compact,1,0"
-python  -u  ./launch.py --distributed --nproc_per_node=2 --nnodes=4 --hostfile ./hosts --master_addr=ip /path/to/dlrm_s_pytorch.py --arch-sparse-feature-size=64 --arch-mlp-bot="13-128-64" --arch-mlp-top="256-128-1" --max-ind-range=40000000  --data-generation=dataset --data-set=terabyte --raw-data-file=$DATA_PATH/day --processed-data-file=$DATA_PATH/terabyte_processed.npz --loss-function=bce --round-targets=True --num-workers=0 --test-num-workers=0 --bf16 --use-ipex  --optimizer=1 --dist-backend=ccl --learning-rate=16 --mini-batch-size=262144 --print-freq=16  --print-time --test-freq=800 --sparse-dense-boundary=403346 --test-mini-batch-size=16384 --lr-num-warmup-steps=4000 --lr-decay-start-step=5760 --lr-num-decay-steps=27000 --memory-map --mlperf-logging --mlperf-auc-threshold=0.8025 --mlperf-bin-loader --mlperf-bin-shuffle --numpy-rand-seed=12345 $dlrm_extra_option 2>&1 | tee run_terabyte_mlperf_256k_8_sockets_eight_nodes_numpy_data_bf16_small_network_lamb_bin_opt_launch_${seed_num}_03_24_2021.log

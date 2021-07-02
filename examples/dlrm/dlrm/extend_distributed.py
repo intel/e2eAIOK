@@ -5,8 +5,6 @@ import torch
 from torch.autograd import Function
 from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.distributed as dist
-from typing import MutableSequence, Any, Sequence, List
-
 try:
     import torch_ccl
 except ImportError as e:
@@ -22,51 +20,6 @@ allgatherv_supported = False
 a2a_impl = os.environ.get('DLRM_ALLTOALL_IMPL', '')
 
 myreq = None
-
-
-def distribute_to_buckets(elements: MutableSequence[Any], buckets: Sequence[List[Any]], start_bucket: int = 0):
-    current_bucket = start_bucket % len(buckets)
-    while elements:
-        element = elements.pop()
-        buckets[current_bucket].append(element)
-        current_bucket = (current_bucket + 1) % len(buckets)
-    return current_bucket
-
-
-def get_criteo_device_mapping(num_gpus: int = 4, num_embeddings: int = 26, heavy_components=(0, 9, 19, 21, 20)):
-    """Get device mappings for hybrid parallelism
-
-    Bottom MLP running on device 0. 26 embeddings will be distributed across among all the devices. 0, 9, 19, 20, 21
-    are the large ones, 20GB each.
-
-    Args:
-        num_gpus (int): Default 4.
-        num_embeddings (int):
-        heavy_components (tuple):
-
-    Returns:
-        device_mapping (dict):
-    """
-    bottom_mlp_index = -1
-    heavy_components = list(heavy_components)
-    regular_components = [x for x in range(num_embeddings) if x not in heavy_components]
-
-    gpu_buckets = [[] for _ in range(num_gpus)]
-    gpu_buckets[0].append(bottom_mlp_index)
-
-    next_bucket = distribute_to_buckets(heavy_components, gpu_buckets, start_bucket=1)
-    distribute_to_buckets(regular_components, gpu_buckets, start_bucket=next_bucket)
-
-    vectors_per_gpu = [len(bucket) for bucket in gpu_buckets]
-
-    gpu_buckets[0].pop(0)  # pop bottom mlp
-
-    return {
-        'bottom_mlp': 0,
-        'embedding': gpu_buckets,
-        'vectors_per_gpu': vectors_per_gpu,
-    }
-
 
 def env2int(env_list, default = -1):
     for e in env_list:

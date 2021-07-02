@@ -1,5 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-# Modifications copyright Intel
+#
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 #
@@ -401,7 +401,10 @@ class DLRM_Net(nn.Module):
             V = E(sparse_index_group_batch, sparse_offset_group_batch)
 
             ly.append(V)
+
+        # print(ly)
         return ly
+#if self.bf16:
     def interact_features(self, x, ly):
         x = x.to(ly[0].dtype)
         if self.arch_interaction_op == "dot":
@@ -508,6 +511,7 @@ class DLRM_Net(nn.Module):
         for i in range(len(ly_sparse)):
             ly_sparse2.append(ly_sparse[i].repeat(1,4))
         del ly_sparse
+        #ly_sparse ""= torch.cat(ly_sparse,1)
         ly = ly_dense + list(ly_sparse2)
         # interactions
         z = self.interact_features(x, ly)
@@ -1338,6 +1342,7 @@ if __name__ == "__main__":
 
                 # testing
                 if should_test and not args.inference_only:
+                    break
                     epoch_num_float = (j + 1) / len(train_ld) + k + 1
                     mlperf_logger.barrier()
                     mlperf_logger.log_start(key=mlperf_logger.constants.EVAL_START,

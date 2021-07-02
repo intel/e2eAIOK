@@ -402,11 +402,11 @@ def make_criteo_data_and_loaders(args):
         if True:
             print("binary dataset, line 386 of dlrm_data_pytorch.py")
             #lstr = args.processed_data_file.split("/")
-            d_path = "/mnt/DP_disk6/binary_dataset/"
+            d_path = "/mnt/DP_disk7/binary_dataset/"
             train_file = d_path + "train_data.bin"
             test_file = d_path + "test_data.bin"
             #val_file = d_path + "val_data.bin"
-            counts_file = d_path + 'train_fea_count.npz'
+            counts_file = d_path + 'day_fea_count.npz'
 
             train_data = data_loader_terabyte.CriteoBinDataset(
                 data_file=train_file,

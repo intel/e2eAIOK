@@ -88,9 +88,6 @@ def _transform_features(
     return x_int_batch, lS_o, x_cat_batch.t(), y_batch.view(-1, 1)
 
 
-
-
-
 def _batch_generator(
         data_filename, data_directory, days, batch_size, split, drop_last, max_ind_range
 ):
@@ -236,8 +233,8 @@ class CriteoBinDataset(Dataset):
         print('data file:', data_file, 'number of batches:', self.num_batches)
         self.file = open(data_file, 'rb')
 
-        self.counts= [7912889, 33823, 17139, 7339, 20046, 4, 7105, 1382, 63, 5554114, 582469, 245828, 11, 2209, 10667, 104, 4, 968, 15, 8165896, 2675940, 7156453, 302516, 12022, 97, 35]
-        #self.counts = [39884406,39043,17289,7420,20263,3,7120,1543,63,38532951,2953546,403346,10,2208,11938,155,4,976,14,39979771,25641295, 39664984,585935,12972,108,36]
+        with np.load(counts_file) as data:
+            self.counts = data["counts"]
 
         # hardcoded for now
         self.m_den = 13
@@ -250,32 +247,14 @@ class CriteoBinDataset(Dataset):
         rank_size = self.bytes_last_batch if idx == (self.num_batches - 1) else self.bytes_per_rank 
         self.file.seek(idx * self.bytes_per_batch + rank_size * my_rank, 0)
         raw_data = self.file.read(rank_size)
-        device = "cpu"
-        array = np.frombuffer(raw_data, dtype=np.int32).reshape(-1, self.tot_fea)
-        numerical_features = array[:, 1:14].view(dtype=np.float32)
-        numerical_features = torch.from_numpy(numerical_features)
+        array = np.frombuffer(raw_data, dtype=np.int32)
+        tensor = torch.from_numpy(array).view((-1, self.tot_fea))
 
-        categorical_features = torch.from_numpy(array[:, 14:])
-        click = torch.from_numpy(array[:, 0])
-
-        categorical_features = categorical_features.to(device, non_blocking=True).to(torch.long)
-        numerical_features = numerical_features.to(device, non_blocking=True)
-        click = click.to(torch.float32).to(device, non_blocking=True)
-        return _transform_features(x_int_batch=numerical_features,
-                                   x_cat_batch=categorical_features,
-                                   y_batch=click,
+        return _transform_features(x_int_batch=tensor[:, 1:14],
+                                   x_cat_batch=tensor[:, 14:],
+                                   y_batch=tensor[:, 0],
                                    max_ind_range=self.max_ind_range,
                                    flag_input_torch_tensor=True)
-#        array = np.frombuffer(raw_data, dtype=np.int32)
-#         tensor = torch.from_numpy(array).view((-1, self.tot_fea))
-
-#         return _transform_features(x_int_batch=tensor[:, 1:14],
-#                                    x_cat_batch=tensor[:, 14:],
-#                                    y_batch=tensor[:, 0],
-        
-#                                    max_ind_range=self.max_ind_range,
-#                                    flag_input_torch_tensor=True)
-           
 
 
 def numpy_to_binary(input_files, output_file_path, split='train'):
