@@ -1,4 +1,5 @@
 from .init_spark import *
+import re
 
 def convert_to_spark_dict(orig_dict, schema=['dict_col', 'dict_col_id']):
     ret = []

@@ -40,10 +40,10 @@ class Operation:
     def collect(self, df):
         raise NotImplementedError(self.op_name + "doesn't support collect")
 
-    def to_dict_dfs(self, df):
+    def to_dict_dfs(self, df, spark = None):
         raise NotImplementedError(self.op_name + "doesn't support to_dict_dfs")
 
-    def process(self, df, spark):
+    def process(self, df, spark, save_path="", per_core_memory_size=0, flush_threshold = 0):
         return df
 
     # some common method
@@ -77,10 +77,39 @@ class Operation:
             dict_name = i['col_name']
             return (dict_name, dict_df)
 
-    def generate_dict_dfs(self, df, withCount=False):
+    def generate_dict_dfs(self, df, spark=None, cache_path=None, withCount=True, isParquet=True):
         # at least we can cache here to make read much faster
-        df.cache()
         # handle multiple columns issue
+        if isParquet == False and spark != None and cache_path != None:
+            cols = self.cols
+            # let's raise NotImplemented exception for union case and doSplit case
+            if self.doSplit:
+                raise NotImplementedError("csv optimization is not supporting for doSplit yet.")
+            for i in self.cols:
+                if isinstance(i, dict):
+                    raise NotImplementedError("csv optimization is not supporting for generate dictionary for multiple columns yet.")
+            df = (df
+                .select(spk_func.posexplode(spk_func.array(*cols)))
+                .withColumnRenamed('pos', 'column_id')
+                .withColumnRenamed('col', 'dict_col')
+                .filter('dict_col is not null')
+                .groupBy('column_id', 'dict_col')
+                .count())
+            windowed = Window.partitionBy('column_id').orderBy(spk_func.desc('count'))
+            df = df.withColumn('dict_col_id', spk_func.row_number().over(windowed))
+            df.write.format("parquet").mode("overwrite").save(cache_path)
+            df = spark.read.parquet(cache_path)
+            i = 0
+            for col_name in cols:
+                dict_df = df.filter('column_id == %d' % i).drop('column_id')
+                if withCount:
+                    self.dict_dfs.append({'col_name': col_name, 'dict': dict_df})
+                else:
+                    self.dict_dfs.append(
+                        {'col_name': col_name, 'dict': dict_df.drop('count')})
+                i += 1
+            return self.dict_dfs
+        # below is when input is parquet
         for i in self.cols:
             col_name = ""
             if isinstance(i, dict):
@@ -114,10 +143,8 @@ class Operation:
             dict_df = dict_df.withColumn('dict_col_id', spk_func.row_number().over(
                 Window.orderBy(spk_func.desc('count')))).withColumn('dict_col_id', spk_func.col('dict_col_id') - 1).select('dict_col', 'dict_col_id', 'count')
             if withCount:
-                print("generate_dict_dfs withCount = True")
                 self.dict_dfs.append({'col_name': col_name, 'dict': dict_df})
             else:
-                print("generate_dict_dfs withCount = False")
                 self.dict_dfs.append(
                     {'col_name': col_name, 'dict': dict_df.drop('count')})
         return self.dict_dfs
@@ -302,7 +329,7 @@ class Categorify(Operation):
         cols (list): columns which are be modified
     '''
 
-    def __init__(self, cols, dict_dfs=None, hint='auto', doSplit=False, sep='\t', doSortForArray=False, keepMostFrequent=False):
+    def __init__(self, cols, dict_dfs=None, hint='auto', doSplit=False, sep='\t', doSortForArray=False, keepMostFrequent=False, saveTmpToDisk=False):
         self.op_name = "Categorify"
         self.cols = cols
         self.dict_dfs = dict_dfs
@@ -311,16 +338,17 @@ class Categorify(Operation):
         self.sep = sep
         self.doSortForArray = doSortForArray
         self.keepMostFrequent = keepMostFrequent
+        self.saveTmpToDisk = saveTmpToDisk
+        self.save_path_id = 0
         self.strategy_type = {
             'udf': 'udf', 'broadcast_join': 'short_dict', 'shuffle_join': 'huge_dict'}
 
-    def process(self, df, spark):
+    def process(self, df, spark, save_path="", per_core_memory_size=0, flush_threshold = 0):
         if self.dict_dfs == None:
             # We should do categorify upon same column
-            self.dict_dfs = self.to_dict_dfs(df)
+            self.dict_dfs = self.to_dict_dfs(df, spark, save_path)
             for i in self.dict_dfs:
                 col_name, dict_df = self.get_colname_dict_as_tuple(i)
-                dict_df.cache()
         strategy = {}
         if self.hint != "auto" and self.hint in self.strategy_type:
             strategy[self.strategy_type[self.hint]] = []
@@ -328,7 +356,7 @@ class Categorify(Operation):
                 col_name, dict_df = self.get_colname_dict_as_tuple(i)
                 strategy[self.strategy_type[self.hint]].append(col_name)
         else:
-            strategy = self.categorify_strategy_decision_maker(self.dict_dfs)
+            strategy = self.categorify_strategy_decision_maker(self.dict_dfs, df, per_core_memory_size, flush_threshold)
 
         # For now, we prepared dict_dfs and strategy
         for i in self.cols:
@@ -350,14 +378,10 @@ class Categorify(Operation):
             dict_df = self.find_dict(src_name, self.dict_dfs)
             # for long dict, we will do shj all along
             if 'long_dict' in strategy and src_name in strategy['long_dict']:
-                df = self.categorify_with_bhj(df, dict_df, col_name, spark)
-        for i in self.cols:
-            col_name, src_name = self.get_col_tgt_src(i)
-            dict_df = self.find_dict(src_name, self.dict_dfs)
-            # for huge dict, we will do shj seperately
-            if 'huge_dict' in strategy and src_name in strategy['huge_dict']:
-                df = self.categorify_with_join(df, dict_df, col_name, spark)
-                df.persist()
+                if 'huge_dict' in strategy and src_name in strategy['huge_dict']:
+                    df = self.categorify_with_join(df, dict_df, col_name, spark, save_path, saveTmpToDisk=True)
+                else:
+                    df = self.categorify_with_join(df, dict_df, col_name, spark, save_path, saveTmpToDisk=False)
         return df
 
     def get_col_tgt_src(self, i):
@@ -412,7 +436,8 @@ class Categorify(Operation):
         df = df.withColumn(i, udf_impl(spk_func.col(i)))
         return df
 
-    def categorify_with_join(self, df, dict_df, i, spark):
+    def categorify_with_join(self, df, dict_df, i, spark, save_path, saveTmpToDisk=False):
+        saveTmpToDisk = self.saveTmpToDisk or saveTmpToDisk
         if self.doSplit == False:
             df = df.join(dict_df.hint('shuffle_hash'), spk_func.col(i) == dict_df.dict_col, 'left')\
                 .withColumn(i, dict_df.dict_col_id).drop("dict_col_id", "dict_col")
@@ -439,6 +464,12 @@ class Categorify(Operation):
                     spk_func.collect_list(spk_func.col('dict_col_id')).alias('dict_col_id'))
             df = df.join(tmp_df.hint('shuffle_hash'),
                          'row_id', 'left').drop('row_id').drop(i).withColumnRenamed('dict_col_id', i)
+        # if self.saveTmpToDisk is True, we will save current df to hdfs or localFS instead of replying on Shuffle
+        if saveTmpToDisk:
+            cur_save_path = "%s_%d" % (save_path, self.save_path_id)
+            self.save_path_id += 1
+            df.write.format('parquet').mode('overwrite').save(cur_save_path)
+            df = spark.read.parquet(cur_save_path)
         return df
 
     def categorify_with_bhj(self, df, dict_df, i, spark):
@@ -450,22 +481,52 @@ class Categorify(Operation):
                 "We should use udf to handle withSplit + small dict scenario")
         return df
 
-    def categorify_strategy_decision_maker(self, dict_dfs):
+    def categorify_strategy_decision_maker(self, dict_dfs, df, per_core_memory_size, flush_threshold):
         small_cols = []
         long_cols = []
         huge_cols = []
         udf_cols = []
+        total_small_cols_num_rows = 0
+        total_estimated_shuffled_size = 0
+        # estimate main df size
+        df_cnt = df.count()
+        df_estimzate_size_per_row = sum([get_estimate_size_of_dtype(dtype) for _, dtype in df.dtypes])
+        df_estimated_size = df_estimzate_size_per_row * df_cnt
+        # Below threshold is maximum BHJ numRows, 2 means maximum 50% memory to cache Broadcast data, and 20 means we estimate each row has 20 bytes.
+        threshold = per_core_memory_size / 2 / 20
+        threshold = threshold if threshold <= 50000000 else 50000000
+        flush_threshold = flush_threshold * 0.8
+        print("categorify threshold is %.3f M rows, flush_threshold is %.3f GB" % (threshold / 1000000, flush_threshold / 2**30))
+        dict_dfs_with_cnt = []
         for i in dict_dfs:
             col_name, dict_df = self.get_colname_dict_as_tuple(i)
-            if (dict_df.count() > 50000000):
-                huge_cols.append(col_name)
-            elif (dict_df.count() > 50000000):
-                long_cols.append(col_name)
+            dict_df_cnt = dict_df.count()
+            dict_dfs_with_cnt.append((col_name, dict_df, dict_df_cnt))
+        sorted_dict_dfs_with_cnt = [(col_name, dict_df, dict_df_cnt) for col_name, dict_df, dict_df_cnt in sorted(dict_dfs_with_cnt, key=lambda pair: pair[2])]
+        for to_print in sorted_dict_dfs_with_cnt:
+            print(to_print)
+
+        for (col_name, dict_df, dict_df_cnt) in sorted_dict_dfs_with_cnt:
+            if self.doSplit:
+                threshold = 30000000
+            if (dict_df_cnt > threshold or (total_small_cols_num_rows + dict_df_cnt) > threshold):
+                if ((total_estimated_shuffled_size + df_estimated_size) > flush_threshold):
+                    print("etstimated_to_shuffle_size is %.3f GB, will do shj and spill to disk" % (df_estimated_size / 2**30))
+                    huge_cols.append(col_name)
+                    long_cols.append(col_name)
+                    total_estimated_shuffled_size = 0
+                else:
+                    print("etstimated_to_shuffle_size is %.3f GB, will do shj" % (df_estimated_size / 2**30))
+                    long_cols.append(col_name)
+                    # if accumulate shuffle capacity may exceed maximum shuffle disk size, we should use hdfs instead
+                    total_estimated_shuffled_size += df_estimated_size
             else:
                 if self.doSplit:
                     udf_cols.append(col_name)
                 else:
+                    total_small_cols_num_rows += dict_df_cnt
                     small_cols.append(col_name)
+            df_estimated_size -= df_cnt * 6
         return {'short_dict': small_cols, 'long_dict': long_cols, 'huge_dict': huge_cols, 'udf': udf_cols}
 
 
@@ -634,6 +695,7 @@ class GenerateDictionary(Operation):
         self.sep = sep
         self.withCount = withCount
         self.dict_dfs = []
+        self.isParquet = isParquet
 
     def merge_dict(self, dict_dfs, to_merge_dict_dfs):
         self.dict_dfs = []
@@ -653,8 +715,99 @@ class GenerateDictionary(Operation):
                 {'col_name': dict_name, 'dict': to_merge.union(fwd_dict_df)})
         return self.dict_dfs
 
-    def to_dict_dfs(self, df):
-        return self.generate_dict_dfs(df, self.withCount)
+    def to_dict_dfs(self, df, spark = None, cache_path = None):
+        return self.generate_dict_dfs(df, spark, cache_path, self.withCount, self.isParquet)
+
+
+class ModelMerge(Operation):
+    '''
+    Operation to Merge Pre-Generated Model
+
+    Args:
+    '''
+    # TODO: We should add an optimization for csv input
+
+    def __init__(self, dicts, saveTmpToDisk=False):
+        self.op_name = "ModelMerge"
+        self.dict_dfs = dicts
+        self.saveTmpToDisk = saveTmpToDisk
+        self.save_path_id = 0
+
+    def process(self, df, spark, save_path="", per_core_memory_size=0, flush_threshold = 0):
+        if self.dict_dfs == None:
+            raise NotImplementedError("process %s ")
+        strategy = self.strategy_decision_maker(self.dict_dfs, df, per_core_memory_size, flush_threshold)
+
+        # For now, we prepared dict_dfs and strategy
+        for out_col, i_dict in self.dict_dfs.items():
+            col_name, dict_df, default_v = i_dict
+            # for short dict, we will do bhj
+            if 'short_dict' in strategy and out_col in strategy['short_dict']:
+                df = self.merge_with_bhj(
+                    df, dict_df, col_name, default_v, out_col, spark)
+        for out_col, i_dict in self.dict_dfs.items():
+            col_name, dict_df, default_v = i_dict
+            # for huge dict, we will do shj seperately
+            if 'long_dict' in strategy and out_col in strategy['long_dict']:
+                if 'huge_dict' in strategy and src_name in strategy['huge_dict']:
+                    df = self.merge_with_join(df, dict_df, col_name, default_v, out_col, spark, save_path, saveTmpToDisk=True)
+                else:
+                    df = self.merge_with_join(df, dict_df, col_name, default_v, out_col, spark, save_path, saveTmpToDisk=False)
+        return df
+
+    def merge_with_join(self, df, dict_df, i, default_v, out_col, spark, save_path, saveTmpToDisk=False):
+        saveTmpToDisk = self.saveTmpToDisk or saveTmpToDisk
+        df = df.join(dict_df.hint('shuffle_hash'), i, how='left')
+        # df = df.fillna(default_v, out_col)
+        # if self.saveTmpToDisk is True, we will save current df to hdfs or localFS instead of replying on Shuffle
+        if saveTmpToDisk:
+            cur_save_path = "%s_%d" % (save_path, self.save_path_id)
+            self.save_path_id += 1
+            df.write.format('parquet').mode('overwrite').save(cur_save_path)
+            df = spark.read.parquet(cur_save_path)
+        return df
+
+    def merge_with_bhj(self, df, dict_df, i, default_v, out_col, spark):
+        df = df.join(spk_func.broadcast(dict_df), i, how='left')
+        # df = df.fillna(default_v, out_col)
+        return df
+
+    def strategy_decision_maker(self, dict_dfs, df, per_core_memory_size, flush_threshold):
+        small_cols = []
+        long_cols = []
+        huge_cols = []
+        udf_cols = []
+        total_small_cols_num_rows = 0
+        total_estimated_shuffled_size = 0
+        # estimate main df size
+        df_cnt = df.count()
+        df_estimzate_size_per_row = sum([get_estimate_size_of_dtype(dtype) for _, dtype in df.dtypes])
+        df_estimated_size = df_estimzate_size_per_row * df_cnt
+        # Below threshold is maximum BHJ numRows, 2 means maximum 50% memory to cache Broadcast data, and 20 means we estimate each row has 20 bytes.
+        threshold = per_core_memory_size / 2 / 20
+        flush_threshold = flush_threshold * 0.8
+        print("categorify threshold is %.3f M rows, flush_threshold is %.3f GB, etstimated_to_shuffle_size is %.3f GB" % (threshold / 1000000, flush_threshold / 2**30, df_estimated_size / 2**30))
+        dict_dfs_with_cnt = []
+        for out_col, i_dict in self.dict_dfs.items():
+            col_name, dict_df, default_v = i_dict
+            dict_df_cnt = dict_df.count()
+            dict_dfs_with_cnt.append((col_name, dict_df, dict_df_cnt))
+        sorted_dict_dfs_with_cnt = [(col_name, dict_df, dict_df_cnt) for col_name, dict_df, dict_df_cnt in sorted(dict_dfs_with_cnt, key=lambda pair: pair[2])]
+        print(sorted_dict_dfs_with_cnt)
+
+        for (col_name, dict_df, dict_df_cnt) in sorted_dict_dfs_with_cnt:
+            if (dict_df_cnt > threshold or (total_small_cols_num_rows + dict_df_cnt) > threshold):
+                if ((total_estimated_shuffled_size + df_estimated_size) > flush_threshold):
+                    huge_cols.append(col_name)
+                    total_estimated_shuffled_size = 0
+                else:
+                    long_cols.append(col_name)
+                    # if accumulate shuffle capacity may exceed maximum shuffle disk size, we should use hdfs instead
+                    total_estimated_shuffled_size += df_estimated_size
+            else:
+                total_small_cols_num_rows += dict_df_cnt
+                small_cols.append(col_name)
+        return {'short_dict': small_cols, 'long_dict': long_cols, 'huge_dict': huge_cols}
 
 # class NegativeSample(Operation):
 #    def get_negative_sample_udf(self, broadcast_data):
@@ -682,7 +835,7 @@ class GenerateDictionary(Operation):
 
 
 class DataProcessor:
-    def __init__(self, spark, path_prefix="hdfs://", current_path="", dicts_path=""):
+    def __init__(self, spark, path_prefix="hdfs://", current_path="", shuffle_disk_capacity="unlimited", dicts_path="dicts", spark_mode='yarn'):
         self.ops = []
         self.spark = spark
         self.uuid = uuid.uuid1()
@@ -691,6 +844,20 @@ class DataProcessor:
         self.current_path = current_path
         self.dicts_path = dicts_path
         self.tmp_materialzed_list = []
+        self.per_core_memory_size = 0
+        if spark_mode == 'yarn' or spark_mode == 'standalone':
+            memory_size = parse_size(spark.sparkContext.getConf().get('spark.executor.memory'))
+            numCores = int(spark.sparkContext.getConf().get('spark.executor.cores'))
+            self.per_core_memory_size = memory_size / numCores
+        elif spark_mode == 'local':
+            memory_size = parse_size(spark.sparkContext.getConf().get('spark.worker.memory'))
+            numCores = int(spark.sparkContext.getConf().get('spark.executor.cores'))
+            self.per_core_memory_size = memory_size / numCores
+        if shuffle_disk_capacity == "unlimited":
+            self.flush_threshold = (2**63 - 1)
+        else:
+            self.flush_threshold = parse_size(shuffle_disk_capacity)
+        print("per core memory size is %.3f GB and shuffle_disk maximum capacity is %.3f GB" % (self.per_core_memory_size * 1.0/(2**30), self.flush_threshold * 1.0/(2**30)))
 
     def __del__(self):
         for tmp_file in self.tmp_materialzed_list:
@@ -721,12 +888,9 @@ class DataProcessor:
         if method == 0:
             return df.cache()
         else:
-            tmp_id = self.tmp_id
-            self.tmp_id += 1
             save_path = ""
             if df_name == "materialized_tmp":
-                save_path = "%s/%s/tmp/%s-%s-%d" % (
-                    self.path_prefix, self.current_path, df_name, self.uuid, tmp_id)
+                save_path = self.get_tmp_cache_path()
                 self.tmp_materialzed_list.append(save_path)
             else:
                 save_path = "%s/%s/%s" % (self.path_prefix,
@@ -736,7 +900,8 @@ class DataProcessor:
 
     def transform(self, df, name="materialized_tmp"):
         for op in self.ops:
-            df = op.process(df, self.spark)
+            save_path = self.get_tmp_cache_path()
+            df = op.process(df, self.spark, save_path=save_path, per_core_memory_size = self.per_core_memory_size, flush_threshold = self.flush_threshold)
         return self.materialize(df, df_name=name)
 
     def generate_dicts(self, df):
@@ -747,7 +912,8 @@ class DataProcessor:
             if op.op_name != "GenerateDictionary":
                 raise NotImplementedError(
                     "We haven't support apply generate_dict to not GenerateDictionary operator yet.")
-            dfs.extend(op.to_dict_dfs(df))
+            save_path = self.get_tmp_cache_path()
+            dfs.extend(op.to_dict_dfs(df, self.spark, save_path))
         for dict_df in dfs:
             materialized_dfs.append({'col_name': dict_df['col_name'], 'dict': self.materialize(
                 dict_df['dict'], "%s/%s" % (self.dicts_path, dict_df['col_name']))})
@@ -761,7 +927,8 @@ class DataProcessor:
             if op.op_name != "GenerateDictionary":
                 raise NotImplementedError(
                     "We haven't support apply generate_dict to not GenerateDictionary operator yet.")
-            dfs.extend(op.merge_dict(op.to_dict_dfs(df), to_merge_dict_dfs))
+            save_path = get_tmp_cache_path()
+            dfs.extend(op.merge_dict(op.to_dict_dfs(df, self.spark, save_path), to_merge_dict_dfs))
         for dict_df in dfs:
             materialized_dfs.append({'col_name': dict_df['col_name'], 'dict': self.materialize(
                 dict_df['dict'], "%s/%s_merged" % (self.dicts_path, dict_df['col_name']))})
