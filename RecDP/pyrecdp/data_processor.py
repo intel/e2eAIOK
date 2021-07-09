@@ -511,19 +511,22 @@ class Categorify(Operation):
                 threshold = 30000000
             if (dict_df_cnt > threshold or (total_small_cols_num_rows + dict_df_cnt) > threshold):
                 if ((total_estimated_shuffled_size + df_estimated_size) > flush_threshold):
-                    print("etstimated_to_shuffle_size is %.3f GB, will do shj and spill to disk" % (df_estimated_size / 2**30))
+                    print("etstimated_to_shuffle_size for %s is %.3f GB, will do shj and spill to disk" % (col_name, df_estimated_size / 2**30))
                     huge_cols.append(col_name)
                     long_cols.append(col_name)
                     total_estimated_shuffled_size = 0
                 else:
-                    print("etstimated_to_shuffle_size is %.3f GB, will do shj" % (df_estimated_size / 2**30))
+                    print("etstimated_to_shuffle_size for %s is %.3f GB, will do shj" % (col_name, df_estimated_size / 2**30))
                     long_cols.append(col_name)
                     # if accumulate shuffle capacity may exceed maximum shuffle disk size, we should use hdfs instead
                     total_estimated_shuffled_size += df_estimated_size
             else:
                 if self.doSplit:
+                    print("%s will do udf" % (col_name))
+                    total_small_cols_num_rows += dict_df_cnt
                     udf_cols.append(col_name)
                 else:
+                    print("%s will do bhj" % (col_name))
                     total_small_cols_num_rows += dict_df_cnt
                     small_cols.append(col_name)
             df_estimated_size -= df_cnt * 6
