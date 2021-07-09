@@ -30,7 +30,7 @@ class RecsysSchema:
             'engaged_with_user_account_creation',
         ]
         self.string_cols3 = [
-            'enaging_user_id',
+            'engaging_user_id',
         ]
         self.int_cols4 = [
             'enaging_user_follower_count',  # Engaging User Features

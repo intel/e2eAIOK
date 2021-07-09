@@ -152,7 +152,7 @@ class FeatureModification(Operation):
             f_cols = ["%s(%s)" % (self.op, x) for x in self.cols]
             return "%s(%s)" % (self.op_name, ','.join(f_cols))
 
-    def process(self, df, spark):
+    def process(self, df, spark, save_path="", per_core_memory_size=0, flush_threshold = 0):
         if self.op == 'udf':
             for i in self.cols:
                 df = df.withColumn(i, self.udf_impl(spk_func.col(i)))
@@ -197,7 +197,7 @@ class FeatureAdd(Operation):
                       for (x, y) in self.cols.items()]
             return "%s(%s)" % (self.op_name, ','.join(f_cols))
 
-    def process(self, df, spark):
+    def process(self, df, spark, save_path="", per_core_memory_size=0, flush_threshold = 0):
         if self.op == 'udf':
             for after, before in self.cols.items():
                 df = df.withColumn(after, self.udf_impl(spk_func.col(before)))
@@ -227,8 +227,70 @@ class FillNA(Operation):
         self.cols = cols
         self.default = default
 
-    def process(self, df, spark):
+    def process(self, df, spark, save_path="", per_core_memory_size=0, flush_threshold = 0):
         return df.fillna(self.default, [i for i in self.cols])
+
+
+class DropFeature(Operation):
+    '''
+    Operation to fillna to columns
+
+    Args:
+
+        cols (list): columns which are be modified
+        default: filled default value
+    '''
+
+    def __init__(self, cols):
+        self.op_name = "DropFeature"
+        self.cols = cols
+
+    def process(self, df, spark, save_path="", per_core_memory_size=0, flush_threshold = 0):
+        for i in self.cols:
+            df = df.drop(i)
+        return df
+
+
+class Distinct(Operation):
+    '''
+    Operation to perform distinct to columns
+
+    Args:
+
+        cols (list): columns which are be modified
+        default: filled default value
+    '''
+
+    def __init__(self):
+        self.op_name = "Distinct"
+
+    def process(self, df, spark, save_path="", per_core_memory_size=0, flush_threshold = 0):
+        return df.distinct()
+
+
+class SelectFeature(Operation):
+    '''
+    Operation to select and rename columns
+
+    Args:
+
+        cols (list): columns which are be modified
+        default: filled default value
+    '''
+
+    def __init__(self, cols=[]):
+        self.op_name = "SelectFeature"
+        self.cols = cols
+
+    def process(self, df, spark, save_path="", per_core_memory_size=0, flush_threshold = 0):
+        to_select = []
+        for i in self.cols:
+            if isinstance(i, str):
+                to_select.append(i)
+            elif isinstance(i, tuple):
+                to_select.append("%s as %s" % (i[0], i[1]))
+
+        return df.selectExpr(*to_select)
 
 
 class Categorify(Operation):
@@ -426,7 +488,7 @@ class CategorifyMultiItems(Operation):
         self.skipList = skipList
         self.freqRange = freqRange
 
-    def process(self, df, spark):
+    def process(self, df, spark, save_path="", per_core_memory_size=0, flush_threshold = 0):
         for i in self.cols:
             sorted_data_df = df.select(spk_func.explode(spk_func.split(spk_func.col(i), self.sep))).groupBy('col').count().orderBy(
                 spk_func.desc('count'), 'col').select('col', 'count')
@@ -519,7 +581,7 @@ class CategorifyWithDictionary(Operation):
         self.cols = cols
         self.dict_data = dictData
 
-    def process(self, df, spark):
+    def process(self, df, spark, save_path="", per_core_memory_size=0, flush_threshold = 0):
         if len(self.dict_data) == 0:
             for i in self.cols:
                 df = df.withColumn(i, spk_func.lit(None))
@@ -565,7 +627,7 @@ class GenerateDictionary(Operation):
     '''
     # TODO: We should add an optimization for csv input
 
-    def __init__(self, cols, withCount=False, doSplit=False, sep='\t'):
+    def __init__(self, cols, withCount=False, doSplit=False, sep='\t', isParquet=True):
         self.op_name = "GenerateDictionary"
         self.cols = cols
         self.doSplit = doSplit
@@ -646,6 +708,14 @@ class DataProcessor:
 
     def reset_ops(self, ops):
         self.ops = ops
+
+    def get_tmp_cache_path(self):
+        tmp_id = self.tmp_id
+        self.tmp_id += 1
+        save_path = "%s/%s/tmp/%s-%s-%d" % (
+            self.path_prefix, self.current_path, "materialized_tmp", self.uuid, tmp_id)
+        self.tmp_materialzed_list.append(save_path)
+        return save_path
 
     def materialize(self, df, df_name="materialized_tmp", method=1):
         if method == 0:

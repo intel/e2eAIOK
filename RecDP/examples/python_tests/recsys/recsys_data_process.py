@@ -220,9 +220,14 @@ def decodeBertTokenizer(df, proc, output_name="data_all_with_text"):
     proc.reset_ops([op_feature_modification_tokenizer_decode,
                     op_feature_modification_format_url])
     t1 = timer()
-    df = proc.transform(df)
+    df = proc.transform(df, name=output_name)
     t2 = timer()
     print("BertTokenizer decode and format took %.3f" % (t2 - t1))
+
+    return df
+
+
+def tweetFeatureEngineer(df, proc, output_name="tweet_feature_engineer"):
 
     def extract_hash(text, split_text='@', no=0):
         text = text.lower()
@@ -263,16 +268,17 @@ def decodeBertTokenizer(df, proc, output_name="data_all_with_text"):
     user_define_hash_2 = f.udf(lambda x: extract_hash(x, no=1))
 
     # features upon tweet
+    op_fillna_for_tweet = FillNA(['original_tweet'], "")
     op_feature_add_tweet_nortsign = FeatureAdd(
-        cols={'tweet_nortsign': 'tweet'}, udfImpl=to_notsign)
+        cols={'tweet_nortsign': 'original_tweet'}, udfImpl=to_notsign)
     op_feature_add_count_words = FeatureAdd(
-        cols={'count_words': 'tweet'}, udfImpl=count_space)
+        cols={'count_words': 'original_tweet'}, udfImpl=count_space)
     op_feature_add_count_char = FeatureAdd(
-        cols={'count_char': 'tweet'}, udfImpl=count_text_length)
+        cols={'count_char': 'original_tweet'}, udfImpl=count_text_length)
     op_feature_add_tw_uhash = FeatureAdd(
-        cols={'tw_uhash': 'tweet'}, udfImpl=user_defined_hash)
+        cols={'tw_uhash': 'original_tweet'}, udfImpl=user_defined_hash)
     op_feature_add_tw_hash = FeatureAdd(
-        cols={'tw_hash': "hash(col('tweet'))%1000000000"}, op='inline')
+        cols={'tw_hash': "f.hash(f.col('original_tweet'))%1000000000"}, op='inline')
     # features upon tweet_nortsign
     op_feature_add_count_at = FeatureAdd(
         cols={'count_ats': 'tweet_nortsign'}, udfImpl=count_at)

@@ -1,1 +1,1 @@
-__all__ = ["data_processor", "init_spark", "utils"]
+__all__ = ["data_processor", "encoder", "init_spark", "utils"]
