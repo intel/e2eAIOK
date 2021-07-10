@@ -350,16 +350,26 @@ class Categorify(Operation):
             for i in self.dict_dfs:
                 col_name, dict_df = self.get_colname_dict_as_tuple(i)
         strategy = {}
+        sorted_cols = []
         if self.hint != "auto" and self.hint in self.strategy_type:
             strategy[self.strategy_type[self.hint]] = []
             for i in self.dict_dfs:
                 col_name, dict_df = self.get_colname_dict_as_tuple(i)
                 strategy[self.strategy_type[self.hint]].append(col_name)
+                sorted_cols.append(col_name)
         else:
-            strategy = self.categorify_strategy_decision_maker(self.dict_dfs, df, per_core_memory_size, flush_threshold)
+            sorted_cols, strategy = self.categorify_strategy_decision_maker(self.dict_dfs, df, per_core_memory_size, flush_threshold)
+        
+        sorted_cols_pair = []
+        for cn in sorted_cols:
+            for i in self.cols:
+                col_name, src_name = self.get_col_tgt_src(i)
+                if col_name == cn:
+                    sorted_cols_pair.append({col_name: src_name})
+                    break
 
         # For now, we prepared dict_dfs and strategy
-        for i in self.cols:
+        for i in sorted_cols_pair:
             col_name, src_name = self.get_col_tgt_src(i)
             dict_df = self.find_dict(src_name, self.dict_dfs)
             # for udf type, we will do udf to do user-defined categorify
@@ -367,21 +377,27 @@ class Categorify(Operation):
                 dict_data = dict((row['dict_col'], row['dict_col_id'])
                                  for row in dict_df.collect())
                 df = self.categorify_with_udf(df, dict_data, col_name, spark)
-        for i in self.cols:
+        for i in sorted_cols_pair:
             col_name, src_name = self.get_col_tgt_src(i)
             dict_df = self.find_dict(src_name, self.dict_dfs)
             # for short dict, we will do bhj
             if 'short_dict' in strategy and src_name in strategy['short_dict']:
-                df = self.categorify_with_bhj(df, dict_df, col_name, spark)
-        for i in self.cols:
+                df = self.categorify_with_join(df, dict_df, col_name, spark, save_path, method="bhj")
+        for i in sorted_cols_pair:
             col_name, src_name = self.get_col_tgt_src(i)
             dict_df = self.find_dict(src_name, self.dict_dfs)
             # for long dict, we will do shj all along
             if 'long_dict' in strategy and src_name in strategy['long_dict']:
                 if 'huge_dict' in strategy and src_name in strategy['huge_dict']:
-                    df = self.categorify_with_join(df, dict_df, col_name, spark, save_path, saveTmpToDisk=True)
+                    if 'smj_dict' in strategy and src_name in strategy['smj_dict']:
+                        df = self.categorify_with_join(df, dict_df, col_name, spark, save_path, method="smj", saveTmpToDisk=True)
+                    else:
+                        df = self.categorify_with_join(df, dict_df, col_name, spark, save_path, method="shj", saveTmpToDisk=True)
                 else:
-                    df = self.categorify_with_join(df, dict_df, col_name, spark, save_path, saveTmpToDisk=False)
+                    if 'smj_dict' in strategy and src_name in strategy['smj_dict']:
+                        df = self.categorify_with_join(df, dict_df, col_name, spark, save_path, method="smj", saveTmpToDisk=False)
+                    else:
+                        df = self.categorify_with_join(df, dict_df, col_name, spark, save_path, method="shj", saveTmpToDisk=False)
         return df
 
     def get_col_tgt_src(self, i):
@@ -436,10 +452,16 @@ class Categorify(Operation):
         df = df.withColumn(i, udf_impl(spk_func.col(i)))
         return df
 
-    def categorify_with_join(self, df, dict_df, i, spark, save_path, saveTmpToDisk=False):
+    def categorify_with_join(self, df, dict_df, i, spark, save_path, method='shj', saveTmpToDisk=False):
         saveTmpToDisk = self.saveTmpToDisk or saveTmpToDisk
+        hint_type = "shuffle_hash"
+        if method == "bhj":
+            hint_type = "broadcast"
+        elif method == "smj":
+            hint_type = "merge"
+        print("do %s to %s" % (method, i))
         if self.doSplit == False:
-            df = df.join(dict_df.hint('shuffle_hash'), spk_func.col(i) == dict_df.dict_col, 'left')\
+            df = df.join(dict_df.hint(hint_type), spk_func.col(i) == dict_df.dict_col, 'left')\
                 .withColumn(i, dict_df.dict_col_id).drop("dict_col_id", "dict_col")
         else:
             df = df.withColumn(
@@ -447,22 +469,22 @@ class Categorify(Operation):
             tmp_df = df.select('row_id', i).withColumn(
                 i, f.explode(f.split(f.col(i), self.sep)))
             tmp_df = tmp_df.join(
-                dict_df.hint('shuffle_hash'),
+                dict_df.hint(hint_type),
                 spk_func.col(i) == dict_df.dict_col,
                 'left').filter(spk_func.col('dict_col_id').isNotNull())
             tmp_df = tmp_df.select(
                 'row_id', spk_func.col('dict_col_id'))
-            if self.doSortForArray:
-                if self.keepMostFrequent:
-                    tmp_df = tmp_df.groupby('row_id').agg(spk_func.array_sort(
-                        spk_func.collect_list(spk_func.col('dict_col_id'))).getItem(0).alias('dict_col_id'))
-                else:
-                    tmp_df = tmp_df.groupby('row_id').agg(spk_func.array_sort(
-                        spk_func.collect_list(spk_func.col('dict_col_id'))).alias('dict_col_id'))
+            if self.keepMostFrequent:
+                tmp_df = tmp_df.groupby('row_id').agg(spk_func.array_sort(
+                    spk_func.collect_list(spk_func.col('dict_col_id'))).getItem(0).alias('dict_col_id'))
+            elif self.doSortForArray:
+                tmp_df = tmp_df.groupby('row_id').agg(spk_func.array_sort(
+                    spk_func.collect_list(spk_func.col('dict_col_id'))).alias('dict_col_id'))
             else:
                 tmp_df = tmp_df.groupby('row_id').agg(
                     spk_func.collect_list(spk_func.col('dict_col_id')).alias('dict_col_id'))
-            df = df.join(tmp_df.hint('shuffle_hash'),
+
+            df = df.join(tmp_df.hint(hint_type),
                          'row_id', 'left').drop('row_id').drop(i).withColumnRenamed('dict_col_id', i)
         # if self.saveTmpToDisk is True, we will save current df to hdfs or localFS instead of replying on Shuffle
         if saveTmpToDisk:
@@ -485,6 +507,7 @@ class Categorify(Operation):
         small_cols = []
         long_cols = []
         huge_cols = []
+        smj_cols = []
         udf_cols = []
         total_small_cols_num_rows = 0
         total_estimated_shuffled_size = 0
@@ -500,23 +523,34 @@ class Categorify(Operation):
         dict_dfs_with_cnt = []
         for i in dict_dfs:
             col_name, dict_df = self.get_colname_dict_as_tuple(i)
-            dict_df_cnt = dict_df.count()
-            dict_dfs_with_cnt.append((col_name, dict_df, dict_df_cnt))
+            found = False
+            for j in self.cols:
+                col_name_from_cols, _ = self.get_col_tgt_src(j)
+                if col_name_from_cols == col_name:
+                    found = True
+                    break
+            if found == True:
+              dict_df_cnt = dict_df.count()
+              dict_dfs_with_cnt.append((col_name, dict_df, dict_df_cnt))
         sorted_dict_dfs_with_cnt = [(col_name, dict_df, dict_df_cnt) for col_name, dict_df, dict_df_cnt in sorted(dict_dfs_with_cnt, key=lambda pair: pair[2])]
         for to_print in sorted_dict_dfs_with_cnt:
             print(to_print)
 
+        sorted_cols = []
         for (col_name, dict_df, dict_df_cnt) in sorted_dict_dfs_with_cnt:
+            sorted_cols.append(col_name)
             if self.doSplit:
                 threshold = 30000000
             if (dict_df_cnt > threshold or (total_small_cols_num_rows + dict_df_cnt) > threshold):
                 if ((total_estimated_shuffled_size + df_estimated_size) > flush_threshold):
-                    print("etstimated_to_shuffle_size for %s is %.3f GB, will do shj and spill to disk" % (col_name, df_estimated_size / 2**30))
+                    print("etstimated_to_shuffle_size for %s is %.3f GB, will do smj and spill to disk" % (col_name, df_estimated_size / 2**30))
                     huge_cols.append(col_name)
+                    smj_cols.append(col_name)
                     long_cols.append(col_name)
                     total_estimated_shuffled_size = 0
                 else:
-                    print("etstimated_to_shuffle_size for %s is %.3f GB, will do shj" % (col_name, df_estimated_size / 2**30))
+                    print("etstimated_to_shuffle_size for %s is %.3f GB, will do smj" % (col_name, df_estimated_size / 2**30))
+                    smj_cols.append(col_name)
                     long_cols.append(col_name)
                     # if accumulate shuffle capacity may exceed maximum shuffle disk size, we should use hdfs instead
                     total_estimated_shuffled_size += df_estimated_size
@@ -530,7 +564,7 @@ class Categorify(Operation):
                     total_small_cols_num_rows += dict_df_cnt
                     small_cols.append(col_name)
             df_estimated_size -= df_cnt * 6
-        return {'short_dict': small_cols, 'long_dict': long_cols, 'huge_dict': huge_cols, 'udf': udf_cols}
+        return (sorted_cols, {'short_dict': small_cols, 'long_dict': long_cols, 'huge_dict': huge_cols, 'udf': udf_cols, 'smj_dict': smj_cols})
 
 
 class CategorifyMultiItems(Operation):
@@ -691,7 +725,7 @@ class GenerateDictionary(Operation):
     '''
     # TODO: We should add an optimization for csv input
 
-    def __init__(self, cols, withCount=False, doSplit=False, sep='\t', isParquet=True):
+    def __init__(self, cols, withCount=True, doSplit=False, sep='\t', isParquet=True):
         self.op_name = "GenerateDictionary"
         self.cols = cols
         self.doSplit = doSplit
