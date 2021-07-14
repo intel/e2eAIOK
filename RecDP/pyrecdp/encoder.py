@@ -27,7 +27,7 @@ class Encoder:
         self.spark = proc.spark
         self.tmp_materialzed_list = []
 
-    def transform(self, train, valid, train_only=False):
+    def transform(self, train, valid, train_only=True):
         raise NotImplementedError("This is base Encoder class")
 
     def materialize(self, df, df_name="materialized_tmp"):
@@ -46,75 +46,77 @@ class Encoder:
 
 
 class TargetEncoder(Encoder):
-    def __init__(self, proc, x_col, y_col, out_col, y_mean=None, out_dtype=None, folds=5, smooth=20, seed=42):
+    def __init__(self, proc, x_col_list, y_col_list, out_col_list, out_name, out_dtype=None, y_mean_list=None, smooth=20, seed=42):
         super().__init__(proc)
         self.op_name = "TargetEncoder"
-        self.x_col = x_col
-        self.y_col = y_col
-        self.out_col = out_col
+        self.x_col_list = x_col_list
+        self.y_col_list = y_col_list
+        self.out_col_list = out_col_list
         self.out_dtype = out_dtype
-        self.y_mean = y_mean
-        self.folds = folds
+        self.out_name = out_name
+        self.y_mean_list = y_mean_list
         self.seed = seed
         self.smooth = smooth
+        self.expected_list_size = len(y_col_list)
+        if len(self.out_col_list) < self.expected_list_size:
+            raise ValueError("TargetEncoder __init__, input out_col_list should be same size as y_col_list")      
+        if y_mean_list != None and len(self.y_mean_list) < self.expected_list_size:
+            raise ValueError("TargetEncoder __init__, input y_mean_list should be same size as y_col_list")        
 
-    def transform(self, train, valid, train_only=False):
-        self.mean = float(self.y_mean)
-        x_col = self.x_col
-        y_col = self.y_col
-        out_col = self.out_col
-        if self.y_mean is None:
-            self.y_mean = np.array(train.groupBy().mean(y_col).collect())[0][0]
-        mean = self.y_mean
-        smooth = self.smooth
-        out_dtype = self.out_dtype
+    def transform(self, df):
+        x_col = self.x_col_list
+        cols = ['fold', x_col] if isinstance(x_col, str) else ['fold'] + x_col
+        agg_per_fold = df.groupBy(cols)
+        agg_all = df.groupBy(x_col)
 
-        cols = ['fold', x_col] if isinstance(x_col, str) else ['fold']+x_col
-        agg_per_fold = train.groupBy(cols).agg(
-            f.count(y_col).alias('count_y'), f.sum(y_col).alias('sum_y'))
-        agg_per_fold = agg_per_fold.withColumn('count_y_all', f.sum('count_y').over(Window.partitionBy(
-            x_col))).withColumn('sum_y_all', f.sum('sum_y').over(Window.partitionBy(x_col)))
+        per_fold_list = []
+        all_list = []
 
-        agg_per_fold.cache()
-        if train_only == False:
-            agg_all = agg_per_fold
+        for i in range(0, self.expected_list_size):
+            y_col = self.y_col_list[i]
+            per_fold_list.append(f.count(y_col).alias(f'count_{y_col}'))
+            per_fold_list.append(f.count(y_col).alias(f'sum_{y_col}'))
+            all_list.append(f.count(y_col).alias(f'count_all_{y_col}'))
+            all_list.append(f.count(y_col).alias(f'sum_all_{y_col}'))
 
-        # prepare for agg_per_fold
-        agg_per_fold = agg_per_fold.withColumn(
-            'count_y_all', f.col('count_y_all')-f.col('count_y'))
-        agg_per_fold = agg_per_fold.withColumn(
-            'sum_y_all', f.col('sum_y_all')-f.col('sum_y'))
-        agg_per_fold = agg_per_fold.withColumn(
-            out_col,
-            (f.col('sum_y_all')+f.lit(mean)*f.lit(smooth))/(f.col('count_y_all')+f.lit(smooth)))
-        if out_dtype is not None:
+        agg_per_fold = agg_per_fold.agg(*per_fold_list)
+        agg_all = agg_all.agg(*all_list)
+        agg_per_fold = agg_per_fold.join(agg_all, x_col, 'left')
+
+        for i in range(0, self.expected_list_size):
+            y_col = self.y_col_list[i]
+            out_col = self.out_col_list[i]
+            out_dtype = self.out_dtype
+            y_mean = self.y_mean_list[i] if self.y_mean_list != None else None
+            
+            if y_mean is None:
+                y_mean = np.array(df.groupBy().mean(y_col).collect())[0][0]
+            mean = float(y_mean)
+            smooth = self.smooth
+
+            # print(agg_per_fold.dtypes)
+
+            # prepare for agg_per_fold
             agg_per_fold = agg_per_fold.withColumn(
-                out_col, f.col(out_col).cast(out_dtype))
-        agg_per_fold = agg_per_fold.drop(
-            'count_y_all', 'count_y', 'sum_y_all', 'sum_y')
-
-        if train_only == False:
-            # prepare for agg_all
-            agg_all = agg_all.drop('fold').drop(
-                'count_y').drop('sum_y').distinct()
+                f'count_all_{y_col}', f.col(f'count_all_{y_col}')-f.col(f'count_{y_col}'))
+            agg_per_fold = agg_per_fold.withColumn(
+                f'sum_all_{y_col}', f.col(f'sum_all_{y_col}')-f.col(f'sum_{y_col}'))
+            agg_per_fold = agg_per_fold.withColumn(
+                out_col,
+                (f.col(f'sum_all_{y_col}') + f.lit(mean) * f.lit(smooth))/(f.col(f'count_all_{y_col}') + f.lit(smooth)))
             agg_all = agg_all.withColumn(
                 out_col,
-                (f.col('sum_y_all')+f.lit(mean)*f.lit(smooth))/(f.col('count_y_all')+f.lit(smooth)))
+                (f.col(f'sum_all_{y_col}') + f.lit(mean) * f.lit(smooth))/(f.col(f'count_all_{y_col}') + f.lit(smooth)))
             if out_dtype is not None:
+                agg_per_fold = agg_per_fold.withColumn(
+                    out_col, f.col(out_col).cast(out_dtype))
                 agg_all = agg_all.withColumn(
                     out_col, f.col(out_col).cast(out_dtype))
-            to_select = [x_col, out_col] if isinstance(
-                x_col, str) else x_col + [out_col]
-            agg_all = agg_all.select(*to_select)
-
-        train_out = (cols, self.materialize(
-            agg_per_fold, "train/%s" % out_col), mean)
-        if train_only == False:
-            valid_out = (x_col, self.materialize(
-                agg_all, "valid/%s" % out_col), mean)
-        else:
-            valid_out = ()
-        return (train_out, valid_out)
+            agg_per_fold = agg_per_fold.drop(
+                f'count_all_{y_col}', f'count_{y_col}', f'sum_all_{y_col}', f'sum_{y_col}')
+            agg_all = agg_all.drop(f'count_all_{y_col}', f'sum_all_{y_col}')
+        return (self.materialize(agg_per_fold, "%s/train/%s" % (self.dicts_path, self.out_name)),
+                self.materialize(agg_all, "%s/test/%s" % (self.dicts_path, self.out_name)))
 
 
 class CountEncoder(Encoder):
@@ -125,7 +127,7 @@ class CountEncoder(Encoder):
         self.out_col = out_col
         self.seed = seed
 
-    def transform(self, train, valid, train_only=False):
+    def transform(self, train, valid, train_only=True):
         x_col = self.x_col
         out_col = self.out_col
 
@@ -165,7 +167,7 @@ class FrequencyEncoder(Encoder):
         self.out_col = out_col
         self.seed = seed
 
-    def transform(self, train, valid, train_only=False):
+    def transform(self, train, valid, train_only=True):
         x_col = self.x_col
         out_col = self.out_col
         length_train = train.count()
