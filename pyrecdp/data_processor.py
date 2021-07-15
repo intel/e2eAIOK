@@ -216,8 +216,7 @@ class Operation:
                 if self.doSplit:
                     print("%s will do udf" % (col_name))
                     total_small_cols_num_rows += dict_df_cnt
-                    #udf_cols.append(col_name)
-                    small_cols.append(col_name)
+                    udf_cols.append(col_name)
                 else:
                     print("%s will do bhj" % (col_name))
                     total_small_cols_num_rows += dict_df_cnt
