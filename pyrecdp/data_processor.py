@@ -41,10 +41,10 @@ class Operation:
     def collect(self, df):
         raise NotImplementedError(self.op_name + "doesn't support collect")
 
-    def to_dict_dfs(self, df, spark = None):
+    def to_dict_dfs(self, df, spark = None, enable_gazelle=False):
         raise NotImplementedError(self.op_name + "doesn't support to_dict_dfs")
 
-    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0):
+    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
         return df
 
     # some common method
@@ -78,7 +78,7 @@ class Operation:
             dict_name = i['col_name']
             return (dict_name, dict_df)
 
-    def generate_dict_dfs(self, df, spark=None, cache_path=None, withCount=True, isParquet=True):
+    def generate_dict_dfs(self, df, spark=None, cache_path=None, withCount=True, isParquet=True, enable_gazelle=False):
         # at least we can cache here to make read much faster
         # handle multiple columns issue
         if isParquet == False and spark != None and cache_path != None:
@@ -98,8 +98,12 @@ class Operation:
                 .count())
             windowed = Window.partitionBy('column_id').orderBy(spk_func.desc('count'))
             df = df.withColumn('dict_col_id', spk_func.row_number().over(windowed))
-            df.write.format("parquet").mode("overwrite").save(cache_path)
-            df = spark.read.parquet(cache_path)
+            if enable_gazelle:
+                df.write.format('arrow').mode('overwrite').save(save_path)
+                df = spark.read.format("arrow").load(cache_path)
+            else:
+                df.write.format("parquet").mode("overwrite").save(cache_path)
+                df = spark.read.parquet(cache_path)
             i = 0
             for col_name in cols:
                 dict_df = df.filter('column_id == %d' % i).drop('column_id')
@@ -250,7 +254,7 @@ class FeatureModification(Operation):
             f_cols = ["%s(%s)" % (self.op, x) for x in self.cols]
             return "%s(%s)" % (self.op_name, ','.join(f_cols))
 
-    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0):
+    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
         if self.op == 'udf':
             for i in self.cols:
                 df = df.withColumn(i, self.udf_impl(spk_func.col(i)))
@@ -295,7 +299,7 @@ class FeatureAdd(Operation):
                       for (x, y) in self.cols.items()]
             return "%s(%s)" % (self.op_name, ','.join(f_cols))
 
-    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0):
+    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
         if self.op == 'udf':
             for after, before in self.cols.items():
                 df = df.withColumn(after, self.udf_impl(spk_func.col(before)))
@@ -325,7 +329,7 @@ class FillNA(Operation):
         self.cols = cols
         self.default = default
 
-    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0):
+    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
         return df.fillna(self.default, [i for i in self.cols])
 
 
@@ -343,7 +347,7 @@ class DropFeature(Operation):
         self.op_name = "DropFeature"
         self.cols = cols
 
-    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0):
+    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
         for i in self.cols:
             df = df.drop(i)
         return df
@@ -362,7 +366,7 @@ class Distinct(Operation):
     def __init__(self):
         self.op_name = "Distinct"
 
-    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0):
+    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
         return df.distinct()
 
 
@@ -380,7 +384,7 @@ class SelectFeature(Operation):
         self.op_name = "SelectFeature"
         self.cols = cols
 
-    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0):
+    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
         to_select = []
         for i in self.cols:
             if isinstance(i, str):
@@ -414,10 +418,10 @@ class Categorify(Operation):
         self.strategy_type = {
             'udf': 'udf', 'broadcast_join': 'short_dict', 'shuffle_join': 'huge_dict'}
 
-    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0):
+    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
         if self.dict_dfs == None:
             # We should do categorify upon same column
-            self.dict_dfs = self.to_dict_dfs(df, spark, save_path)
+            self.dict_dfs = self.to_dict_dfs(df, spark, save_path, enable_gazelle)
             for i in self.dict_dfs:
                 col_name, dict_df = self.get_colname_dict_as_tuple(i)
         strategy = {}
@@ -467,14 +471,14 @@ class Categorify(Operation):
             if 'long_dict' in strategy and src_name in strategy['long_dict']:
                 if 'huge_dict' in strategy and src_name in strategy['huge_dict']:
                     if 'smj_dict' in strategy and src_name in strategy['smj_dict']:
-                        df = self.categorify_with_join(df, dict_df, col_name, spark, save_path, method="smj", saveTmpToDisk=True)
+                        df = self.categorify_with_join(df, dict_df, col_name, spark, save_path, method="smj", saveTmpToDisk=True, enable_gazelle=enable_gazelle)
                     else:
-                        df = self.categorify_with_join(df, dict_df, col_name, spark, save_path, method="shj", saveTmpToDisk=True)
+                        df = self.categorify_with_join(df, dict_df, col_name, spark, save_path, method="shj", saveTmpToDisk=True, enable_gazelle=enable_gazelle)
                 else:
                     if 'smj_dict' in strategy and src_name in strategy['smj_dict']:
-                        df = self.categorify_with_join(df, dict_df, col_name, spark, save_path, method="smj", saveTmpToDisk=False)
+                        df = self.categorify_with_join(df, dict_df, col_name, spark, save_path, method="smj", saveTmpToDisk=False, enable_gazelle=enable_gazelle)
                     else:
-                        df = self.categorify_with_join(df, dict_df, col_name, spark, save_path, method="shj", saveTmpToDisk=False)
+                        df = self.categorify_with_join(df, dict_df, col_name, spark, save_path, method="shj", saveTmpToDisk=False, enable_gazelle=enable_gazelle)
         return df
 
     def get_col_tgt_src(self, i):
@@ -529,7 +533,7 @@ class Categorify(Operation):
         df = df.withColumn(i, udf_impl(spk_func.col(i)))
         return df
 
-    def categorify_with_join(self, df, dict_df, i, spark, save_path, method='shj', saveTmpToDisk=False):
+    def categorify_with_join(self, df, dict_df, i, spark, save_path, method='shj', saveTmpToDisk=False, enable_gazelle=False):
         saveTmpToDisk = self.saveTmpToDisk or saveTmpToDisk
         hint_type = "shuffle_hash"
         if method == "bhj":
@@ -568,8 +572,12 @@ class Categorify(Operation):
         if saveTmpToDisk:
             cur_save_path = "%s_%d" % (save_path, self.save_path_id)
             self.save_path_id += 1
-            df.write.format('parquet').mode('overwrite').save(cur_save_path)
-            df = spark.read.parquet(cur_save_path)
+            if enable_gazelle:
+                df.write.format('arrow').mode('overwrite').save(save_path)
+                df = spark.read.format("arrow").load(save_path)
+            else:
+                df.write.format('parquet').mode('overwrite').save(cur_save_path)
+                df = spark.read.parquet(cur_save_path)
         return df
 
     def categorify_with_bhj(self, df, dict_df, i, spark):
@@ -603,7 +611,7 @@ class CategorifyMultiItems(Operation):
         self.skipList = skipList
         self.freqRange = freqRange
 
-    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0):
+    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
         for i in self.cols:
             sorted_data_df = df.select(spk_func.explode(spk_func.split(spk_func.col(i), self.sep))).groupBy('col').count().orderBy(
                 spk_func.desc('count'), 'col').select('col', 'count')
@@ -696,7 +704,7 @@ class CategorifyWithDictionary(Operation):
         self.cols = cols
         self.dict_data = dictData
 
-    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0):
+    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
         if len(self.dict_data) == 0:
             for i in self.cols:
                 df = df.withColumn(i, spk_func.lit(None))
@@ -770,8 +778,8 @@ class GenerateDictionary(Operation):
                 {'col_name': dict_name, 'dict': to_merge.union(fwd_dict_df)})
         return self.dict_dfs
 
-    def to_dict_dfs(self, df, spark = None, cache_path = None):
-        return self.generate_dict_dfs(df, spark, cache_path, self.withCount, self.isParquet)
+    def to_dict_dfs(self, df, spark = None, cache_path = None, enable_gazelle=False):
+        return self.generate_dict_dfs(df, spark, cache_path, self.withCount, self.isParquet, enable_gazelle=enable_gazelle)
 
 
 class ModelMerge(Operation):
@@ -790,7 +798,7 @@ class ModelMerge(Operation):
         self.cols = None
         self.doSplit = False
 
-    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0):
+    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
         if self.dict_dfs == None:
             raise NotImplementedError("process %s ")
         sorted_cols, strategy = self.categorify_strategy_decision_maker(self.dict_dfs, df, df_cnt, per_core_memory_size, flush_threshold)
@@ -800,24 +808,24 @@ class ModelMerge(Operation):
             dict_df = self.find_dict(col_name, self.dict_dfs) 
             # for short dict, we will do bhj
             if 'short_dict' in strategy and col_name in strategy['short_dict']:
-                df = self.merge_with_join(df, dict_df, col_name, spark, save_path, saveTmpToDisk=False, method='bhj')
+                df = self.merge_with_join(df, dict_df, col_name, spark, save_path, saveTmpToDisk=False, method='bhj', enable_gazelle=enable_gazelle)
         for col_name in sorted_cols:
             dict_df = self.find_dict(col_name, self.dict_dfs) 
             # for huge dict, we will do shj seperately
             if 'long_dict' in strategy and col_name in strategy['long_dict']:
                 if 'huge_dict' in strategy and col_name in strategy['huge_dict']:
                     if 'smj_dict' in strategy and col_name in strategy['smj_dict']:
-                        df = self.merge_with_join(df, dict_df, col_name, spark, save_path, saveTmpToDisk=True, method='smj')
+                        df = self.merge_with_join(df, dict_df, col_name, spark, save_path, saveTmpToDisk=True, method='smj', enable_gazelle=enable_gazelle)
                     else:
-                        df = self.merge_with_join(df, dict_df, col_name, spark, save_path, saveTmpToDisk=True, method='shj')
+                        df = self.merge_with_join(df, dict_df, col_name, spark, save_path, saveTmpToDisk=True, method='shj', enable_gazelle=enable_gazelle)
                 else:
                     if 'smj_dict' in strategy and col_name in strategy['smj_dict']:
-                        df = self.merge_with_join(df, dict_df, col_name, spark, save_path, saveTmpToDisk=False, method='smj')
+                        df = self.merge_with_join(df, dict_df, col_name, spark, save_path, saveTmpToDisk=False, method='smj', enable_gazelle=enable_gazelle)
                     else:
-                        df = self.merge_with_join(df, dict_df, col_name, spark, save_path, saveTmpToDisk=False, method='shj')
+                        df = self.merge_with_join(df, dict_df, col_name, spark, save_path, saveTmpToDisk=False, method='shj', enable_gazelle=enable_gazelle)
         return df
 
-    def merge_with_join(self, df, dict_df, i, spark, save_path, saveTmpToDisk=False, method='shj'):
+    def merge_with_join(self, df, dict_df, i, spark, save_path, saveTmpToDisk=False, method='shj', enable_gazelle=False):
         saveTmpToDisk = self.saveTmpToDisk or saveTmpToDisk
         hint_type = "shuffle_hash"
         if method == "bhj":
@@ -830,8 +838,12 @@ class ModelMerge(Operation):
         if saveTmpToDisk:
             cur_save_path = "%s_%d" % (save_path, self.save_path_id)
             self.save_path_id += 1
-            df.write.format('parquet').mode('overwrite').save(cur_save_path)
-            df = spark.read.parquet(cur_save_path)
+            if enable_gazelle:
+                df.write.format('arrow').mode('overwrite').save(save_path)
+                df = spark.read.format("arrow").load(save_path)
+            else:
+                df.write.format('parquet').mode('overwrite').save(cur_save_path)
+                df = spark.read.parquet(cur_save_path)
         return df
 
 
@@ -861,7 +873,7 @@ class ModelMerge(Operation):
 
 
 class DataProcessor:
-    def __init__(self, spark, path_prefix="hdfs://", current_path="", shuffle_disk_capacity="unlimited", dicts_path="dicts", spark_mode='yarn'):
+    def __init__(self, spark, path_prefix="hdfs://", current_path="", shuffle_disk_capacity="unlimited", dicts_path="dicts", spark_mode='yarn', enable_gazelle=False):
         self.ops = []
         self.spark = spark
         self.uuid = uuid.uuid1()
@@ -871,6 +883,7 @@ class DataProcessor:
         self.dicts_path = dicts_path
         self.tmp_materialzed_list = []
         self.per_core_memory_size = 0
+        self.enable_gazelle = enable_gazelle
         if spark_mode == 'yarn' or spark_mode == 'standalone':
             memory_size = parse_size(spark.sparkContext.getConf().get('spark.executor.memory'))
             numCores = int(spark.sparkContext.getConf().get('spark.executor.cores'))
@@ -921,15 +934,20 @@ class DataProcessor:
             else:
                 save_path = "%s/%s/%s" % (self.path_prefix,
                                           self.current_path, df_name)
-            df.write.format('parquet').mode('overwrite').save(save_path)
-            return self.spark.read.parquet(save_path)
+            if self.enable_gazelle:
+                # df.write.format('parquet').mode('overwrite').save(save_path)
+                df.write.format('arrow').mode('overwrite').save(save_path)
+                return self.spark.read.format("arrow").load(save_path)
+            else:
+                df.write.format('parquet').mode('overwrite').save(save_path)
+                return self.spark.read.parquet(save_path)
 
     def transform(self, df, name="materialized_tmp", df_cnt = None):
         if df_cnt == None:
             df_cnt = df.count()
         for op in self.ops:
             save_path = self.get_tmp_cache_path()
-            df = op.process(df, self.spark, df_cnt, save_path=save_path, per_core_memory_size = self.per_core_memory_size, flush_threshold = self.flush_threshold)
+            df = op.process(df, self.spark, df_cnt, save_path=save_path, per_core_memory_size = self.per_core_memory_size, flush_threshold = self.flush_threshold, enable_gazelle=self.enable_gazelle)
         return self.materialize(df, df_name=name)
 
     def generate_dicts(self, df):
@@ -941,7 +959,7 @@ class DataProcessor:
                 raise NotImplementedError(
                     "We haven't support apply generate_dict to not GenerateDictionary operator yet.")
             save_path = self.get_tmp_cache_path()
-            dfs.extend(op.to_dict_dfs(df, self.spark, save_path))
+            dfs.extend(op.to_dict_dfs(df, self.spark, save_path, self.enable_gazelle))
         for dict_df in dfs:
             materialized_dfs.append({'col_name': dict_df['col_name'], 'dict': self.materialize(
                 dict_df['dict'], "%s/%s" % (self.dicts_path, dict_df['col_name']))})
@@ -956,7 +974,7 @@ class DataProcessor:
                 raise NotImplementedError(
                     "We haven't support apply generate_dict to not GenerateDictionary operator yet.")
             save_path = get_tmp_cache_path()
-            dfs.extend(op.merge_dict(op.to_dict_dfs(df, self.spark, save_path), to_merge_dict_dfs))
+            dfs.extend(op.merge_dict(op.to_dict_dfs(df, self.spark, save_path, self.enable_gazelle), to_merge_dict_dfs))
         for dict_df in dfs:
             materialized_dfs.append({'col_name': dict_df['col_name'], 'dict': self.materialize(
                 dict_df['dict'], "%s/%s_merged" % (self.dicts_path, dict_df['col_name']))})
