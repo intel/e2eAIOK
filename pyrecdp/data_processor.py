@@ -442,6 +442,7 @@ class Categorify(Operation):
                     sorted_cols_pair.append({col_name: src_name})
                     break
 
+        last_method = 'bhj'
         # For now, we prepared dict_dfs and strategy
         for i in sorted_cols_pair:
             col_name, src_name = self.get_col_tgt_src(i)
@@ -450,6 +451,7 @@ class Categorify(Operation):
                 df = df.withColumn(col_name, spk_func.col(src_name))
             # for udf type, we will do udf to do user-defined categorify
             if 'udf' in strategy and src_name in strategy['udf']:
+                last_method = 'udf'
                 dict_data = dict((row['dict_col'], row['dict_col_id'])
                                  for row in dict_df.collect())
                 df = self.categorify_with_udf(df, dict_data, col_name, spark)
@@ -460,6 +462,7 @@ class Categorify(Operation):
                 df = df.withColumn(col_name, spk_func.col(src_name))
             # for short dict, we will do bhj
             if 'short_dict' in strategy and src_name in strategy['short_dict']:
+                last_method = 'bhj'
                 df = self.categorify_with_join(df, dict_df, col_name, spark, save_path, method="bhj")
         for i in sorted_cols_pair:
             col_name, src_name = self.get_col_tgt_src(i)
@@ -470,14 +473,19 @@ class Categorify(Operation):
             if 'long_dict' in strategy and src_name in strategy['long_dict']:
                 if 'huge_dict' in strategy and src_name in strategy['huge_dict']:
                     if 'smj_dict' in strategy and src_name in strategy['smj_dict']:
+                        last_method = 'smj'
                         df = self.categorify_with_join(df, dict_df, col_name, spark, save_path, method="smj", saveTmpToDisk=True, enable_gazelle=enable_gazelle)
                     else:
+                        last_method = 'shj'
                         df = self.categorify_with_join(df, dict_df, col_name, spark, save_path, method="shj", saveTmpToDisk=True, enable_gazelle=enable_gazelle)
                 else:
                     if 'smj_dict' in strategy and src_name in strategy['smj_dict']:
+                        last_method = 'smj'
                         df = self.categorify_with_join(df, dict_df, col_name, spark, save_path, method="smj", saveTmpToDisk=False, enable_gazelle=enable_gazelle)
                     else:
+                        last_method = 'shj'
                         df = self.categorify_with_join(df, dict_df, col_name, spark, save_path, method="shj", saveTmpToDisk=False, enable_gazelle=enable_gazelle)
+        # when last_method is BHJ, we should add a separator for spark wscg optimization
         return df
 
     def get_col_tgt_src(self, i):
@@ -895,11 +903,16 @@ class DataProcessor:
             self.flush_threshold = (2**63 - 1)
         else:
             self.flush_threshold = parse_size(shuffle_disk_capacity)
+        self.registerScalaUDFs()
         print("per core memory size is %.3f GB and shuffle_disk maximum capacity is %.3f GB" % (self.per_core_memory_size * 1.0/(2**30), self.flush_threshold * 1.0/(2**30)))
 
     def __del__(self):
         for tmp_file in self.tmp_materialzed_list:
             shutil.rmtree(tmp_file, ignore_errors=True)
+
+    def registerScalaUDFs(self):
+        self.spark.udf.registerJavaFunction("sortStringArrayByFrequency","com.intel.recdp.SortStringArrayByFrequency")
+        self.spark.udf.registerJavaFunction("sortIntArrayByFrequency","com.intel.recdp.SortIntArrayByFrequency")
 
     def describe(self):
         description = []
@@ -934,7 +947,7 @@ class DataProcessor:
                 save_path = "%s/%s/%s" % (self.path_prefix,
                                           self.current_path, df_name)
             if self.enable_gazelle:
-                # df.write.format('parquet').mode('overwrite').save(save_path)
+                #df.write.format('parquet').mode('overwrite').save(save_path)
                 df.write.format('arrow').mode('overwrite').save(save_path)
                 return self.spark.read.format("arrow").load(save_path)
             else:
