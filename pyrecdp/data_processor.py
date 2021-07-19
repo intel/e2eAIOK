@@ -486,6 +486,25 @@ class Categorify(Operation):
                         last_method = 'shj'
                         df = self.categorify_with_join(df, dict_df, col_name, spark, save_path, method="shj", saveTmpToDisk=False, enable_gazelle=enable_gazelle)
         # when last_method is BHJ, we should add a separator for spark wscg optimization
+        if last_method == 'bhj':
+            print("Adding a CodegenSeparator to pure BHJ WSCG case")
+            found = False
+            for dname, dtype in df.dtypes:
+                if dtype == "string":
+                    df = df.withColumn(dname, spk_func.expr(f"CodegenSeparator1({dname})"))
+                    found = True
+                    break
+                if dtype == "int":
+                    df = df.withColumn(dname, spk_func.expr(f"CodegenSeparator0({dname})"))
+                    found = True
+                    break
+                if dtype == "bigint":
+                    df = df.withColumn(dname, spk_func.expr(f"CodegenSeparator2({dname})"))
+                    found = True
+                    break
+            if found == False:
+                df = df.withColumn("CodegenSeparator", spk_func.expr(f"CodegenSeparator())"))
+    
         return df
 
     def get_col_tgt_src(self, i):
@@ -903,6 +922,7 @@ class DataProcessor:
             self.flush_threshold = (2**63 - 1)
         else:
             self.flush_threshold = parse_size(shuffle_disk_capacity)
+        self.gateway = spark.sparkContext._gateway
         self.registerScalaUDFs()
         print("per core memory size is %.3f GB and shuffle_disk maximum capacity is %.3f GB" % (self.per_core_memory_size * 1.0/(2**30), self.flush_threshold * 1.0/(2**30)))
 
@@ -913,6 +933,10 @@ class DataProcessor:
     def registerScalaUDFs(self):
         self.spark.udf.registerJavaFunction("sortStringArrayByFrequency","com.intel.recdp.SortStringArrayByFrequency")
         self.spark.udf.registerJavaFunction("sortIntArrayByFrequency","com.intel.recdp.SortIntArrayByFrequency")
+        self.spark._jsparkSession.udf().register("CodegenSeparator", self.gateway.jvm.org.apache.spark.sql.api.CodegenSeparator())
+        self.spark._jsparkSession.udf().register("CodegenSeparator0", self.gateway.jvm.org.apache.spark.sql.api.CodegenSeparator0())
+        self.spark._jsparkSession.udf().register("CodegenSeparator1", self.gateway.jvm.org.apache.spark.sql.api.CodegenSeparator1())
+        self.spark._jsparkSession.udf().register("CodegenSeparator2", self.gateway.jvm.org.apache.spark.sql.api.CodegenSeparator2())
 
     def describe(self):
         description = []
@@ -996,3 +1020,6 @@ class DataProcessor:
         for op in self.ops[:-1]:
             df = op.process(df, self.spark)
         return self.ops[-1].collect(df)
+
+    def py2Java(self, df, func_name, javaClassName, *args):
+        self.spark._jsparkSession.udf().register(func_name, javaClassName)
