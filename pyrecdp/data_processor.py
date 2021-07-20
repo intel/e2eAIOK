@@ -224,6 +224,14 @@ class Operation:
             df_estimated_size -= df_cnt * 6
         return (sorted_cols, {'short_dict': small_cols, 'long_dict': long_cols, 'huge_dict': huge_cols, 'udf': udf_cols, 'smj_dict': smj_cols})
 
+    def check_scala_extension(self, spark):
+        driverClassPath = spark.sparkContext.getConf().get('spark.driver.extraClassPath')
+        execClassPath = spark.sparkContext.getConf().get('spark.executor.extraClassPath')
+        if driverClassPath == None or execClassPath == None or 'recdp' not in driverClassPath or 'recdp' not in execClassPath:
+            return False
+        else:
+            return True
+
 class FeatureModification(Operation):
     '''
     Operation to modify feature column in-place, support build-in function and udf
@@ -452,9 +460,7 @@ class Categorify(Operation):
             # for udf type, we will do udf to do user-defined categorify
             if 'udf' in strategy and src_name in strategy['udf']:
                 last_method = 'udf'
-                dict_data = dict((row['dict_col'], row['dict_col_id'])
-                                 for row in dict_df.collect())
-                df = self.categorify_with_udf(df, dict_data, col_name, spark)
+                df = self.categorify_with_udf(df, dict_df, col_name, spark)
         for i in sorted_cols_pair:
             col_name, src_name = self.get_col_tgt_src(i)
             dict_df = self.find_dict(src_name, self.dict_dfs)
@@ -522,7 +528,6 @@ class Categorify(Operation):
             broadcast_data)
         sep = self.sep
         doSortForArray = self.doSortForArray
-
         def largest_freq_encode(x):
             broadcast_data = broadcast_dict.value
             if x != '':
@@ -554,9 +559,29 @@ class Categorify(Operation):
         else:
             return spk_func.udf(freq_encode, spk_type.ArrayType(spk_type.IntegerType()))
 
-    def categorify_with_udf(self, df, dict_data, i, spark):
+    def categorify_with_udf(self, df, dict_df, i, spark):
+        dict_data = dict((row['dict_col'], row['dict_col_id']) for row in dict_df.collect())
         udf_impl = self.get_mapping_udf(dict_data, spark)
         df = df.withColumn(i, udf_impl(spk_func.col(i)))
+
+    def categorify_with_scala_udf(self, df, dict_df, i, spark):
+        # call java to broadcast data and set broadcast handler to udf
+        if not self.check_scala_extension(spark):
+            raise ValueError("RecDP need to enable recdp-scala-extension to run categorify_with_udf, please config spark.driver.extraClassPath and spark.executor.extraClassPath for spark")
+        gateway = spark.sparkContext._gateway
+        categorify_broadcast_handler = gateway.jvm.org.apache.spark.sql.api.CategorifyBroadcast.broadcast(spark.sparkContext._jsc, dict_df._jdf)
+
+        if self.doSplit == False:
+            spark._jsparkSession.udf().register(f"Categorify_{i}", gateway.jvm.org.apache.spark.sql.api.Categorify(categorify_broadcast_handler))
+            df = df.withColumn(i, spk_func.expr(f"Categorify_{i}({i})"))
+        else:
+            spark._jsparkSession.udf().register(f"CategorifyForArray_{i}", gateway.jvm.org.apache.spark.sql.api.CategorifyForArray(categorify_broadcast_handler))
+            df = df.withColumn(i, spk_func.split(spk_func.col(i), self.sep))
+            df = df.withColumn(i, spk_func.expr(f"CategorifyForArray_{i}({i})"))
+            if self.keepMostFrequent:
+                df = df.withColumn(i, spk_func.array_sort(spk_func.col(i)).getItem(0))
+            elif self.doSortForArray:
+                df = df.withColumn(i, spk_func.array_sort(spk_func.col(i)))
         return df
 
     def categorify_with_join(self, df, dict_df, i, spark, save_path, method='shj', saveTmpToDisk=False, enable_gazelle=False):
@@ -915,7 +940,7 @@ class DataProcessor:
             numCores = int(spark.sparkContext.getConf().get('spark.executor.cores'))
             self.per_core_memory_size = memory_size / numCores
         elif spark_mode == 'local':
-            memory_size = parse_size(spark.sparkContext.getConf().get('spark.worker.memory'))
+            memory_size = parse_size(spark.sparkContext.getConf().get('spark.driver.memory'))
             numCores = int(spark.sparkContext.getConf().get('spark.executor.cores'))
             self.per_core_memory_size = memory_size / numCores
         if shuffle_disk_capacity == "unlimited":
@@ -931,6 +956,11 @@ class DataProcessor:
             shutil.rmtree(tmp_file, ignore_errors=True)
 
     def registerScalaUDFs(self):
+        driverClassPath = self.spark.sparkContext.getConf().get('spark.driver.extraClassPath')
+        execClassPath = self.spark.sparkContext.getConf().get('spark.executor.extraClassPath')
+        if driverClassPath == None or execClassPath == None or 'recdp' not in driverClassPath or 'recdp' not in execClassPath:
+            return
+        print("recdp-scala-extension is enabled")
         self.spark.udf.registerJavaFunction("sortStringArrayByFrequency","com.intel.recdp.SortStringArrayByFrequency")
         self.spark.udf.registerJavaFunction("sortIntArrayByFrequency","com.intel.recdp.SortIntArrayByFrequency")
         self.spark._jsparkSession.udf().register("CodegenSeparator", self.gateway.jvm.org.apache.spark.sql.api.CodegenSeparator())
