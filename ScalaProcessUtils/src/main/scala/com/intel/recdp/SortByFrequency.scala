@@ -21,9 +21,21 @@ import org.apache.spark.sql.types.{ArrayType, DataType, IntegerType}
 import scala.collection.mutable.WrappedArray
 
 class SortIntArrayByFrequency extends UDF1[WrappedArray[Integer], Array[Integer]] {
-  def call(x: WrappedArray[Integer]) = x.toArray.groupBy(identity).toArray.sortBy(-_._2.size).map(_._1)
+  def call(x: WrappedArray[Integer]) = {
+    if (x != null) {
+      x.toArray.groupBy(identity).toArray.sortBy(-_._2.size).map(_._1)
+    } else {
+      Array[Integer]()
+    }
+  }
 }
 
 class SortStringArrayByFrequency extends UDF1[WrappedArray[String], Array[String]] {
-  def call(x: WrappedArray[String]) = x.toArray.groupBy(identity).toArray.sortBy(-_._2.size).map(_._1)
+  def call(x: WrappedArray[String]) = {
+    if (x != null) {
+      x.toArray.groupBy(identity).toArray.sortBy(-_._2.size).map(_._1)
+    } else {
+      Array[String]()
+    }
+  }
 }

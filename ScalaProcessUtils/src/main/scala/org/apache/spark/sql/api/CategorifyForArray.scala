@@ -29,11 +29,11 @@ import org.apache.spark.sql.expressions.{SparkUserDefinedFunction}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{ArrayType, DataType, IntegerType, LongType, StringType}
 
-class CategorifyForArrayUDF(broadcast_handler: Broadcast[Map[String, Integer]]) extends UDF1[WrappedArray[String], Array[Integer]] {
-  def call(x_l: WrappedArray[String]): Array[Integer] = {   
+case class CategorifyForArrayUDF(broadcast_handler: Broadcast[Map[String, Int]]) extends UDF1[WrappedArray[String], Array[Option[Int]]] {
+  def call(x_l: WrappedArray[String]): Array[Option[Int]] = {   
     val broadcasted = broadcast_handler.value
-    if (broadcasted == null || broadcasted.isEmpty || x_l == null) return Array[Integer]()
-    x_l.toArray.map(x => if (x != null && broadcasted.contains(x)) broadcasted(x) else -1.asInstanceOf[Integer])
+    if (broadcasted == null || broadcasted.isEmpty || x_l == null) return Array[Option[Int]]()
+    x_l.toArray.map(x => if (x != null && broadcasted.contains(x)) Some(broadcasted(x)) else None)
   }
 }
 
@@ -42,7 +42,7 @@ class CategorifyForArray(
     f: AnyRef,
     dataType: DataType
     ) extends SparkUserDefinedFunction(f, dataType, Nil, None, Some(name), true, true) {
-      def this(broadcasted: Broadcast[Map[String, Integer]]) = {
-        this("CategorifyForArray", (new CategorifyForArrayUDF(broadcasted)).asInstanceOf[UDF1[Any, Any]].call(_: Any), new ArrayType(IntegerType, true))
+      def this(broadcasted: Broadcast[Map[String, Int]]) = {
+        this("CategorifyForArray", (CategorifyForArrayUDF(broadcasted)).asInstanceOf[UDF1[Any, Any]].call(_: Any), new ArrayType(IntegerType, true))
       }
 }

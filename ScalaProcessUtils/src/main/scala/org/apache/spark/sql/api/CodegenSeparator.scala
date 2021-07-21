@@ -43,19 +43,19 @@ class CodegenFallbackUDF(
       }
   }
 
-class DummyUDF extends UDF0[String] {
+case class DummyUDF() extends UDF0[String] {
   def call() = ""
 }
 
-class DummyUDFForString extends UDF1[String, String] {
+case class DummyUDFForString() extends UDF1[String, String] {
   def call(x: String) = x
 }
 
-class DummyUDFForInteger extends UDF1[Integer, Integer] {
-  def call(x: Integer) = x
+case class DummyUDFForInteger() extends UDF1[Int, Int] {
+  def call(x: Int) = x
 }
 
-class DummyUDFForLong extends UDF1[Long, Long] {
+case class DummyUDFForLong() extends UDF1[Long, Long] {
   def call(x: Long) = x
 }
 
@@ -65,7 +65,7 @@ class CodegenSeparator(
     dataType: DataType
     ) extends SparkUserDefinedFunction(f, dataType, Nil, None, None, true, true) {
   def this() {
-    this("CodegenSeparator", () => (new DummyUDF()).asInstanceOf[UDF0[Any]].call(), StringType)
+    this("CodegenSeparator", () => (DummyUDF()).asInstanceOf[UDF0[Any]].call(), StringType)
   }
   override def createScalaUDF(exprs: Seq[Expression]): ScalaUDF = new CodegenFallbackUDF(f, dataType, exprs, udfName = Some(name))
 }
@@ -76,7 +76,7 @@ class CodegenSeparator0(
     dataType: DataType
     ) extends SparkUserDefinedFunction(f, dataType, Nil, None, None, true, true) {
   def this() {
-    this("CodegenSeparator", (new DummyUDFForInteger()).asInstanceOf[UDF1[Integer, Integer]].call(_: Integer), IntegerType)
+    this("CodegenSeparator", (DummyUDFForInteger()).asInstanceOf[UDF1[Int, Int]].call(_: Int), IntegerType)
   }
   override def createScalaUDF(exprs: Seq[Expression]): ScalaUDF = new CodegenFallbackUDF(f, dataType, exprs, udfName = Some(name))
 }
@@ -87,7 +87,7 @@ class CodegenSeparator1(
     dataType: DataType
     ) extends SparkUserDefinedFunction(f, dataType, Nil, None, None, true, true) {
   def this() {
-    this("CodegenSeparator", (new DummyUDFForString()).asInstanceOf[UDF1[String, String]].call(_: String), StringType)
+    this("CodegenSeparator", (DummyUDFForString()).asInstanceOf[UDF1[String, String]].call(_: String), StringType)
   }
   override def createScalaUDF(exprs: Seq[Expression]): ScalaUDF = new CodegenFallbackUDF(f, dataType, exprs, udfName = Some(name))
 }
@@ -98,7 +98,7 @@ class CodegenSeparator2(
     dataType: DataType
     ) extends SparkUserDefinedFunction(f, dataType, Nil, None, None, true, true) {
   def this() {
-    this("CodegenSeparator", (new DummyUDFForLong()).asInstanceOf[UDF1[Long, Long]].call(_: Long), LongType)
+    this("CodegenSeparator", (DummyUDFForLong()).asInstanceOf[UDF1[Long, Long]].call(_: Long), LongType)
   }
   override def createScalaUDF(exprs: Seq[Expression]): ScalaUDF = new CodegenFallbackUDF(f, dataType, exprs, udfName = Some(name))
 }

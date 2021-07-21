@@ -460,7 +460,8 @@ class Categorify(Operation):
             # for udf type, we will do udf to do user-defined categorify
             if 'udf' in strategy and src_name in strategy['udf']:
                 last_method = 'udf'
-                df = self.categorify_with_udf(df, dict_df, col_name, spark)
+                #df = self.categorify_with_udf(df, dict_df, col_name, spark)
+                df = self.categorify_with_scala_udf(df, dict_df, col_name, spark)
         for i in sorted_cols_pair:
             col_name, src_name = self.get_col_tgt_src(i)
             dict_df = self.find_dict(src_name, self.dict_dfs)
@@ -530,18 +531,12 @@ class Categorify(Operation):
         doSortForArray = self.doSortForArray
         def largest_freq_encode(x):
             broadcast_data = broadcast_dict.value
+            min_val = None
             if x != '':
-                val = []
                 for v in x.split(sep):
-                    if v != '' and v in broadcast_data:
-                        val.append(broadcast_data[v])
-                if len(val) > 0:
-                    val.sort()
-                    return val[0]
-                else:
-                    return 0
-            else:
-                return 0
+                    if v != '' and v in broadcast_data and (min_val == None or broadcast_data[v] < min_val):
+                        min_val = broadcast_data[v]
+            return min_val
 
         def freq_encode(x):
             broadcast_data = broadcast_dict.value
@@ -563,6 +558,7 @@ class Categorify(Operation):
         dict_data = dict((row['dict_col'], row['dict_col_id']) for row in dict_df.collect())
         udf_impl = self.get_mapping_udf(dict_data, spark)
         df = df.withColumn(i, udf_impl(spk_func.col(i)))
+        return df
 
     def categorify_with_scala_udf(self, df, dict_df, i, spark):
         # call java to broadcast data and set broadcast handler to udf
@@ -575,13 +571,15 @@ class Categorify(Operation):
             spark._jsparkSession.udf().register(f"Categorify_{i}", gateway.jvm.org.apache.spark.sql.api.Categorify(categorify_broadcast_handler))
             df = df.withColumn(i, spk_func.expr(f"Categorify_{i}({i})"))
         else:
-            spark._jsparkSession.udf().register(f"CategorifyForArray_{i}", gateway.jvm.org.apache.spark.sql.api.CategorifyForArray(categorify_broadcast_handler))
             df = df.withColumn(i, spk_func.split(spk_func.col(i), self.sep))
-            df = df.withColumn(i, spk_func.expr(f"CategorifyForArray_{i}({i})"))
             if self.keepMostFrequent:
-                df = df.withColumn(i, spk_func.array_sort(spk_func.col(i)).getItem(0))
-            elif self.doSortForArray:
-                df = df.withColumn(i, spk_func.array_sort(spk_func.col(i)))
+                spark._jsparkSession.udf().register(f"CategorifyByFreqForArray_{i}", gateway.jvm.org.apache.spark.sql.api.CategorifyByFreqForArray(categorify_broadcast_handler))
+                df = df.withColumn(i, spk_func.expr(f"CategorifyByFreqForArray_{i}({i})"))
+            else:
+                spark._jsparkSession.udf().register(f"CategorifyForArray_{i}", gateway.jvm.org.apache.spark.sql.api.CategorifyForArray(categorify_broadcast_handler))
+                df = df.withColumn(i, spk_func.expr(f"CategorifyForArray_{i}({i})"))
+                if self.doSortForArray:
+                    df = df.withColumn(i, spk_func.array_sort(spk_func.col(i)))
         return df
 
     def categorify_with_join(self, df, dict_df, i, spark, save_path, method='shj', saveTmpToDisk=False, enable_gazelle=False):

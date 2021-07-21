@@ -21,9 +21,9 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{IntegerType, StringType}
 
 object CategorifyBroadcast {
-  def broadcast(sc: JavaSparkContext, dict_df: DataFrame): Broadcast[Map[String, Integer]] = {
+  def broadcast(sc: JavaSparkContext, dict_df: DataFrame): Broadcast[Map[String, Int]] = {
     val broadcast_data = dict_df.select("dict_col", "dict_col_id").collect().map( row => 
-      (row(0).asInstanceOf[String], row(1).asInstanceOf[Integer])
+      (row(0).asInstanceOf[String], row(1).asInstanceOf[Int])
     ).toMap
     sc.broadcast(broadcast_data)
   }
