@@ -26,6 +26,21 @@
     </license>
   </licenses>
 
+  <profiles>
+    <profile>
+      <id>spark-3.0</id>
+      <properties>
+        <spark.version>3.0.0</spark.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>spark-3.1</id>
+      <properties>
+        <spark.version>3.1.0</spark.version>
+      </properties>
+    </profile>
+  </profiles>
+
   <properties>
     <spark.version>3.1.0</spark.version>
     <scala.binary.version>2.12</scala.binary.version>

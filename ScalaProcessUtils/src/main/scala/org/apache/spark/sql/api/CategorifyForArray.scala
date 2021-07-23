@@ -41,7 +41,7 @@ class CategorifyForArray(
     name: String,
     f: AnyRef,
     dataType: DataType
-    ) extends SparkUserDefinedFunction(f, dataType, Nil, None, Some(name), true, true) {
+    ) extends SparkUserDefinedFunction(f, dataType, Nil, name = Some(name)) {
       def this(broadcasted: Broadcast[Map[String, Int]]) = {
         this("CategorifyForArray", (CategorifyForArrayUDF(broadcasted)).asInstanceOf[UDF1[Any, Any]].call(_: Any), new ArrayType(IntegerType, true))
       }

@@ -63,7 +63,7 @@ class CodegenSeparator(
     name: String,
     f: AnyRef,
     dataType: DataType
-    ) extends SparkUserDefinedFunction(f, dataType, Nil, None, None, true, true) {
+    ) extends SparkUserDefinedFunction(f, dataType, Nil) {
   def this() {
     this("CodegenSeparator", () => (DummyUDF()).asInstanceOf[UDF0[Any]].call(), StringType)
   }
@@ -74,7 +74,7 @@ class CodegenSeparator0(
     name: String,
     f: AnyRef,
     dataType: DataType
-    ) extends SparkUserDefinedFunction(f, dataType, Nil, None, None, true, true) {
+    ) extends SparkUserDefinedFunction(f, dataType, Nil) {
   def this() {
     this("CodegenSeparator", (DummyUDFForInteger()).asInstanceOf[UDF1[Int, Int]].call(_: Int), IntegerType)
   }
@@ -85,7 +85,7 @@ class CodegenSeparator1(
     name: String,
     f: AnyRef,
     dataType: DataType
-    ) extends SparkUserDefinedFunction(f, dataType, Nil, None, None, true, true) {
+    ) extends SparkUserDefinedFunction(f, dataType, Nil) {
   def this() {
     this("CodegenSeparator", (DummyUDFForString()).asInstanceOf[UDF1[String, String]].call(_: String), StringType)
   }
@@ -96,7 +96,7 @@ class CodegenSeparator2(
     name: String,
     f: AnyRef,
     dataType: DataType
-    ) extends SparkUserDefinedFunction(f, dataType, Nil, None, None, true, true) {
+    ) extends SparkUserDefinedFunction(f, dataType, Nil) {
   def this() {
     this("CodegenSeparator", (DummyUDFForLong()).asInstanceOf[UDF1[Long, Long]].call(_: Long), LongType)
   }
