@@ -896,29 +896,52 @@ class ModelMerge(Operation):
         return df
 
 
-# class NegativeSample(Operation):
-#    def get_negative_sample_udf(self, broadcast_data):
-#        broadcast_movie_id_list = self.spark.sparkContext.broadcast(
-#            broadcast_data)
-#
-#        def get_random_id(asin):
-#            item_list = broadcast_movie_id_list.value
-#            asin_total_len = len(item_list)
-#            asin_neg = asin
-#            while True:
-#                asin_neg_index = random.randint(0, asin_total_len - 1)
-#                asin_neg = item_list[asin_neg_index]
-#                if asin_neg == None or asin_neg == asin:
-#                    continue
-#                else:
-#                    break
-#            return asin_neg
-#        return udf(get_random_id, StringType())
+class NegativeSample(Operation):
+    def __init__(self, cols, dicts):
+        self.op_name = "NegativeSample"
+        self.cols = cols
+        self.dict_dfs = dicts
+        if len(cols) != len(dicts):
+            raise ValueError("NegativeSample expects input dicts has same size cols for mapping")
+        self.num_cols = len(cols)
 
 
-# class RandomIndex(Operation):
-#    def rand_ordinal_n(self, df, n, name='ordinal'):
-#        return df.withColumn(name, (rand() * n).cast("int"))
+    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
+        for i in range(0, self.num_cols):
+            df = jvm_get_negative_samples(spark, df, self.cols[i], self.get_colname_dict_as_tuple(self.dict_dfs[i])[1])
+        return df
+
+
+class CollapseByHist(Operation):
+    def __init__(self, cols, by, orderBy = None, minNumHist = 0):
+        self.op_name = "CollapseByHist"
+        self.cols = cols
+        self.by = by
+        self.orderBy = orderBy
+        self.minNumHist = minNumHist
+        if cols == None or by == None or len(cols) == 0 or (isinstance(by, list) and len(by) == 0):
+            raise ValueError("CollapseByHist expects input cols and by are not None or Empty")
+
+
+    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
+        w = Window.partitionBy(self.by)
+        if self.orderBy != None:
+            w = w.orderBy(self.orderBy)
+        for c in self.cols:
+            df = df.withColumn(f'hist_{c}', spk_func.collect_list(c).over(w))        
+        df = df.withColumn('row_id', spk_func.row_number().over(w))
+        df = df.withColumn('row_cnt', spk_func.count(spk_func.lit(1)).over(Window.partitionBy(self.by)))
+        df = df.withColumn('row_cnt', spk_func.col('row_cnt').cast(spk_type.IntegerType()))
+        df = df.filter((df.row_id == df.row_cnt) & (df.row_cnt > spk_func.lit(self.minNumHist)))
+        for c in self.cols:
+            df = df.withColumn(f'hist_{c}', spk_func.expr(f"slice(hist_{c}, 1, row_cnt - 1)"))
+        df = df.drop('row_id').drop('row_cnt')
+        return df
+
+
+#class RandomIndex(Operation):
+#   def rand_ordinal_n(self, df, n, name='ordinal'):
+#       return df.withColumn(name, (rand() * n).cast("int"))
 
 
 class DataProcessor:

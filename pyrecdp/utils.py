@@ -1,5 +1,10 @@
 from .init_spark import *
 import re
+from pyspark import *
+from pyspark.sql import *
+from py4j.protocol import Py4JJavaError
+from py4j.java_gateway import JavaObject
+from py4j.java_collections import ListConverter, JavaArray, JavaList, JavaMap
 
 def convert_to_spark_dict(orig_dict, schema=['dict_col', 'dict_col_id']):
     ret = []
@@ -33,3 +38,46 @@ def parse_size(size):
 def get_estimate_size_of_dtype(dtype_name):
     units = {'byte': 1, 'short': 2, 'int': 4, 'long': 8, 'float': 4, 'double': 8, 'string': 10}
     return units[dtype_name] if dtype_name in units else 4
+
+
+def _j4py(spark, r):
+    sc = spark.sparkContext
+    if isinstance(r, JavaObject):
+        clsName = r.getClass().getSimpleName()
+        # convert RDD into JavaRDD
+        if clsName != 'JavaRDD' and clsName.endswith("RDD"):
+            r = r.toJavaRDD()
+            clsName = 'JavaRDD'
+        elif clsName == 'JavaRDD':
+            jrdd = sc._jvm.SerDe.javaToPython(r)
+            return RDD(jrdd, sc)
+        elif clsName == 'DataFrame' or clsName == 'Dataset':
+            return DataFrame(r, SQLContext.getOrCreate(sc))
+        else:
+             raise NotImplementedError(f"can't convert {clsName} {r} to java")
+    else:
+        raise NotImplementedError(f"can't convert {r} to java")
+    return r
+
+
+def _py4j(obj):
+    """ Convert Python object into Java """
+    if isinstance(obj, DataFrame):
+        obj = obj._jdf
+    elif isinstance(obj, SparkContext):
+        obj = obj._jsc
+    elif isinstance(obj, (list, tuple)):
+        obj = ListConverter().convert([_py4j(x) for x in obj],
+                                      sc._gateway._gateway_client)
+    elif isinstance(obj, JavaObject):
+        pass
+    elif isinstance(obj, (int, float, bool, bytes, str)):
+        pass
+    else:
+        raise NotImplementedError(f"can't convert {obj} to python")
+    return obj    
+
+def jvm_get_negative_samples(spark, df, col_name, dict_df):
+    gateway = spark.sparkContext._gateway
+    _jcls = gateway.jvm.org.apache.spark.sql.api.NegativeSample
+    return _j4py(spark, _jcls.add(_py4j(spark.sparkContext), _py4j(df), _py4j(col_name), _py4j(dict_df)))
