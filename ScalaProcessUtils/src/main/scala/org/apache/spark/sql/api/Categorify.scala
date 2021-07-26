@@ -19,29 +19,24 @@ import scala.util.Try
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.sql._
-import org.apache.spark.sql.api.java.{UDF0, UDF1}
-import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
-import org.apache.spark.sql.catalyst.expressions.codegen._
-import org.apache.spark.sql.catalyst.expressions.codegen.Block._
-import org.apache.spark.sql.catalyst.expressions.{Expression, Literal, ScalaUDF}
-import org.apache.spark.sql.expressions.{SparkUserDefinedFunction}
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types.{ArrayType, DataType, IntegerType, LongType, StringType}
 
-case class CategorifyUDF(broadcast_handler: Broadcast[Map[String, Int]]) extends UDF1[String, Option[Int]] {
-  def call(x: String): Option[Int] = {   
-    val broadcasted = broadcast_handler.value
-    if (broadcasted == null || broadcasted.isEmpty || x == null) return None
-    if (broadcasted.contains(x)) Some(broadcasted(x)) else None
-  }
-}
-
-class Categorify(
-    name: String,
-    f: AnyRef,
-    dataType: DataType
-    ) extends SparkUserDefinedFunction(f, dataType, Nil, name = Some(name)) {
-      def this(broadcasted: Broadcast[Map[String, Int]]) = {
-        this("Categorify", (CategorifyUDF(broadcasted)).asInstanceOf[UDF1[Any, Any]].call(_: Any), IntegerType)
+object Categorify {
+  def categorify(sc: JavaSparkContext, df: DataFrame, col_name: String, dict_df: DataFrame): DataFrame = {
+    val broadcast_data = dict_df.select("dict_col", "dict_col_id").collect().map( row => 
+      (row(0).asInstanceOf[String], row(1).asInstanceOf[Int])
+    ).toMap
+    val broadcast_handler = sc.broadcast(broadcast_data)
+    val categorifyUDF = udf((x: String) => {
+      val broadcasted = broadcast_handler.value
+      if (broadcasted == null || broadcasted.isEmpty || x == null) {
+        None
+      } else if (broadcasted.contains(x)) {
+        Some(broadcasted(x))
+      } else {
+        None
       }
+    })
+    return df.withColumn(col_name, categorifyUDF(col(col_name)))
+  }
 }

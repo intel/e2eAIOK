@@ -19,38 +19,28 @@ import scala.collection.mutable.WrappedArray
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.sql._
-import org.apache.spark.sql.api.java.{UDF0, UDF1}
-import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
-import org.apache.spark.sql.catalyst.expressions.codegen._
-import org.apache.spark.sql.catalyst.expressions.codegen.Block._
-import org.apache.spark.sql.catalyst.expressions.{Expression, Literal, ScalaUDF}
-import org.apache.spark.sql.expressions.{SparkUserDefinedFunction}
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types.{ArrayType, DataType, IntegerType, LongType, StringType}
 
-case class CategorifyByFreqForArrayUDF(broadcast_handler: Broadcast[Map[String, Int]]) extends UDF1[WrappedArray[String], Option[Int]] {
-  def call(x_l: WrappedArray[String]): Option[Int] = {
-    lazy val broadcasted = broadcast_handler.value
-    if (broadcasted == null || broadcasted.isEmpty || x_l == null) {
-      None
-    } else {
-      var min_val: Option[Int] = None
-      x_l.foreach(x => {
-        if (x != null && broadcasted.contains(x) && (min_val == None || broadcasted(x) < min_val.get)) {
-          min_val = Some(broadcasted(x))
-        }
-      })
-      min_val
-    }
-  }
-}
-
-class CategorifyByFreqForArray(
-    name: String,
-    f: AnyRef,
-    dataType: DataType
-    ) extends SparkUserDefinedFunction(f, dataType, Nil, name = Some(name)) {
-      def this(broadcasted: Broadcast[Map[String, Int]]) = {
-        this("CategorifyByFreqForArray", (CategorifyByFreqForArrayUDF(broadcasted)).asInstanceOf[UDF1[Any, Any]].call(_: Any), IntegerType)
+object CategorifyByFreqForArray {
+  def categorify(sc: JavaSparkContext, df: DataFrame, col_name: String, dict_df: DataFrame): DataFrame = {
+    val broadcast_data = dict_df.select("dict_col", "dict_col_id").collect().map( row => 
+      (row(0).asInstanceOf[String], row(1).asInstanceOf[Int])
+    ).toMap
+    val broadcast_handler = sc.broadcast(broadcast_data)
+    val categorifyUDF = udf((x_l: WrappedArray[String]) => {
+      val broadcasted = broadcast_handler.value
+      if (broadcasted == null || broadcasted.isEmpty || x_l == null) {
+        None
+      } else {
+        var min_val: Option[Int] = None
+        x_l.foreach(x => {
+          if (x != null && broadcasted.contains(x) && (min_val == None || broadcasted(x) < min_val.get)) {
+            min_val = Some(broadcasted(x))
+          }
+        })
+        min_val
       }
+    })
+    return df.withColumn(col_name, categorifyUDF(col(col_name)))
+  }
 }

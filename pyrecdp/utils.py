@@ -77,6 +77,21 @@ def _py4j(obj):
         raise NotImplementedError(f"can't convert {obj} to python")
     return obj    
 
+def jvm_categorify(spark, df, col_name, dict_df):
+    gateway = spark.sparkContext._gateway
+    _jcls = gateway.jvm.org.apache.spark.sql.api.Categorify
+    return _j4py(spark, _jcls.categorify(_py4j(spark.sparkContext), _py4j(df), _py4j(col_name), _py4j(dict_df)))
+
+def jvm_categorify_for_array(spark, df, col_name, dict_df):
+    gateway = spark.sparkContext._gateway
+    _jcls = gateway.jvm.org.apache.spark.sql.api.CategorifyForArray
+    return _j4py(spark, _jcls.categorify(_py4j(spark.sparkContext), _py4j(df), _py4j(col_name), _py4j(dict_df)))
+
+def jvm_categorify_by_freq_for_array(spark, df, col_name, dict_df):
+    gateway = spark.sparkContext._gateway
+    _jcls = gateway.jvm.org.apache.spark.sql.api.CategorifyByFreqForArray
+    return _j4py(spark, _jcls.categorify(_py4j(spark.sparkContext), _py4j(df), _py4j(col_name), _py4j(dict_df)))
+
 def jvm_get_negative_samples(spark, df, col_name, dict_df):
     gateway = spark.sparkContext._gateway
     _jcls = gateway.jvm.org.apache.spark.sql.api.NegativeSample

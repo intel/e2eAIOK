@@ -564,20 +564,15 @@ class Categorify(Operation):
         # call java to broadcast data and set broadcast handler to udf
         if not self.check_scala_extension(spark):
             raise ValueError("RecDP need to enable recdp-scala-extension to run categorify_with_udf, please config spark.driver.extraClassPath and spark.executor.extraClassPath for spark")
-        gateway = spark.sparkContext._gateway
-        categorify_broadcast_handler = gateway.jvm.org.apache.spark.sql.api.CategorifyBroadcast.broadcast(spark.sparkContext._jsc, dict_df._jdf)
 
         if self.doSplit == False:
-            spark._jsparkSession.udf().register(f"Categorify_{i}", gateway.jvm.org.apache.spark.sql.api.Categorify(categorify_broadcast_handler))
-            df = df.withColumn(i, spk_func.expr(f"Categorify_{i}({i})"))
+            df = jvm_categorify(spark, df, i, dict_df)
         else:
             df = df.withColumn(i, spk_func.split(spk_func.col(i), self.sep))
             if self.keepMostFrequent:
-                spark._jsparkSession.udf().register(f"CategorifyByFreqForArray_{i}", gateway.jvm.org.apache.spark.sql.api.CategorifyByFreqForArray(categorify_broadcast_handler))
-                df = df.withColumn(i, spk_func.expr(f"CategorifyByFreqForArray_{i}({i})"))
+                df = jvm_categorify_by_freq_for_array(spark, df, i, dict_df)
             else:
-                spark._jsparkSession.udf().register(f"CategorifyForArray_{i}", gateway.jvm.org.apache.spark.sql.api.CategorifyForArray(categorify_broadcast_handler))
-                df = df.withColumn(i, spk_func.expr(f"CategorifyForArray_{i}({i})"))
+                df = jvm_categorify_for_array(spark, df, i, dict_df)
                 if self.doSortForArray:
                     df = df.withColumn(i, spk_func.array_sort(spk_func.col(i)))
         return df
@@ -1072,5 +1067,10 @@ class DataProcessor:
             df = op.process(df, self.spark)
         return self.ops[-1].collect(df)
 
-    def py2Java(self, df, func_name, javaClassName, *args):
-        self.spark._jsparkSession.udf().register(func_name, javaClassName)
+    def get_sample(self, df, df_cnt = None, vertical = False, truncate = 50):
+        if df_cnt == None:
+            df_cnt = df.count()
+        for op in self.ops:
+            save_path = self.get_tmp_cache_path()
+            df = op.process(df, self.spark, df_cnt, save_path=save_path, per_core_memory_size = self.per_core_memory_size, flush_threshold = self.flush_threshold, enable_gazelle=self.enable_gazelle)
+        df.show(vertical = vertical, truncate = truncate)
