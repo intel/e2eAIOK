@@ -411,10 +411,11 @@ class Categorify(Operation):
         cols (list): columns which are be modified
     '''
 
-    def __init__(self, cols, dict_dfs=None, hint='auto', doSplit=False, sep='\t', doSortForArray=False, keepMostFrequent=False, saveTmpToDisk=False):
+    def __init__(self, cols, dict_dfs=None, gen_dicts=True, hint='auto', doSplit=False, sep='\t', doSortForArray=False, keepMostFrequent=False, saveTmpToDisk=False):
         self.op_name = "Categorify"
         self.cols = cols
         self.dict_dfs = dict_dfs
+        self.gen_dicts = gen_dicts
         self.hint = hint
         self.doSplit = doSplit
         self.sep = sep
@@ -426,11 +427,6 @@ class Categorify(Operation):
             'udf': 'udf', 'broadcast_join': 'short_dict', 'shuffle_join': 'huge_dict'}
 
     def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
-        if self.dict_dfs == None:
-            # We should do categorify upon same column
-            self.dict_dfs = self.to_dict_dfs(df, spark, save_path, enable_gazelle)
-            for i in self.dict_dfs:
-                col_name, dict_df = self.get_colname_dict_as_tuple(i)
         strategy = {}
         sorted_cols = []
         if self.hint != "auto" and self.hint in self.strategy_type:
@@ -632,154 +628,6 @@ class Categorify(Operation):
             raise NotImplementedError(
                 "We should use udf to handle withSplit + small dict scenario")
         return df
-
-    
-
-
-class CategorifyMultiItems(Operation):
-    '''
-    Operation to categorify columns contains multiple id in one item
-
-    Args:
-
-        cols (list): columns which are be modified
-        strategy (int): 1. return id with biggest freq_cnt in list - used by recsys; 2. TBD ...
-        sep (str): separator, default is '\t'
-    '''
-
-    def __init__(self, cols, strategy=0, sep='\t', skipList=[], freqRange=[2, 100000]):
-        self.op_name = "CategorifyMultiItems"
-        self.cols = cols
-        self.sep = sep
-        self.strategy = strategy
-        self.skipList = skipList
-        self.freqRange = freqRange
-
-    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
-        for i in self.cols:
-            sorted_data_df = df.select(spk_func.explode(spk_func.split(spk_func.col(i), self.sep))).groupBy('col').count().orderBy(
-                spk_func.desc('count'), 'col').select('col', 'count')
-            if self.strategy == 0:
-                sorted_data = sorted_data_df.collect()
-                dict_data = dict((id['col'], idx) for (id, idx) in zip(
-                    sorted_data, range(len(sorted_data))))
-                udf_impl = self.get_mapping_udf_0(
-                    dict_data, spark, self.sep, self.skipList)
-                df = df.withColumn(i, udf_impl(spk_func.col(i)))
-            elif self.strategy == 1:
-                sorted_data = sorted_data_df.collect()
-                dict_data = dict((id['col'], [id['count'], idx]) for (id, idx) in zip(
-                    sorted_data, range(len(sorted_data))))
-                udf_impl = self.get_mapping_udf_1(
-                    dict_data, spark, self.sep, self.skipList, self.freqRange)
-                df = df.withColumn(i, udf_impl(spk_func.col(i)))
-
-            else:
-                raise NotImplementedError(
-                    "CategorifyMultiItems only supports strategy as 0")
-        return df
-
-    def get_mapping_udf_0(self, broadcast_data, spark, sep, skipList, default=None):
-        # check if we support this type
-        first_value = next(iter(broadcast_data.values()))
-        if not isinstance(first_value, int) and not isinstance(first_value, str) and not isinstance(first_value, float):
-            raise NotImplementedError
-
-        # numPrint = 0
-        # for key, value in broadcast_data.items():
-        #    print(key, value)
-        #    numPrint += 1
-        #    if (numPrint > 20):
-        #        break
-
-        broadcast_dict = spark.sparkContext.broadcast(
-            broadcast_data)
-
-        def largest_freq_encode(x):
-            broadcast_data = broadcast_dict.value
-            if x != '':
-                val = []
-                for v in x.split(sep):
-                    if v != '' and v in broadcast_data:
-                        val.append(broadcast_data[v])
-                if len(val) > 0:
-                    val.sort()
-                    return val[0]
-                else:
-                    return 0
-            else:
-                return 0
-        # switch return type
-        if isinstance(first_value, int):
-            return spk_func.udf(largest_freq_encode, spk_type.IntegerType())
-        if isinstance(first_value, str):
-            return spk_func.udf(largest_freq_encode, spk_type.StringType())
-        if isinstance(first_value, float):
-            return spk_func.udf(largest_freq_encode, spk_type.FloatType())
-
-    def get_mapping_udf_1(self, broadcast_data, spark, sep, skipList, freqRange, default=None):
-        broadcast_dict = spark.sparkContext.broadcast(
-            broadcast_data)
-
-        def frequence_encode(x):
-            dict_data = broadcast_dict.value
-            li = []
-            for v in x.split(sep):
-                if v not in skipList:
-                    f, i = dict_data[v]
-                    if f < freqRange[1] and f > freqRange[0]:
-                        li.append(i)
-            return sorted(li, reverse=True)
-        return spk_func.udf(frequence_encode, spk_type.ArrayType(spk_type.IntegerType()))
-
-
-class CategorifyWithDictionary(Operation):
-    '''
-    Operation to categorify columns by pre-defined dictionary
-
-    Args:
-
-        cols (list): columns which are be modified
-        dictData (dict): pre-defined dictionary to map column data to corresponding id
-    '''
-
-    def __init__(self, cols, dictData):
-        self.op_name = "CategorifyWithDictionary"
-        self.cols = cols
-        self.dict_data = dictData
-
-    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
-        if len(self.dict_data) == 0:
-            for i in self.cols:
-                df = df.withColumn(i, spk_func.lit(None))
-        else:
-            udf_impl = self.get_mapping_udf(self.dict_data, spark)
-            for i in self.cols:
-                df = df.withColumn(i, udf_impl(spk_func.col(i)))
-        return df
-
-    def get_mapping_udf(self, broadcast_data, spark, default=None):
-        # check if we support this type
-        first_value = next(iter(broadcast_data.values()))
-        if not isinstance(first_value, int) and not isinstance(first_value, str) and not isinstance(first_value, float):
-            raise NotImplementedError
-
-        broadcast_dict = spark.sparkContext.broadcast(
-            broadcast_data)
-
-        def get_mapped(x):
-            map_dict = broadcast_dict.value
-            if x in map_dict:
-                return map_dict[x]
-            else:
-                return default
-        # switch return type
-        if isinstance(first_value, int):
-            return spk_func.udf(get_mapped, spk_type.IntegerType())
-        if isinstance(first_value, str):
-            return spk_func.udf(get_mapped, spk_type.StringType())
-        if isinstance(first_value, float):
-            return spk_func.udf(get_mapped, spk_type.FloatType())
 
 
 class GenerateDictionary(Operation):
@@ -1024,11 +872,29 @@ class DataProcessor:
                 df.write.format('parquet').mode('overwrite').save(save_path)
                 return self.spark.read.parquet(save_path)
 
+    def refine_op(self, op, df, save_path):
+        if isinstance(op, Categorify) and op.dict_dfs == None :
+            dict_dfs = []
+            if not op.gen_dicts:
+                dict_names = op.cols
+                dict_dfs = [{'col_name': name, 'dict': self.spark.read.parquet(
+                    "%s/%s/%s/%s" % (self.path_prefix, self.current_path, self.dicts_path, name))} for name in dict_names]
+            if op.gen_dicts:
+                dfs = []
+                op_gen_dicts = GenerateDictionary(op.cols, doSplit=op.doSplit, sep=op.sep)
+                dfs.extend(op_gen_dicts.to_dict_dfs(df, self.spark, save_path, self.enable_gazelle))
+                for dict_df in dfs:
+                    dict_dfs.append({'col_name': dict_df['col_name'], 'dict': self.materialize(
+                        dict_df['dict'], "%s/%s" % (self.dicts_path, dict_df['col_name']))})
+            op.dict_dfs = dict_dfs
+        return op
+
     def transform(self, df, name="materialized_tmp", df_cnt = None):
         if df_cnt == None:
             df_cnt = df.count()
         for op in self.ops:
             save_path = self.get_tmp_cache_path()
+            op = self.refine_op(op, df, save_path)
             df = op.process(df, self.spark, df_cnt, save_path=save_path, per_core_memory_size = self.per_core_memory_size, flush_threshold = self.flush_threshold, enable_gazelle=self.enable_gazelle)
         return self.materialize(df, df_name=name)
 
@@ -1072,5 +938,6 @@ class DataProcessor:
             df_cnt = df.count()
         for op in self.ops:
             save_path = self.get_tmp_cache_path()
+            op = self.refine_op(op, df, save_path)
             df = op.process(df, self.spark, df_cnt, save_path=save_path, per_core_memory_size = self.per_core_memory_size, flush_threshold = self.flush_threshold, enable_gazelle=self.enable_gazelle)
         df.show(vertical = vertical, truncate = truncate)
