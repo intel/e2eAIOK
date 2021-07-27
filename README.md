@@ -8,9 +8,11 @@
 * Extensible – provides plugin interface to extend intel RECO & Friesian with optimized adaptive DataProcess pipeline plan with spark and modin.
 * Feature Engineer oriented – advanced feature engineering functions (target encoding) 
 
-## Currently RecDP is proven by two use case: 
-* DRLM: passed on previous NVIDIA-script fail on no-filtering dataset.
-* Recsys2021: passed on previous NVIDIA-script fail on process full dataset
+## Currently RecDP is proven by four use case:
+* Recsys2021: successfully support intel Recsys2021 challenge feature engineering work
+* Recsys2020: successfully processing over 600 millions dataset and aligned with Recsys2021 winner feature engineering work.
+* DRLM: successfully processing Criteo dataset of 24 days w/wo frequence limit, previously wo/ frequence limit went failed using NVIDIA provided spark script.
+* DIEN: w/ RecDP, process time is 6x speeding up comparing with original Ali-Matrix python script. 
 
 ## Design Overview
 ![RecDP overview](resources/recdp_overview.png)
@@ -25,8 +27,10 @@ mvn package [-pspark3.0]
 
 #### test with provided example
 * Recsys2021 example [url](https://github.com/oap-project/recdp/blob/master/examples/notebooks/recsys2021/final_submission_feature_engineering.ipynb)
-* Recsys2020 multi-categorify example [url](https://github.com/oap-project/recdp/blob/master/examples/notebooks/recsys2020/recsys_for_kai.ipynb)
+* Recsys2020 example [url](https://github.com/oap-project/recdp/blob/master/examples/notebooks/recsys2020/recsys2020_feature_engineering.ipynb)
+* Recsys2020 multiitem-categorify example(support for Analytics Zoo Friesian) [url](https://github.com/oap-project/recdp/blob/master/examples/notebooks/recsys2020/recsys_for_friesian_integration.ipynb)
 * DLRM example [url](https://github.com/oap-project/recdp/blob/master/examples/notebooks/dlrm/DLRM_Performance.ipynb)
+* DIEN example [url](https://github.com/oap-project/recdp/blob/master/examples/notebooks/dien/dien_data_process.ipynb)
 
 #### write your own
 * some spark configuration is required
