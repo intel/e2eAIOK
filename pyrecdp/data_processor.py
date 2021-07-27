@@ -174,7 +174,7 @@ class Operation:
         threshold = per_core_memory_size / 4 / 20
         threshold_per_bhj = threshold if threshold <= 30000000 else 30000000
         flush_threshold = flush_threshold * 0.8
-        print("bhj total threshold is %.3f M rows, one bhj threshold is %.3f M rows, flush_threshold is %.3f GB" % (threshold / 1000000, threshold_per_bhj/1000000, flush_threshold / 2**30))
+        # print("[DEBUG] bhj total threshold is %.3f M rows, one bhj threshold is %.3f M rows, flush_threshold is %.3f GB" % (threshold / 1000000, threshold_per_bhj/1000000, flush_threshold / 2**30))
         dict_dfs_with_cnt = []
         for i in dict_dfs:
             col_name, dict_df = self.get_colname_dict_as_tuple(i)
@@ -191,8 +191,8 @@ class Operation:
               dict_df_cnt = dict_df.count()
               dict_dfs_with_cnt.append((col_name, dict_df, dict_df_cnt))
         sorted_dict_dfs_with_cnt = [(col_name, dict_df, dict_df_cnt) for col_name, dict_df, dict_df_cnt in sorted(dict_dfs_with_cnt, key=lambda pair: pair[2])]
-        for to_print in sorted_dict_dfs_with_cnt:
-            print(to_print)
+        # for to_print in sorted_dict_dfs_with_cnt:
+        #    print(to_print)
 
         sorted_cols = []
         for (col_name, dict_df, dict_df_cnt) in sorted_dict_dfs_with_cnt:
@@ -201,24 +201,24 @@ class Operation:
                 threshold_per_bhj = 30000000
             if (dict_df_cnt > threshold_per_bhj or (total_small_cols_num_rows + dict_df_cnt) > threshold):
                 if ((total_estimated_shuffled_size + df_estimated_size) > flush_threshold):
-                    print("etstimated_to_shuffle_size for %s is %.3f GB, will do smj and spill to disk" % (str(col_name), df_estimated_size / 2**30))
+                    # print("etstimated_to_shuffle_size for %s is %.3f GB, will do smj and spill to disk" % (str(col_name), df_estimated_size / 2**30))
                     huge_cols.append(col_name)
                     smj_cols.append(col_name)
                     long_cols.append(col_name)
                     total_estimated_shuffled_size = 0
                 else:
-                    print("etstimated_to_shuffle_size for %s is %.3f GB, will do smj" % (str(col_name), df_estimated_size / 2**30))
+                    # print("etstimated_to_shuffle_size for %s is %.3f GB, will do smj" % (str(col_name), df_estimated_size / 2**30))
                     smj_cols.append(col_name)
                     long_cols.append(col_name)
                     # if accumulate shuffle capacity may exceed maximum shuffle disk size, we should use hdfs instead
                     total_estimated_shuffled_size += df_estimated_size
             else:
                 if self.doSplit:
-                    print("%s will do udf" % (col_name))
+                    # print("%s will do udf" % (col_name))
                     total_small_cols_num_rows += dict_df_cnt
                     udf_cols.append(col_name)
                 else:
-                    print("%s will do bhj" % (col_name))
+                    # print("%s will do bhj" % (col_name))
                     total_small_cols_num_rows += dict_df_cnt
                     small_cols.append(col_name)
             df_estimated_size -= df_cnt * 6
@@ -312,8 +312,11 @@ class FeatureAdd(Operation):
                 df = df.withColumn(after, self.udf_impl(spk_func.col(before)))
         elif self.op == 'inline':
             for after, before in self.cols.items():
-                #print("[DEBUG]: inline script is %s" % before)
-                df = df.withColumn(after, eval(before))
+                try:
+                    df = df.withColumn(after, eval(before))
+                except Exception as e:
+                    print("[ERROR]: inline script is %s" % before)
+                    raise e
         elif self.op == 'toInt':
             for after, before in self.cols.items():
                 df = df.withColumn(after, spk_func.col(
@@ -444,14 +447,13 @@ class Categorify(Operation):
                 col_name, src_name = self.get_col_tgt_src(i)
                 if src_name == cn:
                     sorted_cols_pair.append({col_name: src_name})
-                    break
 
         last_method = 'bhj'
         # For now, we prepared dict_dfs and strategy
         for i in sorted_cols_pair:
             col_name, src_name = self.get_col_tgt_src(i)
             dict_df = self.find_dict(src_name, self.dict_dfs)
-            if col_name != src_name:
+            if col_name != src_name and col_name not in df.columns:
                 df = df.withColumn(col_name, spk_func.col(src_name))
             # for udf type, we will do udf to do user-defined categorify
             if 'udf' in strategy and src_name in strategy['udf']:
@@ -461,7 +463,7 @@ class Categorify(Operation):
         for i in sorted_cols_pair:
             col_name, src_name = self.get_col_tgt_src(i)
             dict_df = self.find_dict(src_name, self.dict_dfs)
-            if col_name != src_name:
+            if col_name != src_name and col_name not in df.columns:
                 df = df.withColumn(col_name, spk_func.col(src_name))
             # for short dict, we will do bhj
             if 'short_dict' in strategy and src_name in strategy['short_dict']:
@@ -470,7 +472,7 @@ class Categorify(Operation):
         for i in sorted_cols_pair:
             col_name, src_name = self.get_col_tgt_src(i)
             dict_df = self.find_dict(src_name, self.dict_dfs)
-            if col_name != src_name:
+            if col_name != src_name and col_name not in df.columns:
                 df = df.withColumn(col_name, spk_func.col(src_name))
             # for long dict, we will do shj all along
             if 'long_dict' in strategy and src_name in strategy['long_dict']:
@@ -551,12 +553,14 @@ class Categorify(Operation):
             return spk_func.udf(freq_encode, spk_type.ArrayType(spk_type.IntegerType()))
 
     def categorify_with_udf(self, df, dict_df, i, spark):
+        print("do %s to %s" % ("python_udf", i))
         dict_data = dict((row['dict_col'], row['dict_col_id']) for row in dict_df.collect())
         udf_impl = self.get_mapping_udf(dict_data, spark)
         df = df.withColumn(i, udf_impl(spk_func.col(i)))
         return df
 
     def categorify_with_scala_udf(self, df, dict_df, i, spark):
+        print("do %s to %s" % ("scala_udf", i))
         # call java to broadcast data and set broadcast handler to udf
         if not self.check_scala_extension(spark):
             raise ValueError("RecDP need to enable recdp-scala-extension to run categorify_with_udf, please config spark.driver.extraClassPath and spark.executor.extraClassPath for spark")

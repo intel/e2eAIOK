@@ -120,83 +120,66 @@ class TargetEncoder(Encoder):
 
 
 class CountEncoder(Encoder):
-    def __init__(self, proc, x_col, out_col, seed=42):
+    def __init__(self, proc, x_col_list, y_col_list, out_col_list, out_name):
         super().__init__(proc)
         self.op_name = "CountEncoder"
-        self.x_col = x_col
-        self.out_col = out_col
-        self.seed = seed
+        self.x_col_list = x_col_list
+        self.y_col_list = y_col_list
+        self.out_col_list = out_col_list
+        self.out_name = out_name        
+        self.expected_list_size = len(y_col_list)
+        if len(self.out_col_list) < self.expected_list_size:
+            raise ValueError("CountEncoder __init__, input out_col_list should be same size as y_col_list")
 
-    def transform(self, train, valid, train_only=True):
-        x_col = self.x_col
-        out_col = self.out_col
-
+    def transform(self, df):
+        x_col = self.x_col_list
         cols = [x_col] if isinstance(x_col, str) else x_col
-        agg_all = train.groupby(cols).count(
-        ).withColumnRenamed('count', out_col)
-        agg_test = valid.groupby(cols).count().withColumnRenamed(
-            'count', out_col+'_valid')
+        agg_all = df.groupby(cols)
 
-        agg_test_size = agg_test.count()
-        if agg_test_size > 30000000:
-            agg_all = agg_all.join(agg_test.hint(
-                'shuffle_hash'), cols, how='left')
-        else:
-            agg_all = agg_all.join(f.broadcast(agg_test), cols, how='left')
-        agg_all = agg_all.fillna(0, out_col+'_valid')
-        agg_all = agg_all.withColumn(
-            out_col, f.col(out_col)+f.col(out_col+'_valid'))
-        agg_all = agg_all.drop(out_col+'_valid')
-        agg_all.cache()
+        all_list = []
 
-        train_out = (cols, self.materialize(
-            agg_all, "train/%s" % out_col), 0)
-        if train_only == False:
-            valid_out = (cols, self.materialize(
-                agg_all, "valid/%s" % out_col), 0)
-        else:
-            valid_out = ()
-        return (train_out, valid_out)
+        for i in range(0, self.expected_list_size):
+            y_col = self.y_col_list[i]
+            out_col = self.out_col_list[i]
+            all_list.append(f.count(y_col).alias(f'{out_col}'))
+
+        agg_all = agg_all.agg(*all_list)
+        for i in range(0, self.expected_list_size):
+            out_col = self.out_col_list[i]
+            agg_all = agg_all.withColumn(out_col, f.col(out_col).cast(spk_type.IntegerType()))
+
+        return (self.materialize(agg_all, "%s/train/%s" % (self.dicts_path, self.out_name)),
+                self.materialize(agg_all, "%s/test/%s" % (self.dicts_path, self.out_name)))
 
 
 class FrequencyEncoder(Encoder):
-    def __init__(self, proc, x_col, out_col, seed=42):
+    def __init__(self, proc, x_col_list, y_col_list, out_col_list, out_name):
         super().__init__(proc)
         self.op_name = "FrequencyEncoder"
-        self.x_col = x_col
-        self.out_col = out_col
-        self.seed = seed
+        self.x_col_list = x_col_list
+        self.y_col_list = y_col_list
+        self.out_col_list = out_col_list
+        self.out_name = out_name        
+        self.expected_list_size = len(y_col_list)
+        if len(self.out_col_list) < self.expected_list_size:
+            raise ValueError("FrequencyEncoder __init__, input out_col_list should be same size as y_col_list")
 
-    def transform(self, train, valid, train_only=True):
-        x_col = self.x_col
-        out_col = self.out_col
-        length_train = train.count()
-        length_valid = valid.count()
-
+    def transform(self, df):
+        length_df = df.count()
+        x_col = self.x_col_list
         cols = [x_col] if isinstance(x_col, str) else x_col
-        agg_all_train = train.groupby(cols).count(
-        ).withColumnRenamed('count', out_col)
-        agg_all_train = agg_all_train.withColumn(out_col, f.col(
-            out_col).cast(spk_type.IntegerType()))
-        agg_all_train = agg_all_train.withColumn(
-            out_col, f.col(out_col)*1.0/length_train)
-        agg_all_train = agg_all_train.withColumn(out_col, f.col(
-            out_col).cast(spk_type.FloatType()))
+        agg_all = df.groupby(cols)
 
-        agg_all_valid = valid.groupby(cols).count(
-        ).withColumnRenamed('count', out_col)
-        agg_all_valid = agg_all_valid.withColumn(out_col, f.col(
-            out_col).cast(spk_type.IntegerType()))
-        agg_all_valid = agg_all_valid.withColumn(
-            out_col, f.col(out_col)*1.0/length_valid)
-        agg_all_valid = agg_all_valid.withColumn(out_col, f.col(
-            out_col).cast(spk_type.FloatType()))
+        all_list = []
 
-        train_out = (cols, self.materialize(
-            agg_all_train, "train/%s" % out_col), 0)
-        if train_only == False:
-            valid_out = (cols, self.materialize(
-                agg_all_valid, "valid/%s" % out_col), 0)
-        else:
-            valid_out = ()
-        return (train_out, valid_out)
+        for i in range(0, self.expected_list_size):
+            y_col = self.y_col_list[i]
+            out_col = self.out_col_list[i]
+            all_list.append(f.count(y_col).alias(out_col))
+        agg_all = agg_all.agg(*all_list)
+
+        for i in range(0, self.expected_list_size):
+            out_col = self.out_col_list[i]
+            agg_all = agg_all.withColumn(out_col, (f.col(out_col)*1.0/length_df).cast(spk_type.FloatType()))
+        return (self.materialize(agg_all, "%s/train/%s" % (self.dicts_path, self.out_name)),
+                None)
