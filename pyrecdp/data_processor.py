@@ -759,6 +759,30 @@ class NegativeSample(Operation):
         return df
 
 
+class ScalaDFTest(Operation):
+    def __init__(self, cols, dicts=None, method="int"):
+        self.op_name = "ScalaDFTest"
+        self.cols = cols
+        self.dict_dfs = dicts
+        if dicts != None and len(cols) != len(dicts):
+            raise ValueError("ScalaDFTest expects input dicts has same size cols for mapping")
+        self.num_cols = len(cols)
+        self.method = method
+
+
+    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
+        if self.method == "int":
+            for i in range(0, self.num_cols):
+                df = jvm_scala_df_test_int(spark, df, self.cols[i])
+        elif self.method == "str":
+            for i in range(0, self.num_cols):
+                df = jvm_scala_df_test_str(spark, df, self.cols[i])
+        elif self.method == "broadcast" and self.dict_dfs != None:
+            for i in range(0, self.num_cols):
+                df = jvm_scala_df_test_broadcast(spark, df, self.cols[i], self.get_colname_dict_as_tuple(self.dict_dfs[i])[1])
+        return df
+
+
 class CollapseByHist(Operation):
     def __init__(self, cols, by, orderBy = None, minNumHist = 0):
         self.op_name = "CollapseByHist"

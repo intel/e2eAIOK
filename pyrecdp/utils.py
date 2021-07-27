@@ -96,3 +96,18 @@ def jvm_get_negative_samples(spark, df, col_name, dict_df):
     gateway = spark.sparkContext._gateway
     _jcls = gateway.jvm.org.apache.spark.sql.api.NegativeSample
     return _j4py(spark, _jcls.add(_py4j(spark.sparkContext), _py4j(df), _py4j(col_name), _py4j(dict_df)))
+
+def jvm_scala_df_test_int(spark, df, col_name):
+    gateway = spark.sparkContext._gateway
+    _jcls = gateway.jvm.org.apache.spark.sql.api.ScalaDFTest
+    return _j4py(spark, _jcls.scala_test_int(_py4j(spark.sparkContext), _py4j(df), _py4j(col_name)))
+
+def jvm_scala_df_test_str(spark, df, col_name):
+    gateway = spark.sparkContext._gateway
+    _jcls = gateway.jvm.org.apache.spark.sql.api.ScalaDFTest
+    return _j4py(spark, _jcls.scala_test_str(_py4j(spark.sparkContext), _py4j(df), _py4j(col_name)))
+
+def jvm_scala_df_test_broadcast(spark, df, col_name, dict_df):
+    gateway = spark.sparkContext._gateway
+    _jcls = gateway.jvm.org.apache.spark.sql.api.ScalaDFTest
+    return _j4py(spark, _jcls.scala_test_broadcast(_py4j(spark.sparkContext), _py4j(df), _py4j(col_name), _py4j(dict_df)))
