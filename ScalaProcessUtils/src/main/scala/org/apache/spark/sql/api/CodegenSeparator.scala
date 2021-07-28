@@ -31,7 +31,7 @@ class CodegenFallbackUDF(
     dataType: DataType,
     children: Seq[Expression],
     inputEncoders: Seq[Option[ExpressionEncoder[_]]] = Nil,
-    outputEncoder: Option[ExpressionEncoder[_]] = None,
+    // outputEncoder: Option[ExpressionEncoder[_]] = None,
     udfName: Option[String] = None,
     nullable: Boolean = true,
     udfDeterministic: Boolean = true
@@ -41,6 +41,9 @@ class CodegenFallbackUDF(
       ev: ExprCode): ExprCode = {
         throw new NotImplementedError("CodeGen is not supported in CodegenFallbackUDF")
       }
+    /* override protected def otherCopyArgs: Seq[AnyRef] = {
+      outputEncoder :: Nil
+    } */
   }
 
 case class DummyUDF() extends UDF0[String] {
