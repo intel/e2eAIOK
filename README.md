@@ -22,7 +22,7 @@
 * noted: support spark 3.1 by default, using -pspark3.0 for running with Spark3.0
 ```
 cd ScalaProcessUtils/
-mvn package [-pspark3.0]
+mvn package [-Pspark-3.0]
 ```
 
 #### test with provided example
