@@ -442,11 +442,15 @@ class Categorify(Operation):
             sorted_cols, strategy = self.categorify_strategy_decision_maker(self.dict_dfs, df, df_cnt, per_core_memory_size, flush_threshold)
         
         sorted_cols_pair = []
+        pri_key_loaded = []
         for cn in sorted_cols:
             for i in self.cols:
                 col_name, src_name = self.get_col_tgt_src(i)
                 if src_name == cn:
-                    sorted_cols_pair.append({col_name: src_name})
+                    if col_name not in pri_key_loaded:
+                        pri_key_loaded.append(col_name)
+                        sorted_cols_pair.append({col_name: src_name})
+
 
         last_method = 'bhj'
         # For now, we prepared dict_dfs and strategy
