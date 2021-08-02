@@ -31,12 +31,14 @@
       <id>spark-3.0</id>
       <properties>
         <spark.version>3.0.0</spark.version>
+        <exclude.files>**/3.1/org/apache/spark/sql/api/CodegenSeparator.scala</exclude.files>
       </properties>
     </profile>
     <profile>
       <id>spark-3.1</id>
       <properties>
         <spark.version>3.1.0</spark.version>
+        <exclude.files>**/3.0/org/apache/spark/sql/api/CodegenSeparator.scala</exclude.files>
       </properties>
     </profile>
   </profiles>
@@ -45,6 +47,7 @@
     <spark.version>3.1.0</spark.version>
     <scala.binary.version>2.12</scala.binary.version>
     <scala.version>2.12.8</scala.version>
+    <exclude.files>**/3.0/org/apache/spark/sql/api/CodegenSeparator.scala</exclude.files>
     <jars.target.dir>${project.build.directory}/scala-${scala.binary.version}/jars</jars.target.dir>
   </properties>
   <dependencies>
@@ -79,15 +82,16 @@
             </goals>
           </execution>
         </executions>
+        <configuration>
+          <excludes>
+            <exclude>${exclude.files}</exclude>
+          </excludes>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.8.0</version>
-        <configuration>
-          <source>1.8</source>
-          <target>1.8</target>
-        </configuration>
         <executions>
           <execution>
             <phase>compile</phase>
@@ -96,6 +100,11 @@
             </goals>
           </execution>
         </executions>
+        <configuration>
+          <excludes>
+            <exclude>${exclude.files}</exclude>
+          </excludes>
+        </configuration>
       </plugin>
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
