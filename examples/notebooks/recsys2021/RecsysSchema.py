@@ -13,40 +13,40 @@ class RecsysSchema:
             'tweet_type',     #
             'language',       #
         ]
-        self.long_cols1 = [
+        self.int_cols1 = [
             'tweet_timestamp',
         ]
         self.string_cols2 = [
             'engaged_with_user_id',
         ]
-        self.long_cols2 = [
+        self.int_cols2 = [
             'engaged_with_user_follower_count',  # Engaged With User Features
             'engaged_with_user_following_count',      #
         ]
         self.bool_cols1 = [
             'engaged_with_user_is_verified',          #
         ]
-        self.long_cols3 = [
+        self.int_cols3 = [
             'engaged_with_user_account_creation',
         ]
         self.string_cols3 = [
             'engaging_user_id',
         ]
-        self.long_cols4 = [
+        self.int_cols4 = [
             'enaging_user_follower_count',  # Engaging User Features
             'enaging_user_following_count',      #
         ]
         self.bool_cols2 = [
             'enaging_user_is_verified',
         ]
-        self.long_cols5 = [
+        self.int_cols5 = [
             'enaging_user_account_creation',
         ]
         self.bool_cols3 = [
             'engagee_follows_engager',  # Engagement Features
 
         ]
-        self.double_cols = [
+        self.float_cols = [
             'reply_timestamp',  # Target Reply
             'retweet_timestamp',  # Target Retweet
             'retweet_with_comment_timestamp',  # Target Retweet with comment
@@ -54,7 +54,7 @@ class RecsysSchema:
         ]
 
         # After some conversion
-        self.long_cols6 = [
+        self.int_cols6 = [
             'tweet_timestamp',
             'engaged_with_user_follower_count',  # Engaged With User Features
             'engaged_with_user_following_count',      #
@@ -67,39 +67,39 @@ class RecsysSchema:
     def toStructType(self):
         str_fields1 = [StructField('%s' % i, StringType())
                        for i in self.string_cols1]
-        long_fields1 = [StructField('%s' % i, LongType())
-                       for i in self.long_cols1]
+        int_fields1 = [StructField('%s' % i, IntegerType())
+                       for i in self.int_cols1]
         str_fields2 = [StructField('%s' % i, StringType())
                        for i in self.string_cols2]
-        long_fields2 = [StructField('%s' % i, LongType())
-                       for i in self.long_cols2]
+        int_fields2 = [StructField('%s' % i, IntegerType())
+                       for i in self.int_cols2]
         bool_fields1 = [StructField('%s' % i, BooleanType())
                         for i in self.bool_cols1]
-        long_fields3 = [StructField('%s' % i, LongType())
-                       for i in self.long_cols3]
+        int_fields3 = [StructField('%s' % i, IntegerType())
+                       for i in self.int_cols3]
         str_fields3 = [StructField('%s' % i, StringType())
                        for i in self.string_cols3]
-        long_fields4 = [StructField('%s' % i, LongType())
-                       for i in self.long_cols4]
+        int_fields4 = [StructField('%s' % i, IntegerType())
+                       for i in self.int_cols4]
         bool_fields2 = [StructField('%s' % i, BooleanType())
                         for i in self.bool_cols2]
-        long_fields5 = [StructField('%s' % i, LongType())
-                       for i in self.long_cols5]
+        int_fields5 = [StructField('%s' % i, IntegerType())
+                       for i in self.int_cols5]
         bool_fields3 = [StructField('%s' % i, BooleanType())
                         for i in self.bool_cols3]
-        double_fields = [StructField('%s' % i, DoubleType())
-                        for i in self.double_cols]
+        float_fields = [StructField('%s' % i, FloatType())
+                        for i in self.float_cols]
         return StructType(
             str_fields1
-            + long_fields1
+            + int_fields1
             + str_fields2
-            + long_fields2
+            + int_fields2
             + bool_fields1
-            + long_fields3
+            + int_fields3
             + str_fields3
-            + long_fields4
+            + int_fields4
             + bool_fields2
-            + long_fields5
+            + int_fields5
             + bool_fields3
-            + double_fields
+            + float_fields
         )
