@@ -75,10 +75,8 @@ class TargetEncoder(Encoder):
         for i in range(0, self.expected_list_size):
             y_col = self.y_col_list[i]
             per_fold_list.append(f.count(y_col).alias(f'count_{y_col}'))
-            # per_fold_list.append(f.count(y_col).alias(f'sum_{y_col}'))
             per_fold_list.append(f.sum(y_col).alias(f'sum_{y_col}'))
             all_list.append(f.count(y_col).alias(f'count_all_{y_col}'))
-            # all_list.append(f.count(y_col).alias(f'sum_all_{y_col}'))
             all_list.append(f.sum(y_col).alias(f'sum_all_{y_col}'))
 
         agg_per_fold = agg_per_fold.agg(*per_fold_list)
