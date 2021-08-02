@@ -334,7 +334,8 @@ def splitByDate(df, proc, train_output, test_output, numFolds=5):
     t1 = timer()
     train_df = df.filter(
         (f.col('tweet_timestamp') >= f.lit(train_start)) & (f.col('tweet_timestamp') < f.lit(train_end)))
-    train_df = train_df.withColumn("fold", f.round(f.rand(seed=42)*numFolds))
+    # train_df = train_df.withColumn("fold", f.round(f.rand(seed=42)*numFolds))
+    train_df = train_df.withColumn("fold", f.round(f.rand(seed=42)*(numFolds-1)).cast("int"))
     train_df.write.format('parquet').mode('overwrite').save(proc.path_prefix + proc.current_path + train_output)
     t2 = timer()
     print("split to train took %.3f" % (t2 - t1))
@@ -454,7 +455,7 @@ def get_encoding_features_dicts(proc):
 def main():
     path_prefix = "hdfs://localhost:9000/"
     current_path = "/recsys2021/feateng/"
-    original_folder = "/recsys2021/validation/"
+    original_folder = "/recsys2021/oridata/valid/"
     dicts_folder = "recsys_dicts/"
     recsysSchema = RecsysSchema()
 

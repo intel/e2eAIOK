@@ -334,7 +334,8 @@ def splitByDate(df, proc, train_output, test_output, numFolds=5):
     t1 = timer()
     train_df = df.filter(
         (f.col('tweet_timestamp') >= f.lit(train_start)) & (f.col('tweet_timestamp') < f.lit(train_end)))
-    train_df = train_df.withColumn("fold", f.round(f.rand(seed=42)*numFolds))
+    # train_df = train_df.withColumn("fold", f.round(f.rand(seed=42)*numFolds))
+    train_df = train_df.withColumn("fold", f.round(f.rand(seed=42)*(numFolds-1)).cast("int"))
     train_df.write.format('parquet').mode('overwrite').save(proc.path_prefix + proc.current_path + train_output)
     t2 = timer()
     print("split to train took %.3f" % (t2 - t1))
@@ -454,7 +455,7 @@ def get_encoding_features_dicts(proc):
 def main():
     path_prefix = "hdfs://localhost:9000/"
     current_path = "/recsys2021/feateng/"
-    original_folder = "/recsys2021/ori_train/"
+    original_folder = "/recsys2021/oridata/train/"
     dicts_folder = "recsys_dicts/"
     recsysSchema = RecsysSchema()
 
@@ -484,10 +485,10 @@ def main():
     # 1.2 create RecDP DataProcessor
     proc = DataProcessor(spark, path_prefix,
                         current_path=current_path, dicts_path=dicts_folder, shuffle_disk_capacity="1500GB",spark_mode='local')
-    df = spark.read.parquet(path_prefix + original_folder)
-    df = df.withColumnRenamed('enaging_user_following_count', 'engaging_user_following_count')
-    df = df.withColumnRenamed('enaging_user_is_verified', 'engaging_user_is_verified')
-    print("data loaded!")
+    # df = spark.read.parquet(path_prefix + original_folder)
+    # df = df.withColumnRenamed('enaging_user_following_count', 'engaging_user_following_count')
+    # df = df.withColumnRenamed('enaging_user_is_verified', 'engaging_user_is_verified')
+    # print("data loaded!")
 
     # # fast test, comment for full dataset
     # df.sample(0.01).write.format("parquet").mode("overwrite").save(path_prefix+"%s/sample_0_0_1" % current_path)
@@ -496,8 +497,9 @@ def main():
 
     # ===============================================
     # decode tweet_tokens
-    df = decodeBertTokenizerAndExtractFeatures(df, proc, output_name="decoded_with_extracted_features")
-    print("data decoded!")
+    # df = decodeBertTokenizerAndExtractFeatures(df, proc, output_name="decoded_with_extracted_features")
+    # print("data decoded!")
+    df = spark.read.parquet(path_prefix+current_path+"decoded_with_extracted_features")
 
     # ===============================================
     # splitting and sampling
