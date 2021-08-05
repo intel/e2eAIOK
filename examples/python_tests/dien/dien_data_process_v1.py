@@ -181,7 +181,7 @@ def main():
     save_to_local_train_splitByUser(df, proc)
     t1 = timer()
 
-    print(f"Total process time is {(t1 - t0)/1000000} secs")
+    print(f"Total process time is {(t1 - t0)} secs")
 
     ####################################
     

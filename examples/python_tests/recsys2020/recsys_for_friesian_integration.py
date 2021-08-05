@@ -48,7 +48,8 @@ def main():
 	t0 = timer()
 	spark = SparkSession.builder.master('local[80]')\
 		.appName("Recsys2020_data_process_support_for_friesian")\
-		.config("spark.driver.memory", "480G")\
+		.config("spark.driver.memory", "400G")\
+		.config("spark.driver.memoryOverhead", "80G")\
 		.config("spark.executor.cores", "80")\
 		.config("spark.driver.extraClassPath", f"{scala_udf_jars}")\
 		.getOrCreate()
@@ -71,7 +72,7 @@ def main():
 
 	t1 = timer()
 
-	print(f"Total process time is {(t1 - t0)/1000000} secs")
+	print(f"Total process time is {(t1 - t0)} secs")
 
 
 if __name__ == "__main__":
