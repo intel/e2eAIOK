@@ -160,7 +160,7 @@ class Operation:
         return self.dict_dfs
 
 
-    def categorify_strategy_decision_maker(self, dict_dfs, df, df_cnt, per_core_memory_size, flush_threshold):
+    def categorify_strategy_decision_maker(self, dict_dfs, df, df_cnt, per_core_memory_size, flush_threshold, enable_gazelle):
         small_cols = []
         long_cols = []
         huge_cols = []
@@ -171,8 +171,12 @@ class Operation:
         df_estimzate_size_per_row = sum([get_estimate_size_of_dtype(dtype) for _, dtype in df.dtypes])
         df_estimated_size = df_estimzate_size_per_row * df_cnt
         # Below threshold is maximum BHJ numRows, 4 means maximum 50% memory to cache Broadcast data, and 20 means we estimate each row has 20 bytes.
-        threshold = per_core_memory_size / 4 / 20
-        threshold_per_bhj = threshold if threshold <= 30000000 else 30000000
+        if enable_gazelle:
+            threshold = per_core_memory_size / 20
+            threshold_per_bhj = threshold if threshold <= 400000000 else 400000000
+        else:
+            threshold = per_core_memory_size / 4 / 20
+            threshold_per_bhj = threshold if threshold <= 30000000 else 30000000
         flush_threshold = flush_threshold * 0.8
         # print("[DEBUG] bhj total threshold is %.3f M rows, one bhj threshold is %.3f M rows, flush_threshold is %.3f GB" % (threshold / 1000000, threshold_per_bhj/1000000, flush_threshold / 2**30))
         dict_dfs_with_cnt = []
@@ -200,6 +204,7 @@ class Operation:
             if self.doSplit:
                 threshold_per_bhj = 30000000
             if (dict_df_cnt > threshold_per_bhj or (total_small_cols_num_rows + dict_df_cnt) > threshold):
+                print(f"for {col_name} current dict_length {dict_df_cnt} exceeded threshold_per_bhj {threshold_per_bhj} or accumulated BHJ length {total_small_cols_num_rows + dict_df_cnt} exceeded estimated threshold {threshold}, will go smj")
                 if ((total_estimated_shuffled_size + df_estimated_size) > flush_threshold):
                     # print("etstimated_to_shuffle_size for %s is %.3f GB, will do smj and spill to disk" % (str(col_name), df_estimated_size / 2**30))
                     huge_cols.append(col_name)
@@ -226,8 +231,7 @@ class Operation:
 
     def check_scala_extension(self, spark):
         driverClassPath = spark.sparkContext.getConf().get('spark.driver.extraClassPath')
-        execClassPath = spark.sparkContext.getConf().get('spark.executor.extraClassPath')
-        if driverClassPath == None or execClassPath == None or 'recdp' not in driverClassPath or 'recdp' not in execClassPath:
+        if driverClassPath == None or 'recdp' not in driverClassPath:
             return False
         else:
             return True
@@ -439,7 +443,7 @@ class Categorify(Operation):
                 strategy[self.strategy_type[self.hint]].append(col_name)
                 sorted_cols.append(col_name)
         else:
-            sorted_cols, strategy = self.categorify_strategy_decision_maker(self.dict_dfs, df, df_cnt, per_core_memory_size, flush_threshold)
+            sorted_cols, strategy = self.categorify_strategy_decision_maker(self.dict_dfs, df, df_cnt, per_core_memory_size, flush_threshold, enable_gazelle)
         
         sorted_cols_pair = []
         pri_key_loaded = []
@@ -495,7 +499,7 @@ class Categorify(Operation):
                         last_method = 'shj'
                         df = self.categorify_with_join(df, dict_df, col_name, spark, save_path, method="shj", saveTmpToDisk=False, enable_gazelle=enable_gazelle)
         # when last_method is BHJ, we should add a separator for spark wscg optimization
-        if last_method == 'bhj':
+        if last_method == 'bhj' and not enable_gazelle:
             print("Adding a CodegenSeparator to pure BHJ WSCG case")
             found = False
             for dname, dtype in df.dtypes:
@@ -701,7 +705,7 @@ class ModelMerge(Operation):
     def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
         if self.dict_dfs == None:
             raise NotImplementedError("process %s ")
-        sorted_cols, strategy = self.categorify_strategy_decision_maker(self.dict_dfs, df, df_cnt, per_core_memory_size, flush_threshold)
+        sorted_cols, strategy = self.categorify_strategy_decision_maker(self.dict_dfs, df, df_cnt, per_core_memory_size, flush_threshold, enable_gazelle)
 
         # For now, we prepared dict_dfs and strategy
         for col_name in sorted_cols:
@@ -831,14 +835,22 @@ class DataProcessor:
         self.tmp_materialzed_list = []
         self.per_core_memory_size = 0
         self.enable_gazelle = enable_gazelle
+        self.spark_mode = spark_mode
+        fail_to_parse = True
         if spark_mode == 'yarn' or spark_mode == 'standalone':
-            memory_size = parse_size(spark.sparkContext.getConf().get('spark.executor.memory'))
-            numCores = int(spark.sparkContext.getConf().get('spark.executor.cores'))
-            self.per_core_memory_size = memory_size / numCores
-        elif spark_mode == 'local':
+            try:
+                memory_size = parse_size(spark.sparkContext.getConf().get('spark.executor.memory'))
+                memory_size += parse_size(spark.sparkContext.getConf().get('spark.executor.memoryOverhead'))
+                numCores = int(spark.sparkContext.getConf().get('spark.executor.cores'))
+                self.per_core_memory_size = memory_size / numCores
+                fail_to_parse = False
+            except:
+                pass
+        elif spark_mode == 'local' or fail_to_parse:
             memory_size = parse_size(spark.sparkContext.getConf().get('spark.driver.memory'))
-            numCores = int(spark.sparkContext.getConf().get('spark.executor.cores'))
+            numCores = int(parse_cores_num(spark.sparkContext.getConf().get('spark.master')))
             self.per_core_memory_size = memory_size / numCores
+            self.spark_mode = 'local'
         if shuffle_disk_capacity == "unlimited":
             self.flush_threshold = (2**63 - 1)
         else:
@@ -854,8 +866,12 @@ class DataProcessor:
     def registerScalaUDFs(self):
         driverClassPath = self.spark.sparkContext.getConf().get('spark.driver.extraClassPath')
         execClassPath = self.spark.sparkContext.getConf().get('spark.executor.extraClassPath')
-        if driverClassPath == None or execClassPath == None or 'recdp' not in driverClassPath or 'recdp' not in execClassPath:
-            return
+        if self.spark_mode == 'local':
+            if driverClassPath == None or 'recdp' not in driverClassPath:
+                return
+        else: 
+            if driverClassPath == None or execClassPath == None or 'recdp' not in driverClassPath or 'recdp' not in execClassPath:
+                return
         print("recdp-scala-extension is enabled")
         self.spark.udf.registerJavaFunction("sortStringArrayByFrequency","com.intel.recdp.SortStringArrayByFrequency")
         self.spark.udf.registerJavaFunction("sortIntArrayByFrequency","com.intel.recdp.SortIntArrayByFrequency")

@@ -1,4 +1,5 @@
 from .init_spark import *
+import os
 import re
 from pyspark import *
 from pyspark.sql import *
@@ -33,6 +34,14 @@ def parse_size(size):
     size = size.upper()
     number, unit = re.findall('(\d+)(\w*)', size)[0]
     return int(float(number)*units[unit])
+
+
+def parse_cores_num(local_str):
+    number = re.findall('local\[(\d+)\]', local_str)
+    if len(number) > 0:
+        return int(number[0])
+    else:
+        return os.cpu_count()
 
 
 def get_estimate_size_of_dtype(dtype_name):
