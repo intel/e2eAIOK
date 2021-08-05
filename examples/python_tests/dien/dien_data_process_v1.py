@@ -146,7 +146,7 @@ def save_to_local_train_splitByUser(df, proc):
 def main():
     path_prefix = "file://"
     current_path = "/home/vmagent/app/recdp/examples/python_tests/dien/output/"
-    original_folder = "/home/vmagent/app/recdp/examples/python_tests/dien/"
+    original_folder = "/home/vmagent/app/recdp/examples/python_tests/dien/j2c_test/"
 
     scala_udf_jars = "/home/vmagent/app/recdp/ScalaProcessUtils/target/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
 
