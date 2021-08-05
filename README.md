@@ -22,10 +22,25 @@
 * noted: support spark 3.1 by default, using -pspark3.0 for running with Spark3.0
 ```
 cd ScalaProcessUtils/
-mvn package [-Pspark-3.0]
+mvn package -Pspark-3.1
+or
+mvn package -Pspark-3.0
 ```
 
-#### test with provided example
+#### test with provided spark docker img
+
+##### modify run_docker script
+${your_local_codes_data_dir} is the path for current recdp folder
+```
+# docker run --network host -v ${your_local_codes_data_dir}:/home/vmagent/app/recdp -w /home/vmagent/app/ -it xuechendi/recdp_spark3.1 /bin/bash
+docker run --network host -v /mnt/nvme2/chendi/BlueWhale/recdp:/home/vmagent/app/recdp -w /home/vmagent/app/ -it xuechendi/recdp_spark3.1 /bin/bash
+
+# test with provided python script
+python test/test_spark_local.py
+
+```
+
+#### test with provided jupyter notebook example
 * Recsys2021 example [url](https://github.com/oap-project/recdp/blob/master/examples/notebooks/recsys2021/final_submission_feature_engineering.ipynb)
 * Recsys2020 example [url](https://github.com/oap-project/recdp/blob/master/examples/notebooks/recsys2020/recsys2020_feature_engineering.ipynb)
 * Recsys2020 multiitem-categorify example(support for Analytics Zoo Friesian) [url](https://github.com/oap-project/recdp/blob/master/examples/notebooks/recsys2020/recsys_for_friesian_integration.ipynb)
