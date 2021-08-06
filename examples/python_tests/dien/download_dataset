@@ -1,0 +1,8 @@
+#!/usr/bin/bash
+
+wget http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Books.json.gz
+wget http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/meta_Books.json.gz
+gunzip reviews_Books.json.gz
+gunzip meta_Books.json.gz
+mkdir raw_data
+mv *json raw_data
