@@ -15,6 +15,7 @@ import sys
 from timeit import default_timer as timer
 import logging
 import shutil
+import random
 
 
 class Operation:
@@ -759,6 +760,25 @@ class NegativeSample(Operation):
         if len(cols) != len(dicts):
             raise ValueError("NegativeSample expects input dicts has same size cols for mapping")
         self.num_cols = len(cols)
+
+    def get_negative_sample_udf(self, spark, broadcast_data):
+        broadcast_movie_id_list = spark.sparkContext.broadcast(
+            broadcast_data)
+
+        def get_random_id(asin):
+            item_list = broadcast_movie_id_list.value
+            asin_total_len = len(item_list)
+            asin_neg = asin
+            while True:
+                asin_neg_index = random.randint(0, asin_total_len - 1)
+                asin_neg = item_list[asin_neg_index]
+                if asin_neg == None or asin_neg == asin:
+                    continue
+                else:
+                    break
+            return [asin_neg, asin]
+
+        return spk_func.udf(get_random_id, spk_type.ArrayType(spk_type.StringType()))
 
 
     def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):

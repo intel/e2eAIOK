@@ -84,11 +84,11 @@ def main():
 
     ##### 1. Start spark and initialize data processor #####
     t0 = timer()
-    spark = SparkSession.builder.master('local[80]')\
+    spark = SparkSession.builder.master('local[104]')\
         .appName("dien_data_process")\
-        .config("spark.driver.memory", "400G")\
-        .config("spark.driver.memoryOverhead", "80G")\
-        .config("spark.executor.cores", "80")\
+        .config("spark.driver.memory", "480G")\
+        .config("spark.driver.memoryOverhead", "20G")\
+        .config("spark.executor.cores", "104")\
         .config("spark.driver.extraClassPath", f"{scala_udf_jars}")\
         .getOrCreate()
 

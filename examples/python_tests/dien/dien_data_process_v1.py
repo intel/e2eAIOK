@@ -39,22 +39,16 @@ def collapse_by_hist(df, item_info_df, proc, output_name, min_num_hist = 0):
     t2 = timer()
     print(f"Merge with category and collapse hist took {t2 - t1} secs")
     return df
-    
 
-def add_negative_sample(df, item_info_df, proc, output_name, gen_dict = True):
+
+def get_dict_for_asin(df, proc):
     dict_dfs = []
-    if gen_dict:
-        op_gen_dict = GenerateDictionary(['asin'])
-        proc.reset_ops([op_gen_dict])
-        t1 = timer()
-        dict_dfs = proc.generate_dicts(df)
-        t2 = timer()
-        print("Generate Dictionary took %.3f" % (t2 - t1))    
-    else:
-        dict_names = ['asin']
-        dict_dfs = [{'col_name': name, 'dict': proc.spark.read.parquet(
-            "%s/%s/%s/%s" % (proc.path_prefix, proc.current_path, proc.dicts_path, name))} for name in dict_names]
-    
+    dict_names = ['asin']
+    dict_dfs = [{'col_name': name, 'dict': df.select(spk_func.col(name).alias('dict_col'))} for name in dict_names]
+    return dict_dfs
+
+
+def add_negative_sample(df, item_info_df, dict_dfs, proc, output_name):
     # add negative_sample as new row
     op_negative_sample = NegativeSample(['asin'], dict_dfs)
     op_drop_category = DropFeature(['category'])
@@ -152,10 +146,11 @@ def main():
 
     ##### 1. Start spark and initialize data processor #####
     t0 = timer()
-    spark = SparkSession.builder.master('local[80]')\
+    spark = SparkSession.builder.master('local[104]')\
         .appName("dien_data_process")\
         .config("spark.driver.memory", "480G")\
-        .config("spark.executor.cores", "80")\
+        .config("spark.driver.memoryOverhead", "20G")\
+        .config("spark.executor.cores", "104")\
         .config("spark.driver.extraClassPath", f"{scala_udf_jars}")\
         .getOrCreate()
 
@@ -169,10 +164,11 @@ def main():
 
     # 1. join records with its category and then collapse history 
     df = reviews_info_df
+    dict_dfs = get_dict_for_asin(df, proc)
     df = collapse_by_hist(df, item_info_df, proc, "collapsed", min_num_hist = 2)
 
     # 2. add negative sample to records
-    df = add_negative_sample(df, item_info_df, proc, "records_with_negative_sample", gen_dict = True)
+    df = add_negative_sample(df, item_info_df, dict_dfs, proc, "records_with_negative_sample")
 
     # df = spark.read.parquet(path_prefix + current_path + "records_with_negative_sample")
     save_to_uid_voc(df, proc)
