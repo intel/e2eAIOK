@@ -57,8 +57,12 @@ spark = SparkSession.builder.master(...
 # call run
 ./download_dataset
 ./run
-
 ```
+
+### Expected output as below
+
+![dien_example](https://user-images.githubusercontent.com/4355494/128459861-ef2a1215-3db5-4acf-b7da-9c39a550517f.PNG)
+
 
 #### test with provided jupyter notebook example
 * Recsys2021 example [url](https://github.com/oap-project/recdp/blob/master/examples/notebooks/recsys2021/final_submission_feature_engineering.ipynb)
