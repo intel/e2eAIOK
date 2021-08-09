@@ -30,6 +30,19 @@ public class CosineDistanceKNN {
     String trainDataPath, String queryDataPath);
 
   /**
+   * benchmark test. train data and query data is generated randomly inside the
+   * c++ program.
+   *
+   * @param rows_train_count  row count for train data
+   * @param columns_count  columns count
+   * @param rows_query_count  row count for query data
+   * @param neighbors_count  neighbors count in KNN algorithm
+   * @return
+   */
+  public native static int benchmark(int rows_train_count, int columns_count,
+    int rows_query_count, int neighbors_count);
+
+  /**
    * Call by native code for init indicesTable.
    * Applicable for small amount of data.
    */

@@ -5,6 +5,8 @@
 #include "oneapi/dal/table/common.hpp"
 #include <jni.h>
 #include <string>
+#include <chrono>
+#include <random>
 // Just for cout table use. To find the header, need add the below option in compiling.
 // -I/${ONEDAL_HOME}/__release_lnx_gnu/daal/latest/examples/oneapi/cpp/source
 #include "example_util/utils.hpp"
@@ -13,6 +15,8 @@
 
 namespace dal = oneapi::dal;
 namespace knn = dal::knn;
+
+using Float = float;
 
 // TODO: free resources.
 static int createTableOnJVM(const oneapi::dal::table &table, const std::string& initTableMethod,
@@ -92,3 +96,55 @@ JNIEXPORT jint JNICALL Java_com_intel_algorithm_CosineDistanceKNN_search(JNIEnv 
     res = createTableOnJVM(distances_table, "initDistancesTable", "setDistances", env);
     return res;
 }
+
+/*
+ * Class:     com_intel_algorithm_CosineDistanceKNN
+ * Method:    benchmark
+ * Signature: (IIII)I
+ */
+JNIEXPORT jint JNICALL Java_com_intel_algorithm_CosineDistanceKNN_benchmark
+  (JNIEnv *env, jclass this_class, jint rows_train_count, jint columns_count,
+  jint rows_query_count, jint neighbors_count) {
+
+  std::default_random_engine state(777);
+  std::normal_distribution<Float> normal(-10.0, 10.0);
+  auto x_train_arr = dal::array<Float>::empty(rows_train_count * columns_count);
+  auto x_train_data = x_train_arr.get_mutable_data();
+  for (std::size_t i = 0; i < rows_train_count * columns_count; ++i) {
+      x_train_data[i] = normal(state);
+  }
+  auto x_train = dal::homogen_table::wrap(x_train_arr, rows_train_count, columns_count);
+
+  auto x_query_arr = dal::array<Float>::empty(rows_query_count * columns_count);
+  auto x_query_data = x_query_arr.get_mutable_data();
+  for (std::size_t i = 0; i < rows_query_count * columns_count; ++i) {
+      x_query_data[i] = normal(state);
+  }
+  auto x_query = dal::homogen_table::wrap(x_query_arr, rows_query_count, columns_count);
+
+  const auto cosine_desc = dal::cosine_distance::descriptor<Float>{};
+
+  const auto knn_desc =
+      dal::knn::descriptor<Float,
+                           dal::knn::method::brute_force,
+                           dal::knn::task::search,
+                           dal::cosine_distance::descriptor<Float>>(neighbors_count,
+                                                                      cosine_desc);
+
+  auto t11 = std::chrono::high_resolution_clock::now();
+  const auto train_result = dal::train(knn_desc, x_train);
+  auto t12 = std::chrono::high_resolution_clock::now();
+
+  std::cout << "Time train: "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(t12 - t11).count()
+            << " ms\n";
+
+  auto t21 = std::chrono::high_resolution_clock::now();
+  const auto test_result = dal::infer(knn_desc, x_query, train_result.get_model());
+  auto t22 = std::chrono::high_resolution_clock::now();
+
+  std::cout << "Time infer: "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(t22 - t21).count()
+            << " ms\n\n";
+  return 0;
+  }
