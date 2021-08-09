@@ -1,3 +1,6 @@
+from data.outbrain.pyrecdp.data_processor import *
+from data.outbrain.pyrecdp.utils import *
+
 from pyspark.context import SparkContext, SparkConf
 from pyspark.sql.functions import col, udf
 from pyspark.sql.session import SparkSession
@@ -25,7 +28,7 @@ import os
 
 os.environ["PYSPARK_PYTHON"] = "/root/sw/miniconda3/envs/spark/bin/python"
 
-OUTPUT_BUCKET_FOLDER = "/tmp/spark/preprocessed/rewrite/"
+OUTPUT_BUCKET_FOLDER = "/tmp/spark/preprocessed/recdp/"
 DATA_BUCKET_FOLDER = "/outbrain/orig/"
 SPARK_TEMP_FOLDER = "/tmp/spark/spark-temp/"
 TENSORFLOW_HADOOP = "data/outbrain/spark/data/tensorflow-hadoop-1.5.0.jar"
@@ -46,12 +49,6 @@ LESS_SPECIAL_CAT_VALUE = 'less'
 def convert_odd_timestamp(timestamp_ms_relative):
     TIMESTAMP_DELTA = 1465876799998
     return datetime.datetime.fromtimestamp((int(timestamp_ms_relative) + TIMESTAMP_DELTA) // 1000)
-
-INT_DEFAULT_NULL_VALUE = -1
-int_null_to_minus_one_udf = F.udf(lambda x: x if x is not None else INT_DEFAULT_NULL_VALUE, IntegerType())
-int_list_null_to_empty_list_udf = F.udf(lambda x: x if x is not None else [], ArrayType(IntegerType()))
-float_list_null_to_empty_list_udf = F.udf(lambda x: x if x is not None else [], ArrayType(FloatType()))
-str_list_null_to_empty_list_udf = F.udf(lambda x: x if x is not None else [], ArrayType(StringType()))
 
 events_schema = StructType(
     [StructField("display_id", IntegerType(), True),
@@ -142,11 +139,6 @@ events_joined_df = events_df.join(documents_meta_df
                                   .withColumnRenamed('publish_time', 'publish_time_doc_event')
                                   .withColumnRenamed('document_id_doc', 'document_id_doc_event'),
                                   on=F.col("document_id_event") == F.col("document_id_doc_event"), how='left').alias('events')
-# events_joined_df = events_df.join(documents_meta_df
-#                                   .withColumnRenamed('source_id', 'source_id_doc_event')
-#                                   .withColumnRenamed('publisher_id', 'publisher_doc_event')
-#                                   .withColumnRenamed('publish_time', 'publish_time_doc_event'),
-#                                   on=F.col("document_id_event") == F.col("document_id_doc"), how='left').alias('events').cache()
 
 clicks_train_joined_df = clicks_train_df \
     .join(promoted_content_df, on='ad_id', how='left') \
@@ -196,8 +188,6 @@ state_value_cal = events_df.select('event_country_state').groupBy('event_country
 # event_geo_location_values_counts = get_category_field_values_counts('geo_location_event', events_df, min_threshold=10)
 geo_location_value_cat = events_df.select('geo_location_event').groupBy('geo_location_event').count().filter('geo_location_event is not null and count >= 10')
 
-REG = 0
-ctr_udf = F.udf(lambda clicks, views: clicks / float(views + REG), FloatType())
 
 # ### Average CTR by ad_id
 ad_id_popularity_df = train_set_df \
@@ -352,11 +342,6 @@ def cosine_similarity_doc_event_doc_ad_aspects(doc_event_aspect_ids, doc_event_a
 ####################################################################################
 ########################### split UDF #############################################
 ##################################################################################
-def category(df, col, dict_data):
-    udf_inter = F.udf(lambda x: float(dict_data.value[x][1]) if x in dict_data.value else None, DoubleType())
-    df = df.withColumn(col + '_cat', udf_inter(col))
-    return df
-
 def timestamp_delta(df, publish_time, timestamp):
     def timestamp_delta_udf(publish_time, timestamp):
         if timestamp > -1:
@@ -369,12 +354,6 @@ def timestamp_delta(df, publish_time, timestamp):
     df = df.withColumn(publish_time + '_delta', udf_inter(publish_time, timestamp))
     return df
 
-# Setting Popularity fields
-def get_popularity_score_fn(df, col, dic):
-    udf_inter = F.udf(lambda x: float(dic.value[x][0]) if x in dic.value else None, DoubleType())
-    df = df.withColumn(col + '_score', udf_inter(col))
-    return df
-
 # Setting Doc_event-doc_ad CB Similarity fields
 def get_doc_event_doc_ad_cb_similarity_score_fn(df, doc_event_ids, doc_event_levels, doc_ad_ids, doc_ad_levels, cnt):
     udf_inter = F.udf(
@@ -382,12 +361,6 @@ def get_doc_event_doc_ad_cb_similarity_score_fn(df, doc_event_ids, doc_event_lev
         cosine_similarity_doc_event_doc_ad_aspects(doc_event_ids, doc_event_levels, doc_ad_ids, doc_ad_levels, cnt)[0], DoubleType())
     df = df.withColumn(doc_event_ids + '_sim', udf_inter(doc_event_ids, doc_event_levels, doc_ad_ids, doc_ad_levels))
     return df
-
-def location_codec(df, col, dic):
-    udf_inter = F.udf(lambda x: float(dic[x]) if x in dic else dic[LESS_SPECIAL_CAT_VALUE], DoubleType())
-    df = df.withColumn(col, udf_inter(col))
-    return df
-
 
 def categorify_join(df, dict_df, column, dict_col):
     dict_df = dict_df.select(column, dict_col)
@@ -481,35 +454,70 @@ documents_categories_grouped_df.unpersist()
 documents_topics_grouped_df.unpersist()
 documents_entities_grouped_df.unpersist()
 
+################# recdp ######################
+def categorifyAllFeatures(df, proc, output_name="categorified", gen_dict=False):
+    categorify_cols = ['ad_id_views', 'document_id_promo_views',
+                            'ad_id_ctr', 'document_id_promo_ctr', 'publisher_id_ctr', 
+                            'advertiser_id_ctr', 'campaign_id_ctr', 'source_id_ctr',
+                            'event_country_count', 'event_country_state_count', 'geo_location_event_count']
+    to_categorify_cols = ['ad_id', 'document_id_promo',
+                            'ad_id', 'document_id_promo', 'publisher_id', 
+                            'advertiser_id', 'campaign_id', 'source_id',
+                            'event_country', 'event_country_state', 'geo_location_event']
+    
+    # transform dict column name to match recdp
+    dfs = [ad_id_popularity_df.select(F.col('ad_id').alias('dict_col'), F.col('views').alias('dict_col_id')), 
+            document_id_popularity_df.select(F.col('document_id_promo').alias('dict_col'), F.col('views').alias('dict_col_id')), 
+            ad_id_popularity_df.select(F.col('ad_id').alias('dict_col'), F.col('ctr').alias('dict_col_id')), 
+            document_id_popularity_df.select(F.col('document_id_promo').alias('dict_col'), F.col('ctr').alias('dict_col_id')), 
+            publisher_popularity_df.select(F.col('publisher_id').alias('dict_col'), F.col('ctr').alias('dict_col_id')), 
+            advertiser_id_popularity_df.select(F.col('advertiser_id').alias('dict_col'), F.col('ctr').alias('dict_col_id')), 
+            campaign_id_popularity_df.select(F.col('campaign_id').alias('dict_col'), F.col('ctr').alias('dict_col_id')), 
+            source_id_popularity_df.select(F.col('source_id').alias('dict_col'), F.col('ctr').alias('dict_col_id')), 
+            country_value_cat.select(F.col('event_country').alias('dict_col'), F.col('count').alias('dict_col_id')), 
+            state_value_cal.select(F.col('event_country_state').alias('dict_col'), F.col('count').alias('dict_col_id')), 
+            geo_location_value_cat.select(F.col('geo_location_event').alias('dict_col'), F.col('count').alias('dict_col_id'))]
+
+    dict_dfs = [{'col_name': name, 'dict': dfs[index]} for index, name in enumerate(categorify_cols)]
+    # add new columns since recdp will overwrite cat columns
+    for index, column in enumerate(categorify_cols):
+        df = df.withColumn(column, F.col(to_categorify_cols[index]))
+
+    op_categorify = Categorify(categorify_cols, dict_dfs=dict_dfs)
+    op_fillna = FillNA(['event_country_count', 'event_country_state_count', 'geo_location_event_count'], 0)
+    proc.reset_ops([op_categorify, op_fillna])
+    t1 = timer()
+    df = proc.transform(df, name=output_name)
+    t2 = timer()
+    print("Categorify took %.3f" % (t2 - t1))
+
+    return df
+
+path_prefix = "hdfs://"
+current_path = "/wnd/"
+proc = DataProcessor(spark, path_prefix, current_path=current_path, shuffle_disk_capacity="1200GB")
+
 
 train_set_features_df = train_set_enriched_df
-train_set_features_df = categorify_join(train_set_features_df, ad_id_popularity_df, 'ad_id', 'views')
-train_set_features_df = categorify_join(train_set_features_df, document_id_popularity_df, 'document_id_promo', 'views')
+train_set_features_df = categorifyAllFeatures(train_set_features_df, proc, output_name="train_categorified", gen_dict=False)
+# train_set_features_df = categorify_join(train_set_features_df, ad_id_popularity_df, 'ad_id', 'views')
+# train_set_features_df = categorify_join(train_set_features_df, document_id_popularity_df, 'document_id_promo', 'views')
 
-# train_set_features_df = days_delta(train_set_features_df, 'publish_time', 'timestamp_event')
-# train_set_features_df = days_delta(train_set_features_df, 'publish_time_doc_event', 'timestamp_event')
+# train_set_features_df = categorify_join(train_set_features_df, ad_id_popularity_df, 'ad_id', 'ctr')
+# train_set_features_df = categorify_join(train_set_features_df, document_id_popularity_df, 'document_id_promo', 'ctr')
+# train_set_features_df = categorify_join(train_set_features_df, source_id_popularity_df, 'source_id', 'ctr')
+# train_set_features_df = categorify_join(train_set_features_df, publisher_popularity_df, 'publisher_id', 'ctr')
+# train_set_features_df = categorify_join(train_set_features_df, advertiser_id_popularity_df, 'advertiser_id', 'ctr')
+# train_set_features_df = categorify_join(train_set_features_df, campaign_id_popularity_df, 'campaign_id', 'ctr')
 
-train_set_features_df = categorify_join(train_set_features_df, ad_id_popularity_df, 'ad_id', 'ctr')
-train_set_features_df = categorify_join(train_set_features_df, document_id_popularity_df, 'document_id_promo', 'ctr')
-train_set_features_df = categorify_join(train_set_features_df, source_id_popularity_df, 'source_id', 'ctr')
-train_set_features_df = categorify_join(train_set_features_df, publisher_popularity_df, 'publisher_id', 'ctr')
-train_set_features_df = categorify_join(train_set_features_df, advertiser_id_popularity_df, 'advertiser_id', 'ctr')
-train_set_features_df = categorify_join(train_set_features_df, campaign_id_popularity_df, 'campaign_id', 'ctr')
+# train_set_features_df = categorify_join(train_set_features_df, country_value_cat, 'event_country', 'count')
+# train_set_features_df = categorify_join(train_set_features_df, state_value_cal, 'event_country_state', 'count')
+# train_set_features_df = categorify_join(train_set_features_df, geo_location_value_cat, 'geo_location_event', 'count')
+# train_set_features_df = train_set_features_df.fillna(0, subset=['event_country_count', 'event_country_state_count', 'geo_location_event_count'])
 
-train_set_features_df = categorify_join(train_set_features_df, country_value_cat, 'event_country', 'count')
-train_set_features_df = categorify_join(train_set_features_df, state_value_cal, 'event_country_state', 'count')
-train_set_features_df = categorify_join(train_set_features_df, geo_location_value_cat, 'geo_location_event', 'count')
-train_set_features_df = train_set_features_df.fillna(0, subset=['event_country_count', 'event_country_state_count', 'geo_location_event_count'])
-# train_set_features_df = category(train_set_features_df, 'ad_id', ad_id_popularity_broad)
-# train_set_features_df = category(train_set_features_df, 'document_id_promo', document_id_popularity_broad)
 train_set_features_df = timestamp_delta(train_set_features_df, 'publish_time', 'timestamp_event')
 train_set_features_df = timestamp_delta(train_set_features_df, 'publish_time_doc_event', 'timestamp_event')
-# train_set_features_df = get_popularity_score_fn(train_set_features_df, 'ad_id', ad_id_popularity_broad)
-# train_set_features_df = get_popularity_score_fn(train_set_features_df, 'document_id_promo', document_id_popularity_broad)
-# train_set_features_df = get_popularity_score_fn(train_set_features_df, 'source_id', source_id_popularity_broad)
-# train_set_features_df = get_popularity_score_fn(train_set_features_df, 'publisher_id', publisher_popularity_broad)
-# train_set_features_df = get_popularity_score_fn(train_set_features_df, 'advertiser_id', advertiser_id_popularity_broad)
-# train_set_features_df = get_popularity_score_fn(train_set_features_df, 'campaign_id', campaign_id_popularity_broad)
+
 train_set_features_df = get_doc_event_doc_ad_cb_similarity_score_fn(
     train_set_features_df, 'doc_event_category_id_list', 'doc_event_confidence_level_cat_list', 
     'category_id_list', 'confidence_level_cat_list', categories_docs_counts)
@@ -520,9 +528,6 @@ train_set_features_df = get_doc_event_doc_ad_cb_similarity_score_fn(
     train_set_features_df, 'doc_event_entity_id_list', 'doc_event_confidence_level_ent_list', 
     'entity_id_list', 'confidence_level_ent_list', entities_docs_counts)
 
-# train_set_features_df = location_codec(train_set_features_df, 'event_country', event_country_values_counts)
-# train_set_features_df = location_codec(train_set_features_df, 'event_country_state', event_country_state_values_counts)
-# train_set_features_df = location_codec(train_set_features_df, 'geo_location_event', event_geo_location_values_counts)
 #############################################################################
 train_set_features_df = train_set_features_df.withColumn('platform_event', F.col('platform_event') - 1) \
     .withColumn('traffic_source', F.lit(0).cast(DoubleType())) \
@@ -574,25 +579,26 @@ train_feature_vectors_integral_csv_rdd_df = train_set_features_df.select(
 #####################################################################
 
 test_set_features_df = test_set_enriched_df
-test_set_features_df = categorify_join(test_set_features_df, ad_id_popularity_df, 'ad_id', 'views')
-test_set_features_df = categorify_join(test_set_features_df, document_id_popularity_df, 'document_id_promo', 'views')
 
-# test_set_features_df = days_delta(test_set_features_df, 'publish_time', 'timestamp_event')
-# test_set_features_df = days_delta(test_set_features_df, 'publish_time_doc_event', 'timestamp_event')
+test_set_features_df = categorifyAllFeatures(test_set_features_df, proc, output_name="test_categorified", gen_dict=False)
+
+# test_set_features_df = categorify_join(test_set_features_df, ad_id_popularity_df, 'ad_id', 'views')
+# test_set_features_df = categorify_join(test_set_features_df, document_id_popularity_df, 'document_id_promo', 'views')
+
 test_set_features_df = timestamp_delta(test_set_features_df, 'publish_time', 'timestamp_event')
 test_set_features_df = timestamp_delta(test_set_features_df, 'publish_time_doc_event', 'timestamp_event')
 
-test_set_features_df = categorify_join(test_set_features_df, ad_id_popularity_df, 'ad_id', 'ctr')
-test_set_features_df = categorify_join(test_set_features_df, document_id_popularity_df, 'document_id_promo', 'ctr')
-test_set_features_df = categorify_join(test_set_features_df, source_id_popularity_df, 'source_id', 'ctr')
-test_set_features_df = categorify_join(test_set_features_df, publisher_popularity_df, 'publisher_id', 'ctr')
-test_set_features_df = categorify_join(test_set_features_df, advertiser_id_popularity_df, 'advertiser_id', 'ctr')
-test_set_features_df = categorify_join(test_set_features_df, campaign_id_popularity_df, 'campaign_id', 'ctr')
+# test_set_features_df = categorify_join(test_set_features_df, ad_id_popularity_df, 'ad_id', 'ctr')
+# test_set_features_df = categorify_join(test_set_features_df, document_id_popularity_df, 'document_id_promo', 'ctr')
+# test_set_features_df = categorify_join(test_set_features_df, source_id_popularity_df, 'source_id', 'ctr')
+# test_set_features_df = categorify_join(test_set_features_df, publisher_popularity_df, 'publisher_id', 'ctr')
+# test_set_features_df = categorify_join(test_set_features_df, advertiser_id_popularity_df, 'advertiser_id', 'ctr')
+# test_set_features_df = categorify_join(test_set_features_df, campaign_id_popularity_df, 'campaign_id', 'ctr')
 
-test_set_features_df = categorify_join(test_set_features_df, country_value_cat, 'event_country', 'count')
-test_set_features_df = categorify_join(test_set_features_df, state_value_cal, 'event_country_state', 'count')
-test_set_features_df = categorify_join(test_set_features_df, geo_location_value_cat, 'geo_location_event', 'count')
-test_set_features_df = test_set_features_df.fillna(0, subset=['event_country_count', 'event_country_state_count', 'geo_location_event_count'])
+# test_set_features_df = categorify_join(test_set_features_df, country_value_cat, 'event_country', 'count')
+# test_set_features_df = categorify_join(test_set_features_df, state_value_cal, 'event_country_state', 'count')
+# test_set_features_df = categorify_join(test_set_features_df, geo_location_value_cat, 'geo_location_event', 'count')
+# test_set_features_df = test_set_features_df.fillna(0, subset=['event_country_count', 'event_country_state_count', 'geo_location_event_count'])
 
 test_set_features_df = get_doc_event_doc_ad_cb_similarity_score_fn(
     test_set_features_df, 'doc_event_category_id_list', 'doc_event_confidence_level_cat_list', 
@@ -629,7 +635,7 @@ test_validation_feature_vectors_integral_csv_rdd_df = test_set_features_df.repar
 pd.set_option('display.max_columns', 1000)
 evaluation = True
 evaluation_verbose = False
-LOCAL_DATA_TFRECORDS_DIR = "/outbrain/tfrecords-test/rewrite"
+LOCAL_DATA_TFRECORDS_DIR = "/outbrain/tfrecords-test/recdp"
 
 TEST_SET_MODE = False
 
@@ -711,22 +717,35 @@ all_df = test_validation_feature_vectors_integral_csv_rdd_df.union(train_feature
 min_logs, max_logs = compute_min_max_logs(all_df) # 1s
 
 
-def log_and_norm(df):
-    for col in INT_COLUMNS:
-        col_name_log = col + '_log_01'
-        col_name_norm = col + '_log_01scaled'
-        df = df.withColumn(col_name_log, F.log1p(col))
-        df = df.withColumn(col_name_norm, (F.col(col_name_log)-min_logs[col_name_norm]) / (max_logs[col_name_norm]-min_logs[col_name_norm]))
-        df = df.drop(col_name_log)
+def log_and_norm(df, proc, output_name="log_norm", gen_dict=False):
+    log_cols = {col + '_log_01': f'f.log1p("{col}")' for col in INT_COLUMNS}
+    norm_cols = {col + 'scaled': f'(f.col("{col}")-{min_logs[col+"scaled"]}) / ({max_logs[col+"scaled"]-min_logs[col+"scaled"]})' for col in log_cols.keys()}
+    op_log = FeatureAdd(cols=log_cols, op='inline')
+    op_norm = FeatureAdd(cols=norm_cols, op='inline')
+    proc.reset_ops([op_log, op_norm])
 
-    df = df.fillna(0, subset=CATEGORICAL_COLUMNS)
+    op_fillna = FillNA(CATEGORICAL_COLUMNS, 0)
+    proc.append_ops([op_fillna])
+
+    hash_bucket_cols = {col: f'f.col("{col}") % {size}' for col, size in HASH_BUCKET_SIZES.items()}
+    op_hash_bucket = FeatureModification(cols=hash_bucket_cols, op='inline')
+    proc.append_ops([op_hash_bucket])
+    
+    # for name, size in HASH_BUCKET_SIZES.items():
+    #     hash_bucket_udf = F.udf(lambda x: x % size, IntegerType())
+    #     op_hash_bucket = FeatureModification(cols=[name], udfImpl=hash_bucket_udf)
+    #     proc.append_ops([op_hash_bucket])
+    t1 = timer()
+    df = proc.transform(df, name=output_name)
+    t2 = timer()
+    print("Log and norm took %.3f" % (t2 - t1))
+
     for name, size in HASH_BUCKET_SIZES.items():
-        # df = df.withColumn(name, F.udf(lambda x: x % size, IntegerType())(name))
-        df = df.withColumn(name, F.col(name) % size).withColumn(name, F.when(F.col(name)<0, F.col(name)+size).otherwise(F.col(name)))
+        df = df.withColumn(name, F.when(F.col(name)<0, F.col(name)+size).otherwise(F.col(name)))
     return df
 
-train_feature_norm = log_and_norm(train_feature_vectors_integral_csv_rdd_df)
-test_feature_norm = log_and_norm(test_validation_feature_vectors_integral_csv_rdd_df)
+train_feature_norm = log_and_norm(train_feature_vectors_integral_csv_rdd_df, proc, output_name="log_norm_train")
+test_feature_norm = log_and_norm(test_validation_feature_vectors_integral_csv_rdd_df, proc, output_name="log_norm_test")
 
 train_feature_norm.write.format('parquet').mode('overwrite').save(OUTPUT_BUCKET_FOLDER + 'train_feature_norm')
 train_feature_norm = spark.read.parquet(OUTPUT_BUCKET_FOLDER + 'train_feature_norm')
