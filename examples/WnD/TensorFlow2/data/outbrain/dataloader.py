@@ -1,5 +1,5 @@
 # Copyright (c) 2021, NVIDIA CORPORATION. All rights reserved.
-#
+# Modifications copyright Intel
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -50,23 +50,23 @@ def train_input_fn(
     _parse_function = get_parse_function(feature_spec)
 
     dataset = tf.data.Dataset.list_files(
-        file_pattern=filepath_pattern
+        file_pattern=filepath_pattern,
+        shuffle=False
     )
 
-    dataset = dataset.interleave(
-        lambda x: tf.data.TFRecordDataset(x),
-        cycle_length=cpu_count() // num_gpus,
-        block_length=1
+    dataset = tf.data.TFRecordDataset(
+        filenames=dataset,
+        num_parallel_reads=1
     )
 
-    dataset = dataset.map(
-        map_func=_parse_function,
-        num_parallel_calls=tf.data.experimental.AUTOTUNE
-    )
+    # dataset = dataset.map(
+    #     map_func=_parse_function,
+    #     num_parallel_calls=tf.data.experimental.AUTOTUNE
+    # )
 
     dataset = dataset.shard(num_gpus, id)
 
-    dataset = dataset.shuffle(records_batch_size * 8)
+    dataset = dataset.shuffle(records_batch_size)
 
     dataset = dataset.repeat(
         count=None
@@ -77,15 +77,22 @@ def train_input_fn(
         drop_remainder=False
     )
 
+    dataset = dataset.apply(
+        transformation_func=tf.data.experimental.parse_example_dataset(
+            features=feature_spec,
+            num_parallel_calls=1
+        )
+    )
+
     dataset = dataset.map(
         map_func=partial(
             _consolidate_batch
         ),
-        num_parallel_calls=tf.data.experimental.AUTOTUNE
+        num_parallel_calls=None
     )
 
     dataset = dataset.prefetch(
-        buffer_size=tf.data.experimental.AUTOTUNE
+        buffer_size=1
     )
 
     return dataset

@@ -368,7 +368,7 @@ def evaluate(args, model, config):
 
     t0 = None
     t_batch = None
-
+    s_time = time.time()
     for step, (x, y) in enumerate(eval_dataset):
         loss = evaluation_step(x, y)
         eval_loss.update_state(loss)
@@ -403,7 +403,7 @@ def evaluate(args, model, config):
                     dllogger.log(data=valid_data, step=(step,))
         current_step += 1
         t_batch = time.time()
-
+    logger.info(f'inference time: {time.time() - s_time}')
     map_metric = hvd.allreduce(tf.divide(streaming_map, display_id_counter))
     eval_loss_reduced = hvd.allreduce(eval_loss.result())
 
