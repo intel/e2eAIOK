@@ -29,6 +29,7 @@ spark = SparkSession.builder.master(...
 # copy processed data from output to current folder
 ```
 cp ${recdp_project_path}/examples/python_tests/dien/output/ ./
+cp ${recdp_project_path}/examples/python_tests/dien/j2c_test/*info ./
 ```
 
 When you see the files below in output folder.
