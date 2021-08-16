@@ -61,7 +61,46 @@ def add_negative_sample(df, item_info_df, dict_dfs, proc, output_name):
     print(f"add_negative_sample took {t2 - t1} secs")
     return df
 
-def save_to_voc(df, proc, cols, default_name, default_v, output_name):
+
+def load_processed_csv(spark, data_dir):
+    label_field = StructField('pos', IntegerType())
+    review_id_field = StructField('reviewer_id', StringType())
+    asin_field = StructField('asin', StringType())
+    category_field = StructField('category', StringType())
+    hist_asin_field = StructField('hist_asin', StringType())
+    hist_category_field = StructField('hist_category', StringType())
+    csv_schema = StructType(
+        [label_field, review_id_field, asin_field, category_field, hist_asin_field, hist_category_field])
+
+    return spark.read.schema(csv_schema).option('sep', '\t').csv(data_dir)
+
+
+def categorify_dien_data(df, user_df, asin_df, cat_df, proc, output_name):
+    df = df.select('pos', 'reviewer_id', 'asin', 'category',
+                        f.expr("concat_ws('\x02', hist_asin) as hist_asin"),
+                        f.expr("concat_ws('\x02', hist_category) as hist_category"))
+
+    dict_dfs = []
+    dict_dfs.append({'col_name': 'reviewer_id', 'dict': user_df})
+    dict_dfs.append({'col_name': 'asin', 'dict': asin_df})
+    dict_dfs.append({'col_name': 'category', 'dict': cat_df})
+    dict_dfs.append({'col_name': 'hist_asin', 'dict': asin_df})
+    dict_dfs.append({'col_name': 'hist_category', 'dict': cat_df})
+
+    for dict_df in dict_dfs:
+        print(dict_df['dict'])
+    op_categorify = Categorify(['reviewer_id', 'asin', 'category'], dict_dfs=dict_dfs)
+    op_categorify_2 = Categorify(['hist_asin', 'hist_category'], dict_dfs=dict_dfs, doSplit=True, sep='\x02')
+    proc.reset_ops([op_categorify, op_categorify_2])
+
+    t1 = timer()
+    df = proc.transform(df, output_name)
+    t2 = timer()    
+    print(f"categorify took {t2 - t1} secs")
+    return df
+
+
+def save_to_voc(df, proc, fmt, cols, default_name, default_v, output_name):
     import pickle
     col_name = ''
     dtypes_list = []
@@ -87,35 +126,50 @@ def save_to_voc(df, proc, cols, default_name, default_v, output_name):
 
         dict_df = df.withColumn(col_name, f.array_union(*to_select))
         dict_df = dict_df.select(f.explode(f.col(col_name)).alias(col_name))
-    dict_df = dict_df.filter(f"{col_name} is not null").groupBy(col_name).count().orderBy(f.desc('count')).select(col_name)
-    collected = [row[col_name] for row in dict_df.collect()]
+    if fmt == 'pkl':
+        dict_df = dict_df.filter(f"{col_name} is not null").groupBy(col_name).count().orderBy(f.desc('count')).select(col_name)
+        collected = [row[col_name] for row in dict_df.collect()]
 
-    voc = {}
-    voc[default_name] = default_v
-    voc.update(dict((col_id, col_idx) for (col_id, col_idx) in zip(collected, range(1, len(collected) + 1))))
-    pickle.dump(voc, open(proc.current_path + f'/{output_name}', "wb"), protocol=0)
+        voc = {}
+        voc[default_name] = default_v
+        voc.update(dict((col_id, col_idx) for (col_id, col_idx) in zip(collected, range(1, len(collected) + 1))))
+        pickle.dump(voc, open(proc.current_path + f'/{output_name}.pkl', "wb"), protocol=0)
+    elif fmt == 'parquet':
+        dict_df = dict_df.filter(f"{col_name} is not null").groupBy(col_name).count()
+        dict_df = dict_df.withColumnRenamed(col_name, 'dict_col')
+        w = Window.orderBy(spk_func.desc('count'))
+        dict_df = dict_df.withColumn('dict_col_id', f.row_number().over(w))
+        dict_df.write.format('parquet').mode('overwrite').save(proc.path_prefix + proc.current_path + f'/{output_name}.parquet')
+        dict_df = proc.spark.read.parquet(proc.path_prefix + proc.current_path + f'/{output_name}.parquet')
+    else:
+        raise NotImplementedError(f"Unsupported output format {fmt}")
+    return dict_df
 
 
-def save_to_uid_voc(df, proc):
+def save_to_uid_voc(df, proc, fmt = 'pkl'):
     # saving (using python)
     # build uid_dict, mid_dict and cat_dict
     t1 = timer()
-    save_to_voc(df, proc, ['reviewer_id'], 'A1Y6U82N6TYZPI', 0, 'uid_voc.pkl')
+    dict_df = save_to_voc(df, proc, fmt, ['reviewer_id'], 'A1Y6U82N6TYZPI', 0, 'uid_voc')
     t2 = timer()
     print(f"save_to_uid_voc took {t2 - t1} secs")
+    return dict_df
     
-def save_to_mid_voc(df, proc):
+
+def save_to_mid_voc(df, proc, fmt = 'pkl'):
     t1 = timer()
-    save_to_voc(df, proc, ['hist_asin', 'asin'], 'default_mid', 0, 'mid_voc.pkl')
+    dict_df = save_to_voc(df, proc, fmt, ['hist_asin', 'asin'], 'default_mid', 0, 'mid_voc')
     t2 = timer()
     print(f"save_to_mid_voc took {t2 - t1} secs")
+    return dict_df
     
     
-def save_to_cat_voc(df, proc):
+def save_to_cat_voc(df, proc, fmt = 'pkl'):
     t1 = timer()
-    save_to_voc(df, proc, ['hist_category', 'category'], 'default_cat', 0, 'cat_voc.pkl')
+    dict_df = save_to_voc(df, proc, fmt, ['hist_category', 'category'], 'default_cat', 0, 'cat_voc')
     t2 = timer()
     print(f"save_to_cat_voc took {t2 - t1} secs")
+    return dict_df
     
     
 def save_to_local_train_splitByUser(df, proc):
@@ -134,8 +188,11 @@ def save_to_local_train_splitByUser(df, proc):
             positive_sorted = sorted(r, key=lambda x: x[0])
             for items in positive_sorted:
                 print('\t'.join([str(x) for x in items]), file=fp)
+
     t2 = timer()
     print(f"save_to_local_train_splitByUser took {t2 - t1} secs")
+    return dict_df
+
 
 def main():
     path_prefix = "file://"
@@ -171,10 +228,16 @@ def main():
     df = add_negative_sample(df, item_info_df, dict_dfs, proc, "records_with_negative_sample")
 
     # df = spark.read.parquet(path_prefix + current_path + "records_with_negative_sample")
-    save_to_uid_voc(df, proc)
-    save_to_mid_voc(df, proc)
-    save_to_cat_voc(df, proc)
-    save_to_local_train_splitByUser(df, proc)
+    fmt = 'pkl'
+    uid_dict_df = save_to_uid_voc(df, proc, fmt = fmt)
+    mid_dict_df = save_to_mid_voc(df, proc, fmt = fmt)
+    cat_dict_df = save_to_cat_voc(df, proc, fmt = fmt)
+    if fmt == 'parquet':
+        categorify_dien_data(df, uid_dict_df, mid_dict_df, cat_dict_df, proc, "local_train_splitByUser.parquet")
+        test_df = load_processed_csv(spark, path_prefix + current_path + "/local_test_splitByUser")
+        categorify_dien_data(test_df, uid_dict_df, mid_dict_df, cat_dict_df, proc, "local_test_splitByUser.parquet")
+    else:
+        train_df = save_to_local_train_splitByUser(df, proc)
     t1 = timer()
 
     print(f"Total process time is {(t1 - t0)} secs")

@@ -1,12 +1,14 @@
 #!/usr/bin/bash
 
-mkdir raw_data
+mkdir -p raw_data
+mkdir -p output
 
 if [ ! -f "data.tar.gz" ]; then
         wget https://zenodo.org/record/3463683/files/data.tar.gz
 fi
 
 tar -jxvf data.tar.gz
+yes | cp data/local_test_splitByUser output/
 mv data/local_test_splitByUser raw_data/
 rm -r data
 

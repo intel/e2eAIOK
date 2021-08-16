@@ -6,6 +6,8 @@ from pyspark.sql import *
 from py4j.protocol import Py4JJavaError
 from py4j.java_gateway import JavaObject
 from py4j.java_collections import ListConverter, JavaArray, JavaList, JavaMap
+import pyspark.sql.types as spk_type
+import pyspark.sql.functions as spk_func
 
 def convert_to_spark_dict(orig_dict, schema=['dict_col', 'dict_col_id']):
     ret = []
@@ -13,6 +15,11 @@ def convert_to_spark_dict(orig_dict, schema=['dict_col', 'dict_col_id']):
         ret.append({schema[0]: row_k, schema[1]: row_v})
     return ret
 
+
+def convert_to_spark_df(orig_dict, spark):
+    df = spark.createDataFrame(convert_to_spark_dict(orig_dict))
+    df = df.withColumn('dict_col_id', spk_func.col('dict_col_id').cast(spk_type.IntegerType()))
+    return df
 
 def list_dir(path):
     source_path_dict = {}

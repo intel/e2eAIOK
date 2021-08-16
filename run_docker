@@ -1,2 +1,2 @@
 #docker run --network host -v ${your_local_codes_data_dir}:/home/vmagent/app/recdp -w /home/vmagent/app/ -it xuechendi/recdp_spark3.1 /bin/bash
-docker run --network host -v /mnt/nvme2/chendi/BlueWhale/recdp:/home/vmagent/app/recdp -w /home/vmagent/app/ -it xuechendi/recdp_spark3.1 /bin/bash
+docker run --network host -v /mnt/nvme2/chendi/BlueWhale/recdp:/home/vmagent/app/recdp -v /mnt/nvme2/chendi/BlueWhale/frameworks.bigdata.bluewhale:/home/vmagent/app/frameworks.bigdata.bluewhale -w /home/vmagent/app/ -it xuechendi/recdp_spark3.1 /bin/bash

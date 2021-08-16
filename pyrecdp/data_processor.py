@@ -45,7 +45,7 @@ class Operation:
     def to_dict_dfs(self, df, spark = None, enable_gazelle=False):
         raise NotImplementedError(self.op_name + "doesn't support to_dict_dfs")
 
-    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
+    def process(self, df, spark, df_cnt, enable_scala=True, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
         return df
 
     # some common method
@@ -171,10 +171,10 @@ class Operation:
         total_estimated_shuffled_size = 0
         df_estimzate_size_per_row = sum([get_estimate_size_of_dtype(dtype) for _, dtype in df.dtypes])
         df_estimated_size = df_estimzate_size_per_row * df_cnt
-        # Below threshold is maximum BHJ numRows, 4 means maximum 50% memory to cache Broadcast data, and 20 means we estimate each row has 20 bytes.
+        # Below threshold is maximum BHJ numRows, 4 means maximum 25% memory to cache Broadcast data, and 20 means we estimate each row has 20 bytes.
         if enable_gazelle:
             threshold = per_core_memory_size / 20
-            threshold_per_bhj = threshold if threshold <= 400000000 else 400000000
+            threshold_per_bhj = threshold if threshold <= 100000000 else 100000000
         else:
             threshold = per_core_memory_size / 4 / 20
             threshold_per_bhj = threshold if threshold <= 30000000 else 30000000
@@ -266,7 +266,7 @@ class FeatureModification(Operation):
             f_cols = ["%s(%s)" % (self.op, x) for x in self.cols]
             return "%s(%s)" % (self.op_name, ','.join(f_cols))
 
-    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
+    def process(self, df, spark, df_cnt, enable_scala=True, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
         if self.op == 'udf':
             for i in self.cols:
                 df = df.withColumn(i, self.udf_impl(spk_func.col(i)))
@@ -311,7 +311,7 @@ class FeatureAdd(Operation):
                       for (x, y) in self.cols.items()]
             return "%s(%s)" % (self.op_name, ','.join(f_cols))
 
-    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
+    def process(self, df, spark, df_cnt, enable_scala=True, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
         if self.op == 'udf':
             for after, before in self.cols.items():
                 df = df.withColumn(after, self.udf_impl(spk_func.col(before)))
@@ -344,7 +344,7 @@ class FillNA(Operation):
         self.cols = cols
         self.default = default
 
-    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
+    def process(self, df, spark, df_cnt, enable_scala=True, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
         return df.fillna(self.default, [i for i in self.cols])
 
 
@@ -362,7 +362,7 @@ class DropFeature(Operation):
         self.op_name = "DropFeature"
         self.cols = cols
 
-    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
+    def process(self, df, spark, df_cnt, enable_scala=True, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
         for i in self.cols:
             df = df.drop(i)
         return df
@@ -381,7 +381,7 @@ class Distinct(Operation):
     def __init__(self):
         self.op_name = "Distinct"
 
-    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
+    def process(self, df, spark, df_cnt, enable_scala=True, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
         return df.distinct()
 
 
@@ -399,7 +399,7 @@ class SelectFeature(Operation):
         self.op_name = "SelectFeature"
         self.cols = cols
 
-    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
+    def process(self, df, spark, df_cnt, enable_scala=True, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
         to_select = []
         for i in self.cols:
             if isinstance(i, str):
@@ -434,7 +434,7 @@ class Categorify(Operation):
         self.strategy_type = {
             'udf': 'udf', 'broadcast_join': 'short_dict', 'shuffle_join': 'huge_dict'}
 
-    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
+    def process(self, df, spark, df_cnt, enable_scala=True, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
         strategy = {}
         sorted_cols = []
         if self.hint != "auto" and self.hint in self.strategy_type:
@@ -467,8 +467,10 @@ class Categorify(Operation):
             # for udf type, we will do udf to do user-defined categorify
             if 'udf' in strategy and src_name in strategy['udf']:
                 last_method = 'udf'
-                #df = self.categorify_with_udf(df, dict_df, col_name, spark)
-                df = self.categorify_with_scala_udf(df, dict_df, col_name, spark)
+                if not enable_scala:
+                    df = self.categorify_with_udf(df, dict_df, col_name, spark)
+                else:
+                    df = self.categorify_with_scala_udf(df, dict_df, col_name, spark)
         for i in sorted_cols_pair:
             col_name, src_name = self.get_col_tgt_src(i)
             dict_df = self.find_dict(src_name, self.dict_dfs)
@@ -500,7 +502,7 @@ class Categorify(Operation):
                         last_method = 'shj'
                         df = self.categorify_with_join(df, dict_df, col_name, spark, save_path, method="shj", saveTmpToDisk=False, enable_gazelle=enable_gazelle)
         # when last_method is BHJ, we should add a separator for spark wscg optimization
-        if last_method == 'bhj' and not enable_gazelle:
+        if last_method == 'bhj' and not enable_gazelle and enable_scala:
             print("Adding a CodegenSeparator to pure BHJ WSCG case")
             found = False
             for dname, dtype in df.dtypes:
@@ -703,7 +705,7 @@ class ModelMerge(Operation):
         self.cols = None
         self.doSplit = False
 
-    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
+    def process(self, df, spark, df_cnt, enable_scala=True, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
         if self.dict_dfs == None:
             raise NotImplementedError("process %s ")
         sorted_cols, strategy = self.categorify_strategy_decision_maker(self.dict_dfs, df, df_cnt, per_core_memory_size, flush_threshold, enable_gazelle)
@@ -781,9 +783,16 @@ class NegativeSample(Operation):
         return spk_func.udf(get_random_id, spk_type.ArrayType(spk_type.StringType()))
 
 
-    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
-        for i in range(0, self.num_cols):
-            df = jvm_get_negative_samples(spark, df, self.cols[i], self.get_colname_dict_as_tuple(self.dict_dfs[i])[1])
+    def process(self, df, spark, df_cnt, enable_scala=True, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
+        if enable_scala:
+            for i in range(0, self.num_cols):
+                df = jvm_get_negative_samples(spark, df, self.cols[i], self.get_colname_dict_as_tuple(self.dict_dfs[i])[1])
+        else:
+            for i in range(0, self.num_cols):
+                broadcasted_data = [row['dict_col'] for row in self.get_colname_dict_as_tuple(self.dict_dfs[i])[1].select("dict_col").collect()]
+                negative_sample = get_negative_sample_udf(spark, broadcast_data)
+                df = df.withColumn(self.cols[i], negative_sample(spk_func.col(self.cols[i])))
+                df = df.select(col("*"), spk_func.posexplode(spk_func.col(self.cols[i]))).drop(self.cols[i]).withColumnRenamed("col", self.cols[i])
         return df
 
 
@@ -798,7 +807,7 @@ class ScalaDFTest(Operation):
         self.method = method
 
 
-    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
+    def process(self, df, spark, df_cnt, enable_scala=True, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
         if self.method == "int":
             for i in range(0, self.num_cols):
                 df = jvm_scala_df_test_int(spark, df, self.cols[i])
@@ -822,25 +831,22 @@ class CollapseByHist(Operation):
             raise ValueError("CollapseByHist expects input cols and by are not None or Empty")
 
 
-    def process(self, df, spark, df_cnt, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
+    def process(self, df, spark, df_cnt, enable_scala=True, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
         w = Window.partitionBy(self.by)
+        last_collapse_col = ""
         if self.orderBy != None:
             w = w.orderBy(self.orderBy)
-        for c in self.cols:
-            df = df.withColumn(f'hist_{c}', spk_func.collect_list(c).over(w))        
         df = df.withColumn('row_id', spk_func.row_number().over(w))
-        df = df.withColumn('row_cnt', spk_func.count(spk_func.lit(1)).over(Window.partitionBy(self.by)))
+        for c in self.cols:
+            df = df.withColumn(f'hist_{c}', spk_func.collect_list(c).over(Window.partitionBy(self.by)))
+            last_collapse_col = f'hist_{c}'
+        df = df.withColumn('row_cnt', spk_func.size(spk_func.col(last_collapse_col)))
         df = df.withColumn('row_cnt', spk_func.col('row_cnt').cast(spk_type.IntegerType()))
         df = df.filter((df.row_id == df.row_cnt) & (df.row_cnt > spk_func.lit(self.minNumHist)))
         for c in self.cols:
             df = df.withColumn(f'hist_{c}', spk_func.expr(f"slice(hist_{c}, 1, row_cnt - 1)"))
         df = df.drop('row_id').drop('row_cnt')
         return df
-
-
-#class RandomIndex(Operation):
-#   def rand_ordinal_n(self, df, n, name='ordinal'):
-#       return df.withColumn(name, (rand() * n).cast("int"))
 
 
 class DataProcessor:
@@ -876,7 +882,7 @@ class DataProcessor:
         else:
             self.flush_threshold = parse_size(shuffle_disk_capacity)
         self.gateway = spark.sparkContext._gateway
-        self.registerScalaUDFs()
+        self.enable_scala = self.registerScalaUDFs()
         print("per core memory size is %.3f GB and shuffle_disk maximum capacity is %.3f GB" % (self.per_core_memory_size * 1.0/(2**30), self.flush_threshold * 1.0/(2**30)))
 
     def __del__(self):
@@ -888,10 +894,10 @@ class DataProcessor:
         execClassPath = self.spark.sparkContext.getConf().get('spark.executor.extraClassPath')
         if self.spark_mode == 'local':
             if driverClassPath == None or 'recdp' not in driverClassPath:
-                return
+                return False
         else: 
             if driverClassPath == None or execClassPath == None or 'recdp' not in driverClassPath or 'recdp' not in execClassPath:
-                return
+                return False
         print("recdp-scala-extension is enabled")
         self.spark.udf.registerJavaFunction("sortStringArrayByFrequency","com.intel.recdp.SortStringArrayByFrequency")
         self.spark.udf.registerJavaFunction("sortIntArrayByFrequency","com.intel.recdp.SortIntArrayByFrequency")
@@ -899,6 +905,7 @@ class DataProcessor:
         self.spark._jsparkSession.udf().register("CodegenSeparator0", self.gateway.jvm.org.apache.spark.sql.api.CodegenSeparator0())
         self.spark._jsparkSession.udf().register("CodegenSeparator1", self.gateway.jvm.org.apache.spark.sql.api.CodegenSeparator1())
         self.spark._jsparkSession.udf().register("CodegenSeparator2", self.gateway.jvm.org.apache.spark.sql.api.CodegenSeparator2())
+        return True
 
     def describe(self):
         description = []
@@ -957,14 +964,17 @@ class DataProcessor:
             op.dict_dfs = dict_dfs
         return op
 
-    def transform(self, df, name="materialized_tmp", df_cnt = None):
+    def apply(self, df, df_cnt = None):
         if df_cnt == None:
             df_cnt = df.count()
         for op in self.ops:
             save_path = self.get_tmp_cache_path()
             op = self.refine_op(op, df, save_path)
-            df = op.process(df, self.spark, df_cnt, save_path=save_path, per_core_memory_size = self.per_core_memory_size, flush_threshold = self.flush_threshold, enable_gazelle=self.enable_gazelle)
-        return self.materialize(df, df_name=name)
+            df = op.process(df, self.spark, df_cnt, self.enable_scala, save_path=save_path, per_core_memory_size = self.per_core_memory_size, flush_threshold = self.flush_threshold, enable_gazelle=self.enable_gazelle)
+        return df
+
+    def transform(self, df, name="materialized_tmp", df_cnt = None):
+        return self.materialize(self.apply(df, df_cnt), df_name=name)
 
     def generate_dicts(self, df):
         # flat ops to dfs
@@ -996,16 +1006,11 @@ class DataProcessor:
                 dict_df['dict'], "%s/%s_merged" % (self.dicts_path, dict_df['col_name']))})
         return materialized_dfs
 
-    def collect(self, df):
-        for op in self.ops[:-1]:
-            df = op.process(df, self.spark)
-        return self.ops[-1].collect(df)
-
     def get_sample(self, df, df_cnt = None, vertical = False, truncate = 50):
         if df_cnt == None:
             df_cnt = df.count()
         for op in self.ops:
             save_path = self.get_tmp_cache_path()
             op = self.refine_op(op, df, save_path)
-            df = op.process(df, self.spark, df_cnt, save_path=save_path, per_core_memory_size = self.per_core_memory_size, flush_threshold = self.flush_threshold, enable_gazelle=self.enable_gazelle)
+            df = op.process(df, self.spark, df_cnt, self.enable_scala, save_path=save_path, per_core_memory_size = self.per_core_memory_size, flush_threshold = self.flush_threshold, enable_gazelle=self.enable_gazelle)
         df.show(vertical = vertical, truncate = truncate)
