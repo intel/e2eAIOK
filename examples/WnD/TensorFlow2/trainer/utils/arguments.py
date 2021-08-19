@@ -110,5 +110,7 @@ def parse_args():
                                      'socket_unique_continuous',
                                      'disabled'],
                             help='Type of CPU affinity')
+    run_params.add_argument('--sigopt_config_file', type=str, default='sigopt.yaml',
+                            help='Sigopt config file used for hyper parameter tunning')
 
     return parser.parse_args()
