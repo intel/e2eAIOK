@@ -1,6 +1,7 @@
 import pickle
 import numpy
 from data_iterator import DataIterator
+from adv_data_iterator import AdvDataIterator
 import tensorflow as tf
 from model import *
 import time
@@ -338,9 +339,9 @@ def train(
     session_start_time = time.time()
     with tf.compat.v1.Session(config=session_config) as sess:
         # with tf.compat.v1.Session(config=tf.compat.v1.ConfigProto(gpu_options=gpu_options)) as sess:
-        train_data = DataIterator(
+        train_data = AdvDataIterator(
             train_file, uid_voc, mid_voc, cat_voc, batch_size, maxlen, shuffle_each_epoch=False)
-        test_data = DataIterator(
+        test_data = AdvDataIterator(
             test_file, uid_voc, mid_voc, cat_voc, batch_size, maxlen)
         n_uid, n_mid, n_cat = train_data.get_n()
         # Number of uid = 543060, mid = 367983, cat = 1601 for Amazon dataset
@@ -520,9 +521,12 @@ def train(
 
             # with open('./times/24core_1inst_train_timeline_g210_8260_nosparse_adam_disable_noaddn_batch128_newunsortedsum_inter4_intra6_omp6_0615.txt', 'w') as wf:
             # with open('./times/dien_24core_1inst_train_timeline_8260_fp32_step{}_im0617allmklinput_tanhfusion_inter1_intra24_omp24_0701.txt'.format(nums), 'w') as wf:
-            with open('./times/dien_train_timeline_fp32_step{}.txt'.format(nums), 'w') as wf:
-                for time_per_iter in elapsed_time_records:
-                    wf.write(str(time_per_iter) + '\n')
+            try:
+                with open('./times/dien_train_timeline_fp32_step{}.txt'.format(nums), 'w') as wf:
+                    for time_per_iter in elapsed_time_records:
+                        wf.write(str(time_per_iter) + '\n')
+            except:
+                pass
 
             print("iteration: ", nums)
 

@@ -1,6 +1,7 @@
 import pickle
 import numpy
 from data_iterator import DataIterator
+from adv_data_iterator import AdvDataIterator
 import tensorflow as tf
 from model import *
 import time
@@ -338,9 +339,9 @@ def train(
     session_start_time = time.time()
     with tf.compat.v1.Session(config=session_config) as sess:
         # with tf.compat.v1.Session(config=tf.compat.v1.ConfigProto(gpu_options=gpu_options)) as sess:
-        train_data = DataIterator(
+        train_data = AdvDataIterator(
             train_file, uid_voc, mid_voc, cat_voc, batch_size, maxlen, shuffle_each_epoch=False)
-        test_data = DataIterator(
+        test_data = AdvDataIterator(
             test_file, uid_voc, mid_voc, cat_voc, batch_size, maxlen)
         n_uid, n_mid, n_cat = train_data.get_n()
         # Number of uid = 543060, mid = 367983, cat = 1601 for Amazon dataset
@@ -495,15 +496,15 @@ def train(
                     # print("approximate_accelerator_time: %.3f" % approximate_accelerator_time)
                     print('iter: %d ----> train_loss: %.4f ---- train_accuracy: %.4f ---- train_aux_loss: %.4f' %
                           (iter, loss_sum / test_iter, accuracy_sum / test_iter, aux_loss_sum / test_iter))
-                    try:
-                        test_auc, loss_sum, accuracy_sum, aux_loss_sum, eval_time, prepare_time, nums, test_prepared = eval(
-                            sess, test_data, model, best_model_path, test_prepared)
-                        print(' test_auc: %.4f ----test_loss: %.4f ---- test_accuracy: %.4f ---- test_aux_loss: %.4f ---- eval_time: %.3f ---- num_iters: %d' %
-                              (test_auc, loss_sum, accuracy_sum, aux_loss_sum, eval_time, nums))
-                        test_elapse_time += eval_time
-                        test_prepare_time += prepare_time
-                    except:
-                        pass
+                    #try:
+                    test_auc, loss_sum, accuracy_sum, aux_loss_sum, eval_time, prepare_time, nums, test_prepared = eval(
+                        sess, test_data, model, best_model_path, test_prepared)
+                    print(' test_auc: %.4f ----test_loss: %.4f ---- test_accuracy: %.4f ---- test_aux_loss: %.4f ---- eval_time: %.3f ---- num_iters: %d' %
+                            (test_auc, loss_sum, accuracy_sum, aux_loss_sum, eval_time, nums))
+                    test_elapse_time += eval_time
+                    test_prepare_time += prepare_time
+                    #except:
+                    #    pass
 
                     # delete test every 100 iterations no need in training time
                     # print(' test_auc: %.4f ----test_loss: %.4f ---- test_accuracy: %.4f ---- test_aux_loss: %.4f ---- eval_time: %.3f ---- num_iters: %d' % eval(sess, test_data, model, best_model_path))
@@ -527,9 +528,12 @@ def train(
 
             # with open('./times/24core_1inst_train_timeline_g210_8260_nosparse_adam_disable_noaddn_batch128_newunsortedsum_inter4_intra6_omp6_0615.txt', 'w') as wf:
             # with open('./times/dien_24core_1inst_train_timeline_8260_fp32_step{}_im0617allmklinput_tanhfusion_inter1_intra24_omp24_0701.txt'.format(nums), 'w') as wf:
-            with open('./times/dien_train_timeline_fp32_step{}.txt'.format(nums), 'w') as wf:
-                for time_per_iter in elapsed_time_records:
-                    wf.write(str(time_per_iter) + '\n')
+            try:
+                with open('./times/dien_train_timeline_fp32_step{}.txt'.format(nums), 'w') as wf:
+                    for time_per_iter in elapsed_time_records:
+                        wf.write(str(time_per_iter) + '\n')
+            except:
+                pass
 
             print("iteration: ", nums)
 
@@ -577,9 +581,9 @@ def test(
     #         intra_op_parallelism_threads=1, inter_op_parallelism_threads=1)) as sess:
     sess_config = tf.compat.v1.ConfigProto(gpu_options=gpu_options)
     with tf.compat.v1.Session(config=sess_config) as sess:
-        train_data = DataIterator(
+        train_data = AdvDataIterator(
             train_file, uid_voc, mid_voc, cat_voc, batch_size, maxlen)
-        test_data = DataIterator(
+        test_data = AdvDataIterator(
             test_file, uid_voc, mid_voc, cat_voc, batch_size, maxlen)
         n_uid, n_mid, n_cat = train_data.get_n()
         if model_type == 'DNN':
