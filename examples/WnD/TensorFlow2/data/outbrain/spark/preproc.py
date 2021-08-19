@@ -666,8 +666,8 @@ def make_spec(output_dir, batch_size=None):
     spec = {}
     spec[LABEL_COLUMN] = tf.io.FixedLenFeature(shape=fixed_shape, dtype=tf.int64, default_value=None)
     spec[DISPLAY_ID_COLUMN] = tf.io.FixedLenFeature(shape=fixed_shape, dtype=tf.int64, default_value=None)
-    for name in BOOL_COLUMNS:
-        spec[name] = tf.io.FixedLenFeature(shape=fixed_shape, dtype=tf.int64, default_value=None)
+    for name in FLOAT_COLUMNS:
+        spec[name] = tf.io.FixedLenFeature(shape=fixed_shape, dtype=tf.float32, default_value=None)
     for name in INT_COLUMNS:
         spec[name + '_log_01scaled'] = tf.io.FixedLenFeature(shape=fixed_shape, dtype=tf.float32, default_value=None)
     for name in BOOL_COLUMNS + CATEGORICAL_COLUMNS:
