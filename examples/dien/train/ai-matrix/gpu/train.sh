@@ -21,7 +21,7 @@ do
 	echo "Running training with batch size of $batch"
 	echo "----------------------------------------------------------------"
 	start=`date +%s%N`
-	python script/train.py --mode=train --embedding_device=gpu --batch_size=$batch --num-intra-threads=20 --num-inter-threads=20 |& tee results/result_train_${batch}.txt
+	python script/train.py --mode=train --advanced --embedding_device=gpu --batch_size=$batch --num-intra-threads=20 --num-inter-threads=20 |& tee results/result_train_${batch}.txt
 	end=`date +%s%N`
 	total_time=$(((end-start)/1000000))
     #total_time=`bc <<< "scale = 3; ($end-$start)/1000000000"`

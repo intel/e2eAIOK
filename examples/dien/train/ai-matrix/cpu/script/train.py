@@ -1,7 +1,5 @@
 import pickle
 import numpy
-from data_iterator import DataIterator
-from adv_data_iterator import AdvDataIterator
 import tensorflow as tf
 from model import *
 import time
@@ -19,6 +17,8 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 
 parser = argparse.ArgumentParser()
+parser.add_argument("--advanced", type=bool, nargs='?', const=True, default=False,
+                    help="if we use previous categorified data")
 parser.add_argument("--mode", type=str, default='train',
                     help="mode, train or test")
 parser.add_argument("--model", type=str, default='DIEN', help="model")
@@ -339,9 +339,9 @@ def train(
     session_start_time = time.time()
     with tf.compat.v1.Session(config=session_config) as sess:
         # with tf.compat.v1.Session(config=tf.compat.v1.ConfigProto(gpu_options=gpu_options)) as sess:
-        train_data = AdvDataIterator(
+        train_data = DataIterator(
             train_file, uid_voc, mid_voc, cat_voc, batch_size, maxlen, shuffle_each_epoch=False)
-        test_data = AdvDataIterator(
+        test_data = DataIterator(
             test_file, uid_voc, mid_voc, cat_voc, batch_size, maxlen)
         n_uid, n_mid, n_cat = train_data.get_n()
         # Number of uid = 543060, mid = 367983, cat = 1601 for Amazon dataset
@@ -725,6 +725,12 @@ if __name__ == '__main__':
         tf.random.set_seed(SEED)
     numpy.random.seed(SEED)
     random.seed(SEED)
+    if args.advanced:
+        print("Advanced train")
+        from adv_data_iterator import AdvDataIterator as DataIterator
+    else:
+        print("Original train")
+        from data_iterator import DataIterator
     if args.mode == 'train':
         train(model_type=args.model, seed=SEED,
               batch_size=args.batch_size, data_type=args.data_type)

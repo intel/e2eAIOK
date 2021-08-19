@@ -1,7 +1,5 @@
 import pickle
 import numpy
-from data_iterator import DataIterator
-from adv_data_iterator import AdvDataIterator
 import tensorflow as tf
 from model import *
 import time
@@ -21,6 +19,8 @@ os.environ["CUDA_VISIBLE_DEVICES"]="0, 1"
 
 
 parser = argparse.ArgumentParser()
+parser.add_argument("--advanced", type=bool, nargs='?', const=True, default=False,
+                    help="if we use previous categorified data")
 parser.add_argument("--mode", type=str, default='train',
                     help="mode, train or test")
 parser.add_argument("--model", type=str, default='DIEN', help="model")
@@ -718,6 +718,12 @@ if __name__ == '__main__':
         tf.random.set_seed(SEED)
     numpy.random.seed(SEED)
     random.seed(SEED)
+    if args.advanced:
+        print("Advanced train")
+        from adv_data_iterator import AdvDataIterator as DataIterator
+    else:
+        print("Original train")
+        from data_iterator import DataIterator
     if args.mode == 'train':
         train(model_type=args.model, seed=SEED,
               batch_size=args.batch_size, data_type=args.data_type)

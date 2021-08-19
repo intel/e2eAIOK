@@ -1,6 +1,5 @@
 import pickle
 import numpy
-from data_iterator import DataIterator
 import tensorflow as tf
 from model import *
 import time
@@ -20,6 +19,8 @@ import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 parser = argparse.ArgumentParser()
+parser.add_argument("--advanced", type=bool, nargs='?', const=True, default=False,
+                    help="if we use previous categorified data")
 parser.add_argument("--mode", type=str, default='train',
                     help="mode, train or test")
 parser.add_argument("--model", type=str, default='DIEN', help="model")
@@ -535,9 +536,12 @@ def train(
 
             # with open('./times/24core_1inst_train_timeline_g210_8260_nosparse_adam_disable_noaddn_batch128_newunsortedsum_inter4_intra6_omp6_0615.txt', 'w') as wf:
             # with open('./times/dien_24core_1inst_train_timeline_8260_fp32_step{}_im0617allmklinput_tanhfusion_inter1_intra24_omp24_0701.txt'.format(nums), 'w') as wf:
-            # with open('./times/dien_train_timeline_fp32_step{}.txt'.format(nums), 'w') as wf:
-            #   for time_per_iter in elapsed_time_records:
-            #       wf.write(str(time_per_iter) + '\n')
+            try:
+                with open('./times/dien_train_timeline_fp32_step{}.txt'.format(nums), 'w') as wf:
+                    for time_per_iter in elapsed_time_records:
+                        wf.write(str(time_per_iter) + '\n')
+            except:
+                pass
 
             print("iteration: ", nums)
 
@@ -729,6 +733,12 @@ if __name__ == '__main__':
         tf.random.set_seed(SEED)
     numpy.random.seed(SEED)
     random.seed(SEED)
+    if args.advanced:
+        print("Advanced train")
+        from adv_data_iterator import AdvDataIterator as DataIterator
+    else:
+        print("Original train")
+        from data_iterator import DataIterator
     if args.mode == 'train':
         train(model_type=args.model, seed=SEED,
               batch_size=args.batch_size, data_type=args.data_type)
