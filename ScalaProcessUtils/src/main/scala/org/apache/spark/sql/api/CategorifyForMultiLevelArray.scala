@@ -20,19 +20,31 @@ import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
+import com.intel.recdp._
 
-object CategorifyForArray {
-  def categorify(sc: JavaSparkContext, df: DataFrame, col_name: String, dict_df: DataFrame): DataFrame = {
+object CategorifyForMultiLevelArray {
+  def categorify(sc: JavaSparkContext, df: DataFrame, col_name: String, dict_df: DataFrame, j_sep_list: Any): DataFrame = {
     val broadcast_data = dict_df.select("dict_col", "dict_col_id").collect().map( row => 
       (row(0).asInstanceOf[String], row(1).asInstanceOf[Int])
     ).toMap
     val broadcast_handler = sc.broadcast(broadcast_data)
+    val sep_list = Utils.convertToScalaArray(j_sep_list)
     val categorifyUDF = udf((x_l: WrappedArray[String]) => {
       val broadcasted = broadcast_handler.value
+      def get_mapped(x_l: String, sep_id: Int): String = {
+        if (sep_id >= sep_list.size || !x_l.contains(sep_list(sep_id))) {
+          //System.out.println(s"sep is ${sep_id} and ${sep_list.toList} and x_l is ${x_l}")
+          if (x_l != null && broadcasted.contains(x_l)) broadcasted(x_l).toString
+          else "0"
+        } else {
+          x_l.split(sep_list(sep_id).toCharArray()(0)).map(x => get_mapped(x, sep_id + 1)).mkString(sep_list(sep_id))
+        }
+      }
+
       if (broadcasted == null || broadcasted.isEmpty || x_l == null) {
-        Array[Int]()
+        Array[String]()
       } else {
-        x_l.toArray.map(x => if (x != null && broadcasted.contains(x)) broadcasted(x) else 0)
+        x_l.toArray.map(x => get_mapped(x, 0))
       }
     })
     return df.withColumn(col_name, categorifyUDF(col(col_name)))

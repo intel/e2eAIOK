@@ -56,6 +56,10 @@ def get_estimate_size_of_dtype(dtype_name):
     return units[dtype_name] if dtype_name in units else 4
 
 
+def get_dtype(df, colname):
+    return [dtype for name, dtype in df.dtypes if name == colname][0]
+
+
 def _j4py(spark, r):
     sc = spark.sparkContext
     if isinstance(r, JavaObject):
@@ -76,7 +80,7 @@ def _j4py(spark, r):
     return r
 
 
-def _py4j(obj):
+def _py4j(obj, gateway = None):
     """ Convert Python object into Java """
     if isinstance(obj, DataFrame):
         obj = obj._jdf
@@ -84,13 +88,13 @@ def _py4j(obj):
         obj = obj._jsc
     elif isinstance(obj, (list, tuple)):
         obj = ListConverter().convert([_py4j(x) for x in obj],
-                                      sc._gateway._gateway_client)
+                                      gateway._gateway_client)
     elif isinstance(obj, JavaObject):
         pass
     elif isinstance(obj, (int, float, bool, bytes, str)):
         pass
     else:
-        raise NotImplementedError(f"can't convert {obj} to python")
+        raise NotImplementedError(f"can't convert {str(obj)} to python")
     return obj    
 
 def jvm_categorify(spark, df, col_name, dict_df):
@@ -103,15 +107,30 @@ def jvm_categorify_for_array(spark, df, col_name, dict_df):
     _jcls = gateway.jvm.org.apache.spark.sql.api.CategorifyForArray
     return _j4py(spark, _jcls.categorify(_py4j(spark.sparkContext), _py4j(df), _py4j(col_name), _py4j(dict_df)))
 
+def jvm_categorify_for_multi_level_array(spark, df, col_name, dict_df, sep_list):
+    gateway = spark.sparkContext._gateway
+    _jcls = gateway.jvm.org.apache.spark.sql.api.CategorifyForMultiLevelArray
+    return _j4py(spark, _jcls.categorify(_py4j(spark.sparkContext), _py4j(df), _py4j(col_name), _py4j(dict_df), _py4j(sep_list, gateway)))
+
 def jvm_categorify_by_freq_for_array(spark, df, col_name, dict_df):
     gateway = spark.sparkContext._gateway
     _jcls = gateway.jvm.org.apache.spark.sql.api.CategorifyByFreqForArray
     return _j4py(spark, _jcls.categorify(_py4j(spark.sparkContext), _py4j(df), _py4j(col_name), _py4j(dict_df)))
 
-def jvm_get_negative_samples(spark, df, col_name, dict_df):
+def jvm_get_negative_sample(spark, df, col_name, dict_df, neg_cnt):
     gateway = spark.sparkContext._gateway
     _jcls = gateway.jvm.org.apache.spark.sql.api.NegativeSample
-    return _j4py(spark, _jcls.add(_py4j(spark.sparkContext), _py4j(df), _py4j(col_name), _py4j(dict_df)))
+    return _j4py(spark, _jcls.add(_py4j(spark.sparkContext), _py4j(df), _py4j(col_name), _py4j(dict_df), _py4j(neg_cnt)))
+
+def jvm_get_negative_feature(spark, df, tgt_name, src_name, dict_df, neg_cnt):
+    gateway = spark.sparkContext._gateway
+    _jcls = gateway.jvm.org.apache.spark.sql.api.NegativeFeature
+    return _j4py(spark, _jcls.add(_py4j(spark.sparkContext), _py4j(df), _py4j(tgt_name), _py4j(src_name), _py4j(dict_df), _py4j(neg_cnt)))
+
+def jvm_get_negative_feature_for_array(spark, df, tgt_name, src_name, dict_df, neg_cnt):
+    gateway = spark.sparkContext._gateway
+    _jcls = gateway.jvm.org.apache.spark.sql.api.NegativeFeatureForArray
+    return _j4py(spark, _jcls.add(_py4j(spark.sparkContext), _py4j(df), _py4j(tgt_name), _py4j(src_name), _py4j(dict_df), _py4j(neg_cnt)))
 
 def jvm_scala_df_test_int(spark, df, col_name):
     gateway = spark.sparkContext._gateway

@@ -23,13 +23,13 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{IntegerType, StringType}
 
 // This operator aims to add negative sample as new row
-object NegativeSample {
-  def add(sc: JavaSparkContext, df: DataFrame, col_name: String, dict_df: DataFrame, neg_cnt: Int): DataFrame = {
+object NegativeFeature {
+  def add(sc: JavaSparkContext, df: DataFrame, tgt_name: String, col_name: String, dict_df: DataFrame, neg_cnt: Int): DataFrame = {
     val broadcast_data = dict_df.select("dict_col").collect().map( row => 
       row(0).asInstanceOf[String]
     )
     val broadcasted = sc.broadcast(broadcast_data)
-    val addNegativeSampleUDF = udf((asin: String) => {
+    val addNegativeFeatureUDF = udf((asin: String) => {
       val r = new Random
       val item_list = broadcasted.value
       val num_items = item_list.size
@@ -38,10 +38,8 @@ object NegativeSample {
           val asin_neg_index: Int = r.nextInt(num_items - 1)
           asin_neg = item_list(asin_neg_index)
       } while (asin_neg == asin)
-      Array[String](asin_neg, asin)
+      asin_neg
     })
-    var new_df = df.withColumn(col_name, addNegativeSampleUDF(col(col_name)))
-    new_df = new_df.select(col("*"), posexplode(col(col_name))).drop(col_name).withColumnRenamed("col", col_name)
-    return new_df
+    return df.withColumn(tgt_name, addNegativeFeatureUDF(col(col_name)))
   }
 }

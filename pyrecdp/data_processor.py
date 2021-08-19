@@ -419,7 +419,7 @@ class Categorify(Operation):
         cols (list): columns which are be modified
     '''
 
-    def __init__(self, cols, dict_dfs=None, gen_dicts=True, hint='auto', doSplit=False, sep='\t', doSortForArray=False, keepMostFrequent=False, saveTmpToDisk=False):
+    def __init__(self, cols, dict_dfs=None, gen_dicts=True, hint='auto', doSplit=False, sep='\t', doSortForArray=False, keepMostFrequent=False, saveTmpToDisk=False, multiLevelSplit=False, multiLevelSep=[]):
         self.op_name = "Categorify"
         self.cols = cols
         self.dict_dfs = dict_dfs
@@ -431,6 +431,10 @@ class Categorify(Operation):
         self.keepMostFrequent = keepMostFrequent
         self.saveTmpToDisk = saveTmpToDisk
         self.save_path_id = 0
+        self.multi_level_split = multiLevelSplit
+        if self.multi_level_split:
+            self.hint = 'udf'
+        self.multi_level_sep = multiLevelSep
         self.strategy_type = {
             'udf': 'udf', 'broadcast_join': 'short_dict', 'shuffle_join': 'huge_dict'}
 
@@ -467,7 +471,7 @@ class Categorify(Operation):
             # for udf type, we will do udf to do user-defined categorify
             if 'udf' in strategy and src_name in strategy['udf']:
                 last_method = 'udf'
-                if not enable_scala:
+                if not enable_scala and not self.multi_level_split:
                     df = self.categorify_with_udf(df, dict_df, col_name, spark)
                 else:
                     df = self.categorify_with_scala_udf(df, dict_df, col_name, spark)
@@ -503,7 +507,7 @@ class Categorify(Operation):
                         df = self.categorify_with_join(df, dict_df, col_name, spark, save_path, method="shj", saveTmpToDisk=False, enable_gazelle=enable_gazelle)
         # when last_method is BHJ, we should add a separator for spark wscg optimization
         if last_method == 'bhj' and not enable_gazelle and enable_scala:
-            print("Adding a CodegenSeparator to pure BHJ WSCG case")
+            #print("Adding a CodegenSeparator to pure BHJ WSCG case")
             found = False
             for dname, dtype in df.dtypes:
                 if dtype == "string":
@@ -542,7 +546,8 @@ class Categorify(Operation):
             broadcast_data = broadcast_dict.value
             min_val = None
             if x != '':
-                for v in x.split(sep):
+                x_l = x.split(sep) if not isinstance(x, list) else x
+                for v in x_l:
                     if v != '' and v in broadcast_data and (min_val == None or broadcast_data[v] < min_val):
                         min_val = broadcast_data[v]
             return min_val
@@ -551,7 +556,8 @@ class Categorify(Operation):
             broadcast_data = broadcast_dict.value
             val = []
             if x != '':
-                for v in x.split(sep):
+                x_l = x.split(sep) if not isinstance(x, list) else x
+                for v in x_l:
                     if v != '' and v in broadcast_data:
                         val.append(broadcast_data[v])
                 if doSortForArray and len(val) > 0:
@@ -564,14 +570,14 @@ class Categorify(Operation):
             return spk_func.udf(freq_encode, spk_type.ArrayType(spk_type.IntegerType()))
 
     def categorify_with_udf(self, df, dict_df, i, spark):
-        print("do %s to %s" % ("python_udf", i))
+        #print("do %s to %s" % ("python_udf", i))
         dict_data = dict((row['dict_col'], row['dict_col_id']) for row in dict_df.collect())
         udf_impl = self.get_mapping_udf(dict_data, spark)
         df = df.withColumn(i, udf_impl(spk_func.col(i)))
         return df
 
     def categorify_with_scala_udf(self, df, dict_df, i, spark):
-        print("do %s to %s" % ("scala_udf", i))
+        #print("do %s to %s" % ("scala_udf", i))
         # call java to broadcast data and set broadcast handler to udf
         if not self.check_scala_extension(spark):
             raise ValueError("RecDP need to enable recdp-scala-extension to run categorify_with_udf, please config spark.driver.extraClassPath and spark.executor.extraClassPath for spark")
@@ -579,11 +585,15 @@ class Categorify(Operation):
         if self.doSplit == False:
             df = jvm_categorify(spark, df, i, dict_df)
         else:
-            df = df.withColumn(i, spk_func.split(spk_func.col(i), self.sep))
+            if get_dtype(df, i) == 'string':
+                df = df.withColumn(i, spk_func.split(spk_func.col(i), self.sep))
             if self.keepMostFrequent:
                 df = jvm_categorify_by_freq_for_array(spark, df, i, dict_df)
             else:
-                df = jvm_categorify_for_array(spark, df, i, dict_df)
+                if self.multi_level_split:
+                    df = jvm_categorify_for_multi_level_array(spark, df, i, dict_df, self.multi_level_sep)
+                else:
+                    df = jvm_categorify_for_array(spark, df, i, dict_df)
                 if self.doSortForArray:
                     df = df.withColumn(i, spk_func.array_sort(spk_func.col(i)))
         return df
@@ -595,7 +605,7 @@ class Categorify(Operation):
             hint_type = "broadcast"
         elif method == "smj":
             hint_type = "merge"
-        print("do %s to %s" % (method, i))
+        #print("do %s to %s" % (method, i))
         to_select = df.columns + ['dict_col_id']
         if self.doSplit == False:
             df = df.join(dict_df.hint(hint_type), spk_func.col(i) == dict_df.dict_col, 'left')\
@@ -603,8 +613,9 @@ class Categorify(Operation):
         else:
             df = df.withColumn(
                 'row_id', spk_func.monotonically_increasing_id())
-            tmp_df = df.select('row_id', i).withColumn(
-                i, f.explode(f.split(f.col(i), self.sep)))
+            if get_dtype(df, i) == 'string':
+                df = df.withColumn(i, spk_func.split(spk_func.col(i), self.sep))
+            tmp_df = df.select('row_id', i).withColumn(i, spk_func.explode(spk_func.col(i)))
             tmp_df = tmp_df.join(
                 dict_df.hint("shuffle_hash"),
                 spk_func.col(i) == dict_df.dict_col,
@@ -739,7 +750,7 @@ class ModelMerge(Operation):
             hint_type = "broadcast"
         elif method == "smj":
             hint_type = "merge"
-        print("do %s to %s" % (method, i))
+        #print("do %s to %s" % (method, i))
         df = df.join(dict_df.hint(hint_type), i, how='left')
         # if self.saveTmpToDisk is True, we will save current df to hdfs or localFS instead of replying on Shuffle
         if saveTmpToDisk:
@@ -755,10 +766,11 @@ class ModelMerge(Operation):
 
 
 class NegativeSample(Operation):
-    def __init__(self, cols, dicts):
+    def __init__(self, cols, dicts, negCnt = 1):
         self.op_name = "NegativeSample"
         self.cols = cols
         self.dict_dfs = dicts
+        self.neg_cnt = negCnt
         if len(cols) != len(dicts):
             raise ValueError("NegativeSample expects input dicts has same size cols for mapping")
         self.num_cols = len(cols)
@@ -786,13 +798,86 @@ class NegativeSample(Operation):
     def process(self, df, spark, df_cnt, enable_scala=True, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
         if enable_scala:
             for i in range(0, self.num_cols):
-                df = jvm_get_negative_samples(spark, df, self.cols[i], self.get_colname_dict_as_tuple(self.dict_dfs[i])[1])
+                df = jvm_get_negative_sample(spark, df, self.cols[i], self.get_colname_dict_as_tuple(self.dict_dfs[i])[1], self.neg_cnt)
         else:
             for i in range(0, self.num_cols):
                 broadcasted_data = [row['dict_col'] for row in self.get_colname_dict_as_tuple(self.dict_dfs[i])[1].select("dict_col").collect()]
-                negative_sample = get_negative_sample_udf(spark, broadcast_data)
+                negative_sample = get_negative_sample_udf(spark, broadcasted_data)
                 df = df.withColumn(self.cols[i], negative_sample(spk_func.col(self.cols[i])))
-                df = df.select(col("*"), spk_func.posexplode(spk_func.col(self.cols[i]))).drop(self.cols[i]).withColumnRenamed("col", self.cols[i])
+                df = df.select(spk_func.col("*"), spk_func.posexplode(spk_func.col(self.cols[i]))).drop(self.cols[i]).withColumnRenamed("col", self.cols[i])
+        return df
+
+
+class NegativeFeature(Operation):
+    def __init__(self, cols, dicts, doSplit=False, sep='\t', negCnt = 1):
+        self.op_name = "NegativeFeature"
+        self.cols = cols
+        self.dict_dfs = dicts
+        self.doSplit = doSplit
+        self.neg_cnt = negCnt
+        self.sep = sep
+        if len(cols) != len(dicts):
+            raise ValueError("NegativeFeature expects input dicts has same size cols for mapping")
+        self.num_cols = len(cols)
+
+    def get_negative_feature_udf(self, spark, broadcast_data):
+        broadcast_movie_id_list = spark.sparkContext.broadcast(
+            broadcast_data)
+
+        if self.doSplit:
+            def get_random_id(hist_asin):
+                item_list = broadcast_movie_id_list.value
+                asin_total_len = len(item_list)
+                res = []
+                asin_list = hist_asin.split(self.sep) if not isinstance(hist_asin, list) else hist_asin
+                for asin in asin_list:
+                    asin_neg = asin
+                    while True:
+                        asin_neg_index = random.randint(0, asin_total_len - 1)
+                        asin_neg = item_list[asin_neg_index]
+                        if asin_neg == None or asin_neg == asin:
+                            continue
+                        else:
+                            res.append(asin_neg)
+                            break
+                return res
+
+            return spk_func.udf(get_random_id, spk_type.ArrayType(spk_type.StringType()))
+        else:
+            def get_random_id(asin):
+                item_list = broadcast_movie_id_list.value
+                asin_total_len = len(item_list)
+                asin_neg = asin
+                while True:
+                    asin_neg_index = random.randint(0, asin_total_len - 1)
+                    asin_neg = item_list[asin_neg_index]
+                    if asin_neg == None or asin_neg == asin:
+                        continue
+                    else:
+                        break
+                return asin_neg
+
+            return spk_func.udf(get_random_id, spk_type.StringType())
+
+
+    def process(self, df, spark, df_cnt, enable_scala=True, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
+        if enable_scala:
+            for tgt, src in self.cols.items():
+                dict_df = self.find_dict(src, self.dict_dfs)
+                if self.doSplit:
+                    src_type = get_dtype(df, src)
+                    if src_type == 'string':
+                        df = df.withColumn(tgt, spk_func.split(spk_func.col(src), self.sep))
+                        df = jvm_get_negative_feature_for_array(spark, df, tgt, tgt, dict_df, self.neg_cnt)
+                    else:
+                        df = jvm_get_negative_feature_for_array(spark, df, tgt, src, dict_df, self.neg_cnt)
+                else:
+                    df = jvm_get_negative_feature(spark, df, tgt, src, dict_df, self.neg_cnt)
+        else:
+            for tgt, src in self.cols.items():
+                broadcasted_data = [row['dict_col'] for row in self.find_dict(src, self.dict_dfs)[1].select("dict_col").collect()]
+                negative_feature = get_negative_feature_udf(spark, broadcasted_data)
+                df = df.withColumn(tgt, negative_feature(spk_func.col(src)))
         return df
 
 
@@ -821,12 +906,13 @@ class ScalaDFTest(Operation):
 
 
 class CollapseByHist(Operation):
-    def __init__(self, cols, by, orderBy = None, minNumHist = 0):
+    def __init__(self, cols, by, orderBy = None, minNumHist = 0, maxNumHist = -1):
         self.op_name = "CollapseByHist"
         self.cols = cols
         self.by = by
         self.orderBy = orderBy
         self.minNumHist = minNumHist
+        self.maxNumHist = maxNumHist
         if cols == None or by == None or len(cols) == 0 or (isinstance(by, list) and len(by) == 0):
             raise ValueError("CollapseByHist expects input cols and by are not None or Empty")
 
@@ -839,13 +925,18 @@ class CollapseByHist(Operation):
         df = df.withColumn('row_id', spk_func.row_number().over(w))
         for c in self.cols:
             df = df.withColumn(f'hist_{c}', spk_func.collect_list(c).over(Window.partitionBy(self.by)))
+            df = df.withColumn(f'hist_{c}', spk_func.when(spk_func.col(f'hist_{c}').isNull(), spk_func.array()).otherwise(spk_func.col(f'hist_{c}')))
             last_collapse_col = f'hist_{c}'
         df = df.withColumn('row_cnt', spk_func.size(spk_func.col(last_collapse_col)))
         df = df.withColumn('row_cnt', spk_func.col('row_cnt').cast(spk_type.IntegerType()))
         df = df.filter((df.row_id == df.row_cnt) & (df.row_cnt > spk_func.lit(self.minNumHist)))
         for c in self.cols:
-            df = df.withColumn(f'hist_{c}', spk_func.expr(f"slice(hist_{c}, 1, row_cnt - 1)"))
-        df = df.drop('row_id').drop('row_cnt')
+            if self.maxNumHist != -1:
+                df = df.withColumn('max_hist_len', spk_func.when(spk_func.col('row_cnt') > self.maxNumHist, self.maxNumHist).otherwise(spk_func.col('row_cnt')))
+            else:
+                df = df.withColumn('max_hist_len', spk_func.col('row_cnt'))
+            df = df.withColumn(f'hist_{c}', spk_func.expr(f"slice(hist_{c}, 1, max_hist_len - 1)"))
+        df = df.drop('row_id').drop('row_cnt').drop('max_hist_len')
         return df
 
 
