@@ -186,6 +186,8 @@ def save_to_cat_voc(df, proc, fmt = 'pkl'):
     
     
 def save_to_local_splitByUser(df, proc, output_name):
+    hint = 'byRename'
+    #hint = 'byRewrite'
     t1 = timer()
     if 'noclk_hist_asin' in df.columns:
         dict_df = df.select('pos', 'reviewer_id', 'asin', 'category',
@@ -193,12 +195,27 @@ def save_to_local_splitByUser(df, proc, output_name):
                             f.expr("concat_ws('\x02', hist_category)"),
                             f.expr("concat_ws('\x02', noclk_hist_asin)"),
                             f.expr("concat_ws('\x02', noclk_hist_category)"))
-        collected = [[c1, c2, c3, c4, c5, c6, c7, c8] for (c1, c2, c3, c4, c5, c6, c7, c8) in dict_df.collect()]
+        if hint == 'byRename':
+            dict_df.repartition(1).write.format("csv").option('sep', '\t').mode("overwrite").save(f"{proc.path_prefix}{proc.current_path}/{output_name}-spark")
+            result_rename_or_convert(proc.current_path, output_name)
+            t2 = timer()
+            print(f"save_to_local_splitByUser took {t2 - t1} secs")
+            return dict_df
+        else:
+            collected = [[c1, c2, c3, c4, c5, c6, c7, c8] for (c1, c2, c3, c4, c5, c6, c7, c8) in dict_df.collect()]
     else:
         dict_df = df.select('pos', 'reviewer_id', 'asin', 'category',
                             f.expr("concat_ws('\x02', hist_asin)"),
                             f.expr("concat_ws('\x02', hist_category)"))
-        collected = [[c1, c2, c3, c4, c5, c6] for (c1, c2, c3, c4, c5, c6) in dict_df.collect()]
+        if hint == 'byRename':
+            dict_df.repartition(1).write.format("csv").option('sep', '\t').mode("overwrite").save(f"{proc.path_prefix}{proc.current_path}/{output_name}-spark")
+            result_rename_or_convert(proc.current_path, output_name)
+            t2 = timer()
+            print(f"save_to_local_splitByUser took {t2 - t1} secs")
+            return dict_df
+        else:
+            collected = [[c1, c2, c3, c4, c5, c6] for (c1, c2, c3, c4, c5, c6) in dict_df.collect()]
+
     user_map = {}
     for items in collected:
         if items[1] not in user_map:
@@ -213,6 +230,15 @@ def save_to_local_splitByUser(df, proc, output_name):
     t2 = timer()
     print(f"save_to_local_splitByUser took {t2 - t1} secs")
     return dict_df
+
+
+def result_rename_or_convert(fpath, output_name):
+    source_path_dict = list_dir(fpath)
+    fix = "-spark"
+    tgt_path = f"{fpath}/{output_name}"
+    print(f"result renamed from {source_path_dict[output_name + fix]} to {tgt_path}")
+    os.rename(source_path_dict[output_name + fix], tgt_path)
+    shutil.rmtree(source_path_dict[output_name + fix], ignore_errors=True)
 
 
 def main(option = '--basic'):

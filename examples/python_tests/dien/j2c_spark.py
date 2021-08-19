@@ -99,16 +99,19 @@ def main():
     records_df = spark.read.json("%s/%s/raw_data/reviews_Books.json" % (path_prefix, original_folder))
     records_df = records_df.select('reviewerID', 'asin', 'overall', 'unixReviewTime')
     records_df.repartition(1).write.format("csv").option('sep', '\t').mode("overwrite").save("%s/%s/j2c_test/reviews-info-spark" % (path_prefix, original_folder))
-    process_meta('%s/raw_data/meta_Books.json' % original_folder, "%s/j2c_test" % original_folder)
     result_rename_or_convert("%s/j2c_test/" % (original_folder))
+    t1 = timer()
+    print(f"parse reviews-info with spark took {(t1 - t0)} secs")
+
+    t0 = timer()
+    process_meta('%s/raw_data/meta_Books.json' % original_folder, "%s/j2c_test" % original_folder)
+    t1 = timer()
+    print(f"parse item-info with pure python took {(t1 - t0)} secs")
 
     #item_info_df = spark.read.json("%s/%s/raw_data/meta_Books.json" % (path_prefix, original_folder))
     #item_info_df = item_info_df.withColumn("categories", f.expr("categories[0][size(categories[0]) - 1] as categories"))
     #item_info_df.write.format("csv").option('sep', '\t').mode("overwrite").save(original_folder + "/j2c_test/item-info")
     #compare_with_expected(spark, path_prefix + original_folder, records_df, item_info_df)
-    t1 = timer()
-
-    print(f"Total process time is {(t1 - t0)} secs")
 
     ####################################
     
