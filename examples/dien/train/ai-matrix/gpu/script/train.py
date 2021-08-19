@@ -339,9 +339,9 @@ def train(
     session_start_time = time.time()
     with tf.compat.v1.Session(config=session_config) as sess:
         # with tf.compat.v1.Session(config=tf.compat.v1.ConfigProto(gpu_options=gpu_options)) as sess:
-        train_data = AdvDataIterator(
+        train_data = DataIterator(
             train_file, uid_voc, mid_voc, cat_voc, batch_size, maxlen, shuffle_each_epoch=False)
-        test_data = AdvDataIterator(
+        test_data = DataIterator(
             test_file, uid_voc, mid_voc, cat_voc, batch_size, maxlen)
         n_uid, n_mid, n_cat = train_data.get_n()
         # Number of uid = 543060, mid = 367983, cat = 1601 for Amazon dataset
