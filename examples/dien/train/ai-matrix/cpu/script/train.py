@@ -581,9 +581,9 @@ def test(
     #         intra_op_parallelism_threads=1, inter_op_parallelism_threads=1)) as sess:
     sess_config = tf.compat.v1.ConfigProto(gpu_options=gpu_options)
     with tf.compat.v1.Session(config=sess_config) as sess:
-        train_data = AdvDataIterator(
+        train_data = DataIterator(
             train_file, uid_voc, mid_voc, cat_voc, batch_size, maxlen)
-        test_data = AdvDataIterator(
+        test_data = DataIterator(
             test_file, uid_voc, mid_voc, cat_voc, batch_size, maxlen)
         n_uid, n_mid, n_cat = train_data.get_n()
         if model_type == 'DNN':
@@ -669,34 +669,6 @@ def test(
         prepare_elapse_time = 0
         test_auc, test_loss, test_accuracy, test_aux_loss, eval_time, prepare_time, num_iters, test_prepared = eval(
             sess, test_data, model, model_path)
-        approximate_accelerator_time += eval_time
-        test_elapse_time += eval_time
-        prepare_elapse_time += prepare_time
-        print('test_auc: %.4f ----test_loss: %.4f ---- test_accuracy: %.9f ---- test_aux_loss: %.4f ---- eval_time: %.3f ---- prepare_time: %.3f' %
-              (test_auc, test_loss, test_accuracy, test_aux_loss, eval_time, prepare_time))
-        test_auc, test_loss, test_accuracy, test_aux_loss, eval_time, prepare_time, num_iters, test_prepared = eval(
-            sess, test_data, model, model_path, test_prepared)
-        approximate_accelerator_time += eval_time
-        test_elapse_time += eval_time
-        prepare_elapse_time += prepare_time
-        print('test_auc: %.4f ----test_loss: %.4f ---- test_accuracy: %.9f ---- test_aux_loss: %.4f ---- eval_time: %.3f ---- prepare_time: %.3f' %
-              (test_auc, test_loss, test_accuracy, test_aux_loss, eval_time, prepare_time))
-        test_auc, test_loss, test_accuracy, test_aux_loss, eval_time, prepare_time, num_iters, test_prepared = eval(
-            sess, test_data, model, model_path, test_prepared)
-        approximate_accelerator_time += eval_time
-        test_elapse_time += eval_time
-        prepare_elapse_time += prepare_time
-        print('test_auc: %.4f ----test_loss: %.4f ---- test_accuracy: %.9f ---- test_aux_loss: %.4f ---- eval_time: %.3f ---- prepare_time: %.3f' %
-              (test_auc, test_loss, test_accuracy, test_aux_loss, eval_time, prepare_time))
-        test_auc, test_loss, test_accuracy, test_aux_loss, eval_time, prepare_time, num_iters, test_prepared = eval(
-            sess, test_data, model, model_pat, test_prepared)
-        approximate_accelerator_time += eval_time
-        test_elapse_time += eval_time
-        prepare_elapse_time += prepare_time
-        print('test_auc: %.4f ----test_loss: %.4f ---- test_accuracy: %.9f ---- test_aux_loss: %.4f ---- eval_time: %.3f ---- prepare_time: %.3f' %
-              (test_auc, test_loss, test_accuracy, test_aux_loss, eval_time, prepare_time))
-        test_auc, test_loss, test_accuracy, test_aux_loss, eval_time, prepare_time, num_iters, test_prepared = eval(
-            sess, test_data, model, model_path, test_prepared)
         approximate_accelerator_time += eval_time
         test_elapse_time += eval_time
         prepare_elapse_time += prepare_time

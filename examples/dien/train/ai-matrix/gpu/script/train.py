@@ -667,34 +667,6 @@ def test(
         prepare_elapse_time += prepare_time
         print('test_auc: %.4f ----test_loss: %.4f ---- test_accuracy: %.9f ---- test_aux_loss: %.4f ---- eval_time: %.3f ---- prepare_time: %.3f' %
               (test_auc, test_loss, test_accuracy, test_aux_loss, eval_time, prepare_time))
-        test_auc, test_loss, test_accuracy, test_aux_loss, eval_time, prepare_time, num_iters, test_prepared = eval(
-            sess, test_data, model, model_path, test_prepared)
-        approximate_accelerator_time += eval_time
-        test_elapse_time += eval_time
-        prepare_elapse_time += prepare_time
-        print('test_auc: %.4f ----test_loss: %.4f ---- test_accuracy: %.9f ---- test_aux_loss: %.4f ---- eval_time: %.3f ---- prepare_time: %.3f' %
-              (test_auc, test_loss, test_accuracy, test_aux_loss, eval_time, prepare_time))
-        test_auc, test_loss, test_accuracy, test_aux_loss, eval_time, prepare_time, num_iters, test_prepared = eval(
-            sess, test_data, model, model_path, test_prepared)
-        approximate_accelerator_time += eval_time
-        test_elapse_time += eval_time
-        prepare_elapse_time += prepare_time
-        print('test_auc: %.4f ----test_loss: %.4f ---- test_accuracy: %.9f ---- test_aux_loss: %.4f ---- eval_time: %.3f ---- prepare_time: %.3f' %
-              (test_auc, test_loss, test_accuracy, test_aux_loss, eval_time, prepare_time))
-        test_auc, test_loss, test_accuracy, test_aux_loss, eval_time, prepare_time, num_iters, test_prepared = eval(
-            sess, test_data, model, model_path, test_prepared)
-        approximate_accelerator_time += eval_time
-        test_elapse_time += eval_time
-        prepare_elapse_time += prepare_time
-        print('test_auc: %.4f ----test_loss: %.4f ---- test_accuracy: %.9f ---- test_aux_loss: %.4f ---- eval_time: %.3f ---- prepare_time: %.3f' %
-              (test_auc, test_loss, test_accuracy, test_aux_loss, eval_time, prepare_time))
-        test_auc, test_loss, test_accuracy, test_aux_loss, eval_time, prepare_time, num_iters, test_prepared = eval(
-            sess, test_data, model, model_path, test_prepared)
-        approximate_accelerator_time += eval_time
-        test_elapse_time += eval_time
-        prepare_elapse_time += prepare_time
-        print('test_auc: %.4f ----test_loss: %.4f ---- test_accuracy: %.9f ---- test_aux_loss: %.4f ---- eval_time: %.3f ---- prepare_time: %.3f' %
-              (test_auc, test_loss, test_accuracy, test_aux_loss, eval_time, prepare_time))
         print("Total recommendations: %d" % (num_iters*batch_size))
         print("Approximate accelerator time in seconds is %.3f" %
               approximate_accelerator_time)
