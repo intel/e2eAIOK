@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from trainer.model.widedeep import wide_deep_model
-from trainer.run_hvd import train
+from trainer.run import train
 from trainer.utils.arguments import parse_args
 from trainer.utils.setup import create_config
 import horovod.tensorflow as hvd
@@ -83,18 +83,26 @@ def main():
         else:
             assignments = hvd.broadcast_object(assignments, root_rank=0)
         logger.info(f'{hvd.rank()}:assignment: {assignments}')
-        args.deep_hidden_units = [assignments["dnn_hidden_unit1"], assignments["dnn_hidden_unit1"], assignments["dnn_hidden_unit1"]]
-        args.deep_learning_rate = assignments["learning_rate"]
-        args.deep_warmup_epochs = assignments["warmup_epoch"]
+        args.deep_hidden_units = [assignments["dnn_hidden_unit1"], assignments["dnn_hidden_unit2"], assignments["dnn_hidden_unit3"]]
+        args.deep_learning_rate = assignments["deep_learning_rate"]
+        args.linear_learning_rate = assignments["linear_learning_rate"]
+        args.deep_warmup_epochs = assignments["deep_warmup_epochs"]
+        args.deep_dropout = assignments["deep_dropout"]
 
         model = wide_deep_model(args)
         map = train(args, model, config)
         if hvd.rank() == 0:
-            conn.experiments(experiment.id).observations().create(
-                suggestion=suggestion.id,
-                value=map,
-            )
-            experiment = conn.experiments(experiment.id).fetch()
+            for i in range(5):
+                try:
+                    conn.experiments(experiment.id).observations().create(
+                        suggestion=suggestion.id,
+                        value=map,
+                    )
+                    experiment = conn.experiments(experiment.id).fetch()
+                    break
+                except Exception as e:
+                    logger.info(f'Met exception when creating observation, retried {i} times. The exception is: {e}')
+                    time.sleep(5)
     if hvd.rank() == 0:
         all_best_assignments = conn.experiments(experiment.id).best_assignments().fetch()
         best_assignments = all_best_assignments.data[0].assignments

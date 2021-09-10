@@ -266,6 +266,7 @@ def train(args, model, config):
         if hvd.rank() == 0:
             # dllogger.log(data=eval_data, step=tuple())
             logger.info(f'Final eval result: {eval_data}')
+    return map_metric
 
 
 def evaluate(args, model, config):
