@@ -126,6 +126,22 @@ proc.reset_ops([op_feature_from_original])
 df = proc.transform(df, name=output_name)   # data will be transformed when this line called
 ```
 
+## Test with [OAP Gazelle Project](https://github.com/oap-project/gazelle_plugin)
+```
+docker run -it --privileged --network host -w /home/vmagent/app/ xuechendi/recdp_spark3.1:gazelle /bin/bash
+./run_jupyter
+tail jupyter_error.log
+    Or copy and paste one of these URLs:
+        http://sr130:8888/?token=c631ab6db797517e3603e7450c00e85cfc3b52653f9da31e
+     or http://127.0.0.1:8888/?token=c631ab6db797517e3603e7450c00e85cfc3b52653f9da31e
+[I 08:24:19.503 NotebookApp] 302 GET / (10.0.0.101) 0.950000ms
+[I 08:24:19.515 NotebookApp] 302 GET /tree? (10.0.0.101) 1.090000ms
+```
+run jupyter in browser
+![image](https://user-images.githubusercontent.com/4355494/130717509-df77342d-67c8-4c40-b764-012cdfc6353f.png)
+You'll see sql plan as below
+![image](https://user-images.githubusercontent.com/4355494/130717645-535a0807-a7d8-4968-884e-f0527bb7ccad.png)
+
 
 ## LICENSE
 * Apache 2.0

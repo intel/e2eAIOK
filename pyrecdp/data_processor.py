@@ -384,7 +384,6 @@ class Distinct(Operation):
     def process(self, df, spark, df_cnt, enable_scala=True, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
         return df.distinct()
 
-
 class SelectFeature(Operation):
     '''
     Operation to select and rename columns
@@ -705,6 +704,8 @@ class ModelMerge(Operation):
     Operation to Merge Pre-Generated Model
 
     Args:
+      example - dicts
+      [{'col_name': ['Id'], 'dict': top_answers_df}]
     '''
     # TODO: We should add an optimization for csv input
 
@@ -906,15 +907,15 @@ class ScalaDFTest(Operation):
 
 
 class CollapseByHist(Operation):
-    def __init__(self, cols, by, orderBy = None, minNumHist = 0, maxNumHist = -1):
+    def __init__(self, cols = [], by = None, orderBy = None, minNumHist = 0, maxNumHist = -1):
         self.op_name = "CollapseByHist"
         self.cols = cols
         self.by = by
         self.orderBy = orderBy
         self.minNumHist = minNumHist
         self.maxNumHist = maxNumHist
-        if cols == None or by == None or len(cols) == 0 or (isinstance(by, list) and len(by) == 0):
-            raise ValueError("CollapseByHist expects input cols and by are not None or Empty")
+        if by == None or (isinstance(by, list) and len(by) == 0):
+            raise ValueError("CollapseByHist expects input by should not None or Empty")
 
 
     def process(self, df, spark, df_cnt, enable_scala=True, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
@@ -927,16 +928,26 @@ class CollapseByHist(Operation):
             df = df.withColumn(f'hist_{c}', spk_func.collect_list(c).over(Window.partitionBy(self.by)))
             df = df.withColumn(f'hist_{c}', spk_func.when(spk_func.col(f'hist_{c}').isNull(), spk_func.array()).otherwise(spk_func.col(f'hist_{c}')))
             last_collapse_col = f'hist_{c}'
-        df = df.withColumn('row_cnt', spk_func.size(spk_func.col(last_collapse_col)))
-        df = df.withColumn('row_cnt', spk_func.col('row_cnt').cast(spk_type.IntegerType()))
-        df = df.filter((df.row_id == df.row_cnt) & (df.row_cnt > spk_func.lit(self.minNumHist)))
-        for c in self.cols:
-            if self.maxNumHist != -1:
-                df = df.withColumn('max_hist_len', spk_func.when(spk_func.col('row_cnt') > self.maxNumHist, self.maxNumHist).otherwise(spk_func.col('row_cnt')))
+        if last_collapse_col == "":
+            if self.orderBy != None:
+                df = df.withColumn('row_max', spk_func.max(self.orderBy).over(Window.partitionBy(self.by)))
+                df = df.filter((df[self.orderBy] == df.row_max))
+                df = df.drop('row_id').drop('row_max')
             else:
-                df = df.withColumn('max_hist_len', spk_func.col('row_cnt'))
-            df = df.withColumn(f'hist_{c}', spk_func.expr(f"slice(hist_{c}, 1, max_hist_len - 1)"))
-        df = df.drop('row_id').drop('row_cnt').drop('max_hist_len')
+                df = df.withColumn('row_cnt', spk_func.max('row_id').over(Window.partitionBy(self.by)))
+                df = df.filter((df.row_id == df.row_cnt) & (df.row_cnt > spk_func.lit(self.minNumHist)))
+                df = df.drop('row_id')
+        else:
+            df = df.withColumn('row_cnt', spk_func.size(spk_func.col(last_collapse_col)))
+            df = df.withColumn('row_cnt', spk_func.col('row_cnt').cast(spk_type.IntegerType()))
+            df = df.filter((df.row_id == df.row_cnt) & (df.row_cnt > spk_func.lit(self.minNumHist)))
+            for c in self.cols:
+                if self.maxNumHist != -1:
+                    df = df.withColumn('max_hist_len', spk_func.when(spk_func.col('row_cnt') > self.maxNumHist, self.maxNumHist).otherwise(spk_func.col('row_cnt')))
+                else:
+                    df = df.withColumn('max_hist_len', spk_func.col('row_cnt'))
+                df = df.withColumn(f'hist_{c}', spk_func.expr(f"slice(hist_{c}, 1, max_hist_len - 1)"))
+            df = df.drop('row_id').drop('row_cnt').drop('max_hist_len')
         return df
 
 
@@ -1062,6 +1073,7 @@ class DataProcessor:
             save_path = self.get_tmp_cache_path()
             op = self.refine_op(op, df, save_path)
             df = op.process(df, self.spark, df_cnt, self.enable_scala, save_path=save_path, per_core_memory_size = self.per_core_memory_size, flush_threshold = self.flush_threshold, enable_gazelle=self.enable_gazelle)
+        self.ops = []
         return df
 
     def transform(self, df, name="materialized_tmp", df_cnt = None):
