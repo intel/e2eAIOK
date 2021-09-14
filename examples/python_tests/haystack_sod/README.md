@@ -1,6 +1,14 @@
 # How to run
 
 ```
+# download kaggle dataset
+python
+>> import kaggle
+>>         kaggle.api.authenticate()
+>>         kaggle.api.dataset_download_files('stackoverflow/stacksample', path=SO_PATH, unzip=True, quiet=False)
+
+# or download from website https://www.kaggle.com/stackoverflow/stacksample
+        
 # cp stack-overflow folder to ${current_path}/recdp/examples/python_tests/haystack_sod/
 
 # run below codes to all physical nodes
@@ -34,3 +42,10 @@ EMBEDDING_BATCH_SIZE = 32768
 
 python gen_sod_to_documentstore.py
 ```
+
+![image](https://user-images.githubusercontent.com/4355494/133181494-b55a9366-b61b-4cad-a498-907949ec67ca.png)
+
+##### checkout inferencing progress in spark executor stderr log
+![image](https://user-images.githubusercontent.com/4355494/133181592-ac23bb01-62d7-4ee4-802e-e54802ae8441.png)
+
+
