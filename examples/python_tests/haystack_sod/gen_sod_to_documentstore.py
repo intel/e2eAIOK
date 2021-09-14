@@ -38,6 +38,7 @@ def main():
         .config("spark.executor.cores", NUMCORES_PER_SOCKET)\
         .config("spark.driver.maxResultSize", "16G")\
         .config("spark.sql.execution.arrow.maxRecordsPerBatch", EMBEDDING_BATCH_SIZE)\
+        .config("spark.cleaner.periodicGC.interval", "7200min")\
         .getOrCreate()
 
     SO_FILE = {'question': 'Questions.csv', 'answer': 'Answers.csv'}
@@ -101,7 +102,7 @@ def main():
     print(f"Process Question.csv took {(t1 - t0)} secs")
 
     ############# Embedding and write to DocumentStore ###############
-    # question_df = spark.read.parquet(f"{path_prefix}{current_path}/question_processed.parquet/part-00199-c2fd7eab-512d-4ff4-81e3-a5c6502515ea-c000.snappy.parquet")
+    question_df = spark.read.parquet(f"{path_prefix}{current_path}/question_processed.parquet")
     question_df = question_df.repartition(EMBEDDING_PARALLELISM)
 
     import init_haystack
@@ -126,9 +127,10 @@ def main():
         retriever = EmbeddingRetriever(document_store=document_store, embedding_model="deepset/sentence_bert", use_gpu=False)
         for df in iterator:
             df["question_emb"] = retriever.embed_queries(texts=list(df['text'].values))
-            # FIXME: originally, we will write to documents by batches while met a max length issue
-            # ISSUE log: 'Document contains at least one immense term in field="question-body" (whose UTF8 encoding is longer than the max length 32766)'
-            # document_store.write_documents(df.to_dict(orient="records"))
+            try:
+                document_store.write_documents(df.to_dict(orient="records"))
+            except:
+                pass
             yield df["question_emb"]
 
     total_len = question_df.count()
@@ -145,20 +147,18 @@ def main():
     # This is an alternative way of storing data to document store.
     # once we fixed 'illegal_argument_exception', we can remove this part and use spark to write
 
-    print('write into documentstore...')
-    t0 = timer()
-    qa = question_df.toPandas()
-    docs_to_index = qa.to_dict(orient="records")
-    document_store = ElasticsearchDocumentStore(host="localhost", username="", password="",
-                                                index="document",
-                                                embedding_field="question_emb",
-                                                embedding_dim=768,
-                                                excluded_meta_data=["question_emb"])
-    document_store.write_documents(docs_to_index)
-    t1 = timer()
-    print(f'Write to document store took {(t1 - t0)} secs')
-
-
+#    print('write into documentstore...')
+#    t0 = timer()
+#    qa = question_df.toPandas()
+#    docs_to_index = qa.to_dict(orient="records")
+#    document_store = ElasticsearchDocumentStore(host="localhost", username="", password="",
+#                                                index="document",
+#                                                embedding_field="question_emb",
+#                                                embedding_dim=768,
+#                                                excluded_meta_data=["question_emb"])
+#    document_store.write_documents(docs_to_index)
+#    t1 = timer()
+#    print(f'Write to document store took {(t1 - t0)} secs')
     print('!!!ALL DONE!!!')
 
     question_df = spark.read.parquet(f"{path_prefix}{current_path}/question_with_embed.parquet")
