@@ -11,9 +11,11 @@ python
         
 # cp stack-overflow folder to ${current_path}/recdp/examples/python_tests/haystack_sod/
 
+# run elastic search server on my node
+docker run -d -p 9200:9200 -e "discovery.type=single-node" elasticsearch:7.9.2
+
 # run below codes to all physical nodes
 # Fix the recdp path to align with your env
-
 docker run -it --net=host -v /mnt/nvme2/chendi/BlueWhale/recdp:/home/vmagent/app/recdp -v /mnt/nvme2/chendi/BlueWhale/applications.ai.appliedml.haystack/:/home/haystack -v /mnt/nvme2/chendi/BlueWhale/applications.ai.appliedml.haystack/haystack/:/home/user/haystack xuechendi/haystack-cpu-recdp /bin/bash
 
 # after enter docker, start spark master and workers
