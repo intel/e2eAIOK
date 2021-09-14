@@ -46,6 +46,7 @@ python gen_sod_to_documentstore.py
 ![image](https://user-images.githubusercontent.com/4355494/133181494-b55a9366-b61b-4cad-a498-907949ec67ca.png)
 
 ##### checkout inferencing progress in spark executor stderr log
-![image](https://user-images.githubusercontent.com/4355494/133181592-ac23bb01-62d7-4ee4-802e-e54802ae8441.png)
+![image](https://user-images.githubusercontent.com/4355494/133181797-c1a2a1fe-230c-45ff-a536-89ed143a51c8.png)
+
 
 
