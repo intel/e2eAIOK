@@ -14,14 +14,15 @@ import numpy as np
 import pandas as pd
 from bs4 import BeautifulSoup
 
-MODE = 0  # 0: actual, 1: debug
 SO_PATH = './stack-overflow/'
+EMBEDDING_PARALLELISM = 2
+NUMCORES_PER_SOCKET = 52
+EMBEDDING_BATCH_SIZE = 32768
 
 def main():
     path_prefix = "file://"
     current_path = "/home/vmagent/app/recdp/examples/python_tests/haystack_sod/"
     data_folder = "stack-overflow/"
-    #data_folder = ""
 
     if not os.path.isdir(f"{current_path}/stack-overflow/"):
         import kaggle
@@ -29,16 +30,16 @@ def main():
         kaggle.api.dataset_download_files('stackoverflow/stacksample', path=SO_PATH, unzip=True, quiet=False)
 
     ##### 1. Start spark and initialize data processor #####
-    spark = SparkSession.builder.master('local[*]')\
+    spark = SparkSession.builder.master('spark://sr602:7077')\
         .appName("HAYSTACK_SOD")\
-        .config("spark.driver.memory", "400G")\
-        .config("spark.driver.memoryOverhead", "80G")\
-        .config("spark.executor.cores", "80")\
+        .config("spark.driver.memory", "60G")\
+        .config("spark.executor.memory", "250G")\
+        .config("spark.executor.instances", EMBEDDING_PARALLELISM)\
+        .config("spark.executor.cores", NUMCORES_PER_SOCKET)\
         .config("spark.driver.maxResultSize", "16G")\
-        .config("spark.sql.execution.arrow.maxRecordsPerBatch", "32768")\
+        .config("spark.sql.execution.arrow.maxRecordsPerBatch", EMBEDDING_BATCH_SIZE)\
         .getOrCreate()
 
-    #files = ["day_%d" % i for i in range(0, 24)]
     SO_FILE = {'question': 'Questions.csv', 'answer': 'Answers.csv'}
     file_names = dict((key, path_prefix + os.path.join(current_path, data_folder, filename)) for key, filename in SO_FILE.items())
 
@@ -65,7 +66,6 @@ def main():
     top_answers_df = top_answers_df.drop('Score')
 
     top_answers_df = proc.transform(top_answers_df, name="top_answer_processed.parquet")
-    #top_answers_df.show()
     t1 = timer()
     print(f"Process Answer.csv took {(t1 - t0)} secs")
 
@@ -101,9 +101,8 @@ def main():
     print(f"Process Question.csv took {(t1 - t0)} secs")
 
     ############# Embedding and write to DocumentStore ###############
-    question_df = spark.read.parquet(f"{path_prefix}{current_path}/question_processed.parquet")
-    # Chendi: my SKX node has two sockets, only start two jobs got the best performance
-    question_df = question_df.repartition(2)
+    # question_df = spark.read.parquet(f"{path_prefix}{current_path}/question_processed.parquet/part-00199-c2fd7eab-512d-4ff4-81e3-a5c6502515ea-c000.snappy.parquet")
+    question_df = question_df.repartition(EMBEDDING_PARALLELISM)
 
     import init_haystack
     from haystack.document_store.elasticsearch import ElasticsearchDocumentStore
@@ -127,7 +126,9 @@ def main():
         retriever = EmbeddingRetriever(document_store=document_store, embedding_model="deepset/sentence_bert", use_gpu=False)
         for df in iterator:
             df["question_emb"] = retriever.embed_queries(texts=list(df['text'].values))
-            document_store.write_documents(df.to_dict(orient="records"))
+            # FIXME: originally, we will write to documents by batches while met a max length issue
+            # ISSUE log: 'Document contains at least one immense term in field="question-body" (whose UTF8 encoding is longer than the max length 32766)'
+            # document_store.write_documents(df.to_dict(orient="records"))
             yield df["question_emb"]
 
     total_len = question_df.count()
@@ -139,6 +140,25 @@ def main():
     question_df.show()
     t1 = timer()
     print(f'EmbeddingRetriever embed_queries took {(t1 - t0)} secs')
+
+    # write into document store
+    # This is an alternative way of storing data to document store.
+    # once we fixed 'illegal_argument_exception', we can remove this part and use spark to write
+
+    print('write into documentstore...')
+    t0 = timer()
+    qa = question_df.toPandas()
+    docs_to_index = qa.to_dict(orient="records")
+    document_store = ElasticsearchDocumentStore(host="localhost", username="", password="",
+                                                index="document",
+                                                embedding_field="question_emb",
+                                                embedding_dim=768,
+                                                excluded_meta_data=["question_emb"])
+    document_store.write_documents(docs_to_index)
+    t1 = timer()
+    print(f'Write to document store took {(t1 - t0)} secs')
+
+
     print('!!!ALL DONE!!!')
 
     question_df = spark.read.parquet(f"{path_prefix}{current_path}/question_with_embed.parquet")

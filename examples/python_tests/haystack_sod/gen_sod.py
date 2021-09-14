@@ -34,6 +34,8 @@ def main():
         .config("spark.driver.memory", "400G")\
         .config("spark.driver.memoryOverhead", "80G")\
         .config("spark.executor.cores", "80")\
+        .config("spark.driver.maxResultSize", "16G")\
+        .config("spark.sql.execution.arrow.maxRecordsPerBatch", "32768")\
         .getOrCreate()
 
     #files = ["day_%d" % i for i in range(0, 24)]
@@ -97,65 +99,6 @@ def main():
     question_df.show()
     t1 = timer()
     print(f"Process Question.csv took {(t1 - t0)} secs")
-
-#    ############## Embedding ###############
-#    question_df = spark.read.parquet(f"{path_prefix}{current_path}/question_processed.parquet")
-#    import init_haystack
-#    from haystack.document_store.elasticsearch import ElasticsearchDocumentStore
-#
-#    from haystack.retriever.dense import EmbeddingRetriever
-#    from haystack.utils import print_answers
-#    print('launching es & retriever...')
-#    start_es = True
-#    if start_es:
-#        from haystack.utils import launch_es
-#        launch_es()
-#    document_store = ElasticsearchDocumentStore(host="localhost", username="", password="",
-#                                            index="document",
-#                                            embedding_field="question_emb",
-#                                            embedding_dim=768,
-#                                            excluded_meta_data=["question_emb"])
-#
-#    retriever = EmbeddingRetriever(document_store=document_store, embedding_model="deepset/sentence_bert", use_gpu=False)
-#
-#    # get embeddings for question
-#    embed_udf = f.udf(lambda x: BeautifulSoup(x, "lxml").get_text(), StringType())
-#    total_len = question_df.count()
-#    print('generating embeddings len = %d ...' % (total_len))
-#    t0 = timer()
-#    local_data = question_df.collect()
-#    questions = [row['text'] for row in local_data]
-#    t1 = timer()
-#    print(f'Collect questions as list took {(t1 - t0)} secs')
-#    t0 = timer()
-#    print(f"Start to do EmbeddingRetriever embed_queries ...")
-#    question_emb = retriever.embed_queries(texts=questions)
-#    t1 = timer()
-#    print(f'EmbeddingRetriever embed_queries took {(t1 - t0)} secs')
-#
-#    # write into document store
-#    print('Start write into documentstore...')
-#    t0 = timer()
-#    for vl, v in zip(local_data, question_emb):
-#        vl.update({'question_emb': v})
-#    docs_to_index = local_data
-#    document_store.write_documents(docs_to_index)
-#    t1 = timer()
-#    print(f'EmbeddingRetriever embed_queries took {(t1 - t0)} secs')
-#
-#
-#    # give a simple test
-#    from haystack.pipeline import FAQPipeline
-#    pipe = FAQPipeline(retriever=retriever)
-#
-#    start = time.time()
-#    prediction = pipe.run(query="Python - how to get current date?", top_k_retriever=3)
-#    print_answers(prediction, details="all")
-#    end = time.time()
-#    print('Took %.3f secs', (end - start))
-#
-#    print('!!!ALL DONE!!!')
-
 
 if __name__ == "__main__":
     main()
