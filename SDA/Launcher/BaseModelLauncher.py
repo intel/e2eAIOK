@@ -24,6 +24,10 @@ class BaseModelLauncher:
         self.params['model_dir'] = args.model_dir
         self.params['metric'] = args.metric
         self.params['metric_threshold'] = args.metric_threshold
+        self.params['metric_objective'] = args.metric_objective
+        self.params['observation_budget'] = args.observation_budget
+        if args.training_time_threshold is not None:
+            self.params['training_time_threshold'] = args.training_time_threshold
 
     def parse_common_args(self, args):
         self.parser.add_argument('--ppn', type=int, default=1, help='Define worker number per node for distributed training')
@@ -37,7 +41,10 @@ class BaseModelLauncher:
         self.parser.add_argument('--trainset_size', type=int, help='Define trainset size')
         self.parser.add_argument('--model_dir', type=str, default='./', help='Model save path')
         self.parser.add_argument('--metric', type=str, default='AUC', help='Model evaluation metric')
+        self.parser.add_argument('--observation_budget', type=int, default=40, help='Define total number of sigopt optimization loop')
         self.parser.add_argument('--metric_threshold', type=float, default=0, help='Model evaluation metric threshold')
+        self.parser.add_argument('--metric_objective', type=str, default='maximize', help='Either set minimize or maximize')
+        self.parser.add_argument('--training_time_threshold', type=int, help='Define training time threshold for sigopt optmization metric')
         return self.parser.parse_known_args(args)
     
     def parse_args(self, args):

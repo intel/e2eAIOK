@@ -1,7 +1,11 @@
 experiment: WnD
 metrics:
+- name: training_time
+  objective: minimize
+  threshold: 1800
 - name: MAP
   objective: maximize
+  threshold: 0.6553
 observation_budget: 40
 parameters:
 - grid:

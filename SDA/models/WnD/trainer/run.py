@@ -15,7 +15,6 @@
 import logging
 import os
 import time
-import dllogger
 import horovod.tensorflow as hvd
 import numpy as np
 import tensorflow as tf
@@ -27,6 +26,7 @@ from trainer.utils.schedulers import get_schedule
 metrics_print_interval = 10
 os.environ['HOROVOD_CYCLE_TIME'] = '0.1'
 def train(args, model, config):
+    train_start_time = time.time()
     logger = logging.getLogger('tensorflow')
 
     train_dataset = config['train_dataset']
@@ -216,4 +216,5 @@ def train(args, model, config):
 
         if hvd.rank() == 0:
             logger.info(f'Final eval result: {eval_data}')
-    return metric
+    training_time = time.time() - train_start_time
+    return {'metric': metric, 'training_time': training_time}

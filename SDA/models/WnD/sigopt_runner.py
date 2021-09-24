@@ -14,7 +14,7 @@ def exclude_params(args, parameters):
     merged_parameters = []
     for param in parameters:
         all_assignments[param['name']] = param
-    
+
     if len(args.deep_hidden_units) == 0:
         merged_parameters += [all_assignments['dnn_hidden_unit1'], all_assignments['dnn_hidden_unit2'], all_assignments['dnn_hidden_unit3']]
     if args.deep_learning_rate == -1:
@@ -39,16 +39,9 @@ def assign_params(args, assignments):
     if 'deep_dropout' in assignments:
         args.deep_dropout = assignments["deep_dropout"]
 
-def create_experiment(args, yaml_file="models/WnD/sigopt.yaml"):
-    with open(yaml_file) as f:
-        data = yaml.load(f, Loader=yaml.FullLoader)
-    conn = Connection(client_token='NEKPNYXPRQRRUMTGRMVEKLRAZCUWGMCHTQDSILUOGQMLKZWD')
-    conn.set_proxies(
-        {
-            "http": "http://child-prc.intel.com:913",
-            "https": "http://child-prc.intel.com:913",
-        }
-    )
+def create_experiment(args, data):
+    conn = Connection()
+
     parameters = exclude_params(args, data["parameters"])
     metrics = data["metrics"]
     observation_budget = data["observation_budget"]
@@ -64,32 +57,34 @@ def create_experiment(args, yaml_file="models/WnD/sigopt.yaml"):
     )
     return conn, experiment
 
+def load_yaml(args, yaml_file="models/WnD/sigopt.yaml"):
+    with open(yaml_file) as f:
+        data = yaml.load(f, Loader=yaml.FullLoader)
+    metrics = data["metrics"]
+    args.optimize_training_time = False
+    for metric in metrics:
+        if (metric['name'] == 'training_time'):
+            args.optimize_training_time = True
+            break
+    return data
+
 def main():
     args = parse_args()
     config = create_config(args)
-
     logger = logging.getLogger('tensorflow')
 
+    experiment_data = load_yaml(args)
     assignments = {}
-    experiment_id = 0
-    suggestion_id = 0
+    budget = 0
     if hvd.rank() == 0:
-        conn, experiment = create_experiment(args)
-        experiment_id = experiment.id
-        experiment_id = hvd.broadcast_object(experiment_id, root_rank=0)
-        logger.info(f'experiment.observation_budget: {experiment.observation_budget}')
+        conn, experiment = create_experiment(args, experiment_data)
+        budget = experiment.observation_budget
+        budget = hvd.broadcast_object(budget, root_rank=0)
     else:
-        experiment_id = hvd.broadcast_object(experiment_id, root_rank=0)
+        budget = hvd.broadcast_object(budget, root_rank=0)
+    logger.info(f'Experiment budget: {budget}')
 
-    conn = Connection(client_token='NEKPNYXPRQRRUMTGRMVEKLRAZCUWGMCHTQDSILUOGQMLKZWD')
-    conn.set_proxies(
-        {
-            "http": "http://child-prc.intel.com:913",
-            "https": "http://child-prc.intel.com:913",
-        }
-    )
-    experiment = conn.experiments(experiment_id).fetch()
-    for _ in range(experiment.observation_budget):
+    for _ in range(budget):
 
         if hvd.rank() == 0:
             suggestion = conn.experiments(experiment.id).suggestions().create()
@@ -102,17 +97,19 @@ def main():
         logger.info(f'The training parameters from sigopt: dnn_hidden_units: {args.deep_hidden_units}, linear_learning_rate: {args.linear_learning_rate}, \
             deep_learning_rate: {args.deep_learning_rate}, deep_warmup_epochs: {args.deep_warmup_epochs}, deep_dropout: {args.deep_dropout}')
 
-        s_time = time.time()
         model = wide_deep_model(args)
-        metric = train(args, model, config)
-        metric = 0
-        training_time = time.time() - s_time
+        metrics = train(args, model, config)
+        values = []
+        values.append({'name': args.metric, 'value': metrics['metric']})
+        if args.optimize_training_time:
+            values.append({'name': 'training_time', 'value': metrics['training_time']})
+        logger.info(f'Sigopt observation values: {values}')
         if hvd.rank() == 0:
             for i in range(5):
                 try:
                     conn.experiments(experiment.id).observations().create(
                         suggestion=suggestion.id,
-                        value=metric,
+                        values=values,
                     )
                     experiment = conn.experiments(experiment.id).fetch()
                     break

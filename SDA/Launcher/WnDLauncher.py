@@ -50,9 +50,14 @@ class WnDLauncher(BaseModelLauncher):
                       {'name': 'deep_warmup_epochs', 'bounds': {'min': 1, 'max': 8}, 'type': 'int'},
                       {'name': 'deep_dropout', 'bounds': {'min': 0, 'max': 0.5}, 'type': 'double'}]
         config['parameters'] = parameters
-        metrics = [{'name': self.params['metric'], 'objective': 'maximize'}]
+        metrics = []
+        if 'training_time_threshold' in self.params:
+            metrics.append({'name': 'training_time', 'objective': 'minimize', 'threshold': self.params['training_time_threshold']})
+            metrics.append({'name': self.params['metric'], 'objective': self.params['metric_objective'], 'threshold': self.params['metric_threshold']})
+        else:
+            metrics.append({'name': self.params['metric'], 'objective': self.params['metric_objective']})
         config['metrics'] = metrics
-        config['observation_budget'] = 40
+        config['observation_budget'] = self.params['observation_budget']
         with open(file, 'w') as f:
             yaml.dump(config, f)
     
