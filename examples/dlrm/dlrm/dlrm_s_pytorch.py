@@ -51,7 +51,11 @@
 # Misha Smelyanskiy, "Deep Learning Recommendation Model for Personalization and
 # Recommendation Systems", CoRR, arXiv:1906.00091, 2019
 
+
 from __future__ import absolute_import, division, print_function, unicode_literals
+
+
+
 
 # miscellaneous
 import builtins
@@ -104,8 +108,8 @@ import mlperf_logger
 # from torch.nn.parameter import Parameter
 
 from torch.optim.lr_scheduler import _LRScheduler
+import os
 
-exc = getattr(builtins, "IOError", "FileNotFoundError")
 
 class LRPolicyScheduler(_LRScheduler):
     def __init__(self, optimizer, num_warmup_steps, decay_start_step, num_decay_steps):
@@ -258,7 +262,7 @@ class DLRM_Net(nn.Module):
                 # approach 1
                 if n >= self.sparse_dense_boundary:
                     #n = 39979771
-                    m_sparse = 16
+                    m_sparse = int(m/4)
                     W = np.random.uniform(
                         low=-np.sqrt(1 / n), high=np.sqrt(1 / n), size=(n, m_sparse)
                     ).astype(np.float32)
@@ -743,7 +747,10 @@ if __name__ == "__main__":
     parser.add_argument("--use-ipex", action="store_true", default=False)
     # lamb
     parser.add_argument("--optimizer", type=int, default=0, help='optimizer:[0:sgd, 1:lamb/sgd, 2:adagrad, 3:sparseadam]')
-
+    parser.add_argument("--lamblr", type=float, default=0.01, help='lr for lamb')
+    parser.add_argument("--train-data-path", type=str, default="./data/train.bin")
+    parser.add_argument("--eval-data-path", type=str, default="./data/valid.bin")
+    parser.add_argument("--day-feature-count", type=str, default="./data/day_fea_count.npz")
     args = parser.parse_args()
 
     ext_dist.init_distributed(backend=args.dist_backend)
@@ -1052,10 +1059,10 @@ if __name__ == "__main__":
                 ], lr=args.learning_rate)
             else:
                 optimizer_dense = optimizers[0][0]([
-                    {"params": [p for emb in dlrm.emb_dense for p in emb.parameters()], "lr": args.learning_rate},
-                    {"params": dlrm.bot_l.parameters(), "lr": args.learning_rate},
-                    {"params": dlrm.top_l.parameters(), "lr": args.learning_rate}
-                ], lr=args.learning_rate, bf16=args.bf16)
+                    {"params": [p for emb in dlrm.emb_dense for p in emb.parameters()], "lr": args.lamblr},
+                    {"params": dlrm.bot_l.parameters(), "lr": args.lamblr},
+                    {"params": dlrm.top_l.parameters(), "lr": args.lamblr}
+                ], lr=args.lamblr, bf16=args.bf16)
                 optimizer_sparse = optimizers[1]([
                     {"params": [p for emb in dlrm.emb_sparse for p in emb.parameters()],
                      "lr": args.learning_rate / ext_dist.my_size},
@@ -1342,7 +1349,7 @@ if __name__ == "__main__":
 
                 # testing
                 if should_test and not args.inference_only:
-                    break
+                    test_start = time.time()
                     epoch_num_float = (j + 1) / len(train_ld) + k + 1
                     mlperf_logger.barrier()
                     mlperf_logger.log_start(key=mlperf_logger.constants.EVAL_START,
@@ -1515,7 +1522,14 @@ if __name__ == "__main__":
                     # Uncomment the line below to print out the total time with overhead
                     # print("Total test time for this group: {}" \
                     # .format(time_wrap(use_gpu) - accum_test_time_begin))
+                    # if ext_dist.dist.get_rank()==0:
+                    file1 = open("models/DLRM/trainer/best_auc.txt",'w')
+                    file1.writelines(str(best_auc_test))
+                    file1.close()
 
+                    
+
+                    config.set_auc(best_auc_test)
                     if (args.mlperf_logging
                         and (args.mlperf_acc_threshold > 0)
                         and (best_gA_test > args.mlperf_acc_threshold)):
@@ -1537,9 +1551,15 @@ if __name__ == "__main__":
                         mlperf_logger.log_end(key=mlperf_logger.constants.RUN_STOP,
                                               metadata={
                                                   mlperf_logger.constants.STATUS: mlperf_logger.constants.SUCCESS})
-                                
+
                         break
-                    #ext_dist.barrier()
+                    test_end = time.time()
+                    print(F"Test time:{test_end - test_start}")
+                    ext_dist.barrier()
+                    
+                    # if (j>1) and (j+1)%13600 ==0:
+                    #     print(F"Fineshed 13600 steps training")
+                    #     break
 
             mlperf_logger.barrier()
             mlperf_logger.log_end(key=mlperf_logger.constants.EPOCH_STOP,
@@ -1551,45 +1571,3 @@ if __name__ == "__main__":
     train_end = time.time()
     total_time = train_end - train_start
     print(F"Total Time:{total_time}")
-    if args.enable_profiling:
-        print(prof.key_averages().table(sort_by="cpu_time_total"))
-
-    if args.mlperf_logging and best_auc_test <= args.mlperf_auc_threshold:
-        mlperf_logger.barrier()
-        mlperf_logger.log_end(key=mlperf_logger.constants.RUN_STOP,
-                              metadata={mlperf_logger.constants.STATUS: mlperf_logger.constants.ABORTED})
-
-    # profiling
-    if args.enable_profiling:
-        with open("dlrm_s_pytorch.prof", "w") as prof_f:
-            prof_f.write(prof.key_averages().table(sort_by="cpu_time_total"))
-            prof.export_chrome_trace("./dlrm_s_pytorch.json")
-        # print(prof.key_averages().table(sort_by="cpu_time_total"))
-
-    # plot compute graph
-    if args.plot_compute_graph:
-        sys.exit(
-            "ERROR: Please install pytorchviz package in order to use the"
-            + " visualization. Then, uncomment its import above as well as"
-            + " three lines below and run the code again."
-        )
-        # V = Z.mean() if args.inference_only else E
-        # dot = make_dot(V, params=dict(dlrm.named_parameters()))
-        # dot.render('dlrm_s_pytorch_graph') # write .pdf file
-
-    # test prints
-    if not args.inference_only and args.debug_mode:
-        print("updated parameters (weights and bias):")
-        for param in dlrm.parameters():
-            print(param.detach().cpu().numpy())
-
-    # export the model in onnx
-    if args.save_onnx:
-        dlrm_pytorch_onnx_file = "dlrm_s_pytorch.onnx"
-        torch.onnx.export(
-            dlrm, (X_onnx, lS_o_onnx, lS_i_onnx), dlrm_pytorch_onnx_file, verbose=True, use_external_data_format=True
-        )
-        # recover the model back
-        dlrm_pytorch_onnx = onnx.load("dlrm_s_pytorch.onnx")
-        # check the onnx model
-        onnx.checker.check_model(dlrm_pytorch_onnx)

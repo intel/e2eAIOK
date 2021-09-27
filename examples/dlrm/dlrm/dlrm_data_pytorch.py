@@ -37,6 +37,13 @@ from torch.utils.data import Dataset, RandomSampler
 import data_loader_terabyte
 import mlperf_logger
 
+from prefetch_generator import BackgroundGenerator
+
+class DataLoaderX(torch.utils.data.DataLoader):
+
+    def __iter__(self):
+        return BackgroundGenerator(super().__iter__())
+
 
 # Kaggle Display Advertising Challenge Dataset
 # dataset (str): name of dataset (Kaggle or Terabyte)
@@ -379,34 +386,13 @@ def ensure_dataset_preprocessed(args, d_path):
 
 def make_criteo_data_and_loaders(args):
 
-#     if args.mlperf_logging and args.memory_map and args.data_set == "terabyte":
-#         # more efficient for larger batches
-#         data_directory = path.dirname(args.raw_data_file)
+    if args.mlperf_logging and args.memory_map and args.data_set == "terabyte":
 
-#         if args.mlperf_bin_loader:
-#             lstr = args.processed_data_file.split("/")
-#             d_path = "/".join(lstr[0:-1]) + "/" + lstr[-1].split(".")[0]
-#             train_file = d_path + "_train.bin"
-#             test_file = d_path + "_test.bin"
-#             # val_file = d_path + "_val.bin"
-#             counts_file = args.raw_data_file + '_fea_count.npz'
 
-#             if any(not path.exists(p) for p in [train_file,
-#                                                 test_file,
-#                                                 counts_file]):
-#                 ensure_dataset_preprocessed(args, d_path)
-    if True:
-        # more efficient for larger batches
-        #data_directory = path.dirname(args.raw_data_file)
-
-        if True:
-            print("binary dataset, line 386 of dlrm_data_pytorch.py")
-            #lstr = args.processed_data_file.split("/")
-            d_path = "/mnt/DP_disk7/binary_dataset/"
-            train_file = d_path + "train_data.bin"
-            test_file = d_path + "test_data.bin"
-            #val_file = d_path + "val_data.bin"
-            counts_file = d_path + 'day_fea_count.npz'
+        if args.mlperf_bin_loader:
+            train_file = args.train_data_path
+            test_file = args.eval_data_path
+            counts_file = args.day_feature_count
 
             train_data = data_loader_terabyte.CriteoBinDataset(
                 data_file=train_file,
@@ -418,7 +404,7 @@ def make_criteo_data_and_loaders(args):
             mlperf_logger.log_event(key=mlperf_logger.constants.TRAIN_SAMPLES,
                                     value=train_data.num_samples)
 
-            train_loader = torch.utils.data.DataLoader(
+            train_loader = DataLoaderX(
                 train_data,
                 batch_size=None,
                 batch_sampler=None,
@@ -440,7 +426,7 @@ def make_criteo_data_and_loaders(args):
             mlperf_logger.log_event(key=mlperf_logger.constants.EVAL_SAMPLES,
                                     value=test_data.num_samples)
 
-            test_loader = torch.utils.data.DataLoader(
+            test_loader = DataLoaderX(
                 test_data,
                 batch_size=None,
                 batch_sampler=None,

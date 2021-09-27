@@ -13,8 +13,7 @@ import logging
 import psutil
 from sigopt import Connection
 import time
-import config
-
+import yaml
 logging.basicConfig(level = logging.INFO,format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -398,15 +397,24 @@ def mpi_dist_launch(args):
     elif args.nnodes > 1:
         ipv4_addr_pattern = r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
         ip_list = []
-        with open(args.hostfile) as f:
-             for line in f:
-                 line = line.strip().strip("\n")
-                 is_valid = re.match(ipv4_addr_pattern, line)
-                 if not is_valid:
-                     logger.error("{} is not valid IPV4 address".format(line))
-                     exit(-1)
-                 else:
-                     ip_list.append(line)
+        hosts_array = np.fromstring(args.hostfile, sep=",")
+        for i in range(len(hosts_array)):
+            is_valid = re.match(ipv4_addr_pattern, hosts_array[i])
+            if not is_valid:
+                logger.error("{} is not valid IPV4 address".format(line))
+                exit(-1)
+            else:
+                ip_list.append(hosts_array[i])
+            print(F"hosts_array[i]:{hosts_array[i]}")
+        # with open(args.hostfile) as f:
+        #      for line in f:
+        #          line = line.strip().strip("\n")
+        #          is_valid = re.match(ipv4_addr_pattern, line)
+        #          if not is_valid:
+        #              logger.error("{} is not valid IPV4 address".format(line))
+        #              exit(-1)
+        #          else:
+        #              ip_list.append(line)
         if len(ip_list) < args.nnodes:
             logger.error("The number of IP {} should greater than nnodes parameters {}".format(len(ip_list), args.nnodes))
             exit(-1)
@@ -451,8 +459,6 @@ def mpi_dist_launch(args):
         opm_num_threads = os.environ["OMP_NUM_THREADS"]
 
     os.environ["CCL_WORKER_COUNT"] = str(args.ccl_worker_count)
-    
-
     if "CCL_WORKER_AFFINITY" not in os.environ:
         set_ccl_worker_affinity(args)
 
@@ -496,24 +502,19 @@ def mpi_dist_launch(args):
     cmd.append(args.lamblr)
     cmd.append("--learning-rate")
     cmd.append(args.learning_rate)
-
-    # cmd.append("--test-mini-batch-size")
-    # cmd.append(args.test_mini_batch_size)
     cmd.append("--lr-num-warmup-steps")
     cmd.append(args.lr_num_warmup_steps)
     cmd.append("--lr-decay-start-step")
     cmd.append(args.lr_decay_start_step)
     cmd.append("--lr-num-decay-steps")
     cmd.append(args.lr_num_decay_steps)
-
     cmd.append("--arch-sparse-feature-size")
     cmd.append(args.arch_sparse_feature_size)
     cmd.append("--arch-mlp-top")
     cmd.append(args.arch_mlp_top)
     cmd.append("--arch-mlp-bot")
     cmd.append(args.arch_mlp_bot)
-
-
+    cmd.append("--bf16")
     process = subprocess.Popen(cmd, env=os.environ)
     process.wait()
     os.environ["LAUNCH_CMD"] += " ".join(cmd) + ",#"
@@ -593,34 +594,20 @@ def add_kmp_iomp_params(parser):
     group.add_argument("--enable_iomp", action='store_true', default=False,
                         help="Enable iomp and libiomp.so will be add to LD_PRELOAD") 
 
-def mlp_top(assignments):
-    mlp_top_str = ""
-    if assignments["mlp_top_size_1"] != 0:
-        mlp_top_str += (str(assignments["mlp_top_size_1"]) + "-")
-    if assignments["mlp_top_size_2"] != 0:
-        mlp_top_str += (str(assignments["mlp_top_size_2"]) + "-")
-    if assignments["mlp_top_size_3"] != 0:
-        mlp_top_str += (str(assignments["mlp_top_size_3"]) + "-")
-    mlp_top_str += (str(assignments["mlp_top_size_4"]) + "-1")
-    return mlp_top_str
-
-def mlp_bot(assignments):
-    mlp_bot_str = "13-"
-    if assignments["mlp_bot_size_1"] != 0:
-        mlp_bot_str += (str(assignments["mlp_bot_size_1"]) + "-")
-    mlp_bot_str += (str(assignments["mlp_bot_size_2"]) + "-" + str(assignments["sparse_feature_size"]))
-    return mlp_bot_str
 
 def train_model(args, assignments):
     train_start = time.time()
+    mlp_top_size = ["1024-1024-512-256-1","512-512-256-128-1","512-256-128-1","512-256-1","256-128-1","128-64-1","256-1","128-1"]
+    mlp_bot_size = ["13-512-256-","13-512-256-","13-256-","13-128-"]
     args.lamblr = str(assignments['lamb_lr'])
     args.learning_rate = str(assignments['learning_rate'])
     args.lr_num_warmup_steps= str(assignments['warmup_steps'])
     args.lr_decay_start_step = str(assignments['decay_start_steps'])
     args.lr_num_decay_steps = str(assignments['num_decay_steps'])
     args.arch_sparse_feature_size = str(assignments["sparse_feature_size"])
-    args.arch_mlp_top = mlp_top(assignments)
-    args.arch_mlp_bot = mlp_bot(assignments)
+    args.arch_mlp_top = str(mlp_top_size[assignments["mlp_top_size"]])
+    args.arch_mlp_bot = str(mlp_bot_size[assignments["mlp_bot_size"]])+str(assignments["sparse_feature_size"])
+    args.bf16 = assignments["bf16"]
     if args.distributed:
         mpi_dist_launch(args)
     else:
@@ -628,6 +615,41 @@ def train_model(args, assignments):
     train_end = time.time()
     total_time = train_end - train_start
     return total_time
+def load_yaml(yaml_file="models/DLRM/sigopt.yaml"):
+    with open(yaml_file) as f:
+        data = yaml.load(f, Loader=yaml.FullLoader)
+    metrics = data["metrics"]
+    optimize_training_time = False
+    for metric in metrics:
+        if (metric['name'] == 'training_time'):
+            optimize_training_time = True
+            break
+    return data, optimize_training_time
+
+def create_experiments():
+    data, optimize_training_time = load_yaml()
+
+    conn = Connection(client_token="ESVMBVFLNPCCSLYANHKZXMEYTUYYJZCXSWTUBPWVXXYUMYAF")
+    conn.set_proxies(
+        {
+            "http": "http://child-prc.intel.com:913",
+            "https": "http://child-prc.intel.com:913",
+        }
+    )
+    parameters = data["parameters"]
+    metrics = data["metrics"]
+    observation_budget = data["observation_budget"]
+    experiment_name = data["experiment"]
+    project = data["project"]
+    experiment = conn.experiments().create(
+        name=experiment_name,
+        parameters=parameters,
+        metrics=metrics,
+        observation_budget=observation_budget,
+        project=project,
+    )
+    print("Created experiment: https://app.sigopt.com/experiment/" + experiment.id)
+    return conn, experiment, optimize_training_time
 
 def parse_args():
     """
@@ -667,6 +689,7 @@ def parse_args():
     parser.add_argument("--no_python", default=False, action="store_true",
                         help="Do not prepend the --program script with \"python\" - just exec "
                              "it directly. Useful when the script is not a Python script.")
+
     add_memory_allocator_params(parser)
     add_kmp_iomp_params(parser)
      
@@ -681,158 +704,47 @@ def parse_args():
     parser.add_argument('program_args', nargs=REMAINDER)
     parser.add_argument("--lamblr", type=float, default=0.01, help='lr for lamb')
     parser.add_argument("--learning-rate", type=float, default=0.01)
-    # parser.add_argument("--test-mini-batch-size", type=int, default=-1)
     parser.add_argument("--lr-num-warmup-steps", type=int, default=0)
     parser.add_argument("--lr-decay-start-step", type=int, default=0)
     parser.add_argument("--lr-num-decay-steps", type=int, default=0)
     parser.add_argument("--arch-sparse-feature-size", type=int, default=2)
     parser.add_argument("--arch-mlp-bot", type=str, default="4-3-2")
     parser.add_argument("--arch-mlp-top", type=str, default="4-2-1")
+    # bf16 option
+    parser.add_argument("--bf16", type=int, default=0)
     args = parser.parse_args()
-   
-
     return parser.parse_args()
 
 def main():
-
     env_before = set(os.environ.keys())
     if platform.system() == "Windows":
         raise RuntimeError("Windows platform is not supported!!!")
-
     args = parse_args()
-
     if args.distributed and args.multi_instance:
         raise RuntimeError("Either args.distributed or args.multi_instance should be set")
-    
     if args.latency_performance and args.throughput_performance:
         raise RuntimeError("Either args.latency_performance or args.throughput_performance  should be set")
-
     if args.nnodes > 1:
         args.distributed = True
-
-
-    conn = Connection(client_token="XXXXXXX")
-    conn.set_proxies(
-        {
-            "http": "XXXXXXX",
-            "https": "XXXXXXX",
-        }
-    )
-    experiment = conn.experiments().create(
-    name="DLRM",
-    parameters=[
-        dict(
-        name="learning_rate",
-        bounds=dict(
-            min=5,
-            max=50
-            ),
-        type="int"
-        ),
-        dict(
-        name="lamb_lr",
-        bounds=dict(
-            min=5,
-            max=50
-            ),
-        type="int"
-        )
-        ,
-        dict(
-        name="warmup_steps",
-        bounds=dict(
-            min=2000,
-            max=4500
-            ),
-        type="int"
-        )
-        ,
-        dict(
-        name="decay_start_steps",
-        bounds=dict(
-            min=4501,
-            max=9000
-            ),
-        type="int"
-        )
-        ,
-        dict(
-        name="num_decay_steps",
-        bounds=dict(
-            min=5000,
-            max=15000
-            ),
-        type="int"
-        ),
-        dict(
-            name = "sparse_feature_size",
-            type = "int",
-            grid = [128,64,16]
-        ),
-        dict(
-            name = "mlp_top_size_1",
-            type = "int",
-            grid = [1024,512,0]
-        ),
-        dict(
-            name = "mlp_top_size_2",
-            type = "int",
-            grid = [1024,512,0]
-        ),
-        dict(
-            name = "mlp_top_size_3",
-            type = "int",
-            grid = [512,256,128,0]
-        ),
-        dict(
-            name = "mlp_top_size_4",
-            type = "int",
-            grid = [256,128,64]
-        ),       
-        dict(
-            name = "mlp_bot_size_1",
-            type = "int",
-            grid = [512,256,0]
-        ), 
-        dict(
-            name = "mlp_bot_size_2",
-            type = "int",
-            grid = [256,128]
-        ),     
-        ],
-    metrics=[dict(name="Time", objective="minimize"),dict(name="AUC", objective="maximize"),],
-    observation_budget=30,
-    project="dlrm"
-    )
-
-    print("Created experiment: https://app.sigopt.com/experiment/" + experiment.id)
-
-
+    conn, experiment, optimize_training_time = create_experiments()
     for _ in range(experiment.observation_budget):
         suggestion = conn.experiments(experiment.id).suggestions().create()
         assignments = suggestion.assignments
-        
         total_time = train_model(args,assignments)
-        
-        
-        file1 = open("/mnt/DP_disk1/best_auc.txt",'r')
+        file1 = open("models/DLRM/trainer/best_auc.txt",'r')
         lines = file1.readlines()
         file1.close()
-        value = float(lines[-1])
-        values =  [{'name': 'Time', 'value': total_time}, {'name': 'AUC', 'value': value}]
+        values = []
+        values.append({'name': args.metric, 'value': float(lines[-1])})
+        if optimize_training_time:
+            values.append({'name': 'training_time', 'value': total_time})
         conn.experiments(experiment.id).observations().create(
             suggestion=suggestion.id,
             values=values
         )
 
     assignments = conn.experiments(experiment.id).best_assignments().fetch().data[0].assignments
-
     print(F"Best Assignments::{assignments}")
-
-
-
-    
-
     for x in sorted(set(os.environ.keys()) - env_before):
         logger.debug(f'{x}={os.environ[x]}')
  

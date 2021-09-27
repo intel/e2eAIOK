@@ -36,7 +36,7 @@ class BaseModelLauncher:
         self.parser.add_argument('--ccl_worker_num', type=int, default=1, help='CCL woker number')
         self.parser.add_argument('--python_executable', type=str, default='python', help='Python interpreter')
 
-        self.parser.add_argument('--global_batch_size', type=int, default=10240, help='Global batch size for train and evaluation')
+        self.parser.add_argument('--global_batch_size', type=int, default=1024, help='Global batch size for train and evaluation')
         self.parser.add_argument('--num_epochs', type=int, default=1, help='Number training epochs')
         self.parser.add_argument('--trainset_size', type=int, help='Define trainset size')
         self.parser.add_argument('--model_dir', type=str, default='./', help='Model save path')

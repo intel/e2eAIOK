@@ -11,7 +11,7 @@ class SDA:
         if model == 'WnD':
             self.model_launcher = WnDLauncher(dataset_format, dataset_meta_path, train_path, eval_path, model_args)
         elif model == 'DLRM':
-            self.model_launcher = DLRMLauncher()
+            self.model_launcher = DLRMLauncher(dataset_format, dataset_meta_path, train_path, eval_path, model_args)
         elif model == 'DIEN':
             self.model_launcher = DIENLauncher()
         else:
