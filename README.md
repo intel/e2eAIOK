@@ -1,1 +1,57 @@
-# Bluewhale
+# Bluewhale - E2E AI democratization Kit 
+
+Bluewhale (temp) is the project code name to democratize End-to-End AI on CPU. 
+
+
+# Introduction
+
+Modern end to end machine learning or deep learning system usually includes a lifecycle of data processing, feature enginnering, training, inference and serving. Each different stage might has different challenges, for example, the data to be processed might be huge, and thus require a signficant amount of tiem to process the data and the data ETL and pre-processing time often take much more time than training. For feature engineering phase, usually numerous sets of new features need to be created, and then tested for effectiveness.  For model training, one of the entry barrier is the model could be quite complex and usually requires lots of expertise to design, understand, tune and deploy the models. What makes things worse is one usually needs to repeated experiements of the ETL, training and evaluation gprocess for many times on many model architectures, to get the best model, which requires signficant amount of computational resources and is time-consuming. 
+
+# End-to-End AI democratization 
+
+One approach to resolve those challenges is AI democratization, which trying to make AI accessabile & affordable to every organization and every data scientist. There are a lot of things to be democratized, including: 
+1. data accessibility & quality, where you make the data access easier and simpler; building a data platform to democratize the data management - simplify data ingestion, data explore, processing and visulaization. 
+2. Storage and compute platforms, instead of running the AI on hi-cost GPU, run it on democratized commodity hardware with auto-scaling. 
+3. Algorithms - Democratize the use, development and sharing of ML & DL algorithms; reduce the engry barrier with automatic model searching, AutoML
+4. Model development - select the most suitalbe models for users, democratize the end to end model development 
+5. Market place - simply how you access, use, exchange and monetization of data, algorithm, models, and outcomes 
+
+
+# BlueWhale 
+
+Bluewhale is the project to democratize AI on CPU, starting from E2E recommender systems. The strategy is to bring E2E AI to existing CPU installation base with good-enough performance and zero additional cost, it drives the AI portaion on CPU and drive CPU/GPU balance in E2E AI. 
+
+# Key architecture 
+
+Below firgure showed the architecture diagram of Bluewhale. 
+
+![Architecture](./docs/pictures/architecture.jpg "Bluewhale Architecture")
+
+# Major componments 
+
+Here are the major componments of Bluewhale: 
+1. RecDP -  scalable data processing and feature engineering kit based on Spark and Modin 
+2. Distributed data connector - a distirbuted data connector based on PetaStorm  supporting training framework to load data from distributed filesystem, and provide enhanced capabilities like data caching, sharing. 
+3. Smart Democratization Advisor - a human intelligence enhanced toolkit to generate sigopt recipes for Sigopt AutoML. It 
+4. Model Compression - A model compression toolkit that supports botch train from scratch and pre-trained models, to simply the model tuning process and generate ligher models 
+5. Inference acclerators - enhanced in memory vectors and vector recall utilits to speedup vector recall process. 
+6. Recipes - four proof of concept workloads including DLRM, DIEN, WnD, RecSys, with ready to run notebooks to showcase the benefit of the democratized models. 
+7. deployment kit - a container with deployment kit to have users have a quick try. 
+8. Auto scaling - Bluewhale support autoscaling on the public cloud, users can easiliy scale the work to multiple CPU nodes. 
+
+
+# Examples
+
+Currently four recommender system workloads were supported: including DLRM, DIEN, WnD and RecSys. 
+
+## DLRM 
+
+## DIEN 
+
+## WnD 
+
+## RecSys 
+
+
+# Perforamnce 
+ToBeAdded. 
