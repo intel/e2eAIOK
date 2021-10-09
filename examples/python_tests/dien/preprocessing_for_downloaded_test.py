@@ -12,6 +12,9 @@ import logging
 from pyrecdp.data_processor import *
 from pyrecdp.utils import *
 
+NUM_INSTS = 1
+TARGET_PATH = "/home/xxx/dien"
+
 def load_csv(spark, path):
     review_id_field = StructField('reviewer_id', StringType())
     asin_field = StructField('asin', StringType())
@@ -28,6 +31,28 @@ def load_csv(spark, path):
 
     return reviews_info_df, item_info_df
 
+def process_reviews(spark, review_file, proc, name):
+    records_df = spark.read.json(review_file)
+    records_df = records_df.select('reviewerID', 'asin', 'overall', 'unixReviewTime')
+    records_df = records_df.withColumnRenamed('reviewerID', 'reviewer_id')
+    records_df = records_df.withColumnRenamed('unixReviewTime', 'unix_review_time')
+    records_df = proc.transform(records_df, name)
+    return records_df
+
+
+def process_meta(spark, meta_file, proc, name):
+    def process_single_meta(row):
+        obj = eval(row)
+        cat = obj['categories'][0][-1]
+        return [obj['asin'], cat]
+
+    meta_df = spark.read.text(meta_file)
+    proc_meta_udf = f.udf(lambda x: process_single_meta(x), ArrayType(StringType()))
+    meta_df = meta_df.withColumn('asin', proc_meta_udf(f.col('value')).getItem(0))
+    meta_df = meta_df.withColumn('category', proc_meta_udf(f.col('value')).getItem(1))
+    meta_df = meta_df.drop('value')
+    meta_df = proc.transform(meta_df, name)
+    return meta_df
 
 def collapse_by_hist(df, item_info_df, proc, output_name, min_num_hist = 0, max_num_hist = 100):
     op_model_merge = ModelMerge([{'col_name': 'asin', 'dict': item_info_df}])
@@ -51,6 +76,7 @@ def get_dict_for_asin(df, proc):
 def add_negative_sample(df, item_info_df, dict_dfs, proc, output_name):
     # add negative_sample as new row
     op_negative_sample = NegativeSample(['asin'], dict_dfs)
+    # negative row category is not correct
     op_drop_category = DropFeature(['category'])
     op_add_category = ModelMerge([{'col_name': 'asin', 'dict': item_info_df}])
     op_select = SelectFeature(['pos', 'reviewer_id', 'asin', 'category', 'hist_asin', 'hist_category'])
@@ -113,77 +139,38 @@ def categorify_dien_data(df, user_df, asin_df, cat_df, asin_cat_df, proc, output
     return df
 
 
-def save_to_voc(df, proc, fmt, cols, default_name, default_v, output_name):
-    import pickle
-    col_name = ''
-    dtypes_list = []
-    if isinstance(cols, list):
-        col_name = cols[0]
-        dtypes_list = df.select(*cols).dtypes
-    elif isinstance(cols, str):
-        col_name = cols
-        dtypes_list = df.select(cols).dtypes
-    else:
-        raise ValueError("save_to_voc expects cols as String or list of String")
-
-    to_select = []
-    if len(dtypes_list) == 1 and 'array' not in dtypes_list[0][1]:
-        to_select.append(f.col(dtypes_list[0][0]))
-        dict_df = df.select(*to_select)
-    else:
-        for name, dtype in dtypes_list:
-            if 'array' in dtype:
-                to_select.append(f.col(name))
-            else:
-                to_select.append(f.array(f.col(name)))
-
-        dict_df = df.withColumn(col_name, f.array_union(*to_select))
-        dict_df = dict_df.select(f.explode(f.col(col_name)).alias(col_name))
-    if fmt == 'pkl':
-        dict_df = dict_df.filter(f"{col_name} is not null").groupBy(col_name).count().orderBy(f.desc('count')).select(col_name)
-        collected = [row[col_name] for row in dict_df.collect()]
-
-        voc = {}
-        voc[default_name] = default_v
-        voc.update(dict((col_id, col_idx) for (col_id, col_idx) in zip(collected, range(1, len(collected) + 1))))
-        pickle.dump(voc, open(proc.current_path + f'/{output_name}.pkl', "wb"), protocol=0)
-    else:
-        op_gen_dict = GenerateDictionary([f"{col_name}"])
-        proc.reset_ops([op_gen_dict])
-        dict_dfs = proc.generate_dicts(dict_df)
-        dict_df = dict_dfs[0]['dict']
-        if fmt == 'adv_pkl':
-            voc_count = dict_df.count()
-            pickle.dump(voc_count, open(proc.current_path + f'/{output_name}.pkl', "wb"), protocol=0)
-
+def load_voc(proc, output_name):
+    import pickle as pkl
+    with open("/home/xxx/dien/" + f'/{output_name}.pkl', "rb") as f:
+        voc = dict((key, value) for (key,value) in pkl.load(f).items())
+    dict_df = convert_to_spark_df(voc, proc.spark)
     return dict_df
 
 
-def save_to_uid_voc(df, proc, fmt = 'pkl'):
+def load_uid_voc(proc):
     # saving (using python)
     # build uid_dict, mid_dict and cat_dict
     t1 = timer()
-    dict_df = save_to_voc(df, proc, fmt, ['reviewer_id'], 'A1Y6U82N6TYZPI', 0, 'uid_voc')
+    dict_df = load_voc(proc, 'test_uid_voc')
     t2 = timer()
-    print(f"save_to_uid_voc took {t2 - t1} secs")
+    print(f"load_uid_voc took {t2 - t1} secs")
     return dict_df
     
 
-def save_to_mid_voc(df, proc, fmt = 'pkl'):
+def load_mid_voc(proc):
     t1 = timer()
-    dict_df = save_to_voc(df, proc, fmt, ['hist_asin', 'asin'], 'default_mid', 0, 'mid_voc')
+    dict_df = load_voc(proc, 'test_mid_voc')
     t2 = timer()
-    print(f"save_to_mid_voc took {t2 - t1} secs")
+    print(f"load_mid_voc took {t2 - t1} secs")
     return dict_df
     
     
-def save_to_cat_voc(df, proc, fmt = 'pkl'):
+def load_cat_voc(proc):
     t1 = timer()
-    dict_df = save_to_voc(df, proc, fmt, ['hist_category', 'category'], 'default_cat', 0, 'cat_voc')
+    dict_df = load_voc(proc, 'test_cat_voc')
     t2 = timer()
-    print(f"save_to_cat_voc took {t2 - t1} secs")
+    print(f"load_cat_voc took {t2 - t1} secs")
     return dict_df
-    
     
 def save_to_local_splitByUser(df, proc, output_name):
     hint = 'byRename'
@@ -208,7 +195,7 @@ def save_to_local_splitByUser(df, proc, output_name):
                             f.expr("concat_ws('\x02', hist_asin)"),
                             f.expr("concat_ws('\x02', hist_category)"))
         if hint == 'byRename':
-            dict_df.repartition(1).write.format("csv").option('sep', '\t').mode("overwrite").save(f"{proc.path_prefix}{proc.current_path}/{output_name}-spark")
+            dict_df.repartition(1).write.format("csv").option('sep', '\t').mode("overwrite").save(f"{proc.path_prefix}{TARGET_PATH}/{output_name}-spark")
             result_rename_or_convert(proc.current_path, output_name)
             t2 = timer()
             print(f"save_to_local_splitByUser took {t2 - t1} secs")
@@ -221,7 +208,7 @@ def save_to_local_splitByUser(df, proc, output_name):
         if items[1] not in user_map:
             user_map[items[1]] = []
         user_map[items[1]].append(items)
-    with open(proc.current_path + f"/{output_name}", 'w') as fp:
+    with open(TARGET_PATH + f"/{output_name}", 'w') as fp:
         for user, r in user_map.items():
             positive_sorted = sorted(r, key=lambda x: x[0])
             for items in positive_sorted:
@@ -233,15 +220,21 @@ def save_to_local_splitByUser(df, proc, output_name):
 
 
 def result_rename_or_convert(fpath, output_name):
-    source_path_dict = list_dir(fpath)
+    source_path_dict = list_dir(fpath, False)
     fix = "-spark"
-    tgt_path = f"{fpath}/{output_name}"
-    print(f"result renamed from {source_path_dict[output_name + fix]} to {tgt_path}")
-    os.rename(source_path_dict[output_name + fix], tgt_path)
-    shutil.rmtree(source_path_dict[output_name + fix], ignore_errors=True)
+    tgt_path = f"{TARGET_PATH}/{output_name}"
+    idx = 0
+    if len(source_path_dict[output_name + fix]) == 1:
+        file_name = source_path_dict[output_name + fix][0]
+        shutil.copy(file_name, f"{tgt_path}")
+    else:
+        for file_name in source_path_dict[output_name + fix]:
+            #print(f"result renamed from {file_name} to {tgt_path}_{idx}")
+            shutil.copy(file_name, f"{tgt_path}_{idx}")
+            shutil.rmtree(file_name, ignore_errors=True)
+            idx += 1
 
-
-def main(option = '--basic'):
+def main(option = '--advanced'):
     if option == '--basic':
         fmt = 'pkl'
     elif option == '--advanced':
@@ -251,63 +244,66 @@ def main(option = '--basic'):
 
     path_prefix = "file://"
     current_path = "/home/vmagent/app/recdp/examples/python_tests/dien/output/"
-    original_folder = "/home/vmagent/app/recdp/examples/python_tests/dien/j2c_test/"
+    original_folder = "/home/vmagent/app/recdp/examples/python_tests/dien/"
 
     scala_udf_jars = "/home/vmagent/app/recdp/ScalaProcessUtils/target/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
 
     ##### 1. Start spark and initialize data processor #####
     t0 = timer()
-    spark = SparkSession.builder.master('local[104]')\
+    spark = SparkSession.builder.master('spark://dr8s30:7077')\
         .appName("dien_data_process")\
-        .config("spark.driver.memory", "480G")\
-        .config("spark.driver.memoryOverhead", "20G")\
-        .config("spark.executor.cores", "104")\
+        .config("spark.driver.memory", "20G")\
+        .config("spark.driver.memoryOverhead", "10G")\
+        .config("spark.executor.instances", "4")\
+        .config("spark.executor.cores", "32")\
+        .config("spark.executor.memory", "100G")\
+        .config("spark.executor.memoryOverhead", "20G")\
         .config("spark.driver.extraClassPath", f"{scala_udf_jars}")\
+        .config("spark.executor.extraClassPath", f"{scala_udf_jars}")\
         .getOrCreate()
     spark.sparkContext.setLogLevel("ERROR")
 
     # 1.1 prepare dataFrames
     # 1.2 create RecDP DataProcessor
-    proc = DataProcessor(spark, path_prefix, current_path=current_path, shuffle_disk_capacity="1200GB", spark_mode='local')
+    proc = DataProcessor(spark, path_prefix, current_path=current_path, shuffle_disk_capacity="1200GB", spark_mode='standalone')
+    t1 = timer()
+    print(f"start spark process took {(t1 - t0)} secs")
 
     # ===============================================
-    # basic: Do categorify for all columns
-    reviews_info_df, item_info_df = load_csv(spark, path_prefix + original_folder)
+    # Data ingestion
+    t0 = timer()
+    reviews_info_df = process_reviews(spark, "%s/%s/raw_data/reviews_Books.json" % (path_prefix, original_folder), proc, "reviews-info")
+    #reviews_info_df.repartition(1).write.format("csv").option('sep', '\t').mode("overwrite").save("%s/%s/j2c_test/reviews-info-spark" % (path_prefix, original_folder))
+    t1 = timer()
+    print(f"parse reviews-info with spark took {(t1 - t0)} secs")
 
+    t0 = timer()
+    item_info_df = process_meta(spark, '%s/%s/raw_data/meta_Books.json' % (path_prefix, original_folder), proc, "item-info")
+    #item_info_df.repartition(1).write.format("csv").option('sep', '\t').mode("overwrite").save("%s/%s/j2c_test/item-info-spark" % (path_prefix, original_folder))
+    t1 = timer()
+    print(f"parse item-info with spark took {(t1 - t0)} secs")
+
+    # ===============================================
     # 1. join records with its category and then collapse history 
     df = reviews_info_df
     dict_dfs = get_dict_for_asin(df, proc)
-    df = collapse_by_hist(df, item_info_df, proc, "collapsed", min_num_hist = 2, max_num_hist = 100)
 
-    # 2. add negative sample to records
-    df = add_negative_sample(df, item_info_df, dict_dfs, proc, "records_with_negative_sample")
-
-
+    uid_dict_df = load_uid_voc(proc)
+    mid_dict_df = load_mid_voc(proc)
+    cat_dict_df = load_cat_voc(proc)
     if fmt == 'adv_pkl':
-        dict_dfs[0]['col_name'] = 'hist_asin'
-        df = add_negative_hist_cols(df, item_info_df, dict_dfs, proc, "records_with_negative_hists")
-
-    uid_dict_df = save_to_uid_voc(df, proc, fmt = fmt)
-    mid_dict_df = save_to_mid_voc(df, proc, fmt = fmt)
-    cat_dict_df = save_to_cat_voc(df, proc, fmt = fmt)
-    if fmt == 'adv_pkl':
-        # for create noclk_hist_category, we should create a dict to mapping from asin to its cat_id
         asin_df = item_info_df.withColumnRenamed('asin', 'dict_col')
         cat_dict_for_merge_df = cat_dict_df.withColumnRenamed('dict_col', 'category')
         op_asin_to_cat_id = ModelMerge([{'col_name': 'category', 'dict': cat_dict_for_merge_df}])
-        op_select = SelectFeature(['dict_col', 'dict_col_id', 'count'])
+        op_select = SelectFeature(['dict_col', 'dict_col_id'])
         proc.reset_ops([op_asin_to_cat_id, op_select])
         asin_cat_df = proc.apply(asin_df)
-
-        df = categorify_dien_data(df, uid_dict_df, mid_dict_df, cat_dict_df, asin_cat_df, proc, "local_train_splitByUser.parquet")
-        df = save_to_local_splitByUser(df, proc, 'local_train_splitByUser')
-
+        # for create noclk_hist_category, we should create a dict to mapping from asin to its cat_id
         test_df = load_processed_csv(spark, path_prefix + original_folder + "/local_test_splitByUser")
+        dict_dfs[0]['col_name'] = 'hist_asin'
         test_df = add_negative_hist_cols(test_df, item_info_df, dict_dfs, proc, "test_records_with_negative_hists")
         test_df = categorify_dien_data(test_df, uid_dict_df, mid_dict_df, cat_dict_df, asin_cat_df, proc, "local_test_splitByUser.parquet")
         test_df = save_to_local_splitByUser(test_df, proc, 'local_test_splitByUser')
-    else:
-        train_df = save_to_local_splitByUser(df, proc, 'local_train_splitByUser')
     t1 = timer()
 
     print(f"Total process time is {(t1 - t0)} secs")

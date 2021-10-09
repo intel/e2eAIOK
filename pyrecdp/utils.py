@@ -21,18 +21,27 @@ def convert_to_spark_df(orig_dict, spark):
     df = df.withColumn('dict_col_id', spk_func.col('dict_col_id').cast(spk_type.IntegerType()))
     return df
 
-def list_dir(path):
+def list_dir(path, only_get_one = True):
     source_path_dict = {}
     dirs = os.listdir(path)
     for files in dirs:
         try:
             sub_dirs = os.listdir(path + "/" + files)
+            if not only_get_one:
+                source_path_dict[files] = []
             for file_name in sub_dirs:
                 if (file_name.endswith('parquet') or file_name.endswith('csv')):
-                    source_path_dict[files] = os.path.join(
-                        path, files, file_name)
+                    if not only_get_one:
+                        source_path_dict[files].append(os.path.join(
+                            path, files, file_name))
+                    else:
+                        source_path_dict[files] = os.path.join(
+                            path, files, file_name)
         except:
-            source_path_dict[files] = os.path.join(path, files)
+            if not only_get_one:
+                source_path_dict[files] = [os.path.join(path, files)]
+            else:
+                source_path_dict[files] = os.path.join(path, files)
     return source_path_dict
 
 

@@ -30,7 +30,7 @@ def categorifyAllFeatures(df, proc, output_name="categorified", gen_dict=False, 
     #to_categorify_cols = ['_c%d' % i for i in to_be_categorified]
     if gen_dict:
         # only call below function when target dicts were not pre-prepared        
-        op_gen_dict = GenerateDictionary(to_categorify_cols, isParquet=False)
+        op_gen_dict = GenerateDictionary(to_categorify_cols, isParquet=True)
         proc.reset_ops([op_gen_dict])
         t1 = timer()
         dict_dfs = proc.generate_dicts(df)
@@ -66,27 +66,45 @@ def main():
     #path = os.path.join(path_prefix, file)
 
     scala_udf_jars = "/home/vmagent/app/recdp/ScalaProcessUtils/target/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
-    native_sql_path = "/home/vmagent/app/recdp/gazelle_plugin/native-sql-engine/core/target/spark-columnar-core-1.2.0-snapshot-jar-with-dependencies.jar"
-    native_arrow_datasource_path = "/home/vmagent/app/recdp/gazelle_plugin/arrow-data-source/standard/target/spark-arrow-datasource-standard-1.2.0-snapshot-jar-with-dependencies.jar"
+    native_sql_path = "/home/vmagent/app/native-sql-engine/native-sql-engine/core/target/spark-columnar-core-1.2.0-snapshot-jar-with-dependencies.jar"
+    native_arrow_datasource_path = "/home/vmagent/app/native-sql-engine/arrow-data-source/standard/target/spark-arrow-datasource-standard-1.2.0-snapshot-jar-with-dependencies.jar"
+
+    exec_scala_udf_jars = "/mnt/nvme2/chendi/BlueWhale/recdp/ScalaProcessUtils/target/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
+    exec_native_sql_path = "/mnt/nvme2/chendi/intel-bigdata/OAP/native-sql-engine/native-sql-engine/core/target/spark-columnar-core-1.2.0-snapshot-jar-with-dependencies.jar"
+    exec_native_arrow_datasource_path = "/mnt/nvme2/chendi/intel-bigdata/OAP/native-sql-engine/arrow-data-source/standard/target/spark-arrow-datasource-standard-1.2.0-snapshot-jar-with-dependencies.jar"
 
     ##### 1. Start spark and initialize data processor #####
     t0 = timer()
-    spark = SparkSession.builder.master('local[80]')\
+    spark = SparkSession.builder.master('yarn')\
         .appName("DLRM_nativesql")\
-        .config("spark.driver.memory", "400G")\
-        .config("spark.driver.memoryOverhead", "80G")\
-        .config("spark.executor.cores", "80")\
-        .config("spark.driver.extraClassPath", f"{scala_udf_jars}")\
+        .config("spark.memory.offHeap.size", "600G")\
+        .config("spark.driver.memory", "30G")\
+        .config("spark.driver.memoryOverhead", "30G")\
+        .config("spark.executor.instances", "10")\
+        .config("spark.executor.cores", "6")\
+        .config("spark.executor.memory", "30G")\
+        .config("spark.executor.memoryOverhead", "20G")\
+        .config("spark.sql.broadcastTimeout", "7200")\
+        .config("spark.cleaner.periodicGC.interval", "60min")\
+        .config("spark.driver.extraClassPath", 
+                f"{exec_native_sql_path}:{exec_native_arrow_datasource_path}:{exec_scala_udf_jars}")\
+        .config("spark.executor.extraClassPath", 
+                f"{exec_native_sql_path}:{exec_native_arrow_datasource_path}:{exec_scala_udf_jars}")\
+        .config("spark.sql.extensions", "com.intel.oap.ColumnarPlugin, com.intel.oap.spark.sql.ArrowWriteExtension")\
+        .config("spark.shuffle.manager", "org.apache.spark.shuffle.sort.ColumnarShuffleManager")\
+        .config("spark.sql.execution.sort.spillThreshold", "536870912")\
+        .config("spark.oap.sql.columnar.sortmergejoin.lazyread", "true")\
+        .config("spark.sql.adaptive.enabled", "true")\
         .getOrCreate()
 
     files = ["day_%d" % i for i in range(0, 24)]
     #files = ["day_0"]
     file_names = [os.path.join(path_prefix, parquet_folder, filename) for filename in files]
 
-    proc = DataProcessor(spark, path_prefix, current_path=current_path, shuffle_disk_capacity="1200GB", enable_gazelle=True, spark_mode='local')
+    proc = DataProcessor(spark, path_prefix, current_path=current_path, shuffle_disk_capacity="1200GB", enable_gazelle=True, spark_mode='standalone')
     #df = spark.read.format("arrow").option("originalFormat", "csv").option('sep', '\t').load(file_names)
     df = spark.read.format("arrow").load(file_names)
-    df = categorifyAllFeatures(df, proc, output_name="dlrm_categorified", gen_dict=True, enable_freqlimit=True)
+    df = categorifyAllFeatures(df, proc, output_name="dlrm_categorified", gen_dict=False, enable_freqlimit=False)
     t1 = timer()
 
     print(f"Total process time is {(t1 - t0)} secs")

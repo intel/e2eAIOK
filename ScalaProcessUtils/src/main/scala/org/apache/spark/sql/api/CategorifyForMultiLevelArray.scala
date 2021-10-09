@@ -15,6 +15,8 @@
 package org.apache.spark.sql.api
 
 import scala.collection.mutable.WrappedArray
+import scala.reflect.{ClassTag, ClassManifest}
+import scala.reflect.runtime.universe.TypeTag
 
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.api.java.JavaSparkContext
@@ -23,9 +25,13 @@ import org.apache.spark.sql.functions._
 import com.intel.recdp._
 
 object CategorifyForMultiLevelArray {
-  def categorify(sc: JavaSparkContext, df: DataFrame, col_name: String, dict_df: DataFrame, j_sep_list: Any): DataFrame = {
+  def process[T : ClassTag](sc: JavaSparkContext, df: DataFrame, col_name: String, dict_df: DataFrame, j_sep_list: Any): DataFrame = {
     val broadcast_data = dict_df.select("dict_col", "dict_col_id").collect().map( row => 
-      (row(0).asInstanceOf[String], row(1).asInstanceOf[Int])
+      if (row(0) != null) {
+        (row(0).toString, row(1).asInstanceOf[Int])
+      } else {
+        (null, row(1).asInstanceOf[Int])
+      }
     ).toMap
     val broadcast_handler = sc.broadcast(broadcast_data)
     val sep_list = Utils.convertToScalaArray(j_sep_list)
@@ -48,5 +54,22 @@ object CategorifyForMultiLevelArray {
       }
     })
     return df.withColumn(col_name, categorifyUDF(col(col_name)))
+  }
+
+  def categorify(sc: JavaSparkContext, df: DataFrame, col_name: String, dict_df: DataFrame, j_sep_list: Any): DataFrame = {
+    dict_df.dtypes.foreach {
+      case (dict_col_name, col_type) => if (dict_col_name == "dict_col") {
+        if (col_type == "StringType") {
+          return process[String](sc, df, col_name, dict_df, j_sep_list)
+        } else if (col_type == "IntegerType") {
+          return process[Int](sc, df, col_name, dict_df, j_sep_list)
+        } else if (col_type == "FloatType") {
+          return process[Float](sc, df, col_name, dict_df, j_sep_list)
+        } else {
+          throw new NotImplementedError(s"${col_type} is currently not supported")
+        }
+      }
+    }
+    df
   }
 }

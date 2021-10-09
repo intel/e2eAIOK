@@ -100,7 +100,7 @@ class Operation:
             windowed = Window.partitionBy('column_id').orderBy(spk_func.desc('count'))
             df = df.withColumn('dict_col_id', spk_func.row_number().over(windowed))
             if enable_gazelle:
-                df.write.format('arrow').mode('overwrite').save(save_path)
+                df.write.format('arrow').mode('overwrite').save(cache_path)
                 df = spark.read.format("arrow").load(cache_path)
             else:
                 df.write.format("parquet").mode("overwrite").save(cache_path)
@@ -801,10 +801,13 @@ class NegativeSample(Operation):
             for i in range(0, self.num_cols):
                 df = jvm_get_negative_sample(spark, df, self.cols[i], self.get_colname_dict_as_tuple(self.dict_dfs[i])[1], self.neg_cnt)
         else:
+            udf_list = []
             for i in range(0, self.num_cols):
                 broadcasted_data = [row['dict_col'] for row in self.get_colname_dict_as_tuple(self.dict_dfs[i])[1].select("dict_col").collect()]
-                negative_sample = get_negative_sample_udf(spark, broadcasted_data)
-                df = df.withColumn(self.cols[i], negative_sample(spk_func.col(self.cols[i])))
+                negative_sample = self.get_negative_sample_udf(spark, broadcasted_data)
+                udf_list.append(negative_sample)
+            for i in range(0, self.num_cols):
+                df = df.withColumn(self.cols[i], udf_list[i](spk_func.col(self.cols[i])))
                 df = df.select(spk_func.col("*"), spk_func.posexplode(spk_func.col(self.cols[i]))).drop(self.cols[i]).withColumnRenamed("col", self.cols[i])
         return df
 
@@ -877,7 +880,7 @@ class NegativeFeature(Operation):
         else:
             for tgt, src in self.cols.items():
                 broadcasted_data = [row['dict_col'] for row in self.find_dict(src, self.dict_dfs)[1].select("dict_col").collect()]
-                negative_feature = get_negative_feature_udf(spark, broadcasted_data)
+                negative_feature = self.get_negative_feature_udf(spark, broadcasted_data)
                 df = df.withColumn(tgt, negative_feature(spk_func.col(src)))
         return df
 
