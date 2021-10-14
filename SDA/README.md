@@ -32,7 +32,7 @@ Sigopt config file will be generated based on command line arguments and saved a
 
 * Config file for sigopt
 
-  ```yaml
+  ```yaml for WnD
   experiment: WnD
   metrics:
   - name: training_time
@@ -51,7 +51,56 @@ Sigopt config file will be generated based on command line arguments and saved a
     type: double
   project: sda
   ```
-
+  ```yaml for DLRM
+  experiment: DLRM
+  metrics:
+  - name: AUC
+    objective: maximize
+  observation_budget: 40
+  parameters:
+  - name: learning_rate
+    bounds:
+      max: 50
+      min: 5
+    type: int
+  - name: lamb_lr
+    bounds:
+      max: 50
+      min: 5
+    type: int
+  - name: warmup_steps
+    bounds:
+      max: 4500
+      min: 2000
+    type: int
+  - name: decay_start_steps
+    bounds:
+      max: 9000
+      min: 4501
+    type: int
+  - name: num_decay_steps
+    bounds:
+      max: 15000
+      min: 5000
+    type: int
+  - name: sparse_feature_size
+    grid:
+      128
+      64
+      16    
+    type: int
+  - name: mlp_top_size
+    bounds:
+      max: 7
+      min: 0    
+    type: int
+  - name: mlp_bot_size
+    bounds:
+      max: 3
+      min: 0
+    type: int
+  project: sda
+  ```
 ## Advanced
 
 * Command line arguments for cluster arch
@@ -77,7 +126,7 @@ Sigopt config file will be generated based on command line arguments and saved a
 
 * Quick demo
 
-  To quick evaluate the SDA, the `run.sh` script provides a good startup demo. This demo launches WnD model with outbrain dataset
+  To quick evaluate the SDA, the `run.sh` script provides a good startup demo. This demo launches WnD model with outbrain dataset. And you can also evaluate the demo of DLRM model with Criteo Terabyte using the `run_dlrm.sh` script.
 
 ## Programming guide
 
