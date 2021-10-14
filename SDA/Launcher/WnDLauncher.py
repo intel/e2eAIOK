@@ -11,7 +11,7 @@ class WnDLauncher(BaseModelLauncher):
     '''
     def __init__(self, dataset_format, dataset_meta_path, train_path, eval_path, args):
         super().__init__(dataset_format, dataset_meta_path, train_path, eval_path, args)
-        args = self.parse_args(args)
+        args = self.parse_args(self.cmdl_args)
 
         if dataset_format == 'TFRecords':
             self.params['prebatch_size'] = args.prebatch_size
@@ -62,34 +62,11 @@ class WnDLauncher(BaseModelLauncher):
             yaml.dump(config, f)
     
     def launch(self):
-        cores = self.params['cores'] if 'cores' in self.params else cpu_count()
-        ppn = self.params['ppn'] if 'ppn' in self.params else 1
-        ccl_worker_num = self.params['ccl_worker_num']
-        hosts = self.params['hosts']
-        python_executable = self.params['python_executable']
-        omp_threads = cores // 2 // ppn - ccl_worker_num
-        ranks = len(hosts) * ppn
-
-        # construct WnD launch command with mpi
-        cmd = f"time mpirun -genv OMP_NUM_THREADS={omp_threads} -map-by socket -n {ranks} -ppn {ppn} -hosts {','.join(hosts)} -print-rank-map "
-        cmd += f"-genv I_MPI_PIN_DOMAIN=socket -genv OMP_PROC_BIND=true -genv KMP_BLOCKTIME=1 -genv KMP_AFFINITY=granularity=fine,compact,1,0 "
-        cmd += f"{python_executable} models/WnD/sigopt_runner.py "
-        cmd += f"--dataset_format {self.params['dataset_format']} " \
-            + f"--train_data_pattern {self.params['train_dataset_path']} --eval_data_pattern {self.params['eval_dataset_path']} --transformed_metadata_path {self.params['dataset_meta_path']} " \
-            + f"--global_batch_size {self.params['global_batch_size']} --eval_batch_size {self.params['global_batch_size']} --num_epochs {self.params['num_epochs']} " \
-            + f"--metric {self.params['metric']} --metric_threshold {self.params['metric_threshold']} "
-        if self.params['dataset_format'] == 'TFRecords':
-            cmd += f"--prebatch_size {self.params['prebatch_size']} "
-        if self.params['linear_learning_rate'] != -1:
-            cmd += f"--linear_learning_rate {self.params['linear_learning_rate']} "
-        if self.params['deep_learning_rate'] != -1:
-            cmd += f"--deep_learning_rate {self.params['deep_learning_rate']} "
-        if self.params['deep_warmup_epochs'] != -1:
-            cmd += f"--deep_warmup_epochs {self.params['deep_warmup_epochs']} "
-        if len(self.params['deep_hidden_units']) != 0:
-            cmd += f"--deep_hidden_units {' '.join([str(item) for item in self.params['deep_hidden_units']])} "
-        if self.params['deep_dropout'] != -1:
-            cmd += f"--deep_dropout {self.params['deep_dropout']} "
-        print(f'training launch command: {cmd}')
+        cmd = f"{self.params['python_executable']} models/WnD/sigopt_runner.py " \
+            + f"--dataset_meta_path {self.params['dataset_meta_path']} " \
+            + f"--train_dataset_path '{self.params['train_dataset_path']}' " \
+            + f"--eval_dataset_path '{self.params['eval_dataset_path']}' " \
+            + f"{' '.join(self.cmdl_args)}"
+        print(f'sigopt runner launch command: {cmd}')
         process = subprocess.Popen(cmd, shell=True)
         process.wait()

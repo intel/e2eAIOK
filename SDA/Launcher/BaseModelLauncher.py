@@ -3,6 +3,7 @@ from abc import abstractmethod
 
 class BaseModelLauncher:
     def __init__(self, dataset_format, dataset_meta_path, train_path, eval_path, model_args):
+        self.cmdl_args = model_args
         self.parser = argparse.ArgumentParser()
         self.params = {}
         self.params['dataset_format'] = dataset_format
@@ -35,6 +36,7 @@ class BaseModelLauncher:
         self.parser.add_argument('--hosts', type=str, default=['localhost'], nargs='+', help='Hosts to launch training, separated by spaces')
         self.parser.add_argument('--ccl_worker_num', type=int, default=1, help='CCL woker number')
         self.parser.add_argument('--python_executable', type=str, default='python', help='Python interpreter')
+        self.parser.add_argument('--program', type=str, help='The path to the program to be launched')
 
         self.parser.add_argument('--global_batch_size', type=int, default=1024, help='Global batch size for train and evaluation')
         self.parser.add_argument('--num_epochs', type=int, default=1, help='Number training epochs')

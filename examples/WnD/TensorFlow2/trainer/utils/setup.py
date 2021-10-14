@@ -24,7 +24,7 @@ from data.outbrain.dataloader import train_input_fn, eval_input_fn
 from data.outbrain.features import PREBATCH_SIZE
 
 
-def init_cpu(args, logger):
+def init(args, logger):
     hvd.init()
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
@@ -43,9 +43,6 @@ def init_cpu(args, logger):
 
     if args.xla:
         tf.config.optimizer.set_jit(True)
-    
-    logger.warning('--gpu flag not set, running computation on CPU')
-
 
 def init_logger(args, full, logger):
     if full:
@@ -66,20 +63,12 @@ def init_logger(args, full, logger):
         logger.setLevel(logging.ERROR)
         dllogger.init(backends=[])
 
-    # dllogger.log(data=vars(args), step='PARAMETER')
-
-
 def create_config(args):
-    # assert not (args.cpu and args.amp), \
-    #     'Automatic mixed precision conversion works only with GPU'
     assert not args.benchmark or args.benchmark_warmup_steps < args.benchmark_steps, \
         'Number of benchmark steps must be higher than warmup steps'
     logger = logging.getLogger('tensorflow')
 
-    if args.cpu:
-        init_cpu(args, logger)
-    else:
-        init_gpu(args, logger)
+    init(args, logger)
 
     num_gpus = hvd.size()
     gpu_id = hvd.rank()

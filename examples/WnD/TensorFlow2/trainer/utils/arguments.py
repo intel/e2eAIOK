@@ -1,5 +1,5 @@
 # Copyright (c) 2021, NVIDIA CORPORATION. All rights reserved.
-#
+# Modifications copyright Intel
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,9 +14,6 @@
 
 import argparse
 
-# Default train dataset size
-TRAIN_DATASET_SIZE = 59761827
-
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -25,7 +22,7 @@ def parse_args():
         add_help=True,
     )
 
-    locations = parser.add_argument_group('location of datasets')
+    locations = parser.add_argument_group('datasets parameters')
 
     locations.add_argument('--train_data_pattern', type=str, default='/outbrain/tfrecords/train/part*', nargs='+',
                            help='Pattern of training file names. For example if training files are train_000.tfrecord, '
@@ -36,10 +33,13 @@ def parse_args():
                                 'eval_001.tfrecord then --eval_data_pattern is eval_*')
 
     locations.add_argument('--transformed_metadata_path', type=str, default='/outbrain/tfrecords',
-                           help='Path to transformed_metadata for feature specification reconstruction')
-
+                           help='Path to transformed_metadata for feature specification reconstruction, only available for TFRecords')
+    
     locations.add_argument('--use_checkpoint', default=False, action='store_true',
                            help='Use checkpoint stored in model_dir path')
+    locations.add_argument('--prebatch_size', type=int, default=4096, help='Dataset prebatch size, only available for TFRecords')
+
+    locations.add_argument('--dataset_format', type=str, default='TFRecords', help='train/test dataset format, support TFRecords and binary')
 
     locations.add_argument('--model_dir', type=str, default='/outbrain/checkpoints',
                            help='Destination where model checkpoint will be saved')
@@ -52,7 +52,7 @@ def parse_args():
 
     training_params = parser.add_argument_group('training parameters')
 
-    training_params.add_argument('--training_set_size', type=int, default=TRAIN_DATASET_SIZE,
+    training_params.add_argument('--training_set_size', type=int, default=59761827,
                                  help='Number of samples in the training set')
 
     training_params.add_argument('--global_batch_size', type=int, default=131072,
@@ -63,9 +63,6 @@ def parse_args():
 
     training_params.add_argument('--num_epochs', type=int, default=20,
                                  help='Number of training epochs')
-
-    training_params.add_argument('--cpu', default=False, action='store_true',
-                                 help='Run computations on the CPU')
 
     training_params.add_argument('--amp', default=False, action='store_true',
                                  help='Enable automatic mixed precision conversion')
@@ -81,6 +78,10 @@ def parse_args():
 
     training_params.add_argument('--deep_warmup_epochs', type=float, default=6,
                                  help='Number of learning rate warmup epochs for deep model')
+
+    training_params.add_argument('--metric', type=str, default='AUC', help='Evaluation metric')
+
+    training_params.add_argument('--metric_threshold', type=float, default=0, help='Metric threshold used for training early stop')
 
     model_construction = parser.add_argument_group('model construction')
 
@@ -104,12 +105,6 @@ def parse_args():
     run_params.add_argument('--benchmark_steps', type=int, default=1000,
                             help='Number of steps for performance benchmark')
 
-    run_params.add_argument('--affinity', type=str, default='socket_unique_interleaved',
-                            choices=['socket', 'single', 'single_unique',
-                                     'socket_unique_interleaved',
-                                     'socket_unique_continuous',
-                                     'disabled'],
-                            help='Type of CPU affinity')
     run_params.add_argument('--sigopt_config_file', type=str, default='sigopt.yaml',
                             help='Sigopt config file used for hyper parameter tunning')
 

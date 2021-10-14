@@ -1,6 +1,6 @@
 train:
-  dataset_format: Binary
-  dataset_meta_path: /mnt/DP_disk1/binary_dataset/day_fea_count.npz
-  eval_path: /mnt/DP_disk1/binary_dataset/val_data.bin
-  model: DLRM
-  train_path: /mnt/DP_disk1/binary_dataset/train_data.bin
+  dataset_format: TFRecords
+  dataset_meta_path: /outbrain2/tfrecords
+  eval_path: /mnt/sdd/outbrain2/tfrecords/eval/part*
+  model: WnD
+  train_path: /mnt/sdd/outbrain2/tfrecords/train/part*

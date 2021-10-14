@@ -1,5 +1,5 @@
 # Copyright (c) 2021, NVIDIA CORPORATION. All rights reserved.
-#
+# Modifications copyright Intel
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+import sys
+import os
 
 from trainer.model.widedeep import wide_deep_model
 from trainer.run import train, evaluate
@@ -26,7 +29,10 @@ def main():
     if args.evaluate:
         evaluate(args, model, config)
     else:
-        train(args, model, config)
+        metric = train(args, model, config)
+        file = os.path.join(sys.path[0], 'metric.txt')
+        with open(file, 'w') as f:
+            f.writelines(str(metric))
 
 
 if __name__ == '__main__':

@@ -6,7 +6,7 @@ metrics:
 - name: MAP
   objective: maximize
   threshold: 0.6553
-observation_budget: 40
+observation_budget: 3
 parameters:
 - grid:
   - 64
