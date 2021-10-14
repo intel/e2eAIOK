@@ -17,8 +17,10 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 
 parser = argparse.ArgumentParser()
+parser.add_argument("--slice_id", type=int, nargs='?', const=True, default=0,
+        help="used to slided inference")
 parser.add_argument("--advanced", type=bool, nargs='?', const=True, default=False,
-                    help="if we use previous categorified data")
+        help="use original data_iterator or categorified_data_iterator")
 parser.add_argument("--mode", type=str, default='train',
                     help="mode, train or test")
 parser.add_argument("--model", type=str, default='DIEN', help="model")
@@ -41,9 +43,10 @@ EMBEDDING_DIM = 18
 HIDDEN_SIZE = 18 * 2
 ATTENTION_SIZE = 18 * 2
 best_auc = 0.0
-TARGET_AUC = 0.83
+TARGET_AUC = 0.825
 current_auc = 0.0
 lower_than_current_cnt = 0
+global SLICEID
 
 #TOTAL_TRAIN_SIZE = 512000
 TOTAL_TRAIN_SIZE = 5120000
@@ -222,6 +225,7 @@ def eval(sess, test_data, model, model_path, test_prepared = None):
     global lower_than_current_cnt
     if test_auc >= current_auc:
         current_auc = test_auc
+        lower_than_current_cnt = 0
     else:
         print("current auc is %.4f and test auc is %.4f" % (current_auc, test_auc))
         lower_than_current_cnt += 1
@@ -343,6 +347,9 @@ def train(
             train_file, uid_voc, mid_voc, cat_voc, batch_size, maxlen, shuffle_each_epoch=False)
         test_data = DataIterator(
             test_file, uid_voc, mid_voc, cat_voc, batch_size, maxlen)
+        #from data_iterator import DataIterator as TestDataIterator
+        #test_data = TestDataIterator(
+        #    test_file, "test_uid_voc.pkl", "test_mid_voc.pkl", "test_cat_voc.pkl", batch_size, maxlen)
         n_uid, n_mid, n_cat = train_data.get_n()
         # Number of uid = 543060, mid = 367983, cat = 1601 for Amazon dataset
         print("Number of uid = %i, mid = %i, cat = %i" % (n_uid, n_mid, n_cat))
@@ -410,6 +417,7 @@ def train(
         session_init_elapse_time = session_end_time - session_start_time
 
         data_load_elapse_time = 0
+        train_prepare_elapse_time = 0
         save_elapse_time = 0
         test_elapse_time = 0
         train_elapse_time = 0
@@ -432,15 +440,18 @@ def train(
             data_load_start_time = time.time()
             for src, tgt in train_data:
                 nums += 1
+                prepare_start_time = time.time()
                 uids, mids, cats, mid_his, cat_his, mid_mask, target, sl, noclk_mids, noclk_cats = prepare_data(
                     src, tgt, maxlen, return_neg=True)
                 data_load_end_time = time.time()
+                train_prepare_elapse_time += (data_load_end_time - prepare_start_time)
                 data_load_elapse_time += (data_load_end_time -
                                           data_load_start_time)
 
                 total_data.append(
                     [uids, mids, cats, mid_his, cat_his, mid_mask, target, sl, noclk_mids, noclk_cats])
                 data_load_start_time = time.time()
+            print("Load train data took %.3f secs, including prepare_data %.3f secs" % (data_load_elapse_time, train_prepare_elapse_time))
 
             # prepared_filename = "dien_data_trained_prepared_batch_{}.pickle".format(batch_size)
             # with open(prepared_filename, 'wb') as f:
@@ -581,11 +592,12 @@ def test(
     #         intra_op_parallelism_threads=1, inter_op_parallelism_threads=1)) as sess:
     sess_config = tf.compat.v1.ConfigProto(gpu_options=gpu_options)
     with tf.compat.v1.Session(config=sess_config) as sess:
-        train_data = DataIterator(
-            train_file, uid_voc, mid_voc, cat_voc, batch_size, maxlen)
+        #train_data = DataIterator(
+        #    train_file, uid_voc, mid_voc, cat_voc, batch_size, maxlen)
+        test_file = f"{test_file}_{SLICEID}"
         test_data = DataIterator(
             test_file, uid_voc, mid_voc, cat_voc, batch_size, maxlen)
-        n_uid, n_mid, n_cat = train_data.get_n()
+        n_uid, n_mid, n_cat = test_data.get_n()
         if model_type == 'DNN':
             model = Model_DNN(n_uid, n_mid, n_cat,
                               EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE)
@@ -678,7 +690,7 @@ def test(
         print("Approximate accelerator time in seconds is %.3f" %
               approximate_accelerator_time)
         print("Approximate accelerator performance in recommendations/second is %.3f" %
-              (float(5*num_iters*batch_size)/float(approximate_accelerator_time)))
+              (float(num_iters*batch_size)/float(approximate_accelerator_time)))
         print("Process time breakdown, prepare data took %.3f and test took %.3f, avg is prepare %.3f, test %.3f" % (
             prepare_elapse_time, test_elapse_time, prepare_elapse_time/5, test_elapse_time/5,))
 
@@ -697,6 +709,7 @@ if __name__ == '__main__':
         tf.random.set_seed(SEED)
     numpy.random.seed(SEED)
     random.seed(SEED)
+    SLICEID = args.slice_id
     if args.advanced:
         print("Advanced train")
         from adv_data_iterator import AdvDataIterator as DataIterator

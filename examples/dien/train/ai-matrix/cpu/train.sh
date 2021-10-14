@@ -17,7 +17,7 @@ fi
 mkdir results
 
 batchs='256 512 1024'
-#batchs='256'
+#batchs='512'
 
 for batch in $batchs
 do
@@ -26,7 +26,7 @@ do
 	echo "----------------------------------------------------------------"
 	start=`date +%s%N`
 	# numactl -l -N 0 python script/train.py --mode=train --batch_size=$batch  |& tee results/result_train_${batch}.txt
-  python script/train.py --mode=train --advanced --batch_size=$batch --num-inter-threads=20 --num-intra-threads=20 |& tee results/result_train_${batch}.txt
+    python script/train.py --mode=train --advanced --batch_size=$batch --num-inter-threads=4  --num-intra-threads=36 |& tee results/result_train_${batch}.txt
   # python script/train.py --mode=train --batch_size=$batch --num-inter-threads=1         --num-intra-threads=20  |& tee results/result_train_${batch}.txt
 	end=`date +%s%N`
 	total_time=$(((end-start)/1000000))

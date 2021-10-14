@@ -15,6 +15,7 @@ from tensorflow.python.platform import gfile
 import horovod.tensorflow as hvd
 hvd.init()
 print('local_rank=%d, rank=%d, size=%d' % (hvd.local_rank(), hvd.rank(), hvd.size()))
+print('one_ccl is_enabled: ', hvd.ccl_built())
 
 class Model(object):
     def __init__(self, n_uid, n_mid, n_cat, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE, 
@@ -156,6 +157,9 @@ class Model(object):
             self.noclk_his_eb_sum_1 = tf.reduce_sum(self.noclk_his_eb, 2)
             self.noclk_his_eb_sum = tf.reduce_sum(self.noclk_his_eb_sum_1, 1)
 
+    def distribute_optimizer(self):
+        pass
+
     def _sparse_to_dense_grads(self, grads_and_vars):
         # for g, v in grads_and_vars:
         #     print("g", g)
@@ -197,17 +201,17 @@ class Model(object):
                 # self.optimizer = tf.compat.v1.train.MomentumOptimizer(learning_rate=self.lr, momentum=0.9).minimize(self.loss)
 
                 # convert sparse optimizer to dense optimizer
-                adam_optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=self.lr)
+                adam_optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=self.lr * hvd.size())
                 adam_optimizer = hvd.DistributedOptimizer(adam_optimizer)
                 gradients = adam_optimizer.compute_gradients(self.loss)
                 gradients = self._sparse_to_dense_grads(gradients)
                 self.optimizer = adam_optimizer.apply_gradients(gradients)
-                #self.optimizer = hvd.DistributedOptimizer(adam_optimizer.apply_gradients(gradients))
+
                 # Accuracy metric
                 self.accuracy = tf.reduce_mean(tf.cast(tf.equal(tf.round(self.y_hat), self.target_ph), self.model_dtype))
                 tf.compat.v1.summary.scalar('accuracy', self.accuracy)
 
-            self.merged =  tf.compat.v1.summary.merge_all()
+            #self.merged =  tf.compat.v1.summary.merge_all()
 
     def auxiliary_loss(self, h_states, click_seq, noclick_seq, mask, stag = None):
         def dtype_getter(getter, name, dtype=None, *args, **kwargs):
@@ -448,7 +452,7 @@ class Model_WideDeep(Model):
             # Accuracy metric
             self.accuracy = tf.reduce_mean(tf.cast(tf.equal(tf.round(self.y_hat), self.target_ph), tf.float32))
             tf.compat.v1.summary.scalar('accuracy', self.accuracy)
-        self.merged =  tf.compat.v1.summary.merge_all()
+        #self.merged =  tf.compat.v1.summary.merge_all()
 
 
 class Model_DIN_V2_Gru_QA_attGru(Model):
