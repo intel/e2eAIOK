@@ -299,7 +299,7 @@ def main(option = '--advanced'):
         proc.reset_ops([op_asin_to_cat_id, op_select])
         asin_cat_df = proc.apply(asin_df)
         # for create noclk_hist_category, we should create a dict to mapping from asin to its cat_id
-        test_df = load_processed_csv(spark, path_prefix + original_folder + "/local_test_splitByUser")
+        test_df = load_processed_csv(spark, path_prefix + original_folder + "raw_data/local_test_splitByUser")
         dict_dfs[0]['col_name'] = 'hist_asin'
         test_df = add_negative_hist_cols(test_df, item_info_df, dict_dfs, proc, "test_records_with_negative_hists")
         test_df = categorify_dien_data(test_df, uid_dict_df, mid_dict_df, cat_dict_df, asin_cat_df, proc, "local_test_splitByUser.parquet")
