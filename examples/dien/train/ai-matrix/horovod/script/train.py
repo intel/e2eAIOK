@@ -21,6 +21,8 @@ os.environ["HOROVOD_CCL_CACHE"] = "1"
 import horovod.tensorflow as hvd
 
 parser = argparse.ArgumentParser()
+parser.add_argument("--slice_id", type=int, nargs='?', const=True, default=0,
+                help="used to slided inference")
 parser.add_argument("--advanced", type=bool, nargs='?', const=True, default=False,
                     help="if we use previous categorified data")
 parser.add_argument("--mode", type=str, default='train',
@@ -45,9 +47,10 @@ EMBEDDING_DIM = 18
 HIDDEN_SIZE = 18 * 2
 ATTENTION_SIZE = 18 * 2
 best_auc = 0.0
-TARGET_AUC = 0.83
+TARGET_AUC = 0.82
 current_auc = 0.0
 lower_than_current_cnt = 0
+global SLICEID
 
 #TOTAL_TRAIN_SIZE = 512000
 TOTAL_TRAIN_SIZE = 5120000
@@ -226,6 +229,7 @@ def eval(sess, test_data, model, model_path, test_prepared = None):
     global lower_than_current_cnt
     if test_auc >= current_auc:
         current_auc = test_auc
+        lower_than_current_cnt = 0
     else:
         print("current auc is %.4f and test auc is %.4f" % (current_auc, test_auc))
         lower_than_current_cnt += 1
@@ -588,11 +592,10 @@ def test(
     #         intra_op_parallelism_threads=1, inter_op_parallelism_threads=1)) as sess:
     sess_config = tf.compat.v1.ConfigProto(gpu_options=gpu_options)
     with tf.compat.v1.Session(config=sess_config) as sess:
-        train_data = DataIterator(
-            train_file, uid_voc, mid_voc, cat_voc, batch_size, maxlen)
+        test_file = f"{test_file}_{SLICEID}"
         test_data = DataIterator(
             test_file, uid_voc, mid_voc, cat_voc, batch_size, maxlen)
-        n_uid, n_mid, n_cat = train_data.get_n()
+        n_uid, n_mid, n_cat = test_data.get_n()
         if model_type == 'DNN':
             model = Model_DNN(n_uid, n_mid, n_cat,
                               EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE)
@@ -685,7 +688,7 @@ def test(
         print("Approximate accelerator time in seconds is %.3f" %
               approximate_accelerator_time)
         print("Approximate accelerator performance in recommendations/second is %.3f" %
-              (float(5*num_iters*batch_size)/float(approximate_accelerator_time)))
+              (float(num_iters*batch_size)/float(approximate_accelerator_time)))
         print("Process time breakdown, prepare data took %.3f and test took %.3f, avg is prepare %.3f, test %.3f" % (
             prepare_elapse_time, test_elapse_time, prepare_elapse_time/5, test_elapse_time/5,))
 
@@ -704,6 +707,7 @@ if __name__ == '__main__':
         tf.random.set_seed(SEED)
     numpy.random.seed(SEED)
     random.seed(SEED)
+    SLICEID = args.slice_id
     if args.advanced:
         print("Advanced train")
         from adv_data_iterator import AdvDataIterator as DataIterator

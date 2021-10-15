@@ -15,10 +15,12 @@ from tensorflow.python.platform import gfile
 import os
 #os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID" # see issue #152
-os.environ["CUDA_VISIBLE_DEVICES"]="0, 1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 
 parser = argparse.ArgumentParser()
+parser.add_argument("--slice_id", type=int, nargs='?', const=True, default=0,
+        help="used to slided inference")
 parser.add_argument("--advanced", type=bool, nargs='?', const=True, default=False,
                     help="if we use previous categorified data")
 parser.add_argument("--mode", type=str, default='train',
@@ -43,10 +45,11 @@ EMBEDDING_DIM = 18
 HIDDEN_SIZE = 18 * 2
 ATTENTION_SIZE = 18 * 2
 best_auc = 0.0
-TARGET_AUC = 0.83
+TARGET_AUC = 0.82
 TOTAL_TRAIN_SIZE = 5120000
 current_auc = 0.0
 lower_than_current_cnt = 0
+global SLICEID
 #TOTAL_TRAIN_SIZE = 51200
 
 
@@ -222,6 +225,7 @@ def eval(sess, test_data, model, model_path, test_data_prepared = None):
     global lower_than_current_cnt
     if test_auc >= current_auc:
         current_auc = test_auc
+        lower_than_current_cnt = 0
     else:
         print("current auc is %.4f and test auc is %.4f" % (current_auc, test_auc))
         lower_than_current_cnt += 1
@@ -491,8 +495,9 @@ def train(
                 if (iter % test_iter) == 0:
                     # print("train_size: %d" % train_size)
                     # print("approximate_accelerator_time: %.3f" % approximate_accelerator_time)
-                    print('iter: %d ----> train_loss: %.4f ---- train_accuracy: %.4f ---- train_aux_loss: %.4f' %
-                          (iter, loss_sum / test_iter, accuracy_sum / test_iter, aux_loss_sum / test_iter))
+                    train_time = sum(elapsed_time_records[(iter - test_iter):])
+                    print('iter: %d ----> train_loss: %.4f ---- train_accuracy: %.4f ---- train_aux_loss: %.4f ---- train_time: %.3f' %
+                          (iter, loss_sum / test_iter, accuracy_sum / test_iter, aux_loss_sum / test_iter, train_time))
                     test_auc, loss_sum, accuracy_sum, aux_loss_sum, eval_time, prepare_time, nums, test_prepared = eval(
                         sess, test_data, model, best_model_path, test_prepared)
                     print(' test_auc: %.4f ----test_loss: %.4f ---- test_accuracy: %.4f ---- test_aux_loss: %.4f ---- eval_time: %.3f ---- num_iters: %d' %
@@ -574,11 +579,12 @@ def test(
     #         intra_op_parallelism_threads=1, inter_op_parallelism_threads=1)) as sess:
     sess_config = tf.compat.v1.ConfigProto(gpu_options=gpu_options)
     with tf.compat.v1.Session(config=sess_config) as sess:
-        train_data = DataIterator(
-            train_file, uid_voc, mid_voc, cat_voc, batch_size, maxlen)
+        test_file = f"{test_file}_{SLICEID}"
+        #train_data = DataIterator(
+        #    train_file, uid_voc, mid_voc, cat_voc, batch_size, maxlen)
         test_data = DataIterator(
             test_file, uid_voc, mid_voc, cat_voc, batch_size, maxlen)
-        n_uid, n_mid, n_cat = train_data.get_n()
+        n_uid, n_mid, n_cat = test_data.get_n()
         if model_type == 'DNN':
             model = Model_DNN(n_uid, n_mid, n_cat,
                               EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE)
@@ -671,7 +677,7 @@ def test(
         print("Approximate accelerator time in seconds is %.3f" %
               approximate_accelerator_time)
         print("Approximate accelerator performance in recommendations/second is %.3f" %
-              (float(5*num_iters*batch_size)/float(approximate_accelerator_time)))
+              (float(num_iters*batch_size)/float(approximate_accelerator_time)))
         print("Process time breakdown, prepare data took %.3f and test took %.3f, avg is prepare %.3f, test %.3f" % (
             prepare_elapse_time, test_elapse_time, prepare_elapse_time/5, test_elapse_time/5,))
 
@@ -690,6 +696,7 @@ if __name__ == '__main__':
         tf.random.set_seed(SEED)
     numpy.random.seed(SEED)
     random.seed(SEED)
+    SLICEID = args.slice_id
     if args.advanced:
         print("Advanced train")
         from adv_data_iterator import AdvDataIterator as DataIterator
