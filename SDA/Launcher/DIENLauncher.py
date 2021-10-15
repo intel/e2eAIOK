@@ -1,7 +1,7 @@
 from Launcher.BaseModelLauncher import BaseModelLauncher
 
 class DIENLauncher(BaseModelLauncher):
-    def __init__(self, dataset_format, dataset_meta_path, train_path, eval_path, model_args):
+    def __init__(self, dataset_meta_path, train_path, eval_path, model_args):
         pass
     
     def parse_args(self, args):

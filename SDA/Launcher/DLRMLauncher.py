@@ -4,8 +4,8 @@ import yaml
 from Launcher.BaseModelLauncher import BaseModelLauncher
 
 class DLRMLauncher(BaseModelLauncher):
-    def __init__(self, dataset_format, dataset_meta_path, train_path, eval_path, args):
-        super().__init__(dataset_format, dataset_meta_path, train_path, eval_path, args)
+    def __init__(self, dataset_meta_path, train_path, eval_path, args):
+        super().__init__(dataset_meta_path, train_path, eval_path, args)
         args = self.parse_args(args)
 
         self.params['test_mini_batch_size'] = args.test_mini_batch_size

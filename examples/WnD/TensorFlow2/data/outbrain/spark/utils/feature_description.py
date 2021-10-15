@@ -1,5 +1,5 @@
 # Copyright (c) 2021, NVIDIA CORPORATION. All rights reserved.
-#
+# Modifications copyright Intel
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+PREBATCH_SIZE = 4096
 
 LABEL_COLUMN = "label"
 
@@ -34,6 +36,22 @@ CATEGORICAL_COLUMNS = [
     'event_country_state',
     'event_geo_location',
     'event_platform']
+
+HASH_BUCKET_SIZES = {
+    'doc_event_id': 300000,
+    'ad_id': 250000,
+    'doc_id': 100000,
+    'doc_ad_source_id': 4000,
+    'doc_event_source_id': 4000,
+    'event_geo_location': 2500,
+    'ad_advertiser': 2500,
+    'event_country_state': 2000,
+    'doc_ad_publisher_id': 1000,
+    'doc_event_publisher_id': 1000,
+    'event_country': 300,
+    'event_platform': 4,
+    'campaign_id': 5000
+}
 
 DOC_CATEGORICAL_MULTIVALUED_COLUMNS = {
 }

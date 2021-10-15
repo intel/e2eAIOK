@@ -1,0 +1,64 @@
+# outbrain dataset metadata
+
+numerical_features:
+  doc_event_days_since_published_log_01scaled:
+  doc_ad_days_since_published_log_01scaled:
+  doc_event_doc_ad_sim_categories:
+  doc_event_doc_ad_sim_topics:
+  doc_event_doc_ad_sim_entities:
+  pop_document_id:
+  pop_publisher_id:
+  pop_source_id:
+  pop_ad_id:
+  pop_advertiser_id:
+  pop_campain_id:
+  doc_views_log_01scaled:
+  ad_views_log_01scaled:
+categorical_features:
+  ad_id:
+    voc_size: 250000
+    emb_dim: 128 
+  campaign_id:
+    voc_size: 5000
+    emb_dim: 128 
+  doc_event_id:
+    voc_size: 300000
+    emb_dim: 128 
+  event_platform:
+    voc_size: 4
+    emb_dim: 16
+  doc_id:
+    voc_size: 100000
+    emb_dim: 128 
+  ad_advertiser:
+    voc_size: 2500
+    emb_dim: 64 
+  doc_event_source_id:
+    voc_size: 4000
+    emb_dim: 64 
+  doc_event_publisher_id:
+    voc_size: 1000
+    emb_dim: 64 
+  doc_ad_source_id:
+    voc_size: 4000
+    emb_dim: 64 
+  doc_ad_publisher_id:
+    voc_size: 1000
+    emb_dim: 64 
+  event_geo_location:
+    voc_size: 2500
+    emb_dim: 64 
+  event_country:
+    voc_size: 300
+    emb_dim: 64 
+  event_country_state:
+    voc_size: 2000
+    emb_dim: 64 
+display_id: 
+  display_id:
+label: 
+  label:
+tfrecords_meta_path: /outbrain2/tfrecords
+prebatch_size: 4096
+training_set_size: 59761827
+dataset_format: TFRecords

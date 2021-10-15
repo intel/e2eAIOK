@@ -2,11 +2,10 @@ import argparse
 from abc import abstractmethod
 
 class BaseModelLauncher:
-    def __init__(self, dataset_format, dataset_meta_path, train_path, eval_path, model_args):
+    def __init__(self, dataset_meta_path, train_path, eval_path, model_args):
         self.cmdl_args = model_args
         self.parser = argparse.ArgumentParser()
         self.params = {}
-        self.params['dataset_format'] = dataset_format
         self.params['dataset_meta_path'] = dataset_meta_path
         self.params['train_dataset_path'] = train_path
         self.params['eval_dataset_path'] = eval_path
@@ -20,8 +19,6 @@ class BaseModelLauncher:
         self.params['python_executable'] = args.python_executable
         self.params['global_batch_size'] = args.global_batch_size
         self.params['num_epochs'] = args.num_epochs
-        if dataset_format == 'TFRecords':
-            self.params['trainset_size'] = args.trainset_size
         self.params['model_dir'] = args.model_dir
         self.params['metric'] = args.metric
         self.params['metric_threshold'] = args.metric_threshold

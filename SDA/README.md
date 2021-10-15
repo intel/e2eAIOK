@@ -8,7 +8,7 @@ Smart Democratization Advisor (SDA) is a tool to facilitate [Sigopt](https://sig
 
 ```bash
 python main.py --train_path ${trainset_path} --eval_path ${evalset_path} \
---dataset_meta_path ${meta_path} --model ${model} --dataset_format ${dataset_format}
+--dataset_meta_path ${meta_path} --model ${model}
 ```
 
 SDA config file will be generated based on command line arguments and saved at `sda.yaml`.
@@ -19,7 +19,6 @@ Sigopt config file will be generated based on command line arguments and saved a
   ```yaml
   train:
     # train/test dataset format, support TFRecords and Binary
-    dataset_format: TFRecords
     # dataset metadata path
     dataset_meta_path: /outbrain2/tfrecords
     # evaluation dataset location

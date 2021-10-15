@@ -15,12 +15,10 @@
 import logging
 import os
 import time
-
-import dllogger
 import horovod.tensorflow as hvd
 import numpy as np
 import tensorflow as tf
-from data.outbrain.features import DISPLAY_ID_COLUMN
+
 from tensorflow.python.keras import backend as K
 from trainer.utils.schedulers import get_schedule
 
@@ -32,6 +30,7 @@ def train(args, model, config):
     train_dataset = config['train_dataset']
     eval_dataset = config['eval_dataset']
     steps = int(config['steps_per_epoch'])
+    features = config['features']
     logger.info(f'Steps per epoch: {steps}')
     schedule = get_schedule(
         args=args,
@@ -52,13 +51,14 @@ def train(args, model, config):
     eval_loss = tf.keras.metrics.Mean()
 
     metrics = [
-        tf.keras.metrics.BinaryAccuracy(),
-        tf.keras.metrics.AUC()
+        tf.keras.metrics.BinaryAccuracy(name='binary_accuracy'),
+        tf.keras.metrics.AUC(name='auc')
     ]
 
     current_step_var = tf.Variable(0, trainable=False, dtype=tf.int64)
     display_id_counter = tf.Variable(0., trainable=False, dtype=tf.float64)
     streaming_map = tf.Variable(0., name='STREAMING_MAP', trainable=False, dtype=tf.float64)
+    ap_metric = tf.keras.metrics.Precision(name='ap')
 
     checkpoint = tf.train.Checkpoint(
         deep_optimizer=deep_optimizer,
@@ -128,12 +128,19 @@ def train(args, model, config):
 
         for metric in metrics:
             metric.update_state(y, predictions)
+        
+        if args.metric == 'MAP':
+            cal_map(predictions, x[features.features_keys[-1]], y)
+        elif args.metric == 'AP':
+            ap_metric.update_state(y, predictions)
+        return loss
 
+    def cal_map(predictions, display_ids, y):
         predictions = tf.reshape(predictions, [-1])
         predictions = tf.cast(predictions, tf.float64)
-        display_ids = x[DISPLAY_ID_COLUMN]
         display_ids = tf.reshape(display_ids, [-1])
         labels = tf.reshape(y, [-1])
+
         sorted_ids = tf.argsort(display_ids)
         display_ids = tf.gather(display_ids, indices=sorted_ids)
         predictions = tf.gather(predictions, indices=sorted_ids)
@@ -161,7 +168,6 @@ def train(args, model, config):
         shape = tf.cast(tf.shape(indices)[0], tf.float64)
         display_id_counter.assign_add(shape)
         streaming_map.assign_add(ap_sum)
-        return loss
 
     t0 = None
     t_batch = None
@@ -169,8 +175,6 @@ def train(args, model, config):
     with writer.as_default():
         time_metric_start = time.time()
         for epoch in range(1, args.num_epochs + 1):
-            if hvd.rank() == 0:
-                tf.profiler.experimental.start(os.path.join(args.model_dir, 'profile'))
             for step, (x, y) in enumerate(train_dataset):
                 current_step = np.asscalar(current_step_var.numpy())
                 schedule(optimizer=deep_optimizer, current_step=current_step)
@@ -192,16 +196,13 @@ def train(args, model, config):
                     if current_step > boundary:
                         batch_time = time.time() - t_batch
                         samplesps = args.global_batch_size / batch_time
-                        dllogger.log(data={'batch_samplesps': samplesps}, step=(1, current_step))
+                        logger.info(f'batch_samplesps: {samplesps}, step={current_step}')
 
                         if args.benchmark_steps <= current_step:
                             train_time = time.time() - t0
                             epochs = args.benchmark_steps - max(args.benchmark_warmup_steps, 1)
                             train_throughput = (args.global_batch_size * epochs) / train_time
-                            dllogger.log(
-                                data={'train_throughput': train_throughput},
-                                step=tuple()
-                            )
+                            logger.info(f'train_throughput: {train_throughput}')
                             return
 
                 else:
@@ -211,62 +212,56 @@ def train(args, model, config):
                         train_data['loss'] = f'{loss.numpy():.4f}'
                         train_data['time'] = f'{(time_metric_end - time_metric_start):.4f}'
                         logger.info(f'step: {current_step}, {train_data}')
-                        # dllogger.log(data=train_data, step=(current_step, args.num_epochs * steps))
                         time_metric_start = time.time()
-
-                    if step == steps:
-                        break
 
                 current_step_var.assign_add(1)
                 t_batch = time.time()
             if args.benchmark:
                 continue
-
+            
             for metric in metrics:
                 metric.reset_states()
             eval_loss.reset_states()
+            display_id_counter.assign(0)
+            streaming_map.assign(0)
+            ap_metric.reset_states()
 
             for step, (x, y) in enumerate(eval_dataset):
                 loss = evaluation_step(x, y)
                 eval_loss.update_state(loss)
 
-            map_metric = hvd.allreduce(tf.divide(streaming_map, display_id_counter))
-
-            map_metric = map_metric.numpy()
             eval_loss_reduced = hvd.allreduce(eval_loss.result())
 
             metrics_reduced = {
                 f'{metric.name}_val': hvd.allreduce(metric.result()) for metric in metrics
-            }
+            }            
 
-            for name, result in metrics_reduced.items():
-                tf.summary.scalar(f'{name}', result, step=steps * epoch)
-            tf.summary.scalar('loss_val', eval_loss_reduced, step=steps * epoch)
-            tf.summary.scalar('map_val', map_metric, step=steps * epoch)
+            eval_data = {name: result.numpy() for name, result in metrics_reduced.items()}
+            eval_data.update({'loss_val': eval_loss_reduced.numpy()})
+            if args.metric == 'MAP':
+                metric = hvd.allreduce(tf.divide(streaming_map, display_id_counter)).numpy()
+                eval_data.update({'map_val': metric})
+            elif args.metric == 'AP':
+                metric = hvd.allreduce(ap_metric.result()).numpy()
+                eval_data.update({'ap_val': metric})
+            else:
+                metric = eval_data['auc_val']
+            
+            for name, result in eval_data.items():
+                tf.summary.scalar(name, result, step=current_step_var.numpy())
             writer.flush()
-
-            eval_data = {name: f'{result.numpy():.4f}' for name, result in metrics_reduced.items()}
-            eval_data.update({
-                'loss_val': f'{eval_loss_reduced.numpy():.4f}',
-                'streaming_map_val': f'{map_metric:.4f}'
-            })
-            # dllogger.log(data=eval_data, step=(steps * epoch, args.num_epochs * steps))
-            logger.info(f'step: {steps * epoch}, {eval_data}')
-
+            logger.info(f'step: {current_step_var.numpy()}, {eval_data}')
             if hvd.rank() == 0:
                 manager.save()
-
-            display_id_counter.assign(0)
-            streaming_map.assign(0)
-            if hvd.rank() == 0:
-                tf.profiler.experimental.stop()
-            if map_metric >= 0.6553:
-                logger.info(f'early stop at streaming_map_val: {map_metric}')
+            
+            if metric >= args.metric_threshold:
+                logger.info(f'early stop at {args.metric}: {metric}')
                 break
+
         if hvd.rank() == 0:
-            # dllogger.log(data=eval_data, step=tuple())
             logger.info(f'Final eval result: {eval_data}')
-    return map_metric
+    return metric
+
 
 
 def evaluate(args, model, config):
@@ -333,7 +328,7 @@ def evaluate(args, model, config):
 
         predictions = tf.reshape(predictions, [-1])
         predictions = tf.cast(predictions, tf.float64)
-        display_ids = x[DISPLAY_ID_COLUMN]
+        display_ids = x[features.features_keys[-1]]
         display_ids = tf.reshape(display_ids, [-1])
         labels = tf.reshape(y, [-1])
         sorted_ids = tf.argsort(display_ids)
@@ -366,6 +361,7 @@ def evaluate(args, model, config):
         return loss
 
     eval_dataset = config['eval_dataset']
+    features = config['features']
 
     t0 = None
     t_batch = None
@@ -401,7 +397,7 @@ def evaluate(args, model, config):
                 valid_data = {metric.name: f'{metric.result().numpy():.4f}' for metric in metrics}
                 valid_data['loss'] = f'{loss.numpy():.4f}'
                 if hvd.rank() == 0:
-                    dllogger.log(data=valid_data, step=(step,))
+                    logger.info(f'{valid_data}, step={step}')
         current_step += 1
         t_batch = time.time()
     logger.info(f'inference time: {time.time() - s_time}')
@@ -418,4 +414,4 @@ def evaluate(args, model, config):
         'streaming_map_val': f'{map_metric.numpy():.4f}'
     })
     logger.info(f'step: {step}, {eval_data}')
-    dllogger.log(data=eval_data, step=(step,))
+    logger.info(f'{eval_data}, step={step}')

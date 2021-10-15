@@ -72,17 +72,11 @@ def add_dataset_params(parser):
                        help='train dataset path')
     group.add_argument('--eval_dataset_path', type=str, default='/outbrain/tfrecords/eval/part*',
                        help='eval dataset path')
-    group.add_argument('--dataset_meta_path', type=str, default='/outbrain/tfrecords',
-                       help='Path to transformed_metadata for feature specification reconstruction, only available for TFRecords')
-    group.add_argument('--prebatch_size', type=int, default=4096,
-                       help='Dataset prebatch size, only available for TFRecords')
-    group.add_argument('--dataset_format', type=str, default='TFRecords',
-                       help='train/test dataset format, support TFRecords and binary')
+    group.add_argument('--dataset_meta_path', type=str, default='/outbrain/tfrecords/outbrain_meta.yaml',
+                       help='Dataset metadata file')
 
 def add_training_params(parser):
     group = parser.add_argument_group('training parameters')
-    group.add_argument('--training_set_size', type=int, default=59761827,
-                       help='Number of samples in the training set')
     group.add_argument('--global_batch_size', type=int, default=131072,
                        help='Total size of training batch')
     group.add_argument('--eval_batch_size', type=int, default=131072,
@@ -135,7 +129,7 @@ def parse_args():
     add_model_params(parser)
     add_distributed_training_params(parser)
 
-    parser.add_argument('--program', type=str, default='../examples/WnD/TensorFlow2/main.py',
+    parser.add_argument('--program', type=str, required=True,
                         help='The full path to the proram/script to be launched')
     parser.add_argument('--python_executable', type=str, default='python', 
                         help='Python interpreter')
@@ -144,13 +138,10 @@ def parse_args():
 
 def launch(args):
     # construct WnD launch command
-    cmd = f"{args.python_executable} {args.program} "
-    cmd += f"--dataset_format {args.dataset_format} " \
-        + f"--train_data_pattern {args.train_dataset_path} --eval_data_pattern {args.eval_dataset_path} --transformed_metadata_path {args.dataset_meta_path} " \
+    cmd = f"{args.python_executable} -u {args.program} "
+    cmd += f"--train_data_pattern '{args.train_dataset_path}' --eval_data_pattern '{args.eval_dataset_path}' --dataset_meta_file {args.dataset_meta_path} " \
         + f"--global_batch_size {args.global_batch_size} --eval_batch_size {args.eval_batch_size} --num_epochs {args.num_epochs} " \
         + f"--metric {args.metric} --metric_threshold {args.metric_threshold} "
-    if args.dataset_format == 'TFRecords':
-        cmd += f"--prebatch_size {args.prebatch_size} "
     if args.linear_learning_rate != -1:
         cmd += f"--linear_learning_rate {args.linear_learning_rate} "
     if args.deep_learning_rate != -1:
@@ -176,13 +167,10 @@ def dist_launch(args):
     # construct WnD launch command with mpi
     cmd = f"time mpirun -genv OMP_NUM_THREADS={omp_threads} -map-by socket -n {ranks} -ppn {ppn} -hosts {','.join(hosts)} -print-rank-map "
     cmd += f"-genv I_MPI_PIN_DOMAIN=socket -genv OMP_PROC_BIND=true -genv KMP_BLOCKTIME=1 -genv KMP_AFFINITY=granularity=fine,compact,1,0 "
-    cmd += f"{args.python_executable} {args.program} "
-    cmd += f"--dataset_format {args.dataset_format} " \
-        + f"--train_data_pattern {args.train_dataset_path} --eval_data_pattern {args.eval_dataset_path} --transformed_metadata_path {args.dataset_meta_path} " \
+    cmd += f"{args.python_executable} -u {args.program} "
+    cmd += f"--train_data_pattern '{args.train_dataset_path}' --eval_data_pattern '{args.eval_dataset_path}' --dataset_meta_file {args.dataset_meta_path} " \
         + f"--global_batch_size {args.global_batch_size} --eval_batch_size {args.eval_batch_size} --num_epochs {args.num_epochs} " \
         + f"--metric {args.metric} --metric_threshold {args.metric_threshold} "
-    if args.dataset_format == 'TFRecords':
-        cmd += f"--prebatch_size {args.prebatch_size} "
     if args.linear_learning_rate != -1:
         cmd += f"--linear_learning_rate {args.linear_learning_rate} "
     if args.deep_learning_rate != -1:
@@ -248,8 +236,10 @@ def main():
                 time.sleep(5)
 
     all_best_assignments = conn.experiments(experiment.id).best_assignments().fetch()
-    best_assignments = all_best_assignments.data[0].assignments
-    logger.info("Best Assignments: " + str(best_assignments))
+    if len(all_best_assignments.data) == 0:
+        logger.info("No assignments for satisfied model, you may increase observation budget or modify metric value")
+    else:
+        logger.info(f"Best Assignments: {all_best_assignments.data}")
     logger.info(f"Please go to https://app.sigopt.com/experiment/{experiment.id} for optimization history and analysis")
 
 

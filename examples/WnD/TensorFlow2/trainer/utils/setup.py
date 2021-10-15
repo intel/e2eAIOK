@@ -15,18 +15,15 @@
 import json
 import logging
 import os
-
-import dllogger
 import horovod.tensorflow.keras as hvd
 import tensorflow as tf
-import tensorflow_transform as tft
-from data.outbrain.dataloader import train_input_fn, eval_input_fn
-from data.outbrain.features import PREBATCH_SIZE
+
+from data.outbrain.dataset import create_dataset
+from data.outbrain.features import FeatureMeta
 
 
 def init(args, logger):
     hvd.init()
-    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
     init_logger(
         full=hvd.rank() == 0,
@@ -47,60 +44,23 @@ def init(args, logger):
 def init_logger(args, full, logger):
     if full:
         logger.setLevel(logging.INFO)
-        log_path = os.path.join(args.results_dir, args.log_filename)
-        os.makedirs(args.results_dir, exist_ok=True)
-        dllogger.init(backends=[
-            dllogger.JSONStreamBackend(verbosity=dllogger.Verbosity.VERBOSE,
-                                       filename=log_path),
-            dllogger.StdOutBackend(verbosity=dllogger.Verbosity.VERBOSE)])
         logger.warning('command line arguments: {}'.format(json.dumps(vars(args))))
-        if not os.path.exists(args.results_dir):
-            os.mkdir(args.results_dir)
-
-        with open('{}/args.json'.format(args.results_dir), 'w') as f:
-            json.dump(vars(args), f, indent=4)
     else:
         logger.setLevel(logging.ERROR)
-        dllogger.init(backends=[])
+
 
 def create_config(args):
-    assert not args.benchmark or args.benchmark_warmup_steps < args.benchmark_steps, \
-        'Number of benchmark steps must be higher than warmup steps'
     logger = logging.getLogger('tensorflow')
 
     init(args, logger)
 
-    num_gpus = hvd.size()
-    gpu_id = hvd.rank()
-    train_batch_size = args.global_batch_size // num_gpus
-    eval_batch_size = args.eval_batch_size // num_gpus
-    steps_per_epoch = args.training_set_size / args.global_batch_size
-
-    feature_spec = tft.TFTransformOutput(
-        args.transformed_metadata_path
-    ).transformed_feature_spec()
-
-    train_spec_input_fn = train_input_fn(
-        num_gpus=num_gpus,
-        id=gpu_id,
-        filepath_pattern=args.train_data_pattern,
-        feature_spec=feature_spec,
-        records_batch_size=train_batch_size // PREBATCH_SIZE,
-    )
-
-    eval_spec_input_fn = eval_input_fn(
-        num_gpus=num_gpus,
-        id=gpu_id,
-        repeat=None if args.benchmark else 1,
-        filepath_pattern=args.eval_data_pattern,
-        feature_spec=feature_spec,
-        records_batch_size=eval_batch_size // PREBATCH_SIZE
-    )
-
+    features = FeatureMeta(args.dataset_meta_file)
+    train, eval, steps_per_epoch = create_dataset(args, features)
     config = {
         'steps_per_epoch': steps_per_epoch,
-        'train_dataset': train_spec_input_fn,
-        'eval_dataset': eval_spec_input_fn
+        'train_dataset': train,
+        'eval_dataset': eval, 
+        'features': features
     }
 
     return config

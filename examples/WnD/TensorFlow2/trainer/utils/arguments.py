@@ -24,36 +24,21 @@ def parse_args():
 
     locations = parser.add_argument_group('datasets parameters')
 
-    locations.add_argument('--train_data_pattern', type=str, default='/outbrain/tfrecords/train/part*', nargs='+',
+    locations.add_argument('--train_data_pattern', type=str, default='/outbrain/tfrecords/train/part*', 
                            help='Pattern of training file names. For example if training files are train_000.tfrecord, '
                                 'train_001.tfrecord then --train_data_pattern is train_*')
 
-    locations.add_argument('--eval_data_pattern', type=str, default='/outbrain/tfrecords/eval/part*', nargs='+',
+    locations.add_argument('--eval_data_pattern', type=str, default='/outbrain/tfrecords/eval/part*', 
                            help='Pattern of eval file names. For example if eval files are eval_000.tfrecord, '
                                 'eval_001.tfrecord then --eval_data_pattern is eval_*')
 
-    locations.add_argument('--transformed_metadata_path', type=str, default='/outbrain/tfrecords',
-                           help='Path to transformed_metadata for feature specification reconstruction, only available for TFRecords')
-    
-    locations.add_argument('--use_checkpoint', default=False, action='store_true',
-                           help='Use checkpoint stored in model_dir path')
-    locations.add_argument('--prebatch_size', type=int, default=4096, help='Dataset prebatch size, only available for TFRecords')
-
-    locations.add_argument('--dataset_format', type=str, default='TFRecords', help='train/test dataset format, support TFRecords and binary')
+    locations.add_argument('--dataset_meta_file', type=str, default='data/outbrain/dataset_meta.yaml',
+                           help='Dataset metadata file')
 
     locations.add_argument('--model_dir', type=str, default='/outbrain/checkpoints',
                            help='Destination where model checkpoint will be saved')
 
-    locations.add_argument('--results_dir', type=str, default='/results',
-                           help='Directory to store training results')
-
-    locations.add_argument('--log_filename', type=str, default='log.json',
-                           help='Name of the file to store dlloger output')
-
     training_params = parser.add_argument_group('training parameters')
-
-    training_params.add_argument('--training_set_size', type=int, default=59761827,
-                                 help='Number of samples in the training set')
 
     training_params.add_argument('--global_batch_size', type=int, default=131072,
                                  help='Total size of training batch')
@@ -96,6 +81,9 @@ def parse_args():
     run_params.add_argument('--evaluate', default=False, action='store_true',
                             help='Only perform an evaluation on the validation dataset, don\'t train')
 
+    run_params.add_argument('--use_checkpoint', default=False, action='store_true',
+                           help='Use checkpoint stored in model_dir path')
+    
     run_params.add_argument('--benchmark', action='store_true', default=False,
                             help='Run training or evaluation benchmark to collect performance metrics', )
 
@@ -104,8 +92,4 @@ def parse_args():
 
     run_params.add_argument('--benchmark_steps', type=int, default=1000,
                             help='Number of steps for performance benchmark')
-
-    run_params.add_argument('--sigopt_config_file', type=str, default='sigopt.yaml',
-                            help='Sigopt config file used for hyper parameter tunning')
-
     return parser.parse_args()

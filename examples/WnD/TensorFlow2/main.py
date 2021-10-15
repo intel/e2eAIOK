@@ -24,7 +24,7 @@ from trainer.utils.setup import create_config
 def main():
     args = parse_args()
     config = create_config(args)
-    model = wide_deep_model(args)
+    model = wide_deep_model(args, config['features'])
 
     if args.evaluate:
         evaluate(args, model, config)

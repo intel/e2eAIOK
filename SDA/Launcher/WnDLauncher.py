@@ -9,12 +9,10 @@ class WnDLauncher(BaseModelLauncher):
     '''
         Wide and Deep sigopt model optimization launcher
     '''
-    def __init__(self, dataset_format, dataset_meta_path, train_path, eval_path, args):
-        super().__init__(dataset_format, dataset_meta_path, train_path, eval_path, args)
+    def __init__(self, dataset_meta_path, train_path, eval_path, args):
+        super().__init__(dataset_meta_path, train_path, eval_path, args)
         args = self.parse_args(self.cmdl_args)
 
-        if dataset_format == 'TFRecords':
-            self.params['prebatch_size'] = args.prebatch_size
         # model params
         self.params['deep_hidden_units'] = args.deep_hidden_units
         self.params['deep_dropout'] = args.deep_dropout

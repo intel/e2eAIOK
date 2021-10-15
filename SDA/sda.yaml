@@ -1,6 +1,5 @@
 train:
-  dataset_format: TFRecords
-  dataset_meta_path: /outbrain2/tfrecords
+  dataset_meta_path: /root/ht/ML/frameworks.bigdata.bluewhale/examples/WnD/TensorFlow2/data/outbrain/outbrain_meta.yaml
   eval_path: /mnt/sdd/outbrain2/tfrecords/eval/part*
   model: WnD
   train_path: /mnt/sdd/outbrain2/tfrecords/train/part*

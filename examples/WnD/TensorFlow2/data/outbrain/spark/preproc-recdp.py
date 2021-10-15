@@ -19,7 +19,7 @@ from pyspark import TaskContext
 from tensorflow_transform.tf_metadata import dataset_metadata
 from tensorflow_transform.tf_metadata import dataset_schema
 from tensorflow_transform.tf_metadata import metadata_io
-from data.outbrain.features import PREBATCH_SIZE, HASH_BUCKET_SIZES
+from data.outbrain.spark.utils.feature_description import PREBATCH_SIZE, HASH_BUCKET_SIZES
 from data.outbrain.spark.utils.feature_description import LABEL_COLUMN, DISPLAY_ID_COLUMN, CATEGORICAL_COLUMNS, \
     DOC_CATEGORICAL_MULTIVALUED_COLUMNS, BOOL_COLUMNS, INT_COLUMNS, FLOAT_COLUMNS, \
     FLOAT_COLUMNS_LOG_BIN_TRANSFORM, FLOAT_COLUMNS_SIMPLE_BIN_TRANSFORM, FLOAT_COLUMNS_NO_TRANSFORM

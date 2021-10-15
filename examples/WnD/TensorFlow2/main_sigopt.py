@@ -1,17 +1,3 @@
-# Copyright (c) 2021, NVIDIA CORPORATION. All rights reserved.
-# Modifications copyright Intel
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 from trainer.model.widedeep import wide_deep_model
 from trainer.run import train
 from trainer.utils.arguments import parse_args
@@ -21,17 +7,12 @@ import horovod.tensorflow as hvd
 from sigopt import Connection
 import logging
 import yaml
+import time
 
 def create_experiment(yaml_file="sigopt.yaml"):
     with open(yaml_file) as f:
         data = yaml.load(f, Loader=yaml.FullLoader)
-    conn = Connection(client_token='NEKPNYXPRQRRUMTGRMVEKLRAZCUWGMCHTQDSILUOGQMLKZWD')
-    conn.set_proxies(
-        {
-            "http": "http://child-prc.intel.com:913",
-            "https": "http://child-prc.intel.com:913",
-        }
-    )
+    conn = Connection()
     parameters = data["sigopt"]["parameters"]
     metrics = data["sigopt"]["metrics"]
     observation_budget = data["sigopt"]["observation_budget"]
@@ -59,20 +40,14 @@ def main():
     experiment_id = 0
     suggestion_id = 0
     if hvd.rank() == 0:
-        conn, experiment = create_experiment(args.sigopt_config_file)
+        conn, experiment = create_experiment()
         experiment_id = experiment.id
         experiment_id = hvd.broadcast_object(experiment_id, root_rank=0)
         logger.info(f'experiment.observation_budget: {experiment.observation_budget}')
     else:
         experiment_id = hvd.broadcast_object(experiment_id, root_rank=0)
 
-    conn = Connection(client_token='NEKPNYXPRQRRUMTGRMVEKLRAZCUWGMCHTQDSILUOGQMLKZWD')
-    conn.set_proxies(
-        {
-            "http": "http://child-prc.intel.com:913",
-            "https": "http://child-prc.intel.com:913",
-        }
-    )
+    conn = Connection()
     experiment = conn.experiments(experiment_id).fetch()
     for _ in range(experiment.observation_budget):
 
@@ -89,7 +64,7 @@ def main():
         args.deep_warmup_epochs = assignments["deep_warmup_epochs"]
         args.deep_dropout = assignments["deep_dropout"]
 
-        model = wide_deep_model(args)
+        model = wide_deep_model(args, config['features'])
         map = train(args, model, config)
         if hvd.rank() == 0:
             for i in range(5):

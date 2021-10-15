@@ -14,12 +14,12 @@
 
 import tensorflow as tf
 
-from data.outbrain.features import get_feature_columns, NUMERIC_COLUMNS, EMBEDDING_TABLE_SHAPES
-from trainer.model.layers import ScalarDenseFeatures
 
-
-def wide_deep_model(args):
-    wide_columns, deep_columns = get_feature_columns()
+def wide_deep_model(args, features):
+    wide_columns, deep_columns = features.get_feature_columns()
+    NUMERIC_COLUMNS = features.numerical_keys
+    CATEGORICAL_COLUMNS = features.categorical_keys
+    categorical_meta = features.categorical_meta
 
     wide_weighted_outputs = []
     numeric_dense_inputs = []
@@ -47,9 +47,9 @@ def wide_deep_model(args):
         deep_columns_dict[key] = col
 
     for key in wide_columns_dict:
-        if key in EMBEDDING_TABLE_SHAPES:
+        if key in CATEGORICAL_COLUMNS:
             wide_weighted_outputs.append(tf.keras.layers.Flatten()(tf.keras.layers.Embedding(
-                EMBEDDING_TABLE_SHAPES[key][0], 1, input_length=1)(features[key])))
+                categorical_meta[key]['voc_size'], 1, input_length=1)(features[key])))
         else:
             numeric_dense_inputs.append(features[key])
 
@@ -59,7 +59,6 @@ def wide_deep_model(args):
         numeric_dense_inputs, name='numeric_dense')
     deep_columns = list(deep_columns_dict.values())
 
-    # dnn = ScalarDenseFeatures(deep_columns, name='deep_embedded')(features)
     dnn = tf.keras.layers.DenseFeatures(feature_columns=deep_columns)(features)
     for unit_size in args.deep_hidden_units:
         dnn = tf.keras.layers.Dense(units=unit_size, activation='relu')(dnn)
