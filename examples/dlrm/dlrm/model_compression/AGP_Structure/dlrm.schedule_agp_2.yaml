@@ -1,0 +1,68 @@
+version: 1
+pruners:
+  low_pruner:
+    class: L1RankedStructureParameterPruner_AGP
+    initial_sparsity : 0.01
+    final_sparsity: 0.99
+    group_type: Rows
+    weights: [bot_l.module.0.weight,
+              bot_l.module.1.weight,
+              bot_l.module.2.weight,
+              bot_l.module.3.weight,
+              top_l.module.0.weight,
+              top_l.module.1.weight,
+              top_l.module.2.weight,
+              top_l.module.3.weight,
+              top_l.module.4.weight]
+
+  fine_pruner:
+    class:  AutomatedGradualPruner
+    initial_sparsity : 0.01
+    final_sparsity: 0.99
+    weights: [bot_l.module.0.weight,
+              bot_l.module.1.weight,
+              bot_l.module.2.weight,
+              bot_l.module.3.weight,
+              top_l.module.0.weight,
+              top_l.module.1.weight,
+              top_l.module.2.weight,
+              top_l.module.3.weight,
+              top_l.module.4.weight]
+
+#lr_schedulers:
+#  pruning_lr:
+#    class: StepLR
+#    step_size: 50
+#    gamma: 0.10
+
+
+#extensions:
+#  net_thinner:
+#      class: 'FilterRemover'
+#      thinning_func_str: remove_filters
+#      arch: 'resnet20_cifar'
+#      dataset: 'cifar10'
+
+policies:
+  - pruner:
+      instance_name : low_pruner
+    starting_epoch: 0
+    ending_epoch: 2
+    frequency: 1
+
+  - pruner:
+      instance_name : fine_pruner
+    starting_epoch: 2
+    ending_epoch: 4
+    frequency: 1
+
+# After completing the pruning, we perform network thinning and continue fine-tuning.
+  #- extension:
+  #    instance_name: net_thinner
+  #  epochs: [22]
+
+  #- lr_scheduler:
+  #    instance_name: pruning_lr
+  #  starting_epoch: 0
+  #  ending_epoch: 400
+  #  frequency: 1
