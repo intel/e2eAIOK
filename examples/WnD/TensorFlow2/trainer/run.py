@@ -259,6 +259,7 @@ def train(args, model, config):
                 break
 
         if hvd.rank() == 0:
+            tf.saved_model.save(model, args.model_dir)
             logger.info(f'Final eval result: {eval_data}')
     return metric
 
