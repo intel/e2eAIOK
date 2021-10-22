@@ -281,8 +281,8 @@ def evaluate(args, model, config):
     eval_loss = tf.keras.metrics.Mean()
 
     metrics = [
-        tf.keras.metrics.BinaryAccuracy(),
-        tf.keras.metrics.AUC()
+        tf.keras.metrics.BinaryAccuracy(name='binary_accuracy'),
+        tf.keras.metrics.AUC(name='auc')
     ]
 
     if args.amp:
@@ -299,6 +299,7 @@ def evaluate(args, model, config):
     current_step_var = tf.Variable(0, trainable=False, dtype=tf.int64)
     display_id_counter = tf.Variable(0., trainable=False, dtype=tf.float64)
     streaming_map = tf.Variable(0., name='STREAMING_MAP', trainable=False, dtype=tf.float64)
+    ap_metric = tf.keras.metrics.Precision(name='ap')
 
     checkpoint = tf.train.Checkpoint(
         deep_optimizer=deep_optimizer,
@@ -326,12 +327,20 @@ def evaluate(args, model, config):
 
         for metric in metrics:
             metric.update_state(y, predictions)
+        
+        if args.metric == 'MAP':
+            cal_map(predictions, x[features.features_keys[-1]], y)
+        elif args.metric == 'AP':
+            ap_metric.update_state(y, predictions)
+        
+        return loss
 
+    def cal_map(predictions, display_ids, y):
         predictions = tf.reshape(predictions, [-1])
         predictions = tf.cast(predictions, tf.float64)
-        display_ids = x[features.features_keys[-1]]
         display_ids = tf.reshape(display_ids, [-1])
         labels = tf.reshape(y, [-1])
+
         sorted_ids = tf.argsort(display_ids)
         display_ids = tf.gather(display_ids, indices=sorted_ids)
         predictions = tf.gather(predictions, indices=sorted_ids)
@@ -359,7 +368,6 @@ def evaluate(args, model, config):
         shape = tf.cast(tf.shape(indices)[0], tf.float64)
         display_id_counter.assign_add(shape)
         streaming_map.assign_add(ap_sum)
-        return loss
 
     eval_dataset = config['eval_dataset']
     features = config['features']
@@ -367,42 +375,40 @@ def evaluate(args, model, config):
     t0 = None
     t_batch = None
     s_time = time.time()
-    for step, (x, y) in enumerate(eval_dataset):
-        loss = evaluation_step(x, y)
-        eval_loss.update_state(loss)
-        if args.benchmark:
-            boundary = max(args.benchmark_warmup_steps, 1)
-            if current_step == boundary:
-                t0 = time.time()
-            if current_step > boundary:
-                batch_time = time.time() - t_batch
-                samplesps = args.eval_batch_size / batch_time
-                if hvd.rank() == 0:
-                    # dllogger.log(data={'batch_samplesps': samplesps}, step=(1, current_step))
-                    logger.info(f'step: {current_step}, batch_samplesps: {samplesps}')
-
-                if args.benchmark_steps <= current_step:
-                    valid_time = time.time() - t0
-                    epochs = args.benchmark_steps - max(args.benchmark_warmup_steps, 1)
-                    valid_throughput = (args.eval_batch_size * epochs) / valid_time
+    benchmark_finished = False
+    while(not benchmark_finished):
+        for step, (x, y) in enumerate(eval_dataset):
+            loss = evaluation_step(x, y)
+            eval_loss.update_state(loss)
+            if args.benchmark:
+                boundary = max(args.benchmark_warmup_steps, 1)
+                if current_step == boundary:
+                    t0 = time.time()
+                if current_step > boundary:
+                    batch_time = time.time() - t_batch
+                    samplesps = args.eval_batch_size / batch_time
                     if hvd.rank() == 0:
-                        # dllogger.log(
-                        #     data={'validation_throughput': valid_throughput},
-                        #     step=tuple()
-                        # )
-                        logger.info(f'validation_throughput: {valid_throughput}')
-                    break
+                        logger.info(f'step: {current_step}, batch_samplesps: {samplesps}')
 
-        else:
-            if step % 100 == 0:
-                valid_data = {metric.name: f'{metric.result().numpy():.4f}' for metric in metrics}
-                valid_data['loss'] = f'{loss.numpy():.4f}'
-                if hvd.rank() == 0:
-                    logger.info(f'{valid_data}, step={step}')
-        current_step += 1
-        t_batch = time.time()
+                    if args.benchmark_steps <= current_step:
+                        valid_time = time.time() - t0
+                        epochs = args.benchmark_steps - max(args.benchmark_warmup_steps, 1)
+                        valid_throughput = (args.eval_batch_size * epochs) / valid_time
+                        if hvd.rank() == 0:
+                            logger.info(f'validation_throughput: {valid_throughput}')
+                        benchmark_finished = True
+                        break
+
+            else:
+                if current_step % 100 == 0:
+                    valid_data = {metric.name: f'{metric.result().numpy():.4f}' for metric in metrics}
+                    valid_data['loss'] = f'{loss.numpy():.4f}'
+                    if hvd.rank() == 0:
+                        logger.info(f'{valid_data}, step={current_step}')
+            current_step += 1
+            t_batch = time.time()
     logger.info(f'inference time: {time.time() - s_time}')
-    map_metric = hvd.allreduce(tf.divide(streaming_map, display_id_counter))
+
     eval_loss_reduced = hvd.allreduce(eval_loss.result())
 
     metrics_reduced = {
@@ -410,9 +416,13 @@ def evaluate(args, model, config):
     }
 
     eval_data = {name: f'{result.numpy():.4f}' for name, result in metrics_reduced.items()}
-    eval_data.update({
-        'loss_val': f'{eval_loss_reduced.numpy():.4f}',
-        'streaming_map_val': f'{map_metric.numpy():.4f}'
-    })
-    logger.info(f'step: {step}, {eval_data}')
-    logger.info(f'{eval_data}, step={step}')
+    if args.metric == 'MAP':
+        metric = hvd.allreduce(tf.divide(streaming_map, display_id_counter)).numpy()
+        eval_data.update({'map_val': metric})
+    elif args.metric == 'AP':
+        metric = hvd.allreduce(ap_metric.result()).numpy()
+        eval_data.update({'ap_val': metric})
+    else:
+        metric = eval_data['auc_val']
+    eval_data.update({'loss_val': f'{eval_loss_reduced.numpy():.4f}'})
+    logger.info(f'step: {current_step}, {eval_data}')
