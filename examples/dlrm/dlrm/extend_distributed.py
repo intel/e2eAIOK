@@ -5,11 +5,14 @@ import torch
 from torch.autograd import Function
 from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.distributed as dist
+torch_ccl = False
 try:
     import torch_ccl
+    torch_ccl = True
 except ImportError as e:
     #print(e)
     torch_ccl = False
+print(f"torch_ccl is {torch_ccl}")
 
 my_rank = -1
 my_size = -1

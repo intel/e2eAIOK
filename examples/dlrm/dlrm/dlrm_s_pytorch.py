@@ -1523,13 +1523,13 @@ if __name__ == "__main__":
                     # print("Total test time for this group: {}" \
                     # .format(time_wrap(use_gpu) - accum_test_time_begin))
                     # if ext_dist.dist.get_rank()==0:
+                    directory = "models/DLRM/trainer/"
+                    if not os.path.exists(directory):
+                        os.mkdir(directory)
                     file1 = open("models/DLRM/trainer/best_auc.txt",'w')
                     file1.writelines(str(best_auc_test))
                     file1.close()
 
-                    
-
-                    config.set_auc(best_auc_test)
                     if (args.mlperf_logging
                         and (args.mlperf_acc_threshold > 0)
                         and (best_gA_test > args.mlperf_acc_threshold)):

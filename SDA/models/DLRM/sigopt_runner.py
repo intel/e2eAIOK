@@ -515,6 +515,7 @@ def mpi_dist_launch(args):
     cmd.append("--arch-mlp-bot")
     cmd.append(args.arch_mlp_bot)
     cmd.append("--bf16")
+    print(str(cmd))
     process = subprocess.Popen(cmd, env=os.environ)
     process.wait()
     os.environ["LAUNCH_CMD"] += " ".join(cmd) + ",#"

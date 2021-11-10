@@ -6,15 +6,87 @@ Smart Democratization Advisor (SDA) is a tool to facilitate [Sigopt](https://sig
 
 * Quick start
 
-```bash
-python main.py --train_path ${trainset_path} --eval_path ${evalset_path} \
---dataset_meta_path ${meta_path} --model ${model}
+#### Prepare dataset
+download from ${path will be provided later}
+* Internal COPY
+172.16.8.30://mnt/nvme0/dataset
+
+Expected data format
+```
+└── [  73]  criteo
+    ├── [1.8K]  criteo_meta.yaml
+    ├── [ 13G]  test_data.bin
+    └── [625G]  train_data.bin
+
+
+└── [  61]  outbrain
+    ├── [1.3K]  outbrain_meta.yaml
+    └── [  31]  tfrecords
+        ├── [4.0K]  eval.parquet
+        └── [4.0K]  train.parquet
+    └── [  34]  meta
+        └── [  26]  transformed_metadata
 ```
 
-SDA config file will be generated based on command line arguments and saved at `sda.yaml`.
-Sigopt config file will be generated based on command line arguments and saved at `models/$model/sigopt.yaml`
 
-* Config file for SDA
+#### Enter Docker ENV
+```bash
+cd SDA
+docker run -it --privileged --network host --device=/dev/dri -v ${dataset_path}:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/bluewhale/SDA -w /home/vmagent/app/ docker.io/xuechendi/oneapi-aikit:sda /bin/bash
+```
+
+#### Prepare sigopt TOKEN
+https://app.sigopt.com/tokens/info
+
+#### run test(WnD using outbrain dataset)
+```bash
+# after enter docker
+cd bluewhale/SDA
+source config_proxy
+source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force
+
+SIGOPT_API_TOKEN=${TOKEN} python main.py --train_path "/home/vmagent/app/dataset/outbrain/tfrecords/train/part*" --eval_path "/home/vmagent/app/dataset/outbrain/tfrecords/eval/part*" \
+--dataset_meta_path /home/vmagent/app/dataset/outbrain/outbrain_meta.yaml --model WnD \
+--python_executable /opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python --ppn ${parallelism} --ccl_worker_num ${parallelism} --metric MAP --metric_threshold 0.6553 --num_epochs 8 --global_batch_size 524288 \
+--training_time_threshold 1800 \
+--program /home/vmagent/app/bluewhale/examples/WnD/TensorFlow2/main.py \
+--deep_dropout 0.1 \
+--observation_budget 3
+```
+
+#### run test(WnD using criteo dataset)
+```bash
+# after enter docker
+cd bluewhale/SDA
+source config_proxy
+source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force
+
+SIGOPT_API_TOKEN=${TOKEN} python main.py --train_path "/home/vmagent/app/dataset/criteo/train_data.bin" --eval_path "/home/vmagent/app/dataset/criteo/test_data.bin" \
+--dataset_meta_path /home/vmagent/app/dataset/criteo/criteo_meta.yaml --model WnD \
+--python_executable /opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python --ppn ${parallelism} --ccl_worker_num ${parallelism} --metric AUC --metric_threshold 0.6553 --num_epochs 1 --global_batch_size 524288 \
+--training_time_threshold 1800 \
+--program /home/vmagent/app/bluewhale/examples/WnD/TensorFlow2/main.py \
+--deep_warmup_epochs 1 \
+--observation_budget 3
+```
+
+#### run test(DLRM using criteo dataset)
+```bash
+# after enter docker
+cd bluewhale/SDA
+source config_proxy
+export LD_LIBRARY_PATH=/opt/intel/oneapi/intelpython/python3.7/envs/pytorch_mlperf/lib/python3.7/site-packages/torch/lib/
+source /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/.local/env/setvars.sh
+
+ SIGOPT_API_TOKEN=${TOKEN} seed_num=$(date +%s) python main.py --train_path /home/vmagent/app/dataset/criteo/train_data.bin --eval_path /home/vmagent/app/dataset/criteo/test_data.bin \
+--dataset_meta_path /home/vmagent/app/dataset/criteo/criteo_meta.yaml --model DLRM \
+--python_executable /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python --ppn 2 --metric AUC --metric_threshold 0.8025 \
+--hosts localhost
+```
+
+## Advanced
+
+* Using sda.yaml file to Config SDA
 
   ```yaml
   train:
@@ -100,7 +172,6 @@ Sigopt config file will be generated based on command line arguments and saved a
     type: int
   project: sda
   ```
-## Advanced
 
 * Command line arguments for cluster arch
 

@@ -58,7 +58,7 @@ display_id:
   display_id:
 label: 
   label:
-tfrecords_meta_path: /outbrain2/tfrecords
+tfrecords_meta_path: /home/vmagent/app/dataset/outbrain/meta
 prebatch_size: 4096
 training_set_size: 59761827
 dataset_format: TFRecords

@@ -2,6 +2,9 @@ import argparse
 import subprocess
 import yaml
 from Launcher.BaseModelLauncher import BaseModelLauncher
+from SDA.FeaturesMetaLoader import FeaturesMetaLoader
+import pathlib
+current_path = str(pathlib.Path(__file__).parent.parent.absolute())
 
 class DLRMLauncher(BaseModelLauncher):
     def __init__(self, dataset_meta_path, train_path, eval_path, args):
@@ -11,16 +14,25 @@ class DLRMLauncher(BaseModelLauncher):
         self.params['test_mini_batch_size'] = args.test_mini_batch_size
         self.params['print_freq'] = args.print_freq
         self.params['test_freq'] = args.test_freq
-        self.params['day_feature_count'] = args.day_feature_count
-        
+        # day feature count should be parsed from dataset meta
+        self.params['day_feature_count'] = self.convert_to_counts_npz(dataset_meta_path) 
         self.generate_sigopt_yaml(file = 'models/DLRM/sigopt.yaml')
 
-    def parse_args(self, args):
+    def convert_to_counts_npz(self, dataset_meta_path):
+        meta = FeaturesMetaLoader(dataset_meta_path)
+        counts = []
+        outfile = current_path + "/tmp/dlrm_meta.npz"
+        if meta.categorical_meta:
+            counts = [col_meta["voc_size"] for col_name, col_meta in meta.categorical_meta.items()]
+            import numpy as np
+            np.savez(outfile, counts = counts)
+        print(outfile)
+        return outfile
 
+    def parse_args(self, args):
         self.parser.add_argument("--test-mini-batch-size", type=int, default=32768)
         self.parser.add_argument("--print-freq", type=int, default=16)
         self.parser.add_argument("--test-freq", type=int, default=800)
-        self.parser.add_argument("--day-feature-count", type=str, default="./data/day_fea_count.npz")
         return self.parser.parse_args(args)
     
     def generate_sigopt_yaml(self, file):

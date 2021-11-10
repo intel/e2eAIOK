@@ -165,7 +165,7 @@ def dist_launch(args):
     ranks = len(hosts) * ppn
 
     # construct WnD launch command with mpi
-    cmd = f"time mpirun -genv OMP_NUM_THREADS={omp_threads} -map-by socket -n {ranks} -ppn {ppn} -hosts {','.join(hosts)} -print-rank-map "
+    cmd = f"mpirun -genv OMP_NUM_THREADS={omp_threads} -map-by socket -n {ranks} -ppn {ppn} -hosts {','.join(hosts)} -print-rank-map "
     cmd += f"-genv I_MPI_PIN_DOMAIN=socket -genv OMP_PROC_BIND=true -genv KMP_BLOCKTIME=1 -genv KMP_AFFINITY=granularity=fine,compact,1,0 "
     cmd += f"{args.python_executable} -u {args.program} "
     cmd += f"--train_data_pattern '{args.train_dataset_path}' --eval_data_pattern '{args.eval_dataset_path}' --dataset_meta_file {args.dataset_meta_path} " \
