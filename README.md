@@ -1,6 +1,6 @@
-# Bluewhale - E2E AI democratization Kit 
+# Hydro.ai
 
-Bluewhale (temp code name) is the project code name to democratize End-to-End AI on CPU. 
+Hydro.ai is the project code name to democratize End-to-End AI on CPU. 
 
 
 # Introduction
