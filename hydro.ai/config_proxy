@@ -1,0 +1,2 @@
+export http_proxy=http://proxy-prc.intel.com:912
+export https_proxy=http://proxy-prc.intel.com:912

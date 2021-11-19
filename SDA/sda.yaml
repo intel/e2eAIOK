@@ -1,5 +1,5 @@
 train:
-  dataset_meta_path: /root/ht/ML/frameworks.bigdata.bluewhale/examples/WnD/TensorFlow2/data/outbrain/outbrain_meta.yaml
-  eval_path: /mnt/sdd/outbrain2/tfrecords/eval/part*
-  model: WnD
-  train_path: /mnt/sdd/outbrain2/tfrecords/train/part*
+  dataset_meta_path: /home/vmagent/app/dataset/criteo/criteo_meta.yaml
+  eval_path: /home/vmagent/app/dataset/criteo/test_data.bin
+  model: DLRM
+  train_path: /home/vmagent/app/dataset/criteo/train_data.bin

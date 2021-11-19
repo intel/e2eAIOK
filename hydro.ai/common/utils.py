@@ -1,0 +1,82 @@
+import re
+import os
+import yaml
+import hashlib
+from pathlib import Path
+from datetime import datetime
+
+def mkdir(dest_path):
+    new_name = datetime.now().strftime("%Y%m%d_%H%M%S")
+    new_path = os.path.join(dest_path, new_name)
+    path = Path(new_path)
+    path.mkdir(parents=True)
+    return new_path
+
+def mkdir_or_backup_then_mkdir(dest_path):
+    path = Path(dest_path)
+    if path.exists():
+        new_name = datetime.now().strftime("%Y%m%d_%H%M%S")
+        new_path = os.path.join(path.parent.absolute(), new_name)
+        os.rename(dest_path, new_path)
+    path.mkdir(parents=True)
+
+def get_hash_string(in_str):
+    return hashlib.md5(in_str.encode()).hexdigest()
+
+def timeout_input(printout, default, timeout = -1):
+    if timeout == -1:
+        n = str(input(printout) or default)
+        return n
+    else:
+        import sys, select
+        print(printout)
+        i, o, e = select.select([sys.stdin], [], [], timeout)
+        if (i):
+            return sys.stdin.readline().strip()
+        else:
+            return default
+
+def parse_config(conf_path):
+    settings = {}
+    if not os.path.exists(conf_path):
+        return settings
+    try:
+        with open(conf_path) as f:
+            in_settings = yaml.load(f, Loader=yaml.FullLoader)
+            settings.update(in_settings)
+    except:
+        pass
+    return settings
+
+def get_file(path):
+    file_or_dir = os.listdir(path)
+    if len(file_or_dir) != 1:
+        raise ValueError(f"Expect there is only one file or dir inside {path}")
+    return os.path.join(path, file_or_dir[0])
+
+def list_dir(path):
+    source_path_dict = {'meta': [], 'train': [], 'valid': []}
+    dirs = os.listdir(path)
+    for file_name in dirs:
+        if (file_name.endswith('yaml')):
+            source_path_dict['meta'] = os.path.join(path, file_name)
+        if (file_name == "train"):
+            source_path_dict['train'] = get_file(os.path.join(path, file_name))
+        if (file_name.startswith("valid")):
+            source_path_dict['valid'] = get_file(os.path.join(path, file_name))
+    #if len(source_path_dict['meta']) == 0 or len(source_path_dict['train']) or len(source_path_dict['valid']):
+    #    raise ValueError("This folder layout is not as expected, should have one train folder, one validate folder and a yaml file of metadata")
+    # print(source_path_dict)
+    return source_path_dict
+
+
+def parse_size(size):
+    units = {"B": 1, "KB": 2**10, "MB": 2**20, "GB": 2**30, "TB": 2**40, "K": 2**10, "M": 2**20, "G": 2**30, "T": 2**40}
+    size = size.upper()
+    number, unit = re.findall('(\d+)(\w*)', size)[0]
+    return int(float(number)*units[unit])
+
+
+def get_estimate_size_of_dtype(dtype_name):
+    units = {'byte': 1, 'short': 2, 'int': 4, 'long': 8, 'float': 4, 'double': 8, 'string': 10}
+    return units[dtype_name] if dtype_name in units else 4
