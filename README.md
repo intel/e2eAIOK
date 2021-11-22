@@ -1,7 +1,6 @@
 # Hydro.ai
 
-Hydro.ai is the project code name to democratize End-to-End AI on CPU. 
-
+Hydro.ai is the project code name to democratize End-to-End AI on CPU. It is initiated by Intel AIA, aiming to provide simple experience for democratized END-TO-END model training leveraging Intel oneAPI aikit, Intel sigopt, and Intel Nerual Compressor.
 
 # Introduction
 
@@ -39,26 +38,13 @@ Here are the major componments of Bluewhale:
 7. deployment kit - a container with deployment kit to have users have a quick try. 
 8. Auto scaling - Bluewhale support autoscaling on the public cloud, users can easiliy scale the work to multiple CPU nodes. 
 
-
-# Examples
+# In-Stock-Models
 
 Currently four recommender system workloads were supported: including DLRM, DIEN, WnD and RecSys. The Bluewhale E2E AI democratization kit significantly improved the performance of those models on distributed CPU cluster, reduced the performance gap of CPU to GPU from 100x to < 2x, using the same dataset and the same AUC metrics. The key optimizations Bluewhale brought can be categorized as: 
 
-## RecDP scalable data processing 
-RecDP is parallel data processing framework for recommender systems based on Spark (Modin TBA) and enhanced optimizations, it replaced original single threaded pandas, pure python data processing and thus delivered orders of magnitude performance improvement. 
+# How to Use
 
-## Feature Engineering
-Embedding optimizations (DLRM, DIEN)  
-Encoding optimization (RecSys)
-
-## Training Framework, scalability and parameter optimizations 
-Intel Optimized training framework with oneCCL (DLRM, DIEN, W&D) 
-Improved distributed training scalability (horovod, DDP)\
-Batch size tuning (DLRM, DIEN)
-
-Optimized optimizer to improve scalability (DLRM) 
-## Lighter Models 
-Lighter model with reduced communication overhead (DLRM, W&D)
+[HOW_TO.md](docs/HOW_TO.md)
 
 
 # Perforamnce 
