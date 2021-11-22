@@ -1,2 +1,2 @@
-docker run -it --privileged --network host --device=/dev/dri -v `pwd`/../..//dataset/:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ docker.io/xuechendi/oneapi-aikit:sda /bin/bash
+docker run -it --privileged --network host --device=/dev/dri -v `pwd`/../..//dataset/:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ docker.io/xuechendi/oneapi-aikit:hydro.ai /bin/bash
 

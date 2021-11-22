@@ -5,6 +5,15 @@ import hashlib
 from pathlib import Path
 from datetime import datetime
 
+def update_list(orig, diff):
+    dict_diff = {}
+    for item in diff:
+        dict_diff[item['name']] = item
+    for i in range(len(orig)):
+        if orig[i]['name'] in dict_diff:
+            orig[i] = dict_diff[orig[i]['name']]
+    return orig
+
 def mkdir(dest_path):
     new_name = datetime.now().strftime("%Y%m%d_%H%M%S")
     new_path = os.path.join(dest_path, new_name)
