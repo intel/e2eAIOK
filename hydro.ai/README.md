@@ -32,7 +32,7 @@ source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force
 source /home/vmagent/app/hydro.ai/config_proxy
 # optional - start sshd service
 sudo service ssh start
-bash config_passwdless_ssh.sh
+bash config_passwdless_ssh.sh ${other_train_node}
 ```
 
 # Quick Example
