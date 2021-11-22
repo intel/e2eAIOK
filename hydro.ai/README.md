@@ -27,6 +27,8 @@ python run_hydroai.py --data_path ${dataset_path} --model_name udm --executable_
 # Quick Start
 ``` bash
 docker run -it --privileged --network host --device=/dev/dri -v ${dataset_path}:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ docker.io/xuechendi/oneapi-aikit:hydro.ai /bin/bash
+source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force
+source /home/vmagent/app/hydro.ai/config_proxy
 ```
 
 # Quick Example
