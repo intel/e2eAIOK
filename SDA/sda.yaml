@@ -1,5 +1,0 @@
-train:
-  dataset_meta_path: /home/vmagent/app/dataset/criteo/criteo_meta.yaml
-  eval_path: /home/vmagent/app/dataset/criteo/test_data.bin
-  model: DLRM
-  train_path: /home/vmagent/app/dataset/criteo/train_data.bin
