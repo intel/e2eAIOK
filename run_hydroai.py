@@ -1,5 +1,5 @@
 import init_hydro
-from core.hydroautolearner import HydroAutoLearner
+from hydroai.hydroautolearner import HydroAutoLearner
 import argparse
 import sys
 

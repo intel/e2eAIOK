@@ -1,6 +1,6 @@
 import sqlite3
 import os
-from core.hydromodel import *
+from hydroai.hydromodel import *
 
 class HydroDB:
     def __init__(self):

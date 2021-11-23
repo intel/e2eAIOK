@@ -1,7 +1,7 @@
-from core.hydroserver import *
+from hydroai.hydroserver import *
 from dataloader.hydrodataloader import *
 from common.utils import *
-from core.hydroconfig import *
+from hydroai.hydroconfig import *
 
 class HydroAutoLearner:
     def __init__(self, settings):

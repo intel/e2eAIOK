@@ -12,13 +12,38 @@ class DIENAdvisor(BaseModelAdvisor):
         super().__init__(dataset_meta_path, train_path, eval_path, settings)
         logging.basicConfig(level = logging.INFO,format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         self.logger = logging.getLogger('sigopt')
+
+        # set default required arguments
+        self.params['ppn'] = 1 if 'ppn' not in self.params else self.params['ppn']
+        self.params['num_instances'] = 24 if 'num_instances' not in self.params else self.params['num_instances']
+        self.params['num_cores'] = 4 if 'num_cores' not in self.params else self.params['num_cores']
+
+        # check distributed configuration
+        missing_params = []
+        # mpirun -n 1 -hosts 172.16.8.30 -ppn 1 -iface ens21f1
+        if self.params["ppn"] > 1:
+            missing_params = missing_params + ['hosts'] if 'hosts' not in self.params else missing_params
+            missing_params = missing_params + ['iface'] if 'iface' not in self.params else missing_params
+        if len(missing_params) > 0:
+            raise ValueError(f"[CONFIG ERROR] Missing parameters {missing_params} in hydroai_defaults.conf when ppn is set above 1.")
+
+        self.train_path = train_path
+        self.test_path = eval_path
+        self.saved_path = args['model_saved_path']
+        self.train_python = "/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python"
+        self.train_script = "/home/vmagent/app/hydro.ai/in-stock-models/dien/train/ai-matrix/horovod/script/train.py"
     
     ###### Implementation of required methods ######
 
     def update_metrics(self):
+        result_metrics_path = os.path.join(self.saved_path, "result.yaml")
+        if not os.path.exists(result_metrics_path):
+            raise FileNotFoundError(f"{self.train_script} completed, while we can't find result {result_metrics_path} file.")
+        with open(self.saved_path) as f:
+            results = yaml.load(f, Loader=yaml.FullLoader)
         metrics = []
-        metrics.append({'name': 'accuracy', 'value': self.mean_accuracy})
-        metrics.append({'name': 'training_time', 'value': self.training_time})
+        metrics.append({'name': 'AUC', 'value': results['AUC']})
+        metrics.append({'name': 'training_time', 'value': results['training_time']})
         self.params['model_parameter']['metrics'] = metrics
         return self.params['model_parameter']['metrics']
 
@@ -68,24 +93,52 @@ class DIENAdvisor(BaseModelAdvisor):
         return config
   
     def train_model(self, args):
-        start_time = time.time()
-        self.mean_accuracy, model_path = self.dist_launch(args)
-        self.training_time = time.time() - start_time
+        if args['ppn'] > 1:
+            self.dist_launch(args)
+        else:
+            self.launch(args)
         metrics = self.update_metrics()
         return self.training_time, model_path, metrics
     
     def dist_launch(self, args):
-        # construct WnD launch command with mpi
-        max_depth = args['model_parameter']["tuned_parameters"]['max_depth']
-        learning_rate = args['model_parameter']["tuned_parameters"]['learning_rate']
-        min_split_loss = args['model_parameter']["tuned_parameters"]['min_split_loss']
-        model_saved_path = args['model_saved_path']
+        cmd = []
+        # mpirun -n 1 -hosts 172.16.8.30 -ppn 1 -iface ens21f1 -print-rank-map -prepend-rank -verbose 
+        cmd.extend(["mpirun", "-n", f"{args['ppn']}", "-hosts", f"{args['hosts']}", "-iface", f"{args['iface']}"])
+        cmd.extend(["-print-rank-map", "-prepend-rank", "-verbose"])
+        cmd.extend(self.prepare_cmd(args))
+
+        self.logger.info(f'training launch command: {cmd}')
+        process = subprocess.Popen(cmd)
+        process.wait()
+
+    def prepare_cmd(self, args):
+        cmd = []
+        cmd.extend([f"{self.train_python}", f"{self.train_script}", "--train_path", f"{self.train_path}", "--test_path", f"{self.test_path}"])
+        cmd.append()
+        cmd.append()
+        cmd.append()
+        cmd.append(f)
+        cmd.append()
+        cmd.append(f"--saved_path")
+        cmd.append(f"{model_saved_path}")
+        cmd.append(f"--mode")
+        cmd.append(f"train")
+        cmd.append(f"--batch_size")
+        cmd.append(f"1024")
+        cmd.append(f"--num-intra-threads")
+        cmd.append(f"{args['num_instances']}")
+        cmd.append(f"--num-inter-threads")
+        cmd.append(f"{args['num_cores']}")
+        return cmd
+        
+
+    def launch(self, args):
         cmd = []
         cmd.append(f"/opt/intel/oneapi/intelpython/latest/bin/python")
         cmd.append(f"/home/vmagent/app/hydro.ai/example/sklearn_train.py")
-        cmd.append(f"--max_depth")
-        cmd.append(f"{max_depth}")
-        cmd.append(f"--learning_rate")
+        cmd.append(f"--train_path")
+        cmd.append(f"{self.train_path}")
+        cmd.append(f"--test_pR")
         cmd.append(f"{learning_rate}")
         cmd.append(f"--min_split_loss")
         cmd.append(f"{min_split_loss}")

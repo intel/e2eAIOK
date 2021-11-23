@@ -2,7 +2,7 @@ import argparse
 import logging
 from sigopt import Connection
 import time
-from core.hydroconfig import *
+from hydroai.hydroconfig import *
 from common.utils import *
 import yaml
 import sys
@@ -10,6 +10,38 @@ import json
 from collections import OrderedDict
 
 class BaseModelAdvisor:
+    """Model Advisor Base, Model Advisor is used to create w/wo sigopt parameter advise based on model type
+
+    ...
+
+    Attributes
+    ----------
+    conn
+        sigopt connection
+    experiment
+        current experiment which is either created by this run or
+        fetched by history experiment id
+    params : dict
+        params include dataset_path, save_path, global_configs,
+        model_parameters, passed by arguments or hydroai-defaults.conf
+    assignment_model_tracker : dict
+        a tracker map of assigned_parameters and its corresponding
+        model path
+
+    Methods
+    -------
+    generate_sigopt_yaml()
+        generate parameter range based on model type and passed-in
+        params for sigopt 
+    initialize_model_parameter(assignments = None)
+        generate parameters based on model type for wo sigopt case
+    train_model(args)
+        launch train with passed-in model parameters
+    update_metrics()
+        update return metrics based on training result, normally
+        training script should have a stdout output or a result.yaml
+        file, and this method will pass this file and return metrics
+    """
     def __init__(self, dataset_meta_path, train_path, eval_path, settings):
         logging.basicConfig(level = logging.INFO,format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         self.logger = logging.getLogger('sigopt')

@@ -1,7 +1,7 @@
 import init_hydro_for_test
-from core.hydroDB import *
-from core.hydromodel import *
-from core.hydroconfig import *
+from hydroai.hydroDB import *
+from hydroai.hydromodel import *
+from hydroai.hydroconfig import *
 
 settings = init_settings()
 hydro_model = HydroModel(settings)

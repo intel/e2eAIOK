@@ -1,9 +1,9 @@
-from core.hydromodelzoo import *
-from core.hydroweblistener import *
-from core.hydromodel import *
+from hydroai.hydromodelzoo import *
+from hydroai.hydroweblistener import *
+from hydroai.hydromodel import *
 from SDA.SDA import SDA
 from common.utils import *
-from core.hydroDB import *
+from hydroai.hydroDB import *
 import logging
 
 class HydroServer:

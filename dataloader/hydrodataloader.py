@@ -1,5 +1,5 @@
 from common.utils import *
-from core.hydroconfig import *
+from hydroai.hydroconfig import *
 
 class DummyDataProcessor:
     def __init__(self, model_name):
