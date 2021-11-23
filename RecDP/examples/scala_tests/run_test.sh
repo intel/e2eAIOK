@@ -1,1 +1,0 @@
-spark-submit --master yarn --name DLRM_JOIN_FILLNA_SCALA --class "org.apache.spark.broaddp.test.dlrm.JoinFillNAWithUDF" /mnt/nvme2/chendi/BlueWhale/frameworks.bigdata.bluewhale/BroadDP/examples/scala_tests/target/test-0.1.0-jar-with-dependencies.jar

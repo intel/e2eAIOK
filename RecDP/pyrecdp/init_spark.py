@@ -1,2 +1,0 @@
-import findspark
-findspark.init()
