@@ -116,14 +116,14 @@ class NewAdvisor(BaseModelAdvisor):
         user_defined_parameter = self.params['model_parameter']['parameters'] if ('model_parameter' in self.params) and ('parameters' in self.params['model_parameter']) else None
         config['parameters'] = parameters
         if user_defined_parameter:
-            config['parameters'].update(user_defined_parameter)
+            update_list(config['parameters'], user_defined_parameter)
         config['metrics'] = [
             {'name': 'accuracy', 'strategy': 'optimize', 'objective': 'maximize'},
             {'name': 'training_time', 'objective': 'minimize'}
         ]
         user_defined_metrics = self.params['model_parameter']['metrics'] if ('model_parameter' in self.params) and ('metrics' in self.params['model_parameter']) else None
         if user_defined_metrics:
-            config['metrics'].update(user_defined_metrics)
+            update_list(config['metrics'], user_defined_metrics)
         config['observation_budget'] = self.params['observation_budget']
         
         # save to local disk
