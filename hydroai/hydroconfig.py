@@ -1,14 +1,15 @@
-
 def init_settings():
     settings = {}
     # start db to store history queries / models and score board
     settings['server'] = None
     return settings
 
+
 def init_meta():
     meta = {}
     meta['dataset_format'] = 'forward'
     return meta
+
 
 def init_advisor_params():
     params = {}

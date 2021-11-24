@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SDA.SDA module &mdash; Hydro.ai 0.1.0 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/copybutton.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/clipboard.min.js"></script>
+        <script src="../_static/copybutton.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="hydroai package" href="hydroai.html" />
+    <link rel="prev" title="SDA.modeladvisor.WnDAdvisor module" href="SDA.modeladvisor.WnDAdvisor.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> Hydro.ai
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Hydro.ai Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../QuickStart.html">QuickStart</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Components</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="RecDP.html">RecDP package</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="SDA.html">SDA package</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="SDA.modeladvisor.html">SDA.modeladvisor package</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">SDA.SDA module</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="hydroai.html">hydroai package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modelzoo.html">modelzoo package</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../CreateNewAdvisor.html">Advanced - create new Advisor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../documentstyle.html">Documenting Style</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../codingstyle.html">Coding Style</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Hydro.ai</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="modules.html">Components</a> &raquo;</li>
+          <li><a href="SDA.html">SDA package</a> &raquo;</li>
+      <li>SDA.SDA module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/_modules/SDA.SDA.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-SDA.SDA">
+<span id="sda-sda-module"></span><h1>SDA.SDA module<a class="headerlink" href="#module-SDA.SDA" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="SDA.SDA.SDA">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">SDA.SDA.</span></span><span class="sig-name descname"><span class="pre">SDA</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">settings</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hydro_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="SDA/SDA.html#SDA"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#SDA.SDA.SDA" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Smart Democratization Advisor creates sigopt parameter or model
+parameter based on different model type</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="SDA.SDA.SDA.model">
+<span class="sig-name descname"><span class="pre">model</span></span><a class="headerlink" href="#SDA.SDA.SDA.model" title="Permalink to this definition"></a></dt>
+<dd><p>model type, can be provided models such as dlrm, dien, wnd
+or udm(user defined model)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="SDA.SDA.SDA.data_loader">
+<span class="sig-name descname"><span class="pre">data_loader</span></span><a class="headerlink" href="#SDA.SDA.SDA.data_loader" title="Permalink to this definition"></a></dt>
+<dd><p>A dataset iterator or infomation container</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>HydroDataLoader</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="SDA.SDA.SDA.settings">
+<span class="sig-name descname"><span class="pre">settings</span></span><a class="headerlink" href="#SDA.SDA.SDA.settings" title="Permalink to this definition"></a></dt>
+<dd><p>passed-in configuration includes global configuration, sigopt
+config and model parameters</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="SDA.SDA.SDA.hydro_model">
+<span class="sig-name descname"><span class="pre">hydro_model</span></span><a class="headerlink" href="#SDA.SDA.SDA.hydro_model" title="Permalink to this definition"></a></dt>
+<dd><p>history best model object, if this attribute is not None, we
+can resume from a history experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="hydroai.hydromodel.html#hydroai.hydromodel.HydroModel" title="hydroai.hydromodel.HydroModel">HydroModel</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="SDA.SDA.SDA.launch">
+<span class="sig-name descname"><span class="pre">launch</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="SDA/SDA.html#SDA.launch"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#SDA.SDA.SDA.launch" title="Permalink to this definition"></a></dt>
+<dd><p>Launch a new SDA task</p>
+<p>This method will generate a SDA instance to generate model
+parameters based on model type and user input, then iterating
+train and sigopt communication to find the best model</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><strong>model_path</strong> (<em>str</em>) – best trained model saved path</p></li>
+<li><p><strong>metrics</strong> (<em>list</em>) – A list of this best trained model infomation</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="SDA.modeladvisor.WnDAdvisor.html" class="btn btn-neutral float-left" title="SDA.modeladvisor.WnDAdvisor module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="hydroai.html" class="btn btn-neutral float-right" title="hydroai package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, INTEL_AIA_BDF.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

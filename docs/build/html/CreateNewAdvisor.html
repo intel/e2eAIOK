@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Advanced - create new Advisor &mdash; Hydro.ai 0.1.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/clipboard.min.js"></script>
+        <script src="_static/copybutton.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Documenting Style" href="documentstyle.html" />
+    <link rel="prev" title="modelzoo package" href="_modules/modelzoo.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> Hydro.ai
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Hydro.ai Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="QuickStart.html">QuickStart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="_modules/modules.html">Components</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Advanced - create new Advisor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="documentstyle.html">Documenting Style</a></li>
+<li class="toctree-l1"><a class="reference internal" href="codingstyle.html">Coding Style</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Hydro.ai</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Advanced - create new Advisor</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/CreateNewAdvisor.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="advanced-create-new-advisor">
+<h1>Advanced - create new Advisor<a class="headerlink" href="#advanced-create-new-advisor" title="Permalink to this headline"></a></h1>
+<ul class="simple">
+<li><p>How to define a new Advisor under hydro.ai/SDA/modeladvisor, follow below template</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">yaml</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">common.utils</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">SDA.modeladvisor.BaseModelAdvisor</span> <span class="kn">import</span> <span class="n">BaseModelAdvisor</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">yaml</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">common.utils</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="kn">from</span> <span class="nn">SDA.modeladvisor.BaseModelAdvisor</span> <span class="kn">import</span> <span class="n">BaseModelAdvisor</span>
+
+<span class="k">class</span> <span class="nc">NewAdvisor</span><span class="p">(</span><span class="n">BaseModelAdvisor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A brief intro of this Advisor</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    params : dict</span>
+<span class="sd">      params include dataset_path, save_path, global_configs,</span>
+<span class="sd">      model_parameters, passed by arguments or hydroai-defaults.conf</span>
+<span class="sd">    dataset_meta_path : str</span>
+<span class="sd">      path to dataset meta</span>
+<span class="sd">    train_path : str</span>
+<span class="sd">      path to train dataset</span>
+<span class="sd">    eval_path : str</span>
+<span class="sd">      path to eval dataset</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_meta_path</span><span class="p">,</span> <span class="n">train_path</span><span class="p">,</span> <span class="n">eval_path</span><span class="p">,</span> <span class="n">settings</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">dataset_meta_path</span><span class="p">,</span> <span class="n">train_path</span><span class="p">,</span> <span class="n">eval_path</span><span class="p">,</span> <span class="n">settings</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span><span class="nb">format</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> - </span><span class="si">%(name)s</span><span class="s1"> - </span><span class="si">%(levelname)s</span><span class="s1"> - </span><span class="si">%(message)s</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;sigopt&#39;</span><span class="p">)</span>
+
+    <span class="c1">###### Implementation of required methods ######</span>
+
+    <span class="k">def</span> <span class="nf">update_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        update return metrics based on training result, normally</span>
+<span class="sd">        training script should have a stdout output or a result.yaml</span>
+<span class="sd">        file, and this method will pass this file and return metrics</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        metrics: list</span>
+<span class="sd">          metrics from training output, maybe AUC, MAP, training_time, etc</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">metrics</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># load result from result.txt or captured by train_model function</span>
+        <span class="c1"># change below codes according to your scenario</span>
+        <span class="n">metrics</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;accuracy&#39;</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">mean_accuracy</span><span class="p">})</span>
+        <span class="n">metrics</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;training_time&#39;</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_time</span><span class="p">})</span>
+
+        <span class="c1"># keep these for return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;model_parameter&#39;</span><span class="p">][</span><span class="s1">&#39;metrics&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">metrics</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;model_parameter&#39;</span><span class="p">][</span><span class="s1">&#39;metrics&#39;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">initialize_model_parameter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">assignments</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        generate parameters based on model type for wo sigopt case</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        assignments: dict</span>
+<span class="sd">          optional user defined or sigopt suggested parameters</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        model_parameters: dict</span>
+<span class="sd">          model parameter based on model type</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># This function is used to init parameter without sigopt</span>
+        <span class="c1"># assignments are recorded best parameters</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">tuned_parameters</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">assignments</span><span class="p">:</span>
+            <span class="c1"># modify below parameters based on your model</span>
+            <span class="n">tuned_parameters</span><span class="p">[</span><span class="s1">&#39;max_depth&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">assignments</span><span class="p">[</span><span class="s1">&#39;max_depth&#39;</span><span class="p">]</span>
+            <span class="n">tuned_parameters</span><span class="p">[</span><span class="s1">&#39;learning_rate&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">assignments</span><span class="p">[</span><span class="s1">&#39;learning_rate&#39;</span><span class="p">]</span>
+            <span class="n">tuned_parameters</span><span class="p">[</span><span class="s1">&#39;min_split_loss&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">assignments</span><span class="p">[</span><span class="s1">&#39;min_split_loss&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># modify below parameters based on your model</span>
+            <span class="n">tuned_parameters</span><span class="p">[</span><span class="s1">&#39;max_depth&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">11</span>
+            <span class="n">tuned_parameters</span><span class="p">[</span><span class="s1">&#39;learning_rate&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="mf">0.9294458527831317</span><span class="p">)</span>
+            <span class="n">tuned_parameters</span><span class="p">[</span><span class="s1">&#39;min_split_loss&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="mf">6.88375281543753</span><span class="p">)</span>
+
+        <span class="c1"># keep below lines</span>
+        <span class="n">config</span><span class="p">[</span><span class="s1">&#39;tuned_parameters&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tuned_parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;model_parameter&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;model_saved_path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;save_path&#39;</span><span class="p">],</span> <span class="n">get_hash_string</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">tuned_parameters</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="n">config</span>
+
+    <span class="k">def</span> <span class="nf">generate_sigopt_yaml</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="s1">&#39;test_sigopt.yaml&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        generate parameter range based on model type and passed-in params for sigopt</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        sigopt_parameters: dict</span>
+<span class="sd">          sigopt parameter including ranged model parameter and metrics based on model type</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># This function is used to init parameter for sigopt</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c1"># modify based on your model</span>
+        <span class="n">config</span><span class="p">[</span><span class="s1">&#39;project&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;hydro.ai&#39;</span>
+        <span class="n">config</span><span class="p">[</span><span class="s1">&#39;experiment&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;sklearn&#39;</span>
+        <span class="n">parameters</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;max_depth&#39;</span><span class="p">,</span> <span class="s1">&#39;bounds&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">12</span><span class="p">},</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span><span class="p">},</span>
+                      <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;learning_rate&#39;</span><span class="p">,</span> <span class="s1">&#39;bounds&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">},</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;double&#39;</span><span class="p">},</span>
+                      <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;min_split_loss&#39;</span><span class="p">,</span> <span class="s1">&#39;bounds&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">},</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;double&#39;</span><span class="p">}]</span>
+        <span class="n">user_defined_parameter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;model_parameter&#39;</span><span class="p">][</span><span class="s1">&#39;parameters&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="p">(</span><span class="s1">&#39;model_parameter&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="s1">&#39;parameters&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;model_parameter&#39;</span><span class="p">])</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">config</span><span class="p">[</span><span class="s1">&#39;parameters&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parameters</span>
+        <span class="k">if</span> <span class="n">user_defined_parameter</span><span class="p">:</span>
+            <span class="n">update_list</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;parameters&#39;</span><span class="p">],</span> <span class="n">user_defined_parameter</span><span class="p">)</span>
+        <span class="n">config</span><span class="p">[</span><span class="s1">&#39;metrics&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;accuracy&#39;</span><span class="p">,</span> <span class="s1">&#39;strategy&#39;</span><span class="p">:</span> <span class="s1">&#39;optimize&#39;</span><span class="p">,</span> <span class="s1">&#39;objective&#39;</span><span class="p">:</span> <span class="s1">&#39;maximize&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;training_time&#39;</span><span class="p">,</span> <span class="s1">&#39;objective&#39;</span><span class="p">:</span> <span class="s1">&#39;minimize&#39;</span><span class="p">}</span>
+        <span class="p">]</span>
+        <span class="n">user_defined_metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;model_parameter&#39;</span><span class="p">][</span><span class="s1">&#39;metrics&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="p">(</span><span class="s1">&#39;model_parameter&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="s1">&#39;metrics&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;model_parameter&#39;</span><span class="p">])</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">user_defined_metrics</span><span class="p">:</span>
+            <span class="n">update_list</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;metrics&#39;</span><span class="p">],</span> <span class="n">user_defined_metrics</span><span class="p">)</span>
+        <span class="n">config</span><span class="p">[</span><span class="s1">&#39;observation_budget&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;observation_budget&#39;</span><span class="p">]</span>
+
+        <span class="c1"># save to local disk</span>
+        <span class="n">saved_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;save_path&#39;</span><span class="p">],</span> <span class="n">file</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">saved_path</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">yaml</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">config</span>
+
+    <span class="k">def</span> <span class="nf">train_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        launch train with passed-in model parameters</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        args: dict</span>
+<span class="sd">          global parameters like pnn, host; model_parameter from sigopt suggestion or model pre-defined</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        training_time: float</span>
+<span class="sd">        model_path: str</span>
+<span class="sd">        metrics: list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="c1"># modify based on your model parameter</span>
+        <span class="n">max_depth</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="s1">&#39;model_parameter&#39;</span><span class="p">][</span><span class="s2">&quot;tuned_parameters&quot;</span><span class="p">][</span><span class="s1">&#39;max_depth&#39;</span><span class="p">]</span>
+        <span class="n">learning_rate</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="s1">&#39;model_parameter&#39;</span><span class="p">][</span><span class="s2">&quot;tuned_parameters&quot;</span><span class="p">][</span><span class="s1">&#39;learning_rate&#39;</span><span class="p">]</span>
+        <span class="n">min_split_loss</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="s1">&#39;model_parameter&#39;</span><span class="p">][</span><span class="s2">&quot;tuned_parameters&quot;</span><span class="p">][</span><span class="s1">&#39;min_split_loss&#39;</span><span class="p">]</span>
+        <span class="n">model_saved_path</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="s1">&#39;model_saved_path&#39;</span><span class="p">]</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/opt/intel/oneapi/intelpython/latest/bin/python&quot;</span><span class="p">)</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/home/vmagent/app/hydro.ai/example/sklearn_train.py&quot;</span><span class="p">)</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;--max_depth&quot;</span><span class="p">)</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">max_depth</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;--learning_rate&quot;</span><span class="p">)</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">learning_rate</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;--min_split_loss&quot;</span><span class="p">)</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">min_split_loss</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;--saved_path&quot;</span><span class="p">)</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model_saved_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;training launch command: </span><span class="si">{</span><span class="n">cmd</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="c1"># run train using cmdline, by doing so, we can use different python conda env</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mean_accuracy</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">training_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+
+        <span class="c1"># call update metrics function to make sure metrics is prepared</span>
+        <span class="n">metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">update_metrics</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_time</span><span class="p">,</span> <span class="n">model_saved_path</span><span class="p">,</span> <span class="n">metrics</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Parameters explaination</p></li>
+</ul>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># GLOBAL SETTINGS ###</span>
+<span class="c1"># below is for system configuration</span>
+<span class="c1"># use self.params[&#39;ppn&#39;] to get configuration in your own advisor</span>
+<span class="nt">observation_budget</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="nt">save_path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/home/vmagent/app/hydro.ai/result/</span>
+<span class="nt">ppn</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="c1"># you can add more here</span>
+<span class="c1">#</span>
+<span class="c1"># model_parameter ###</span>
+<span class="c1"># below is for sigopt or w/ sigopt model_parameter configuration</span>
+<span class="c1"># use self.params[&#39;model_parameter&#39;][&#39;parameters&#39;] to get in your own advisor</span>
+<span class="nt">model_parameter</span><span class="p">:</span>
+  <span class="nt">project</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">hydro.ai</span>
+  <span class="nt">experiment</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sklearn</span>
+<span class="c1"># parameters will be used to submit to sigopt</span>
+<span class="c1"># please follow [https://app.sigopt.com/docs/api_reference/object_parameter]</span>
+  <span class="nt">parameters</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">max_depth</span>
+      <span class="nt">bounds</span><span class="p">:</span>
+        <span class="nt">min</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">3</span>
+        <span class="nt">max</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">12</span>
+      <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">int</span>
+    <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">learning_rate</span>
+      <span class="nt">bounds</span><span class="p">:</span>
+        <span class="nt">min</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.0</span>
+        <span class="nt">max</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.0</span>
+      <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">double</span>
+<span class="c1"># metrics will be used to submit to sigopt</span>
+<span class="c1"># please follow [https://app.sigopt.com/docs/api_reference/object_metric]</span>
+  <span class="nt">metrics</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">accuracy</span>
+      <span class="nt">strategy</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">optimize</span>
+      <span class="nt">objective</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">maximize</span>
+    <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">training_time</span>
+      <span class="nt">objective</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">minimize</span>
+<span class="c1"># tuned_parameter is required to be pre-defined in without sigopt scenario through Advisor.initialize_model_parameter(self, assignments = None) method</span>
+<span class="c1"># for with sigopt scenario, tuned_parameter will be set by hydro.ai after it received sigopt suggestion</span>
+<span class="c1"># Advisor should expect self.params[&#39;model_parameter&#39;][&#39;tuned_parameters&#39;] is ready in Advisor.train_model(self, args) method</span>
+  <span class="nt">tuned_parameter</span><span class="p">:</span>
+    <span class="nt">max_depth</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">11</span>
+    <span class="nt">learning_rate</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.9294</span>
+    <span class="nt">min_split_loss</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">6.883</span>
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="_modules/modelzoo.html" class="btn btn-neutral float-left" title="modelzoo package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="documentstyle.html" class="btn btn-neutral float-right" title="Documenting Style" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, INTEL_AIA_BDF.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

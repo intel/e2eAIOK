@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SDA.modeladvisor.BaseModelAdvisor &mdash; Hydro.ai 0.1.0 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/copybutton.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/clipboard.min.js"></script>
+        <script src="../../../_static/copybutton.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> Hydro.ai
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Hydro.ai Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../QuickStart.html">QuickStart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">Components</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../CreateNewAdvisor.html">Advanced - create new Advisor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../documentstyle.html">Documenting Style</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../codingstyle.html">Coding Style</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Hydro.ai</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>SDA.modeladvisor.BaseModelAdvisor</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for SDA.modeladvisor.BaseModelAdvisor</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+
+<span class="kn">import</span> <span class="nn">yaml</span>
+<span class="kn">from</span> <span class="nn">common.utils</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">hydroai.hydroconfig</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">sigopt</span> <span class="kn">import</span> <span class="n">Connection</span>
+
+
+<div class="viewcode-block" id="BaseModelAdvisor"><a class="viewcode-back" href="../../SDA.modeladvisor.BaseModelAdvisor.html#SDA.modeladvisor.BaseModelAdvisor.BaseModelAdvisor">[docs]</a><span class="k">class</span> <span class="nc">BaseModelAdvisor</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Model Advisor Base, Model Advisor is used to create w/wo sigopt</span>
+<span class="sd">    parameter advise based on model type</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    conn</span>
+<span class="sd">        sigopt connection</span>
+<span class="sd">    experiment</span>
+<span class="sd">        current experiment which is either created by this run or</span>
+<span class="sd">        fetched by history experiment id</span>
+<span class="sd">    params : dict</span>
+<span class="sd">        params include dataset_path, save_path, global_configs,</span>
+<span class="sd">        model_parameters, passed by arguments or hydroai-defaults.conf</span>
+<span class="sd">    assignment_model_tracker : dict</span>
+<span class="sd">        a tracker map of assigned_parameters and its corresponding</span>
+<span class="sd">        model path</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_meta_path</span><span class="p">,</span> <span class="n">train_path</span><span class="p">,</span> <span class="n">eval_path</span><span class="p">,</span> <span class="n">settings</span><span class="p">):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
+            <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> - </span><span class="si">%(name)s</span><span class="s1"> - </span><span class="si">%(levelname)s</span><span class="s1"> - </span><span class="si">%(message)s</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;sigopt&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">conn</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">experiment</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="n">init_advisor_params</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;dataset_meta_path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset_meta_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;train_dataset_path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">train_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;eval_dataset_path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">eval_path</span>
+        <span class="n">dest_saved_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;save_path&#39;</span><span class="p">],</span>
+                                       <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;model_name&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;save_path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mkdir</span><span class="p">(</span><span class="n">dest_saved_path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assignment_model_tracker</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">settings</span><span class="p">)</span>
+
+<div class="viewcode-block" id="BaseModelAdvisor.initialize_sigopt"><a class="viewcode-back" href="../../SDA.modeladvisor.BaseModelAdvisor.html#SDA.modeladvisor.BaseModelAdvisor.BaseModelAdvisor.initialize_sigopt">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_sigopt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">experiment_id</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method is used to prepare sigopt including call</span>
+<span class="sd">        generate_sigopt_yaml and setup_sigopt_connection</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        experiment_id: str</span>
+<span class="sd">          history sigopt experiment_id for this task, when this is not</span>
+<span class="sd">          None, we can use this id to fetch previous experiment</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        sigopt_experiment_id: str</span>
+<span class="sd">          sigopt experiment id for this task</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># 1. create sigopt yaml</span>
+        <span class="n">sigopt_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_sigopt_yaml</span><span class="p">()</span>
+        <span class="n">yaml</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">sigopt_config</span><span class="p">,</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">)</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">timeout_input</span><span class="p">(</span><span class="s2">&quot;Please confirm with sigopt parameters?(n for exit)&quot;</span><span class="p">,</span>
+                          <span class="n">default</span><span class="o">=</span><span class="s1">&#39;y&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">n</span> <span class="o">!=</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span>
+            <span class="n">exit</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;model_parameter&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sigopt_config</span>
+        <span class="c1"># 2. create sigopt connection</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">experiment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_setup_sigopt_connection</span><span class="p">(</span>
+            <span class="n">sigopt_config</span><span class="p">,</span> <span class="n">experiment_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">experiment</span><span class="o">.</span><span class="n">id</span></div>
+
+    <span class="k">def</span> <span class="nf">_setup_sigopt_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sigopt_config</span><span class="p">,</span> <span class="n">experiment_id</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">sigopt_config</span><span class="p">[</span><span class="s2">&quot;experiment&quot;</span><span class="p">]</span>
+        <span class="n">parameters</span> <span class="o">=</span> <span class="n">sigopt_config</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">]</span>
+        <span class="n">metrics</span> <span class="o">=</span> <span class="n">sigopt_config</span><span class="p">[</span><span class="s2">&quot;metrics&quot;</span><span class="p">]</span>
+        <span class="n">observation_budget</span> <span class="o">=</span> <span class="n">sigopt_config</span><span class="p">[</span><span class="s2">&quot;observation_budget&quot;</span><span class="p">]</span>
+        <span class="n">project</span> <span class="o">=</span> <span class="n">sigopt_config</span><span class="p">[</span><span class="s2">&quot;project&quot;</span><span class="p">]</span>
+
+        <span class="n">num_tried</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">conn</span> <span class="o">=</span> <span class="n">Connection</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">experiment_id</span><span class="p">:</span>
+                    <span class="n">experiment</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">experiments</span><span class="p">(</span><span class="n">experiment_id</span><span class="p">)</span><span class="o">.</span><span class="n">fetch</span><span class="p">()</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">experiment</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">experiments</span><span class="p">()</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+                        <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+                        <span class="n">parameters</span><span class="o">=</span><span class="n">parameters</span><span class="p">,</span>
+                        <span class="n">metrics</span><span class="o">=</span><span class="n">metrics</span><span class="p">,</span>
+                        <span class="n">observation_budget</span><span class="o">=</span><span class="n">observation_budget</span><span class="p">,</span>
+                        <span class="n">project</span><span class="o">=</span><span class="n">project</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">conn</span><span class="p">,</span> <span class="n">experiment</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">num_tried</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="sd">&quot;&quot;&quot;[WARNING] Met exception when connecting to sigopt,</span>
+<span class="sd">                    will do retry in 5 secs, err msg is: &quot;&quot;&quot;</span>
+                <span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">num_tried</span> <span class="o">&gt;=</span> <span class="mi">30</span><span class="p">:</span>
+                    <span class="n">n</span> <span class="o">=</span> <span class="n">timeout_input</span><span class="p">(</span>
+                        <span class="sd">&quot;&quot;&quot;Retried connection for 30 times, do you still</span>
+<span class="sd">                        want to continue?(n for exit)&quot;&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">default</span><span class="o">=</span><span class="s1">&#39;y&#39;</span><span class="p">,</span>
+                        <span class="n">timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">n</span> <span class="o">!=</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+                    <span class="n">num_tried</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_assignments_to_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">assignments</span><span class="p">):</span>
+        <span class="n">tmp</span> <span class="o">=</span> <span class="n">assignments</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">assignments</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">assignments</span><span class="p">))</span>
+        <span class="n">tmp</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">OrderedDict</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">tmp</span><span class="o">.</span><span class="n">items</span><span class="p">())))</span>
+        <span class="k">return</span> <span class="n">tmp</span>
+
+    <span class="k">def</span> <span class="nf">_assign_sigopt_suggestion</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sigopt_assignments</span><span class="p">):</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">sigopt_assignments</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">config</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;model_parameter&#39;</span><span class="p">][</span><span class="s1">&#39;tuned_parameters&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;model_saved_path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;save_path&#39;</span><span class="p">],</span> <span class="n">get_hash_string</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="p">)))</span>
+
+<div class="viewcode-block" id="BaseModelAdvisor.record_assignmet"><a class="viewcode-back" href="../../SDA.modeladvisor.BaseModelAdvisor.html#SDA.modeladvisor.BaseModelAdvisor.BaseModelAdvisor.record_assignmet">[docs]</a>    <span class="k">def</span> <span class="nf">record_assignmet</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">assignments</span><span class="p">,</span> <span class="n">model_path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method is used to record latest assignment with its trained model path</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        assignment: Assignment</span>
+<span class="sd">          sigopt assignment of model parameters</span>
+<span class="sd">        model_path: str</span>
+<span class="sd">          trained model saved path</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">assignments</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">tmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_assignments_to_string</span><span class="p">(</span><span class="n">assignments</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assignment_model_tracker</span><span class="p">[</span><span class="n">tmp</span><span class="p">]</span> <span class="o">=</span> <span class="n">model_path</span></div>
+
+<div class="viewcode-block" id="BaseModelAdvisor.find_model_by_assignment"><a class="viewcode-back" href="../../SDA.modeladvisor.BaseModelAdvisor.html#SDA.modeladvisor.BaseModelAdvisor.BaseModelAdvisor.find_model_by_assignment">[docs]</a>    <span class="k">def</span> <span class="nf">find_model_by_assignment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">assignments</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method is used to find model saved path by corresponding assignment</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        assignment: Assignment</span>
+<span class="sd">          sigopt assignment of model parameters</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        model_path: str</span>
+<span class="sd">          trained model saved path</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">tmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_assignments_to_string</span><span class="p">(</span><span class="n">assignments</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">tmp</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">assignment_model_tracker</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">assignment_model_tracker</span><span class="p">[</span><span class="n">tmp</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;can&#39;t find </span><span class="si">{</span><span class="n">tmp</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">assignment_model_tracker</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="BaseModelAdvisor.get_metrics_from_best_assignments"><a class="viewcode-back" href="../../SDA.modeladvisor.BaseModelAdvisor.html#SDA.modeladvisor.BaseModelAdvisor.BaseModelAdvisor.get_metrics_from_best_assignments">[docs]</a>    <span class="k">def</span> <span class="nf">get_metrics_from_best_assignments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">best_assignments</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method is used to get metrics from BestAssignments</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        best_assignments: BestAssignments</span>
+<span class="sd">          sigopt returned best_assignment</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        metrics: list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">metrics</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">best_assignments</span><span class="o">.</span><span class="n">values</span><span class="p">:</span>
+            <span class="n">metrics</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">value</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">metrics</span></div>
+
+<div class="viewcode-block" id="BaseModelAdvisor.get_best_parameters_from_best_assignments"><a class="viewcode-back" href="../../SDA.modeladvisor.BaseModelAdvisor.html#SDA.modeladvisor.BaseModelAdvisor.BaseModelAdvisor.get_best_parameters_from_best_assignments">[docs]</a>    <span class="k">def</span> <span class="nf">get_best_parameters_from_best_assignments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">best_assignments</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method is used to get model parameter assignment from BestAssignments</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        best_assignments: BestAssignments</span>
+<span class="sd">          sigopt returned best_assignment</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        assignment: Assignment</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">saved_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;save_path&#39;</span><span class="p">],</span>
+                                  <span class="s2">&quot;best_parameters.yaml&quot;</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">saved_path</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">yaml</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">best_assignments</span><span class="o">.</span><span class="n">assignments</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">best_assignments</span><span class="o">.</span><span class="n">assignments</span></div>
+
+    <span class="k">def</span> <span class="nf">_launch_train_with_sigopt</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">budget</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">experiment</span><span class="o">.</span><span class="n">observation_budget</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Experiment budget: </span><span class="si">{</span><span class="n">budget</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">budget</span><span class="p">):</span>
+            <span class="n">suggestion</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">experiments</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">experiment</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">.</span><span class="n">suggestions</span><span class="p">()</span><span class="o">.</span><span class="n">create</span><span class="p">()</span>
+            <span class="n">assignments</span> <span class="o">=</span> <span class="n">suggestion</span><span class="o">.</span><span class="n">assignments</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_assign_sigopt_suggestion</span><span class="p">(</span><span class="n">assignments</span><span class="p">)</span>
+            <span class="n">mkdir_or_backup_then_mkdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;model_saved_path&#39;</span><span class="p">])</span>
+            <span class="n">model_path</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="n">metrics</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">training_time</span><span class="p">,</span> <span class="n">model_path</span><span class="p">,</span> <span class="n">metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;Received sigopt suggestion, assignment is </span><span class="se">\</span>
+<span class="s1">                    </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_assignments_to_string</span><span class="p">(</span><span class="n">assignments</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">record_assignmet</span><span class="p">(</span><span class="n">assignments</span><span class="p">,</span> <span class="n">model_path</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;Training completed with sigopt suggestion, </span><span class="se">\</span>
+<span class="s1">                    metrics is </span><span class="si">{</span><span class="n">metrics</span><span class="si">}</span><span class="s1">&#39;</span>
+            <span class="p">)</span>
+
+            <span class="n">num_tried</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">experiments</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">experiment</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">.</span><span class="n">observations</span><span class="p">()</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+                        <span class="n">suggestion</span><span class="o">=</span><span class="n">suggestion</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="n">metrics</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">experiment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">experiments</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">experiment</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">.</span><span class="n">fetch</span><span class="p">()</span>
+                    <span class="k">break</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">num_tried</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="nb">print</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s1">&#39;[WARNING] Met exception when connecting to </span><span class="se">\</span>
+<span class="s1">                            sigopt, will do retry in 5 secs, err msg is:&#39;</span>
+                    <span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">num_tried</span> <span class="o">&gt;=</span> <span class="mi">30</span><span class="p">:</span>
+                        <span class="n">n</span> <span class="o">=</span> <span class="n">timeout_input</span><span class="p">(</span>
+                            <span class="s2">&quot;Retried connection for 30 times, do you </span><span class="se">\</span>
+<span class="s2">                                still want to continue?(n for exit)&quot;</span><span class="p">,</span>
+                            <span class="n">default</span><span class="o">=</span><span class="s1">&#39;y&#39;</span><span class="p">,</span>
+                            <span class="n">timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">n</span> <span class="o">!=</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span>
+                            <span class="k">return</span> <span class="n">model_path</span><span class="p">,</span> <span class="n">metrics</span><span class="p">,</span> <span class="n">assignments</span>
+                        <span class="n">num_tried</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Training with sigopt is completed! </span><span class="se">\</span>
+<span class="s2">                https://app.sigopt.com/experiment/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">experiment</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> &quot;</span>
+        <span class="p">)</span>
+        <span class="n">all_best_assignments</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">experiments</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">experiment</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">.</span><span class="n">best_assignments</span><span class="p">()</span><span class="o">.</span><span class="n">fetch</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_best_assignments</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="s2">&quot;No assignments for satisfied model, you may increase </span><span class="se">\</span>
+<span class="s2">                    observation budget or modify metric value&quot;</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">model_path</span><span class="p">,</span> <span class="n">metrics</span><span class="p">,</span> <span class="n">assignments</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">model_path</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">best_assignments</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_best_parameters_from_best_assignments</span><span class="p">(</span>
+                <span class="n">all_best_assignments</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">model_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_model_by_assignment</span><span class="p">(</span><span class="n">best_assignments</span><span class="p">)</span>
+            <span class="n">metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_metrics_from_best_assignments</span><span class="p">(</span>
+                <span class="n">all_best_assignments</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">model_path</span><span class="p">,</span> <span class="n">metrics</span><span class="p">,</span> <span class="n">best_assignments</span>
+
+    <span class="k">def</span> <span class="nf">_launch_train_without_sigopt</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">mkdir_or_backup_then_mkdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;model_saved_path&#39;</span><span class="p">])</span>
+        <span class="n">training_time</span><span class="p">,</span> <span class="n">model_path</span><span class="p">,</span> <span class="n">metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s1">&#39;Training completed based in sigopt suggestion, took </span><span class="si">{</span><span class="n">training_time</span><span class="si">}</span><span class="s1"> secs&#39;</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">model_path</span><span class="p">,</span> <span class="n">metrics</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;model_parameter&#39;</span><span class="p">][</span>
+            <span class="s2">&quot;tuned_parameters&quot;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="BaseModelAdvisor.launch_train"><a class="viewcode-back" href="../../SDA.modeladvisor.BaseModelAdvisor.html#SDA.modeladvisor.BaseModelAdvisor.BaseModelAdvisor.launch_train">[docs]</a>    <span class="k">def</span> <span class="nf">launch_train</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method will launch train w/wo sugopt according to config</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        model_path: str</span>
+<span class="sd">            best trained model saved path</span>
+<span class="sd">        metrics: list</span>
+<span class="sd">            A list of this best trained model infomation</span>
+<span class="sd">        parameters: dict</span>
+<span class="sd">            A dict of best model parameters for this training</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">experiment</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_launch_train_with_sigopt</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_launch_train_without_sigopt</span><span class="p">()</span></div>
+
+    <span class="c1"># Abstract method, Any advisor should have an implementation of below</span>
+
+<div class="viewcode-block" id="BaseModelAdvisor.generate_sigopt_yaml"><a class="viewcode-back" href="../../SDA.modeladvisor.BaseModelAdvisor.html#SDA.modeladvisor.BaseModelAdvisor.BaseModelAdvisor.generate_sigopt_yaml">[docs]</a>    <span class="k">def</span> <span class="nf">generate_sigopt_yaml</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        generate parameter range based on model type and passed-in params for sigopt</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        sigopt_parameters: dict</span>
+<span class="sd">          sigopt parameter including ranged model parameter and metrics based on model type</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;generate_sigopt_yaml is abstract.&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BaseModelAdvisor.initialize_model_parameter"><a class="viewcode-back" href="../../SDA.modeladvisor.BaseModelAdvisor.html#SDA.modeladvisor.BaseModelAdvisor.BaseModelAdvisor.initialize_model_parameter">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_model_parameter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">assignments</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        generate parameters based on model type for wo sigopt case</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        assignments: dict</span>
+<span class="sd">          optional user defined or sigopt suggested parameters</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        model_parameters: dict</span>
+<span class="sd">          model parameter based on model type</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># expect return parameter(dict), this is for no_sigopt path</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;initialize_model_parameter is abstract.&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BaseModelAdvisor.train_model"><a class="viewcode-back" href="../../SDA.modeladvisor.BaseModelAdvisor.html#SDA.modeladvisor.BaseModelAdvisor.BaseModelAdvisor.train_model">[docs]</a>    <span class="k">def</span> <span class="nf">train_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        launch train with passed-in model parameters</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        args: dict</span>
+<span class="sd">          global parameters like pnn, host; model_parameter from sigopt</span>
+<span class="sd">          suggestion or model pre-defined</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        training_time: float</span>
+<span class="sd">        model_path: str</span>
+<span class="sd">        metrics: list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;train_model is abstract.&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BaseModelAdvisor.update_metrics"><a class="viewcode-back" href="../../SDA.modeladvisor.BaseModelAdvisor.html#SDA.modeladvisor.BaseModelAdvisor.BaseModelAdvisor.update_metrics">[docs]</a>    <span class="k">def</span> <span class="nf">update_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        update return metrics based on training result, normally</span>
+<span class="sd">        training script should have a stdout output or a result.yaml</span>
+<span class="sd">        file, and this method will pass this file and return metrics</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        metrics: list</span>
+<span class="sd">          metrics from training output, maybe AUC, MAP, training_time, etc</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># expect return updated metrics(list of dict)</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;update_metrics is abstract.&quot;</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, INTEL_AIA_BDF.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

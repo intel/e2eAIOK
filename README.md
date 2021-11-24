@@ -49,3 +49,8 @@ Currently four recommender system workloads were supported: including DLRM, DIEN
 
 # Perforamnce 
 ToBeAdded. 
+
+# How to Contribute
+
+[Documenting Style](https://www.sphinx-doc.org/en/master/)
+[Coding Style](https://www.python.org/dev/peps/pep-0008/)

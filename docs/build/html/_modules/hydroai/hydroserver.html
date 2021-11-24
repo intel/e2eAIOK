@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>hydroai.hydroserver &mdash; Hydro.ai 0.1.0 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/copybutton.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/clipboard.min.js"></script>
+        <script src="../../_static/copybutton.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> Hydro.ai
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../overview.html">Hydro.ai Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../QuickStart.html">QuickStart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">Components</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../CreateNewAdvisor.html">Advanced - create new Advisor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../documentstyle.html">Documenting Style</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../codingstyle.html">Coding Style</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Hydro.ai</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      <li>hydroai.hydroserver</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for hydroai.hydroserver</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">from</span> <span class="nn">common.utils</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">SDA.SDA</span> <span class="kn">import</span> <span class="n">SDA</span>
+
+<span class="kn">from</span> <span class="nn">hydroai.hydroDB</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">hydroai.hydromodel</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">hydroai.hydromodelzoo</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">hydroai.hydroweblistener</span> <span class="kn">import</span> <span class="o">*</span>
+
+
+<div class="viewcode-block" id="HydroServer"><a class="viewcode-back" href="../hydroai.hydroserver.html#hydroai.hydroserver.HydroServer">[docs]</a><span class="k">class</span> <span class="nc">HydroServer</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class is used to create a HydroServer instance which will</span>
+<span class="sd">    maintain HydroDB instance, doing sigopt communication, training,</span>
+<span class="sd">    model compress</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    db : HydroDB</span>
+<span class="sd">        an DataBase instance used to fetch and update best model info</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># start db to store history queries / models and score board</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span> <span class="o">=</span> <span class="n">HydroDB</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_mem_model_tracker</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
+            <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> - </span><span class="si">%(name)s</span><span class="s1"> - </span><span class="si">%(levelname)s</span><span class="s1"> - </span><span class="si">%(message)s</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;sigopt&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_model_tracker</span><span class="p">()</span>
+
+<div class="viewcode-block" id="HydroServer.generate_learner_id"><a class="viewcode-back" href="../hydroai.hydroserver.html#hydroai.hydroserver.HydroServer.generate_learner_id">[docs]</a>    <span class="k">def</span> <span class="nf">generate_learner_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_name</span><span class="p">,</span> <span class="n">data_loader</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generate An Identical Learner Id based on model_type and dataset</span>
+
+<span class="sd">        This function is aimed to generate an identical learner id for</span>
+<span class="sd">        task, by doing so, we can use this learner_id to find its</span>
+<span class="sd">        history model info or create a new record.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model_name : str</span>
+<span class="sd">            model type of this task</span>
+<span class="sd">        data_loader : HydroDataLoader</span>
+<span class="sd">            An instance for Dataset infomation</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        learner_id: str</span>
+<span class="sd">            generated learner_id</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># tmp way to generate id</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model_name</span><span class="si">}{</span><span class="n">data_loader</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">learner_id</span> <span class="o">=</span> <span class="n">get_hash_string</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;learner_id is </span><span class="si">{</span><span class="n">learner_id</span><span class="si">}</span><span class="s2">, generated based on info </span><span class="si">{</span><span class="n">info</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">learner_id</span></div>
+
+<div class="viewcode-block" id="HydroServer.try_get_previous_checkpoint"><a class="viewcode-back" href="../hydroai.hydroserver.html#hydroai.hydroserver.HydroServer.try_get_previous_checkpoint">[docs]</a>    <span class="k">def</span> <span class="nf">try_get_previous_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_name</span><span class="p">,</span> <span class="n">data_loader</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get history model checkpoint based on model type and datset</span>
+
+<span class="sd">        This function is aimed to try to find history model checkpoint, so</span>
+<span class="sd">        we can resume from where left instead start from scratch</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model_name : str</span>
+<span class="sd">            model type of this task</span>
+<span class="sd">        data_loader : HydroDataLoader</span>
+<span class="sd">            An instance for Dataset infomation</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        str</span>
+<span class="sd">            if history model exists, return its learner_id else None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">learner_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_learner_id</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">data_loader</span><span class="p">)</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_model_by_id</span><span class="p">(</span><span class="n">learner_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">model</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">in_mem_model_tracker</span><span class="p">[</span><span class="n">learner_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">model</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">explain</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">learner_id</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="HydroServer.save_model_tracker"><a class="viewcode-back" href="../hydroai.hydroserver.html#hydroai.hydroserver.HydroServer.save_model_tracker">[docs]</a>    <span class="k">def</span> <span class="nf">save_model_tracker</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Save all in memory model checkpoint</span>
+
+<span class="sd">        This function will be called when hydro server instance destructed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">learner_id</span><span class="p">,</span> <span class="n">hydro_model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_mem_model_tracker</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">insert_model_by_id</span><span class="p">(</span><span class="n">learner_id</span><span class="p">,</span> <span class="n">hydro_model</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="HydroServer.clear_db"><a class="viewcode-back" href="../hydroai.hydroserver.html#hydroai.hydroserver.HydroServer.clear_db">[docs]</a>    <span class="k">def</span> <span class="nf">clear_db</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Clear HydroDB</span>
+
+<span class="sd">        This function is under development</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># TODO: enable in hydro web server mode</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="HydroServer.get_best_model"><a class="viewcode-back" href="../hydroai.hydroserver.html#hydroai.hydroserver.HydroServer.get_best_model">[docs]</a>    <span class="k">def</span> <span class="nf">get_best_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">learner_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get best model for this auto learning task</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        learner_id : str</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        hydro_model: HydroModel</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">learner_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_mem_model_tracker</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;LearningID </span><span class="si">{</span><span class="n">learner_id</span><span class="si">}</span><span class="s2"> is not exists in model-tracker&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_mem_model_tracker</span><span class="p">[</span><span class="n">learner_id</span><span class="p">]</span></div></div>
+
+
+<div class="viewcode-block" id="HydroWebServer"><a class="viewcode-back" href="../hydroai.hydroserver.html#hydroai.hydroserver.HydroWebServer">[docs]</a><span class="k">class</span> <span class="nc">HydroWebServer</span><span class="p">(</span><span class="n">HydroServer</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Hydro Web Server will be running on server side</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="HydroLocalServer"><a class="viewcode-back" href="../hydroai.hydroserver.html#hydroai.hydroserver.HydroLocalServer">[docs]</a><span class="k">class</span> <span class="nc">HydroLocalServer</span><span class="p">(</span><span class="n">HydroServer</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Hydro Local Server will be running as standalone mode</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="k">pass</span>
+
+<div class="viewcode-block" id="HydroLocalServer.submit_task"><a class="viewcode-back" href="../hydroai.hydroserver.html#hydroai.hydroserver.HydroLocalServer.submit_task">[docs]</a>    <span class="k">def</span> <span class="nf">submit_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">,</span> <span class="n">data_loader</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Submit a new auto learning task to HydroServer</span>
+
+<span class="sd">        This method will generate a SDA instance to generate model</span>
+<span class="sd">        parameters based on model type and user input, then iterating</span>
+<span class="sd">        train and sigopt communication to find the best model</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        settings : dict</span>
+<span class="sd">            Includes all the settings for this task, includes model</span>
+<span class="sd">            type, global settings and user defined model parameters</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        learner_id: str</span>
+<span class="sd">            auto learning id for this task</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">learner_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_learner_id</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;model_name&#39;</span><span class="p">],</span>
+                                              <span class="n">data_loader</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">learner_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_mem_model_tracker</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">in_mem_model_tracker</span><span class="p">[</span><span class="n">learner_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">HydroModel</span><span class="p">(</span><span class="n">settings</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sda</span> <span class="o">=</span> <span class="n">SDA</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;model_name&#39;</span><span class="p">],</span> <span class="n">data_loader</span><span class="p">,</span> <span class="n">settings</span><span class="p">,</span>
+                       <span class="bp">self</span><span class="o">.</span><span class="n">in_mem_model_tracker</span><span class="p">[</span><span class="n">learner_id</span><span class="p">])</span>
+        <span class="n">model_path</span><span class="p">,</span> <span class="n">metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sda</span><span class="o">.</span><span class="n">launch</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">learner_id</span></div>
+
+<div class="viewcode-block" id="HydroLocalServer.submit_task_with_program"><a class="viewcode-back" href="../hydroai.hydroserver.html#hydroai.hydroserver.HydroLocalServer.submit_task_with_program">[docs]</a>    <span class="k">def</span> <span class="nf">submit_task_with_program</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">,</span> <span class="n">data_loader</span><span class="p">,</span>
+                                 <span class="n">executable_python</span><span class="p">,</span> <span class="n">program</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Submit a new auto learning task to HydroServer with user</span>
+<span class="sd">        defined program</span>
+
+<span class="sd">        This method will generate a SDA instance to generate model</span>
+<span class="sd">        parameters based on model type and user input, then iterating</span>
+<span class="sd">        train and sigopt communication to find the best model</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        settings : dict</span>
+<span class="sd">            Includes all the settings for this task, includes model</span>
+<span class="sd">            type, global settings and user defined model parameters</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        learner_id: str</span>
+<span class="sd">            auto learning id for this task</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, INTEL_AIA_BDF.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

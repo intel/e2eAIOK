@@ -1,15 +1,11 @@
-
-
 class HydroConnector:
     '''
-    Hydro Service is a long run service for client to submit learning queries and resume or fetch old result
+    Hydro Service is a long run service for client to submit learning
+    queries and resume or fetch old result
 
-    Args:
-
-        url (str): example as http://127.0.0.1:9090
+    :param url(str): example as http://127.0.0.1:9090
 
     '''
-
     def __init__(self, url):
         self.url = url
 
