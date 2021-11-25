@@ -24,7 +24,7 @@ Bluewhale is the project to democratize AI on CPU, starting from E2E recommender
 
 Below firgure showed the architecture diagram of Bluewhale. 
 
-![Architecture](./docs/pictures/architecture.jpg "Bluewhale Architecture")
+![Architecture](./docs/source/architecture.jpg "Bluewhale Architecture")
 
 # Major componments 
 
