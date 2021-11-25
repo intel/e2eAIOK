@@ -1,2 +1,5 @@
-import findspark
-findspark.init()
+try:
+    import findspark
+    findspark.init()
+except:
+    pass
