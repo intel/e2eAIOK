@@ -39,7 +39,8 @@ Quick Start
 
 .. code-block:: bash
 
-    git clone https://github.com/xuechendi/frameworks.bigdata.bluewhale.git
+    git clone https://github.com/intel-innersource/frameworks.bigdata.bluewhale.git
+    git checkout hydro.ai
     git submodule update --init --recursive
     docker run -it --privileged --network host --device-/dev/dri -v ${dataset_path}:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ docker.io/xuechendi/oneapi-aikit:hydro.ai /bin/bash
     source /opt/intel/oneapi/setvars.sh --ccl-configuration-cpu_icc --force

@@ -24,7 +24,7 @@ Bluewhale is the project to democratize AI on CPU, starting from E2E recommender
 
 Below firgure showed the architecture diagram of Bluewhale. 
 
-![Architecture](./docs/pictures/architecture.jpg "Bluewhale Architecture")
+![Architecture](./docs/source/architecture.jpg "Bluewhale Architecture")
 
 # Major componments 
 
@@ -42,9 +42,10 @@ Here are the major componments of Bluewhale:
 
 Currently four recommender system workloads were supported: including DLRM, DIEN, WnD and RecSys. The Bluewhale E2E AI democratization kit significantly improved the performance of those models on distributed CPU cluster, reduced the performance gap of CPU to GPU from 100x to < 2x, using the same dataset and the same AUC metrics. The key optimizations Bluewhale brought can be categorized as: 
 
-# How to Use
+# How To Use
 
-[HOW_TO.md](docs/HOW_TO.md)
+[QuickStart](docs/source/quickstart.rst)
+[Create New Advisor](docs/source/advanced.rst)
 
 
 # Perforamnce 
@@ -52,5 +53,5 @@ ToBeAdded.
 
 # How to Contribute
 
-[Documenting Style](https://www.sphinx-doc.org/en/master/)
-[Coding Style](https://www.python.org/dev/peps/pep-0008/)
+[Documenting Style](docs/source/documentingstyle.rst)
+[Coding Style](docs/source/codingstyle.rst)
