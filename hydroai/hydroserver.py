@@ -87,6 +87,17 @@ class HydroServer:
         else:
             return None
 
+    def get_model_zoo_list(self):
+        """
+        Get in-stock-model list
+
+        Returns
+        -------
+        list
+            A list of current in stock model names
+        """
+        return SDA.get_model_zoo_list()
+
     def save_model_tracker(self):
         """
         Save all in memory model checkpoint

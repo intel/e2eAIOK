@@ -64,7 +64,7 @@ def get_file(path):
     return os.path.join(path, file_or_dir[0])
 
 def list_dir(path):
-    source_path_dict = {'meta': [], 'train': [], 'valid': []}
+    source_path_dict = {'meta': "", 'train': "", 'valid': ""}
     dirs = os.listdir(path)
     for file_name in dirs:
         if (file_name.endswith('yaml')):
@@ -73,9 +73,8 @@ def list_dir(path):
             source_path_dict['train'] = get_file(os.path.join(path, file_name))
         if (file_name.startswith("valid")):
             source_path_dict['valid'] = get_file(os.path.join(path, file_name))
-    #if len(source_path_dict['meta']) == 0 or len(source_path_dict['train']) or len(source_path_dict['valid']):
-    #    raise ValueError("This folder layout is not as expected, should have one train folder, one validate folder and a yaml file of metadata")
-    # print(source_path_dict)
+    if len(source_path_dict['meta']) == 0 or len(source_path_dict['train']) == 0 or len(source_path_dict['valid']) == 0:
+        raise ValueError(f"This folder layout is not as expected, should have one train folder, one validate folder and a yaml file of metadata, current we found {source_path_dict}")
     return source_path_dict
 
 

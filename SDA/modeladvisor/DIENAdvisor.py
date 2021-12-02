@@ -1,10 +1,10 @@
-import subprocess
-import yaml
 import logging
-import time
+import subprocess
 import sys
-from common.utils import *
+import time
 
+import yaml
+from common.utils import *
 from SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
 
 
@@ -15,16 +15,13 @@ class DIENAdvisor(BaseModelAdvisor):
             level=logging.INFO,
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         self.logger = logging.getLogger('sigopt')
+        self.total_cores, self.physical_cores = self.get_cpu_info()
 
         # set default required arguments
-        self.params[
-            'ppn'] = 1 if 'ppn' not in self.params else self.params['ppn']
-        self.params[
-            'num_instances'] = 24 if 'num_instances' not in self.params else self.params[
-                'num_instances']
-        self.params[
-            'num_cores'] = 4 if 'num_cores' not in self.params else self.params[
-                'num_cores']
+        if 'ppn' not in self.params:
+            self.params['ppn'] = 1
+        self.params['num_instances'] = self.physical_cores
+        self.params['num_cores'] = int(self.total_cores / self.physical_cores)
 
         # check distributed configuration
         missing_params = []
@@ -37,28 +34,32 @@ class DIENAdvisor(BaseModelAdvisor):
         if len(missing_params) > 0:
             raise ValueError(
                 f"[CONFIG ERROR] Missing parameters {missing_params} in \
-                hydroai_defaults.conf when ppn is set above 1."
-            )
+                hydroai_defaults.conf when ppn is set above 1.")
 
         self.train_path = train_path
         self.test_path = eval_path
-        self.saved_path = args['model_saved_path']
-        self.train_python = "/opt/intel/oneapi/intelpython/latest/envs\
-            /tensorflow/bin/python"
-        self.train_script = "/home/vmagent/app/hydro.ai/in-stock-models\
-            /dien/train/ai-matrix/horovod/script/train.py"
+        # self.saved_path = settings['model_saved_path']
+        self.train_python = "/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python"
+        self.train_script = "/home/vmagent/app/hydro.ai/in-stock-models/dien/train/ai-matrix/horovod/script/train.py"
+
+    def get_cpu_info(self):
+        # get cpu physical cores and virtual cores per core as return
+        num_total_cores = 128
+        num_physical_cores = 32
+        return num_total_cores, num_physical_cores
 
     # ====== Implementation of required methods ======
 
     def update_metrics(self):
-        result_metrics_path = os.path.join(self.saved_path, "result.yaml")
+        result_metrics_path = os.path.join(self.params['model_saved_path'], "result.yaml")
         if not os.path.exists(result_metrics_path):
             raise FileNotFoundError(
                 f"{self.train_script} completed, while we can't find \
-                    result {result_metrics_path} file."
-            )
-        with open(self.saved_path) as f:
+                    result {result_metrics_path} file.")
+        with open(result_metrics_path) as f:
             results = yaml.load(f, Loader=yaml.FullLoader)
+        self.training_time = results['training_time']
+        self.best_trained_model_path = results['best_trained_model']
         metrics = []
         metrics.append({'name': 'AUC', 'value': results['AUC']})
         metrics.append({
@@ -72,13 +73,13 @@ class DIENAdvisor(BaseModelAdvisor):
         config = {}
         tuned_parameters = {}
         if assignments:
-            tuned_parameters['max_depth'] = assignments['max_depth']
-            tuned_parameters['learning_rate'] = assignments['learning_rate']
-            tuned_parameters['min_split_loss'] = assignments['min_split_loss']
+            tuned_parameters['data_type'] = assignments['data_type']
+            tuned_parameters['seed'] = assignments['seed']
+            tuned_parameters['batch_size'] = assignments['batch_size']
         else:
-            tuned_parameters['max_depth'] = 11
-            tuned_parameters['learning_rate'] = float(0.9294458527831317)
-            tuned_parameters['min_split_loss'] = float(6.88375281543753)
+            tuned_parameters['data_type'] = 'FP32'
+            tuned_parameters['seed'] = 3
+            tuned_parameters['batch_size'] = 1024
         config['tuned_parameters'] = tuned_parameters
         self.params['model_parameter'] = config
         self.params['model_saved_path'] = os.path.join(
@@ -88,28 +89,19 @@ class DIENAdvisor(BaseModelAdvisor):
     def generate_sigopt_yaml(self, file='test_sigopt.yaml'):
         config = {}
         config['project'] = 'hydro.ai'
-        config['experiment'] = 'sklearn'
+        config['experiment'] = 'dien'
         parameters = [{
-            'name': 'max_depth',
-            'bounds': {
-                'min': 3,
-                'max': 12
-            },
+            'name': 'data_type',
+            'categorical_values': ["FP32", "FP16"],
+            'type': 'categorical'
+        }, {
+            'name': 'seed',
+            'bounds': {'min': 3, 'max': 5},
             'type': 'int'
         }, {
-            'name': 'learning_rate',
-            'bounds': {
-                'min': 0.0,
-                'max': 1.0
-            },
-            'type': 'double'
-        }, {
-            'name': 'min_split_loss',
-            'bounds': {
-                'min': 0.0,
-                'max': 10
-            },
-            'type': 'double'
+            'name': 'batch_size',
+            'categorical_values': ["256", "512", "1024"],
+            'type': 'categorical'
         }]
         user_defined_parameter = self.params['model_parameter'][
             'parameters'] if ('model_parameter' in self.params) and (
@@ -121,7 +113,7 @@ class DIENAdvisor(BaseModelAdvisor):
             )
             update_list(config['parameters'], user_defined_parameter)
         config['metrics'] = [{
-            'name': 'accuracy',
+            'name': 'AUC',
             'strategy': 'optimize',
             'objective': 'maximize'
         }, {
@@ -150,7 +142,7 @@ class DIENAdvisor(BaseModelAdvisor):
         else:
             self.launch(args)
         metrics = self.update_metrics()
-        return self.training_time, model_path, metrics
+        return self.training_time, self.best_trained_model_path, metrics
 
     def dist_launch(self, args):
         cmd = []
@@ -163,7 +155,16 @@ class DIENAdvisor(BaseModelAdvisor):
         cmd.extend(["-print-rank-map", "-prepend-rank", "-verbose"])
         cmd.extend(self.prepare_cmd(args))
 
-        self.logger.info(f'training launch command: {cmd}')
+        self.logger.info(f'training launch command: {" ".join(cmd)}')
+        return
+        process = subprocess.Popen(cmd)
+        process.wait()
+
+    def launch(self, args):
+        cmd = []
+        cmd.extend(self.prepare_cmd(args))
+        self.logger.info(f'training launch command: {" ".join(cmd)}')
+        return
         process = subprocess.Popen(cmd)
         process.wait()
 
@@ -173,35 +174,23 @@ class DIENAdvisor(BaseModelAdvisor):
             f"{self.train_python}", f"{self.train_script}", "--train_path",
             f"{self.train_path}", "--test_path", f"{self.test_path}"
         ])
-        cmd.append()
-        cmd.append()
-        cmd.append()
-        cmd.append(f)
-        cmd.append()
-        cmd.append(f"--saved_path")
-        cmd.append(f"{model_saved_path}")
-        cmd.append(f"--mode")
-        cmd.append(f"train")
-        cmd.append(f"--batch_size")
-        cmd.append(f"1024")
-        cmd.append(f"--num-intra-threads")
-        cmd.append(f"{args['num_instances']}")
-        cmd.append(f"--num-inter-threads")
-        cmd.append(f"{args['num_cores']}")
-        return cmd
+        cmd.extend(["--saved_path", f"{args['model_saved_path']}"])
+        cmd.extend(["--num-intra-threads", f"{args['num_instances']}"])
+        cmd.extend(["--num-inter-threads", f"{args['num_cores']}"])
 
-    def launch(self, args):
-        cmd = []
-        cmd.append(f"/opt/intel/oneapi/intelpython/latest/bin/python")
-        cmd.append(f"/home/vmagent/app/hydro.ai/example/sklearn_train.py")
-        cmd.append(f"--train_path")
-        cmd.append(f"{self.train_path}")
-        cmd.append(f"--test_pR")
-        cmd.append(f"{learning_rate}")
-        cmd.append(f"--min_split_loss")
-        cmd.append(f"{min_split_loss}")
-        cmd.append(f"--saved_path")
-        cmd.append(f"{model_saved_path}")
-        self.logger.info(f'training launch command: {cmd}')
-        output = subprocess.check_output(cmd)
-        return float(output), model_saved_path
+        # fixed parameters 
+        cmd.extend(["--mode", "train", "--embedding_device", "cpu", "--model", "DIEN"])
+        cmd.extend(["--slice_id", "0", "--advanced", "true"])
+
+        # tunnable parameters
+        tuned_parameters = args['model_parameter']['tuned_parameters']
+        cmd.extend(["--data_type", f"{tuned_parameters['data_type']}"])
+        cmd.extend(["--seed", f"{tuned_parameters['seed']}"])
+        cmd.extend(["--batch_size", f"{tuned_parameters['batch_size']}"])
+
+        # fake result
+        result_metrics_path = os.path.join(self.params['model_saved_path'], "result.yaml")
+        result = {"AUC": 0.823, "training_time": 425, "best_trained_model": f"{self.params['model_saved_path']}/best_trained_model"}
+        with open(result_metrics_path, "w") as f:
+            results = yaml.dump(result, f)
+        return cmd

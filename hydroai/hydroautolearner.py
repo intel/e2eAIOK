@@ -29,6 +29,10 @@ class HydroAutoLearner:
             raise NotImplementedError("Server mode is now under development.")
         self.data_loader = HydroDataLoaderAdvisor.create_data_loader(
             self.settings['data_path'], self.model_name)
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        self.logger = logging.getLogger('HYDRO.AI')
 
     def submit(self):
         """
@@ -46,6 +50,16 @@ class HydroAutoLearner:
             self.learner_id = self.server.submit_task(self.settings,
                                                       self.data_loader)
         else:
+            if len(self.settings['executable_python']) == 0 or len(
+                    self.settings['program']) == 0:
+                raise ValueError(
+                    f"For non-in-stock-model, --executable_python and --program need be configured."
+                )
+            self.logger.info(
+                f"{self.model_name} is not a in-stock-model, will call \
+                    user specified {self.settings['executable_python']}\
+                         {self.settings['program']}"
+            )
             self.learner_id = self.server.submit_task_with_program(
                 self.settings, self.data_loader,
                 self.settings['executable_python'], self.settings['program'])
@@ -57,7 +71,8 @@ class HydroAutoLearner:
         return self.server.get_best_model(self.learner_id)
 
     def __is_in_stock_model(self, model_name):
-        if model_name.lower() in ["dlrm", "wnd", "pipeline_test"]:
+        #if model_name.lower() in ["dien", "dlrm", "wnd", "pipeline_test"]:
+        if model_name.lower() in self.server.get_model_zoo_list():
             return True
         else:
             return False
