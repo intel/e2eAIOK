@@ -161,7 +161,7 @@ class Operation:
         return self.dict_dfs
 
 
-    def categorify_strategy_decision_maker(self, dict_dfs, df, df_cnt, per_core_memory_size, flush_threshold, enable_gazelle):
+    def categorify_strategy_decision_maker(self, dict_dfs, df, df_cnt, per_core_memory_size, flush_threshold, enable_gazelle,estimated_bytes=20):
         small_cols = []
         long_cols = []
         huge_cols = []
@@ -173,10 +173,10 @@ class Operation:
         df_estimated_size = df_estimzate_size_per_row * df_cnt
         # Below threshold is maximum BHJ numRows, 4 means maximum 25% memory to cache Broadcast data, and 20 means we estimate each row has 20 bytes.
         if enable_gazelle:
-            threshold = per_core_memory_size / 20
+            threshold = per_core_memory_size / estimated_bytes
             threshold_per_bhj = threshold if threshold <= 100000000 else 100000000
         else:
-            threshold = per_core_memory_size / 4 / 20
+            threshold = per_core_memory_size / 4 / estimated_bytes
             threshold_per_bhj = threshold if threshold <= 30000000 else 30000000
         flush_threshold = flush_threshold * 0.8
         # print("[DEBUG] bhj total threshold is %.3f M rows, one bhj threshold is %.3f M rows, flush_threshold is %.3f GB" % (threshold / 1000000, threshold_per_bhj/1000000, flush_threshold / 2**30))
@@ -418,7 +418,7 @@ class Categorify(Operation):
         cols (list): columns which are be modified
     '''
 
-    def __init__(self, cols, dict_dfs=None, gen_dicts=True, hint='auto', doSplit=False, sep='\t', doSortForArray=False, keepMostFrequent=False, saveTmpToDisk=False, multiLevelSplit=False, multiLevelSep=[]):
+    def __init__(self, cols, dict_dfs=None, gen_dicts=True, hint='auto', doSplit=False, sep='\t', doSortForArray=False, keepMostFrequent=False, saveTmpToDisk=False, multiLevelSplit=False, multiLevelSep=[],estimated_bytes=20):
         self.op_name = "Categorify"
         self.cols = cols
         self.dict_dfs = dict_dfs
@@ -436,6 +436,7 @@ class Categorify(Operation):
         self.multi_level_sep = multiLevelSep
         self.strategy_type = {
             'udf': 'udf', 'broadcast_join': 'short_dict', 'shuffle_join': 'huge_dict'}
+        self.estimated_bytes = estimated_bytes
 
     def process(self, df, spark, df_cnt, enable_scala=True, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
         strategy = {}
@@ -447,7 +448,7 @@ class Categorify(Operation):
                 strategy[self.strategy_type[self.hint]].append(col_name)
                 sorted_cols.append(col_name)
         else:
-            sorted_cols, strategy = self.categorify_strategy_decision_maker(self.dict_dfs, df, df_cnt, per_core_memory_size, flush_threshold, enable_gazelle)
+            sorted_cols, strategy = self.categorify_strategy_decision_maker(self.dict_dfs, df, df_cnt, per_core_memory_size, flush_threshold, enable_gazelle,self.estimated_bytes)
         
         sorted_cols_pair = []
         pri_key_loaded = []
@@ -709,18 +710,19 @@ class ModelMerge(Operation):
     '''
     # TODO: We should add an optimization for csv input
 
-    def __init__(self, dicts, saveTmpToDisk=False):
+    def __init__(self, dicts, saveTmpToDisk=False,estimated_bytes=20):
         self.op_name = "ModelMerge"
         self.dict_dfs = dicts
         self.saveTmpToDisk = saveTmpToDisk
         self.save_path_id = 0
         self.cols = None
         self.doSplit = False
+        self.estimated_bytes=estimated_bytes
 
     def process(self, df, spark, df_cnt, enable_scala=True, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
         if self.dict_dfs == None:
             raise NotImplementedError("process %s ")
-        sorted_cols, strategy = self.categorify_strategy_decision_maker(self.dict_dfs, df, df_cnt, per_core_memory_size, flush_threshold, enable_gazelle)
+        sorted_cols, strategy = self.categorify_strategy_decision_maker(self.dict_dfs, df, df_cnt, per_core_memory_size, flush_threshold, enable_gazelle,self.estimated_bytes)
 
         # For now, we prepared dict_dfs and strategy
         for col_name in sorted_cols:

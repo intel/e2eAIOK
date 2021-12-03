@@ -63,7 +63,7 @@ class TargetEncoder(Encoder):
         if y_mean_list != None and len(self.y_mean_list) < self.expected_list_size:
             raise ValueError("TargetEncoder __init__, input y_mean_list should be same size as y_col_list")        
 
-    def transform(self, df):
+    def transform(self, df,threshold=0):
         x_col = self.x_col_list
         cols = ['fold', x_col] if isinstance(x_col, str) else ['fold'] + x_col
         agg_per_fold = df.groupBy(cols)
@@ -82,6 +82,9 @@ class TargetEncoder(Encoder):
         agg_per_fold = agg_per_fold.agg(*per_fold_list)
         agg_all = agg_all.agg(*all_list)
         agg_per_fold = agg_per_fold.join(agg_all, x_col, 'left')
+
+        if threshold > 0:
+            agg_all = agg_all.where(f.col(f'count_all_{self.y_col_list[0]}')>threshold)
 
         for i in range(0, self.expected_list_size):
             y_col = self.y_col_list[i]
@@ -131,7 +134,7 @@ class CountEncoder(Encoder):
         if len(self.out_col_list) < self.expected_list_size:
             raise ValueError("CountEncoder __init__, input out_col_list should be same size as y_col_list")
 
-    def transform(self, df):
+    def transform(self, df, train_generate=True):
         x_col = self.x_col_list
         cols = [x_col] if isinstance(x_col, str) else x_col
         agg_all = df.groupby(cols)
@@ -148,8 +151,12 @@ class CountEncoder(Encoder):
             out_col = self.out_col_list[i]
             agg_all = agg_all.withColumn(out_col, f.col(out_col).cast(spk_type.IntegerType()))
 
-        return (self.materialize(agg_all, "%s/train/%s" % (self.dicts_path, self.out_name)),
-                self.materialize(agg_all, "%s/test/%s" % (self.dicts_path, self.out_name)))
+        if train_generate:
+            return (self.materialize(agg_all, "%s/train/%s" % (self.dicts_path, self.out_name)),
+                    self.materialize(agg_all, "%s/test/%s" % (self.dicts_path, self.out_name)))
+        else:
+            return (self.materialize(agg_all, "%s/test/%s" % (self.dicts_path, self.out_name)))
+
 
 
 class FrequencyEncoder(Encoder):
