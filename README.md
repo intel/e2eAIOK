@@ -56,6 +56,9 @@ cd tests
 python test_categorify.py
 ```
 
+#### Example screenshot
+![image](https://user-images.githubusercontent.com/4355494/144941079-9a06fc88-38fe-454a-b33a-b559edc636de.png)
+
 #### test with provided jupyter notebook example
 * Recsys2021 example [url](https://github.com/oap-project/recdp/blob/master/examples/notebooks/recsys2021/final_submission_feature_engineering.ipynb)
 * Recsys2020 example [url](https://github.com/oap-project/recdp/blob/master/examples/notebooks/recsys2020/recsys2020_feature_engineering.ipynb)
