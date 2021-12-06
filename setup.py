@@ -15,8 +15,12 @@ class post_install(install):
         scala_jar = "recdp-scala-extensions-0.1.0-jar-with-dependencies-30-spark.jar" if vspark.startswith(
             "3.0"
         ) else "recdp-scala-extensions-0.1.0-jar-with-dependencies-latest-spark.jar"
-        print(f"cp {self.build_lib}/ScalaProcessUtils/built/{scala_jar} to {self.install_lib}/pyrecdp/ScalaProcessUtils/target/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar")
-        os.makedirs(os.path.dirname(f"{self.install_lib}/pyrecdp/ScalaProcessUtils/target/"), exist_ok=True)
+        print(
+            f"cp {self.build_lib}/ScalaProcessUtils/built/{scala_jar} to {self.install_lib}/pyrecdp/ScalaProcessUtils/target/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
+        )
+        os.makedirs(os.path.dirname(
+            f"{self.install_lib}/pyrecdp/ScalaProcessUtils/target/"),
+                    exist_ok=True)
         shutil.copy(
             f"{self.build_lib}/ScalaProcessUtils/built/{scala_jar}",
             f"{self.install_lib}/pyrecdp/ScalaProcessUtils/target/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
@@ -38,7 +42,7 @@ setuptools.setup(
     },
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: APACHE License",
+        "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
     include_package_data=True,
@@ -48,5 +52,4 @@ setuptools.setup(
     python_requires=">=3.6",
     cmdclass={'install': post_install},
     zip_safe=False,
-    install_requires = ['pyspark']
-)
+    install_requires=['pyspark'])
