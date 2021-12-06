@@ -9,9 +9,12 @@ class post_install(install):
     def run(self):
         install.run(self)
         import os
-        import pyspark
+        try:
+            import pyspark
+            vspark = str(pyspark.__version__)
+        except:
+            vspark = "3.2.0"
         import shutil
-        vspark = str(pyspark.__version__)
         scala_jar = "recdp-scala-extensions-0.1.0-jar-with-dependencies-30-spark.jar" if vspark.startswith(
             "3.0"
         ) else "recdp-scala-extensions-0.1.0-jar-with-dependencies-latest-spark.jar"
@@ -29,7 +32,7 @@ class post_install(install):
 
 setuptools.setup(
     name="pyrecdp",
-    version="0.1.0",
+    version="0.1.1",
     author="INTEL AIA BDF",
     author_email="chendi.xue@intel.com",
     description=
