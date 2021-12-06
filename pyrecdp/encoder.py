@@ -46,7 +46,7 @@ class Encoder:
 
 
 class TargetEncoder(Encoder):
-    def __init__(self, proc, x_col_list, y_col_list, out_col_list, out_name, out_dtype=None, y_mean_list=None, smooth=20, seed=42):
+    def __init__(self, proc, x_col_list, y_col_list, out_col_list, out_name, out_dtype=None, y_mean_list=None, smooth=20, seed=42,threshold=0):
         super().__init__(proc)
         self.op_name = "TargetEncoder"
         self.x_col_list = x_col_list
@@ -58,6 +58,7 @@ class TargetEncoder(Encoder):
         self.seed = seed
         self.smooth = smooth
         self.expected_list_size = len(y_col_list)
+        self.threshold = threshold
         if len(self.out_col_list) < self.expected_list_size:
             raise ValueError("TargetEncoder __init__, input out_col_list should be same size as y_col_list")      
         if y_mean_list != None and len(self.y_mean_list) < self.expected_list_size:
@@ -82,6 +83,9 @@ class TargetEncoder(Encoder):
         agg_per_fold = agg_per_fold.agg(*per_fold_list)
         agg_all = agg_all.agg(*all_list)
         agg_per_fold = agg_per_fold.join(agg_all, x_col, 'left')
+
+        if self.threshold > 0:
+            agg_all = agg_all.where(f.col(f'count_all_{self.y_col_list[0]}')>self.threshold)
 
         for i in range(0, self.expected_list_size):
             y_col = self.y_col_list[i]
@@ -120,7 +124,7 @@ class TargetEncoder(Encoder):
 
 
 class CountEncoder(Encoder):
-    def __init__(self, proc, x_col_list, y_col_list, out_col_list, out_name):
+    def __init__(self, proc, x_col_list, y_col_list, out_col_list, out_name, train_generate=True):
         super().__init__(proc)
         self.op_name = "CountEncoder"
         self.x_col_list = x_col_list
@@ -128,6 +132,7 @@ class CountEncoder(Encoder):
         self.out_col_list = out_col_list
         self.out_name = out_name        
         self.expected_list_size = len(y_col_list)
+        self.train_generate = train_generate
         if len(self.out_col_list) < self.expected_list_size:
             raise ValueError("CountEncoder __init__, input out_col_list should be same size as y_col_list")
 
@@ -148,8 +153,12 @@ class CountEncoder(Encoder):
             out_col = self.out_col_list[i]
             agg_all = agg_all.withColumn(out_col, f.col(out_col).cast(spk_type.IntegerType()))
 
-        return (self.materialize(agg_all, "%s/train/%s" % (self.dicts_path, self.out_name)),
-                self.materialize(agg_all, "%s/test/%s" % (self.dicts_path, self.out_name)))
+        if self.train_generate:
+            return (self.materialize(agg_all, "%s/train/%s" % (self.dicts_path, self.out_name)),
+                    self.materialize(agg_all, "%s/test/%s" % (self.dicts_path, self.out_name)))
+        else:
+            return (self.materialize(agg_all, "%s/test/%s" % (self.dicts_path, self.out_name)))
+
 
 
 class FrequencyEncoder(Encoder):
