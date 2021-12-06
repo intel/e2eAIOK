@@ -36,25 +36,22 @@ ${Your_system_python_path}/python3.x/lib/python3.x/site-packages/pyrecdp/ScalaPr
 2 directories, 2 files
 ```
 
-#### install with source code and preinstalled docker img
-${your_local_codes_data_dir} is the path for current recdp folder
+#### install with spark preinstalled docker img
 ```
-cd ${your_local_codes_data_dir}
-git clone https://github.com/oap-project/recdp.git
-# docker run --network host -v ${your_local_codes_data_dir}/recdp:/home/vmagent/app/recdp -w /home/vmagent/app/ -it xuechendi/recdp_spark3.1 /bin/bash
-docker run --network host -v /mnt/nvme2/chendi/BlueWhale/recdp:/home/vmagent/app/recdp -w /home/vmagent/app/ -it xuechendi/recdp_spark3.1 /bin/bash
+docker run --network host -w /home/vmagent/app/ -it xuechendi/recdp_spark3.1 /bin/bash
+pip install pyrecdp
 ```
 
 #### run test
 * run below script to perform a test
 [test_categorify](tests/test_categorify.py)
-
+* make sure you download the whole [tests](tests) folder, test data is inside
 ```
 # download tests folder
 # if you are running with spark 3.0 or before, you may need to specify scala_udf_jars to
 # ${Your_system_python_path}/python3.x/lib/python3.x/site-packages/pyrecdp/ScalaProcessUtils/built/30/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar
 # or
-# ${RecDP_cloned_folder}/ScalaProcessUtils/built/30/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar
+# ${RecDP_Cloned_Folder}/ScalaProcessUtils/built/30/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar
 cd tests
 python test_categorify.py
 ```
