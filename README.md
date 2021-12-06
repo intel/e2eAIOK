@@ -18,6 +18,55 @@
 ![RecDP overview](resources/recdp_overview.png)
 
 ## How to start
+#### install with pip (require preinstall spark)
+```
+pip install pyrecdp
+
+# noticed that if pyspark version is not detected, we will install pyrecdp for Spark 3.1 or later
+# And if you are using pyspark 3.0 or before, you may find scala extension here
+${Your_system_python_path}/python3.x/lib/python3.x/site-packages/pyrecdp/ScalaProcessUtils/built/
+
+# example
+/opt/intel/oneapi/intelpython/python3.7/lib/python3.7/site-packages/pyrecdp/ScalaProcessUtils/built/
+|-- 30
+|   `-- recdp-scala-extensions-0.1.0-jar-with-dependencies.jar
+`-- 31
+    `-- recdp-scala-extensions-0.1.0-jar-with-dependencies.jar
+
+2 directories, 2 files
+```
+
+#### install with source code and preinstalled docker img
+${your_local_codes_data_dir} is the path for current recdp folder
+```
+cd ${your_local_codes_data_dir}
+git clone https://github.com/oap-project/recdp.git
+# docker run --network host -v ${your_local_codes_data_dir}/recdp:/home/vmagent/app/recdp -w /home/vmagent/app/ -it xuechendi/recdp_spark3.1 /bin/bash
+docker run --network host -v /mnt/nvme2/chendi/BlueWhale/recdp:/home/vmagent/app/recdp -w /home/vmagent/app/ -it xuechendi/recdp_spark3.1 /bin/bash
+```
+
+#### run test
+* run below script to perform a test
+[test_categorify](tests/test_categorify.py)
+
+```
+# download tests folder
+# if you are running with spark 3.0 or before, you may need to specify scala_udf_jars to
+# ${Your_system_python_path}/python3.x/lib/python3.x/site-packages/pyrecdp/ScalaProcessUtils/built/30/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar
+# or
+# ${RecDP_cloned_folder}/ScalaProcessUtils/built/30/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar
+cd tests
+python test_categorify.py
+```
+
+#### test with provided jupyter notebook example
+* Recsys2021 example [url](https://github.com/oap-project/recdp/blob/master/examples/notebooks/recsys2021/final_submission_feature_engineering.ipynb)
+* Recsys2020 example [url](https://github.com/oap-project/recdp/blob/master/examples/notebooks/recsys2020/recsys2020_feature_engineering.ipynb)
+* Recsys2020 multiitem-categorify example(support for Analytics Zoo Friesian) [url](https://github.com/oap-project/recdp/blob/master/examples/notebooks/recsys2020/recsys_for_friesian_integration.ipynb)
+* DLRM example [url](https://github.com/oap-project/recdp/blob/master/examples/notebooks/dlrm/DLRM_Performance.ipynb)
+* DIEN example [url](https://github.com/oap-project/recdp/blob/master/examples/notebooks/dien/dien_data_process.ipynb)
+
+## Advanced
 #### compile scala extension
 * noted: support spark 3.1 by default, using -pspark3.0 for running with Spark3.0
 ```
@@ -28,48 +77,6 @@ mvn package -Pspark-3.0
 ```
 
 #### test with provided spark docker img
-
-##### modify run_docker script
-${your_local_codes_data_dir} is the path for current recdp folder
-```
-# docker run --network host -v ${your_local_codes_data_dir}:/home/vmagent/app/recdp -w /home/vmagent/app/ -it xuechendi/recdp_spark3.1 /bin/bash
-docker run --network host -v /mnt/nvme2/chendi/BlueWhale/recdp:/home/vmagent/app/recdp -w /home/vmagent/app/ -it xuechendi/recdp_spark3.1 /bin/bash
-
-# test with provided python script
-python test/test_spark_local.py
-
-# test with DIEN data process
-cd recdp/examples/python_tests/dien/
-# modify num_cores and memory_capacity
-vim j2c_spark.py
-# fix at line 87 to 93
-spark = SparkSession.builder.master('local[${num_core}]')\
-        .appName("dien_data_process")\
-        .config("spark.driver.memory", "${memory_size}G")\
-        .config("spark.executor.cores", "${num_core}")\
-        .config("spark.driver.extraClassPath", f"{scala_udf_jars}")\
-        .getOrCreate()
-
-vim dien_data_process.py
-#fix line 155 to 161
-spark = SparkSession.builder.master(...
-
-# call run
-./download_dataset
-./run
-```
-
-### Expected output as below
-
-![dien_example](https://user-images.githubusercontent.com/4355494/128459861-ef2a1215-3db5-4acf-b7da-9c39a550517f.PNG)
-
-
-#### test with provided jupyter notebook example
-* Recsys2021 example [url](https://github.com/oap-project/recdp/blob/master/examples/notebooks/recsys2021/final_submission_feature_engineering.ipynb)
-* Recsys2020 example [url](https://github.com/oap-project/recdp/blob/master/examples/notebooks/recsys2020/recsys2020_feature_engineering.ipynb)
-* Recsys2020 multiitem-categorify example(support for Analytics Zoo Friesian) [url](https://github.com/oap-project/recdp/blob/master/examples/notebooks/recsys2020/recsys_for_friesian_integration.ipynb)
-* DLRM example [url](https://github.com/oap-project/recdp/blob/master/examples/notebooks/dlrm/DLRM_Performance.ipynb)
-* DIEN example [url](https://github.com/oap-project/recdp/blob/master/examples/notebooks/dien/dien_data_process.ipynb)
 
 #### write your own
 * some spark configuration is required

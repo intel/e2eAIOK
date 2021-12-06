@@ -12,27 +12,33 @@ class post_install(install):
         try:
             import pyspark
             vspark = str(pyspark.__version__)
+            print(f"Detect system pyspark, version is {vspark}")
         except:
             vspark = "3.2.0"
+            print(f"Didn't find system pyspark, use default version {vspark}, other version can be found {self.install_lib}/pyrecdp/ScalaProcessUtils/")
         import shutil
-        scala_jar = "recdp-scala-extensions-0.1.0-jar-with-dependencies-30-spark.jar" if vspark.startswith(
+        scala_jar = "/30/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar" if vspark.startswith(
             "3.0"
-        ) else "recdp-scala-extensions-0.1.0-jar-with-dependencies-latest-spark.jar"
-        print(
-            f"cp {self.build_lib}/ScalaProcessUtils/built/{scala_jar} to {self.install_lib}/pyrecdp/ScalaProcessUtils/target/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
-        )
+        ) else "/31/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
+        print(f"mkdir {self.install_lib}/pyrecdp/ScalaProcessUtils/target/")
         os.makedirs(os.path.dirname(
             f"{self.install_lib}/pyrecdp/ScalaProcessUtils/target/"),
                     exist_ok=True)
+        print(
+            f"cp {self.build_lib}/ScalaProcessUtils/built/{scala_jar} to {self.install_lib}/pyrecdp/ScalaProcessUtils/target/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
+        )
         shutil.copy(
             f"{self.build_lib}/ScalaProcessUtils/built/{scala_jar}",
             f"{self.install_lib}/pyrecdp/ScalaProcessUtils/target/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
         )
+        print(f"cp {self.build_lib}/ScalaProcessUtils/built/ {self.install_lib}/pyrecdp/ScalaProcessUtils/")
+        shutil.copytree(f"{self.build_lib}/ScalaProcessUtils/built/",
+                        f"{self.install_lib}/pyrecdp/ScalaProcessUtils/built")
 
 
 setuptools.setup(
     name="pyrecdp",
-    version="0.1.1",
+    version="0.1.2",
     author="INTEL AIA BDF",
     author_email="chendi.xue@intel.com",
     description=
@@ -55,4 +61,4 @@ setuptools.setup(
     python_requires=">=3.6",
     cmdclass={'install': post_install},
     zip_safe=False,
-    install_requires=['pyspark'])
+    install_requires=[])

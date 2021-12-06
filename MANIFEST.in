@@ -1,1 +1,2 @@
-include ScalaProcessUtils/built/*.jar
+include ScalaProcessUtils/built/30/*.jar
+include ScalaProcessUtils/built/31/*.jar
