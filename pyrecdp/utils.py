@@ -1,4 +1,4 @@
-from .init_spark import *
+from pyrecdp.init_spark import *
 import os
 import re
 from pyspark import *

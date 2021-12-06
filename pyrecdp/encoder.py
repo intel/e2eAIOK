@@ -1,5 +1,5 @@
 import uuid
-from .utils import *
+from pyrecdp.utils import *
 from pyspark.ml.feature import *
 import pandas as pd
 import numpy as np

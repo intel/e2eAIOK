@@ -1,5 +1,5 @@
 import uuid
-from .utils import *
+from pyrecdp.utils import *
 from pyspark.ml.feature import *
 import pandas as pd
 import numpy as np
@@ -507,6 +507,9 @@ class Categorify(Operation):
                         df = self.categorify_with_join(df, dict_df, col_name, spark, save_path, method="shj", saveTmpToDisk=False, enable_gazelle=enable_gazelle)
         # when last_method is BHJ, we should add a separator for spark wscg optimization
         if last_method == 'bhj' and not enable_gazelle and enable_scala:
+            vspark = str(spark.version)
+            if not (vspark.startswith("3.1") or vspark.startswith("3.0")):
+                return df
             #print("Adding a CodegenSeparator to pure BHJ WSCG case")
             found = False
             for dname, dtype in df.dtypes:
@@ -957,7 +960,7 @@ class CollapseByHist(Operation):
 
 
 class DataProcessor:
-    def __init__(self, spark, path_prefix="hdfs://", current_path="", shuffle_disk_capacity="unlimited", dicts_path="dicts", spark_mode='yarn', enable_gazelle=False):
+    def __init__(self, spark, path_prefix="hdfs://", current_path="", shuffle_disk_capacity="unlimited", dicts_path="dicts", spark_mode='local', enable_gazelle=False):
         self.ops = []
         self.spark = spark
         self.uuid = uuid.uuid1()
@@ -1046,6 +1049,7 @@ class DataProcessor:
             else:
                 save_path = "%s/%s/%s" % (self.path_prefix,
                                           self.current_path, df_name)
+            print(f"save data to {save_path}")
             if self.enable_gazelle:
                 #df.write.format('parquet').mode('overwrite').save(save_path)
                 df.write.format('arrow').mode('overwrite').save(save_path)
