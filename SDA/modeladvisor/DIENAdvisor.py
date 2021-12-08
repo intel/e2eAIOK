@@ -52,7 +52,8 @@ class DIENAdvisor(BaseModelAdvisor):
     # ====== Implementation of required methods ======
 
     def update_metrics(self):
-        result_metrics_path = os.path.join(self.params['model_saved_path'], "result.yaml")
+        result_metrics_path = os.path.join(self.params['model_saved_path'],
+                                           "result.yaml")
         if not os.path.exists(result_metrics_path):
             raise FileNotFoundError(
                 f"{self.train_script} completed, while we can't find \
@@ -171,8 +172,10 @@ class DIENAdvisor(BaseModelAdvisor):
         cmd.extend(["--num-intra-threads", f"{args['num_instances']}"])
         cmd.extend(["--num-inter-threads", f"{args['num_cores']}"])
 
-        # fixed parameters 
-        cmd.extend(["--mode", "train", "--embedding_device", "cpu", "--model", "DIEN"])
+        # fixed parameters
+        cmd.extend([
+            "--mode", "train", "--embedding_device", "cpu", "--model", "DIEN"
+        ])
         cmd.extend(["--slice_id", "0", "--advanced", "true", "--seed", "3"])
         cmd.extend(["--data_type", "FP32"])
 
