@@ -103,8 +103,8 @@ class WnDAdvisor(BaseModelAdvisor):
 
     def generate_sigopt_yaml(self, file='test_sigopt.yaml'):
         config = {}
-        config['project'] = self.params['project']
-        config['experiment'] = self.params['experiment']
+        config['project'] = self.params['model_parameter']['project']
+        config['experiment'] = self.params['model_parameter']['experiment']
         parameters = [{
             'name': 'dnn_hidden_unit1',
             'grid': [64, 128, 256, 512, 1024, 2048],
