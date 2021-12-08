@@ -169,7 +169,16 @@ def main(input_args):
     if os.path.exists(f"{current_path}/latest_hydro_model"):
         with open(f"{current_path}/latest_hydro_model", 'r') as f:
             jdata = f.read()
-            hydro_model = HydroModel(None, serialized_text=[jdata])
+        hydro_model = HydroModel(None, serialized_text=[jdata])
+        if hydro_model.model_params['model_name'] == settings['model_name']:
+            hydro_model.explain()
+            r = timeout_input("Do you want to use this history hydro model? y or n", 'n', 10)
+            if r == 'n':
+                print("Skip history hydro model, create new hydro model")
+                hydro_model = HydroModel(settings)
+        else:
+            print("Detected history hydro model, but skip since model type is not the same")
+            hydro_model = HydroModel(settings)
     else:
         hydro_model = HydroModel(settings)
     sda = SDA(settings['model_name'], data_loader, settings, hydro_model)

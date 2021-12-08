@@ -146,7 +146,6 @@ class DIENAdvisor(BaseModelAdvisor):
         cmd.extend(self.prepare_cmd(args))
 
         self.logger.info(f'training launch command: {" ".join(cmd)}')
-        return
         process = subprocess.Popen(cmd)
         process.wait()
 
