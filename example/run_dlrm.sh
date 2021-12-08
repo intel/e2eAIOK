@@ -1,1 +1,17 @@
-SIGOPT_API_TOKEN=${TOKEN} python run_hydroai.py --data_path "/home/vmagent/app/dataset" --model_name dlrm --executable_python /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python --program /home/vmagent/app/hydro.ai/modelzoo/dlrm/dlrm/launch.py 
+# prepare data
+# tree ../dataset/criteo/
+# ../dataset/criteo/
+# ├── day_day_count.npz
+# ├── day_fea_count.npz
+# ├── metadata_dlrm_example.yaml
+# ├── model_size.json
+# ├── train
+# │   └── train_data.bin
+# └── valid
+#     └── test_data.bin
+
+# Use hydro.ai API
+SIGOPT_API_TOKEN=${TOKEN} python run_hydroai.py --data_path "/home/vmagent/app/dataset/criteo" --model_name dlrm --conf conf/hydroai_defaults_dlrm_example.conf
+
+# Use SDA API
+SIGOPT_API_TOKEN=${TOKEN} python SDA/SDA.py --data_path "/home/vmagent/app/dataset/criteo" --model_name dlrm --conf conf/hydroai_defaults_dlrm_example.conf

@@ -20,7 +20,11 @@ class DLRMAdvisor(BaseModelAdvisor):
             level=logging.INFO,
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         self.logger = logging.getLogger('sigopt')
-        
+        self.train_python = "/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python"
+        self.train_script = "/home/vmagent/app/hydro.ai/modelzoo/dlrm/dlrm/launch.py"
+        self.train_path = train_path
+        self.test_path = eval_path
+        self.dataset_meta_path = dataset_meta_path
 
     def initialize_model_parameter(self, assignments=None):
         '''
@@ -135,10 +139,10 @@ class DLRMAdvisor(BaseModelAdvisor):
         ppn = args['ppn']
         hosts = args['hosts']
         model_saved_path = args['model_saved_path']
-        cmd = f"{args['executable_python']} -u {args['program']}  --distributed --nproc_per_node={ppn} --nnodes={len(hosts)} --hostfile {','.join(hosts)} "
+        cmd = f"{self.train_python} -u {self.train_script}  --distributed --nproc_per_node={ppn} --nnodes={len(hosts)} --hostfile {','.join(hosts)} "
         cmd +=f"/home/vmagent/app/hydro.ai/modelzoo/dlrm/dlrm/dlrm_s_pytorch.py --mini-batch-size={args['train_batch_size']} --print-freq=16  " \
             + f"--test-mini-batch-size={args['test_batch_size']} --test-freq=800 " \
-            + f"--train-data-path={args['data_path']+'/train_data.bin'} --eval-data-path={args['data_path']+'/train_data.bin'} " \
+            + f"--train-data-path={self.train_path} --eval-data-path={self.test_path} " \
             + f"--nepochs=1 --day-feature-count={args['data_path'] + '/day_fea_count.npz'} " \
             + f"--loss-function=bce --round-targets=True --num-workers=0 --test-num-workers=0 --use-ipex " \
             + f" --dist-backend=ccl --print-time --data-generation=dataset --optimizer=1 --bf16 --data-set=terabyte " \
