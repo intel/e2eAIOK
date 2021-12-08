@@ -75,12 +75,8 @@ class DIENAdvisor(BaseModelAdvisor):
         config = {}
         tuned_parameters = {}
         if assignments:
-            tuned_parameters['data_type'] = assignments['data_type']
-            tuned_parameters['seed'] = assignments['seed']
             tuned_parameters['batch_size'] = assignments['batch_size']
         else:
-            tuned_parameters['data_type'] = 'FP32'
-            tuned_parameters['seed'] = 3
             tuned_parameters['batch_size'] = 1024
         config['tuned_parameters'] = tuned_parameters
         self.params['model_parameter'] = config
