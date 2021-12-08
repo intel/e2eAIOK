@@ -124,10 +124,7 @@ class BaseModelAdvisor:
         return tmp
 
     def _assign_sigopt_suggestion(self, sigopt_assignments):
-        config = {}
-        for k, v in sigopt_assignments.items():
-            config[k] = v
-        self.params['model_parameter']['tuned_parameters'] = config
+        config = self.initialize_model_parameter(sigopt_assignments)
         self.params['model_saved_path'] = os.path.join(
             self.params['save_path'], get_hash_string(str(config)))
 
@@ -209,7 +206,6 @@ class BaseModelAdvisor:
     def _launch_train_with_sigopt(self):
         budget = self.experiment.observation_budget
         self.logger.info(f'Experiment budget: {budget}')
-
         for _ in range(budget):
             suggestion = self.conn.experiments(
                 self.experiment.id).suggestions().create()

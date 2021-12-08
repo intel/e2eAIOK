@@ -71,7 +71,7 @@ def list_dir(path):
             source_path_dict['meta'] = os.path.join(path, file_name)
         if (file_name == "train"):
             source_path_dict['train'] = get_file(os.path.join(path, file_name))
-        if (file_name.startswith("valid")):
+        if (file_name == "valid"):
             source_path_dict['valid'] = get_file(os.path.join(path, file_name))
     if len(source_path_dict['meta']) == 0 or len(source_path_dict['train']) == 0 or len(source_path_dict['valid']) == 0:
         raise ValueError(f"This folder layout is not as expected, should have one train folder, one validate folder and a yaml file of metadata, current we found {source_path_dict}")

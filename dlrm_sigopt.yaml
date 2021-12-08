@@ -1,0 +1,52 @@
+experiment: DLRM
+metrics:
+- name: training_time
+  objective: minimize
+  threshold: 10000
+- name: accuracy
+  objective: maximize
+  threshold: 0.6
+observation_budget: 1
+parameters:
+- bounds:
+    max: 50
+    min: 5
+  name: learning_rate
+  type: int
+- bounds:
+    max: 50
+    min: 5
+  name: lamb_lr
+  type: int
+- bounds:
+    max: 4500
+    min: 2000
+  name: warmup_steps
+  type: int
+- bounds:
+    max: 9000
+    min: 4501
+  name: decay_start_steps
+  type: int
+- bounds:
+    max: 15000
+    min: 5000
+  name: num_decay_steps
+  type: int
+- grid:
+  - 128
+  - 64
+  - 16
+  name: sparse_feature_size
+  type: int
+- bounds:
+    max: 7
+    min: 0
+  name: mlp_top_size
+  type: int
+- bounds:
+    max: 3
+    min: 0
+  name: mlp_bot_size
+  type: int
+project: dlrm

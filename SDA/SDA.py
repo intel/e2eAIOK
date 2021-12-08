@@ -9,7 +9,8 @@ from hydroai.hydromodel import *
 
 from SDA.modeladvisor.DIENAdvisor import *
 from SDA.modeladvisor.TestAdvisor import *
-
+from SDA.modeladvisor.DLRMAdvisor import *
+# from SDA.modeladvisor.ResNetAdvisor import *
 
 class SDA:
     """

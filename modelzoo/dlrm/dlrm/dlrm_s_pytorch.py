@@ -1523,10 +1523,8 @@ if __name__ == "__main__":
                     # print("Total test time for this group: {}" \
                     # .format(time_wrap(use_gpu) - accum_test_time_begin))
                     # if ext_dist.dist.get_rank()==0:
-                    directory = "models/DLRM/trainer/"
-                    if not os.path.exists(directory):
-                        os.mkdir(directory)
-                    file1 = open("models/DLRM/trainer/best_auc.txt",'w')
+
+                    file1 = open("/home/vmagent/app/hydro.ai/modelzoo/dlrm/dlrm/best_auc.txt",'w')
                     file1.writelines(str(best_auc_test))
                     file1.close()
 

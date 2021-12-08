@@ -1,0 +1,1 @@
+SIGOPT_API_TOKEN=${TOKEN} python run_hydroai.py --data_path "/home/vmagent/app/dataset" --model_name dlrm --executable_python /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python --program /home/vmagent/app/hydro.ai/modelzoo/dlrm/dlrm/launch.py 
