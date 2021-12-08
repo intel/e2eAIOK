@@ -32,9 +32,14 @@ What is the input
   
   * validate - folder
   
-  * example/metadata.yaml
+  * metadata.yaml - file
   
 * modication of conf/hydroai_defaults.conf
+
+Pre-processed Data
+------------------
+
+Internal copy vsr602://mnt/nvme2/chendi/BlueWhale/dataset
 
 Quick Start
 -----------
