@@ -1,0 +1,18 @@
+Metadata-Version: 2.1
+Name: SDNO
+Version: 0.0.1
+Summary: A smart democratization neural network optimizer
+Home-page: https://github.com/intel-innersource/frameworks.bigdata.bluewhale
+Author: INTEL AIA BDF
+Author-email: chendi.xue@intel.com
+License: UNKNOWN
+Project-URL: Bug Tracker, https://github.com/intel-innersource/frameworks.bigdata.bluewhale
+Description: # SDNO
+        
+        SDNO is a smart democratization neural network optimizer.
+Platform: UNKNOWN
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown

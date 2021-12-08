@@ -1,2 +1,0 @@
-docker run --privileged -v ${frameworks.bigdata.bluewhale}/examples/dien/train/ai-matrix/gpu/:/home/xxx/dien -it xuechendi/ubuntu-gpu-tf2-py3 /bin/bash
-# docker run --privileged -v /mnt/nvme2/chendi/BlueWhale/frameworks.bigdata.bluewhale/examples/dien/train/ai-matrix/gpu/:/home/xxx/dien -it xuechendi/ubuntu-gpu-tf2-py3 /bin/bash

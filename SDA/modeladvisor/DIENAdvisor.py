@@ -38,9 +38,10 @@ class DIENAdvisor(BaseModelAdvisor):
 
         self.train_path = train_path
         self.test_path = eval_path
+        self.dataset_meta_path = dataset_meta_path
         # self.saved_path = settings['model_saved_path']
         self.train_python = "/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python"
-        self.train_script = "/home/vmagent/app/hydro.ai/in-stock-models/dien/train/ai-matrix/horovod/script/train.py"
+        self.train_script = "/home/vmagent/app/hydro.ai/modelzoo/dien/train/ai-matrix/script/train.py"
 
     def get_cpu_info(self):
         # get cpu physical cores and virtual cores per core as return
@@ -91,14 +92,6 @@ class DIENAdvisor(BaseModelAdvisor):
         config['project'] = 'hydro.ai'
         config['experiment'] = 'dien'
         parameters = [{
-            'name': 'data_type',
-            'categorical_values': ["FP32", "FP16"],
-            'type': 'categorical'
-        }, {
-            'name': 'seed',
-            'bounds': {'min': 3, 'max': 5},
-            'type': 'int'
-        }, {
             'name': 'batch_size',
             'categorical_values': ["256", "512", "1024"],
             'type': 'categorical'
@@ -164,7 +157,6 @@ class DIENAdvisor(BaseModelAdvisor):
         cmd = []
         cmd.extend(self.prepare_cmd(args))
         self.logger.info(f'training launch command: {" ".join(cmd)}')
-        return
         process = subprocess.Popen(cmd)
         process.wait()
 
@@ -172,7 +164,8 @@ class DIENAdvisor(BaseModelAdvisor):
         cmd = []
         cmd.extend([
             f"{self.train_python}", f"{self.train_script}", "--train_path",
-            f"{self.train_path}", "--test_path", f"{self.test_path}"
+            f"{self.train_path}", "--test_path", f"{self.test_path}",
+            "--meta_path", f"{self.dataset_meta_path}"
         ])
         cmd.extend(["--saved_path", f"{args['model_saved_path']}"])
         cmd.extend(["--num-intra-threads", f"{args['num_instances']}"])
@@ -180,17 +173,16 @@ class DIENAdvisor(BaseModelAdvisor):
 
         # fixed parameters 
         cmd.extend(["--mode", "train", "--embedding_device", "cpu", "--model", "DIEN"])
-        cmd.extend(["--slice_id", "0", "--advanced", "true"])
+        cmd.extend(["--slice_id", "0", "--advanced", "true", "--seed", "3"])
+        cmd.extend(["--data_type", "FP32"])
 
         # tunnable parameters
         tuned_parameters = args['model_parameter']['tuned_parameters']
-        cmd.extend(["--data_type", f"{tuned_parameters['data_type']}"])
-        cmd.extend(["--seed", f"{tuned_parameters['seed']}"])
         cmd.extend(["--batch_size", f"{tuned_parameters['batch_size']}"])
 
         # fake result
-        result_metrics_path = os.path.join(self.params['model_saved_path'], "result.yaml")
-        result = {"AUC": 0.823, "training_time": 425, "best_trained_model": f"{self.params['model_saved_path']}/best_trained_model"}
-        with open(result_metrics_path, "w") as f:
-            results = yaml.dump(result, f)
+        # result_metrics_path = os.path.join(self.params['model_saved_path'], "result.yaml")
+        # result = {"AUC": 0.823, "training_time": 425, "best_trained_model": f"{self.params['model_saved_path']}/best_trained_model"}
+        # with open(result_metrics_path, "w") as f:
+        #    results = yaml.dump(result, f)
         return cmd

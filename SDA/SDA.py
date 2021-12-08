@@ -2,7 +2,10 @@ import argparse
 import pathlib
 
 import yaml
-import init_sda
+try:
+    import init_sda
+except:
+    pass
 from dataloader.hydrodataloader import *
 from hydroai.hydroconfig import *
 from hydroai.hydromodel import *
@@ -129,6 +132,7 @@ class SDA:
         self.logger.info("training script completed")
         return model_path, metrics
 
+
 def parse_args(args):
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -136,40 +140,37 @@ def parse_args(args):
         type=str,
         required=True,
         help='could be in-stock model name or udm(user-define-model)')
-    parser.add_argument(
-        '--data_path',
-        type=str,
-        required=True,
-        help='Dataset path')
-    parser.add_argument(
-        '--conf',
-        type=str,
-        default='conf/hydroai_defaults.conf',
-        help='hydroai defaults configuration')
-    parser.add_argument(
-        '--no_sigopt',
-        dest="enable_sigopt",
-        action="store_false",
-        default=True,
-        help='if disable sigopt')
+    parser.add_argument('--data_path',
+                        type=str,
+                        required=True,
+                        help='Dataset path')
+    parser.add_argument('--conf',
+                        type=str,
+                        default='conf/hydroai_defaults.conf',
+                        help='hydroai defaults configuration')
+    parser.add_argument('--no_sigopt',
+                        dest="enable_sigopt",
+                        action="store_false",
+                        default=True,
+                        help='if disable sigopt')
     return parser.parse_args(args).__dict__
+
 
 def main(input_args):
     settings = init_settings()
     settings.update(input_args)
     settings.update(parse_config(settings['conf']))
     data_loader = HydroDataLoaderAdvisor.create_data_loader(
-            settings['data_path'], settings['model_name'])
-    
+        settings['data_path'], settings['model_name'])
+
     current_path = str(pathlib.Path(__file__).parent.absolute())
     if os.path.exists(f"{current_path}/latest_hydro_model"):
         with open(f"{current_path}/latest_hydro_model", 'r') as f:
             jdata = f.read()
-            hydro_model = HydroModel(None, serialized_text = [jdata])
+            hydro_model = HydroModel(None, serialized_text=[jdata])
     else:
         hydro_model = HydroModel(settings)
-    sda = SDA(settings['model_name'], data_loader, settings,
-                       hydro_model)
+    sda = SDA(settings['model_name'], data_loader, settings, hydro_model)
     sda.launch()
     with open(f"{current_path}/latest_hydro_model", 'w') as f:
         f.write(hydro_model.to_json())

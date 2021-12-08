@@ -1,2 +1,0 @@
-#docker run --privileged -v ${frameworks.bigdata.bluewhale}/examples/dien/train/ai-matrix/cpu/:/home/xxx/dien -it xuechendi/ubuntu-cpu-tf2-py3 /bin/bash
-docker run --privileged --network host -v /mnt/nvme0/frameworks.bigdata.bluewhale-main/examples/dien/train/ai-matrix/cpu:/home/xxx/dien -v /mnt/nvme0/recdp/:/home/vmagent/app/recdp  -it xuechendi/ubuntu-cpu-tf2-recdp /bin/bash

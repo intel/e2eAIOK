@@ -1,1 +1,0 @@
-docker run --privileged --network=host -v /mnt/share/ssh:/root/.ssh -v /mnt/DP_disk7/chendi/frameworks.bigdata.bluewhale-main/examples/dien/train/ai-matrix/cpu/:/home/xxx/dien -it xuechendi/ubuntu-cpu-tf2.4-horovod /bin/bash
