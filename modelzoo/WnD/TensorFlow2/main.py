@@ -14,6 +14,7 @@
 
 import sys
 import os
+import horovod.tensorflow as hvd
 
 from trainer.model.widedeep import wide_deep_model
 from trainer.run import train, evaluate
@@ -30,9 +31,10 @@ def main():
         evaluate(args, model, config)
     else:
         metric = train(args, model, config)
-        file = os.path.join(sys.path[0], 'metric.txt')
-        with open(file, 'w') as f:
-            f.writelines(str(metric))
+        if hvd.rank() == 0:
+            file = os.path.join(args.results_dir, 'metric.txt')
+            with open(file, 'w') as f:
+                f.writelines(str(metric))
 
 
 if __name__ == '__main__':

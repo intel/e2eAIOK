@@ -282,7 +282,7 @@ class BaseModelAdvisor:
 
     def launch_train(self):
         """
-        This method will launch train w/wo sugopt according to config
+        This method will launch train w/wo sigopt according to config
 
         Returns
         -------

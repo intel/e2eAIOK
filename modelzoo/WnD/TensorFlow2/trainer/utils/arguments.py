@@ -37,6 +37,9 @@ def parse_args():
 
     locations.add_argument('--model_dir', type=str, default='/outbrain/checkpoints',
                            help='Destination where model checkpoint will be saved')
+    
+    locations.add_argument('--results_dir', type=str, default='/results',
+                           help='Directory to store training results')
 
     training_params = parser.add_argument_group('training parameters')
 

@@ -14,6 +14,8 @@ from SDA.modeladvisor.DIENAdvisor import *
 from SDA.modeladvisor.TestAdvisor import *
 from SDA.modeladvisor.DLRMAdvisor import *
 # from SDA.modeladvisor.ResNetAdvisor import *
+from SDA.modeladvisor.WnDAdvisor import *
+
 
 class SDA:
     """
