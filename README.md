@@ -1,4 +1,4 @@
-# Hydro.ai
+# [Hydro.ai](https://laughing-waddle-b1e4ead5.pages.github.io/html/)
 
 Hydro.ai is the project code name to democratize End-to-End AI on CPU. It is initiated by Intel AIA, aiming to provide simple experience for democratized END-TO-END model training leveraging Intel oneAPI aikit, Intel sigopt, and Intel Nerual Compressor.
 
