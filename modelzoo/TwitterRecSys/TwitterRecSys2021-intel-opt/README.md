@@ -8,6 +8,7 @@
     * Hadoop 3.2
     * lightgbm 3.2.1
     * XGBoost 1.3.3
+    * transformers 4.13.0
 2. Prepare 
     * install pyrecdp
     ```bash
