@@ -37,6 +37,12 @@ def parse_args(args):
         action="store_false",
         default=True,
         help='if disable sigopt')
+    parser.add_argument(
+        '--no_model_cache',
+        dest="enable_model_cache",
+        action="store_false",
+        default=True,
+        help='if disable model cache')
     return parser.parse_args(args).__dict__
 
 

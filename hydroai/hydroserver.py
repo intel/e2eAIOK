@@ -172,7 +172,7 @@ class HydroLocalServer(HydroServer):
         """
         learner_id = self.generate_learner_id(settings['model_name'],
                                               data_loader)
-        if learner_id not in self.in_mem_model_tracker:
+        if (learner_id not in self.in_mem_model_tracker) or (not settings["enable_model_cache"]):
             self.in_mem_model_tracker[learner_id] = HydroModel(settings)
         self.sda = SDA(settings['model_name'], data_loader, settings,
                        self.in_mem_model_tracker[learner_id])

@@ -15,6 +15,7 @@ from SDA.modeladvisor.TestAdvisor import *
 from SDA.modeladvisor.DLRMAdvisor import *
 # from SDA.modeladvisor.ResNetAdvisor import *
 from SDA.modeladvisor.WnDAdvisor import *
+from SDA.modeladvisor.TwitterRecSysAdvisor import *
 
 
 class SDA:
@@ -73,6 +74,9 @@ class SDA:
         elif self.model.lower() == 'dien':
             return DIENAdvisor(self.dataset_meta, self.dataset_train,
                                self.dataset_valid, self.settings)
+        elif self.model.lower() == 'twitter_recsys':
+            return TwitterRecSysAdvisor(self.dataset_meta, self.dataset_train,
+                               self.dataset_valid, self.settings)
         elif self.model.lower() == 'pipeline_test':
             return TestAdvisor(self.dataset_meta, self.dataset_train,
                                self.dataset_valid, self.settings)
@@ -82,7 +86,7 @@ class SDA:
 
     @staticmethod
     def get_model_zoo_list():
-        return ['wnd', 'dlrm', 'dien', 'pipeline_test']
+        return ['wnd', 'dlrm', 'dien', 'twitter_recsys', 'pipeline_test']
 
     def launch(self):
         """
@@ -155,6 +159,11 @@ def parse_args(args):
                         action="store_false",
                         default=True,
                         help='if disable sigopt')
+    parser.add_argument('--no_model_cache',
+                        dest="enable_model_cache",
+                        action="store_false",
+                        default=True,
+                        help='if disable model cache')
     return parser.parse_args(args).__dict__
 
 
@@ -166,7 +175,7 @@ def main(input_args):
         settings['data_path'], settings['model_name'])
 
     current_path = str(pathlib.Path(__file__).parent.absolute())
-    if os.path.exists(f"{current_path}/latest_hydro_model"):
+    if settings["enable_model_cache"] and os.path.exists(f"{current_path}/latest_hydro_model"):
         with open(f"{current_path}/latest_hydro_model", 'r') as f:
             jdata = f.read()
         hydro_model = HydroModel(None, serialized_text=[jdata])

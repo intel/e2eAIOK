@@ -38,14 +38,15 @@ class HydroAutoLearner:
         """
         This method is used to submit an auto learning task to hydro
         """
-        self.learner_id = self.server.try_get_previous_checkpoint(
-            self.model_name, self.data_loader)
-        if self.learner_id:
-            n = timeout_input(
-                """We found history record of this training, do you still
-                want to continue training(s for skip)""", 'c')
-            if n == 's':
-                return
+        if self.settings["enable_model_cache"]:
+            self.learner_id = self.server.try_get_previous_checkpoint(
+                self.model_name, self.data_loader)
+            if self.learner_id:
+                n = timeout_input(
+                    """We found history record of this training, do you still
+                    want to continue training(s for skip)""", 'c')
+                if n == 's':
+                    return
         if self.__is_in_stock_model(self.model_name):
             self.learner_id = self.server.submit_task(self.settings,
                                                       self.data_loader)
