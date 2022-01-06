@@ -60,7 +60,7 @@ def parse_config(conf_path):
 def get_file(path):
     file_or_dir = os.listdir(path)
     if len(file_or_dir) != 1:
-        return os.path.join(path, "*")
+        return path
     return os.path.join(path, file_or_dir[0])
 
 def list_dir(path):

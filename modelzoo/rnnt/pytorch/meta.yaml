@@ -1,0 +1,6 @@
+train_manifests: 
+  - /home/vmagent/app/dataset/LibriSpeech/metadata/librispeech-train-clean-100-wav-tokenized.pkl
+  - /home/vmagent/app/dataset/LibriSpeech/metadata/librispeech-train-clean-360-wav-tokenized.pkl
+  - /home/vmagent/app/dataset/LibriSpeech/metadata/librispeech-train-other-500-wav-tokenized.pkl
+val_manifests: 
+  - /home/vmagent/app/dataset/LibriSpeech/metadata/librispeech-dev-clean-wav-tokenized.pkl
