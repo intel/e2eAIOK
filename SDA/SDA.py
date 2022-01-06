@@ -16,8 +16,8 @@ from SDA.modeladvisor.DLRMAdvisor import *
 # from SDA.modeladvisor.ResNetAdvisor import *
 from SDA.modeladvisor.WnDAdvisor import *
 from SDA.modeladvisor.TwitterRecSysAdvisor import *
+from SDA.modeladvisor.TPCxAIAdvisor09 import *
 from SDA.modeladvisor.RNNTAdvisor import *
-
 
 class SDA:
     """
@@ -81,6 +81,8 @@ class SDA:
         elif self.model.lower() == 'pipeline_test':
             return TestAdvisor(self.dataset_meta, self.dataset_train,
                                self.dataset_valid, self.settings)
+        elif self.model.lower() == "tpcxai09":
+            return TPCxAIAdvisor09(self.dataset_meta, self.dataset_train,
         elif self.model.lower() == 'rnnt':
             return RNNTAdvisor(self.dataset_meta, self.dataset_train,
                                self.dataset_valid, self.settings)
@@ -90,7 +92,7 @@ class SDA:
 
     @staticmethod
     def get_model_zoo_list():
-        return ['wnd', 'dlrm', 'dien', 'twitter_recsys', 'pipeline_test', 'rnnt']
+        return ['wnd', 'dlrm', 'dien', 'twitter_recsys', 'pipeline_test', 'rnnt', 'tpcxai09']
 
     def launch(self):
         """
