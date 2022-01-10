@@ -83,6 +83,7 @@ class SDA:
                                self.dataset_valid, self.settings)
         elif self.model.lower() == "tpcxai09":
             return TPCxAIAdvisor09(self.dataset_meta, self.dataset_train,
+                                   self.dataset_valid, self.settings)
         elif self.model.lower() == 'rnnt':
             return RNNTAdvisor(self.dataset_meta, self.dataset_train,
                                self.dataset_valid, self.settings)
