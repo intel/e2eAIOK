@@ -8,13 +8,13 @@ How to run
 
 .. code-block:: bash
 
-    SIGOPT_API_TOKEN-${SIGOPT_TOKEN} python run_hydroai.py --data_path ${dataset_path} --model_name [dlrm, wnd, dien, pipeline_test]
+    SIGOPT_API_TOKEN=${SIGOPT_TOKEN} python run_hydroai.py --data_path ${dataset_path} --model_name [dlrm, wnd, dien, pipeline_test, twitter_recsys, rnnt, tpcxai09]
 
 * For in-stock model without sigopt
 
 .. code-block:: bash
 
-    python run_hydroai.py --data_path ${dataset_path} --model_name [dlrm, wnd, dien, pipeline_test] --no_sigopt
+    python run_hydroai.py --data_path ${dataset_path} --model_name [dlrm, wnd, dien, pipeline_test, twitter_recsys, rnnt, tpcxai09] --no_sigopt
 
 * For user-define model
 
