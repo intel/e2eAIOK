@@ -13,6 +13,7 @@ from hydroai.hydromodel import *
 from SDA.modeladvisor.DIENAdvisor import *
 from SDA.modeladvisor.TestAdvisor import *
 from SDA.modeladvisor.DLRMAdvisor import *
+from SDA.modeladvisor.DLRMTorch110Advisor import *
 # from SDA.modeladvisor.ResNetAdvisor import *
 from SDA.modeladvisor.WnDAdvisor import *
 from SDA.modeladvisor.TwitterRecSysAdvisor import *
@@ -74,6 +75,9 @@ class SDA:
         elif self.model.lower() == 'dlrm':
             return DLRMAdvisor(self.dataset_meta, self.dataset_train,
                                self.dataset_valid, self.settings)
+        elif self.model.lower() == 'dlrm_torch110':
+            return DLRMTorch110Advisor(self.dataset_meta, self.dataset_train,
+                               self.dataset_valid, self.settings)
         elif self.model.lower() == 'dien':
             return DIENAdvisor(self.dataset_meta, self.dataset_train,
                                self.dataset_valid, self.settings)
@@ -98,7 +102,7 @@ class SDA:
 
     @staticmethod
     def get_model_zoo_list():
-        return ['wnd', 'dlrm', 'dien', 'twitter_recsys', 'pipeline_test', 'rnnt', 'tpcxai09', 'upm']
+        return ['wnd', 'dlrm', 'dlrm_torch110', 'dien', 'twitter_recsys', 'pipeline_test', 'rnnt', 'tpcxai09', 'upm']
 
     def launch(self):
         """
