@@ -1,6 +1,6 @@
-# [Hydro.ai](https://laughing-waddle-b1e4ead5.pages.github.io/html/)
+# [AIDK](https://laughing-waddle-b1e4ead5.pages.github.io/html/)
 
-Hydro.ai is the project code name to democratize End-to-End AI on CPU. It is initiated by Intel AIA, aiming to provide simple experience for democratized END-TO-END model training leveraging Intel oneAPI aikit, Intel sigopt, and Intel Nerual Compressor.
+AI Democratization Kit (AIDK) is a set of kits for E2E AI democratization on CPU. It is a pipeline framework that streamlines AI democratization technologies in each stage of E2E AI pipeline, including data processing, feature engineering, training, hyper-parameter tunning, and inference. AIDK delivers high performance, lightweight models efficiently on commodity hardware. 
 
 # Introduction
 
@@ -16,40 +16,36 @@ One approach to resolve those challenges is AI democratization, which trying to 
 5. Market place - simply how you access, use, exchange and monetization of data, algorithm, models, and outcomes 
 
 
-# BlueWhale 
+# AIDK 
 
-Bluewhale is the project to democratize AI on CPU, starting from E2E recommender systems. The strategy is to bring E2E AI to existing CPU installation base with good-enough performance and zero additional cost, it drives the AI portaion on CPU and drive CPU/GPU balance in E2E AI. As a start, Bluewhale democrate recommender systems on distributed CPU clusters through different optimization of each machine learning life cycle phases. 
+AIDK is the project to democratize E2E AI on CPU. The strategy is to bring E2E AI to existing CPU installation base with good-enough performance and zero additional cost, it drives the AI portaion on CPU and drive CPU/GPU balance in E2E AI. The core componements of AIDK are: model advisor and model acclerator. Model acclerator provides build-in intelligence to generate parameterized models, while model acclerator leverages train-free NAS to generate domain-specific models. As a start, AIDK democrated recommender systems on distributed CPU clusters through different optimization of each machine learning life cycle phases. 
 
-# Key architecture 
+# Architecture 
 
-Below firgure showed the architecture diagram of Bluewhale. 
+Below firgure showed the architecture diagram of AIDK. 
 
-![Architecture](./docs/source/architecture.jpg "Bluewhale Architecture")
+![Architecture](./docs/source/Architecture.jpg "AIDK Architecture")
 
-# Major componments 
+# Major Componments 
 
 Here are the major componments of Bluewhale: 
 1. RecDP -  scalable data processing and feature engineering kit based on Spark and Modin 
 2. Distributed data connector - a distirbuted data connector based on PetaStorm  supporting training framework to load data from distributed filesystem, and provide enhanced capabilities like data caching, sharing. 
 3. Smart Democratization Advisor - a human intelligence enhanced toolkit to generate sigopt recipes for Sigopt AutoML. It first generate optimized SigOpt recipes based on user choices and built-in intelligence, including optimized model parameters, optimized training framework parameters and set the training cluster environment, training framework parameters, and final target metrcis. Then it kicks off Siopt AutoML for optimization experiments to generate the best model. 
-4. Model Compression - A model compression toolkit that supports botch train from scratch and pre-trained models, to simply the model tuning process and generate ligher models 
-5. Inference acclerators - enhanced in memory vectors and vector recall utilits to speedup vector recall process. 
-6. Recipes - four proof of concept workloads including DLRM, DIEN, WnD, RecSys, with ready to run notebooks to showcase the benefit of the democratized models. 
-7. deployment kit - a container with deployment kit to have users have a quick try. 
-8. Auto scaling - Bluewhale support autoscaling on the public cloud, users can easiliy scale the work to multiple CPU nodes. 
+4. Network Acclerator - A train-free NAS based componment to generate domain-specific compact network. 
 
 # In-Stock-Models
 
-Currently four recommender system workloads were supported: including DLRM, DIEN, WnD and RecSys. The Bluewhale E2E AI democratization kit significantly improved the performance of those models on distributed CPU cluster, reduced the performance gap of CPU to GPU from 100x to < 2x, using the same dataset and the same AUC metrics. The key optimizations Bluewhale brought can be categorized as: 
+Currently four recommender system workloads were supported: including DLRM, DIEN, WnD and RecSys. The Bluewhale E2E AI democratization kit significantly improved the performance of those models on distributed CPU cluster, reduced the performance gap of CPU to GPU from 100x to < 2x, using the same dataset and the same AUC metrics.  
+
+# Perforamnce 
+![Performance](./docs/source/Performance.jpg "AIDK Performance"). 
+
 
 # How To Use
 
 [QuickStart](docs/source/quickstart.rst)
 [Create New Advisor](docs/source/advanced.rst)
-
-
-# Perforamnce 
-ToBeAdded. 
 
 # How to Contribute
 
