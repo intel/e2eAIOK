@@ -1,9 +1,37 @@
+import logging
 import re
 import os
 import yaml
 import hashlib
 from pathlib import Path
 from datetime import datetime
+import timeit
+import logging
+
+class Timer:
+    level = 0
+
+    def __init__(self, name, level = 'DEBUG'):
+        self.name = name
+        self.level = 2
+        if level == "INFO":
+            self.level = 1
+        if level == "WARN":
+            self.level = 0
+
+    def __enter__(self):
+        self.start = timeit.default_timer()
+        Timer.level += 1
+
+    def __exit__(self, *a, **kw):
+        Timer.level -= 1
+        if self.level == 0:
+            logging.warn(f'{"  " * Timer.level}{self.name} took {timeit.default_timer() - self.start} sec')
+        if self.level == 1:
+            logging.info(f'{"  " * Timer.level}{self.name} took {timeit.default_timer() - self.start} sec')
+        if self.level == 2:
+            logging.debug(f'{"  " * Timer.level}{self.name} took {timeit.default_timer() - self.start} sec')
+
 
 def update_list(orig, diff):
     dict_diff = {}
