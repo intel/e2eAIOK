@@ -42,8 +42,8 @@ class WnDAdvisor(BaseModelAdvisor):
                 f"[CONFIG ERROR] Missing parameters {missing_params} in \
                 hydroai_defaults.conf when ppn is set above 1.")
 
-        self.train_path = train_path
-        self.test_path = eval_path
+        self.train_path = os.path.join(train_path, 'part*')
+        self.test_path = os.path.join(eval_path, 'part*')
         self.dataset_meta_path = dataset_meta_path
         self.saved_path = self.params['save_path']
         self.train_python = "/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python"

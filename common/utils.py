@@ -58,6 +58,7 @@ def parse_config(conf_path):
     return settings
 
 def get_file(path):
+    # return directory if path contains multi files
     file_or_dir = os.listdir(path)
     if len(file_or_dir) != 1:
         return path
