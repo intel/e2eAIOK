@@ -110,6 +110,7 @@ class DLRMAdvisor(BaseModelAdvisor):
         file1.close()
         self.mean_accuracy = float(lines[-1])
         metrics = self.update_metrics()
+        model_path = args['model_saved_path']
         return self.training_time, model_path, metrics
 
     def launch(self, args):
