@@ -7,6 +7,7 @@ import numpy
 import time
 import os, sys
 import argparse
+import pickle
 
 DATASET_NAME = "Sklearn Wine"
 FEATURE_ENG_PIPELINE_NAME = "Sklearn Standard Scalar"
@@ -66,9 +67,9 @@ def main(params):
                 min_split_loss=params.min_split_loss)
 
     mean_accuracy = evaluate_xgboost_model(**args)
-    model_path = os.path.join(params.saved_path, "chk000000")
-    with open(model_path, 'w') as f:
-        f.write("Fake Model")
+    model_path = os.path.join(params.saved_path, "saved_dictionary.pkl")
+    with open(model_path, 'wb') as f:
+        pickle.dump(args, f)
     print(mean_accuracy)
 
 if __name__ == '__main__':

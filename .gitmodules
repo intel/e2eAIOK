@@ -1,3 +1,15 @@
 [submodule "RecDP"]
 	path = RecDP
 	url = https://github.com/oap-project/recdp.git
+[submodule "tests/cicd/bats"]
+	path = tests/cicd/bats
+	url = https://github.com/bats-core/bats-core.git
+[submodule "tests/cicd/test_helper/bats-support"]
+	path = tests/cicd/test_helper/bats-support
+	url = https://github.com/bats-core/bats-support.git
+[submodule "tests/cicd/test_helper/bats-assert"]
+	path = tests/cicd/test_helper/bats-assert
+	url = https://github.com/bats-core/bats-assert.git
+[submodule "tests/cicd/test_helper/bats-file"]
+	path = tests/cicd/test_helper/bats-file
+	url = https://github.com/ztombol/bats-file.git
