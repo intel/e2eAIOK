@@ -1,6 +1,6 @@
 # AIDK CICD Integration Tests and Unit Tests
 
-AIDK Integration tests(Via BATS framework) provides end-to-end testing of AIDK and built-in workflows, which simulates the real world usage scenarios of AIDK.\
+AIDK Integration Tests(Via BATS framework) provide end-to-end testing of AIDK and built-in workflows, which simulates the real world usage scenarios of AIDK.\
 AIDK Unit Tests(Via Pytest framework) verify the code is working as expected by artificially created data of (input,expectation) pair.
 
 ## Prepare dataset
