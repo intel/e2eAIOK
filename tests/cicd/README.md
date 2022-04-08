@@ -9,7 +9,7 @@ Internal copy sr602:/mnt/DP_disk1/dataset
 
 ## Test scripts that can be run manually by developer
 
-The easiest way to run integration tests is with Docker.
+The easiest way to run test scripts is with Docker.
 
 Firstly, build docker for test.
 ```
