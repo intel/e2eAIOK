@@ -1,12 +1,12 @@
 import logging
 
-from common.utils import *
-from SDA.SDA import SDA
+from AIDK.common.utils import *
+from AIDK.SDA.SDA import SDA
 
-from hydroai.hydroDB import *
-from hydroai.hydromodel import *
-from hydroai.hydromodelzoo import *
-from hydroai.hydroweblistener import *
+from AIDK.hydroai.hydroDB import *
+from AIDK.hydroai.hydromodel import *
+from AIDK.hydroai.hydromodelzoo import *
+from AIDK.hydroai.hydroweblistener import *
 
 
 class HydroServer:

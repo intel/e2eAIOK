@@ -1,6 +1,6 @@
 import sqlite3
 import os
-from hydroai.hydromodel import *
+from AIDK.hydroai.hydromodel import *
 
 
 class HydroDB:
@@ -23,6 +23,10 @@ class HydroDB:
         self.cur.execute(
             '''CREATE TABLE models (learner_id text, hydro_model json)''')
         self.conn.commit()
+
+    def print_all(self):
+        for row in self.cur.execute("SELECT * FROM models"):
+            print(row)
 
     def get_model_by_id(self, learner_id):
         """

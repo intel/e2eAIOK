@@ -70,8 +70,8 @@ export master_hostname=`hostname`
 /home/spark-3.2.0-bin-hadoop3.2/sbin/start-master.sh
 /home/spark-3.2.0-bin-hadoop3.2/sbin/start-worker.sh spark://${master_hostname}:7077
 conda activate base
-python /home/vmagent/app/test/test_spark_local.py
-python /home/vmagent/app/hydro.ai/RecDP/tests/test_categorify.py
+python /home/vmagent/app/hydro.ai/tests/cicd/src/test_spark_local.py --hostname ${master_hostname} 
+python /home/vmagent/app/hydro.ai/tests/cicd/src/test_categorify.py
 
 conda activate tensorflow
 # UT check for docker env with horovod

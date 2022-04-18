@@ -1,14 +1,10 @@
 import subprocess
 import yaml
 import logging
-import time
-import sys
-from common.utils import *
 import os
-# import sys
-# sys.path.append("..")
 
-from SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
+from AIDK.common.utils import *
+from AIDK.SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
 
 class BERTAdvisor(BaseModelAdvisor):
     '''

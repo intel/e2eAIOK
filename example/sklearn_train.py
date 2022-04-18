@@ -52,9 +52,13 @@ def evaluate_xgboost_model(X, y,
 
 def parse_args(args):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--max_depth', type=int, required=True)
+    parser.add_argument('--max_depth', type=int, default=3, required=True)
     parser.add_argument('--learning_rate', type=float, required=True)
-    parser.add_argument('--min_split_loss', type=float, required=True)
+    parser.add_argument('--min_split_loss', type=float, default=0.1, required=True)
+    
+    parser.add_argument('--extra', action='store_true', help='whether use REnorm.',)
+    parser.add_argument('--reducer', type=str, default='mean', help='method for reducer',)
+
     parser.add_argument('--saved_path', type=str, required=True)
     return parser.parse_args(args)
 
@@ -68,8 +72,11 @@ def main(params):
 
     mean_accuracy = evaluate_xgboost_model(**args)
     model_path = os.path.join(os.path.realpath(os.path.normpath(params.saved_path)), "saved_dictionary.pkl")
+    result_path = os.path.join(os.path.realpath(os.path.normpath(params.saved_path)), "result")
     with open(model_path, 'wb') as f:
         pickle.dump(args, f)
+    with open(result_path, 'w') as f:
+        f.write(f"{mean_accuracy}")
     print(mean_accuracy)
 
 if __name__ == '__main__':

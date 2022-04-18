@@ -24,3 +24,11 @@ def init_advisor_params():
     params['observation_budget'] = 1
     params['save_path'] = '/home/vmagent/app/hydro.ai/result/'
     return params
+
+def default_settings(model_name, settings):
+    default = {"model_name": model_name, "enable_sigopt": False, "interative": False}
+    for k, v in default.items():
+        if k not in settings:
+            settings[k] = v
+
+    return settings

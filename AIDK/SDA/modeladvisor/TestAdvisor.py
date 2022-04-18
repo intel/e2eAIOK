@@ -2,11 +2,11 @@ import subprocess
 import yaml
 import logging
 import time
-import sys
-from common.utils import *
 
-from SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
 
+from AIDK.common.utils import *
+from AIDK.hydroai.hydroconfig import default_settings
+from AIDK.SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
 
 class TestAdvisor(BaseModelAdvisor):
     def __init__(self, dataset_meta_path, train_path, eval_path, settings):
@@ -127,6 +127,6 @@ class TestAdvisor(BaseModelAdvisor):
         cmd.append(f"{min_split_loss}")
         cmd.append(f"--saved_path")
         cmd.append(f"{model_saved_path}")
-        self.logger.info(f'training launch command: {cmd}')
+        self.logger.info(f'### Starting model training ###, launch cmd is: {" ".join(cmd)}')
         output = subprocess.check_output(cmd)
         return float(output), model_saved_path

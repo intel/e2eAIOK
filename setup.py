@@ -1,5 +1,6 @@
 import setuptools
 from setuptools.command.install import install
+from setuptools import find_packages
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
@@ -22,8 +23,7 @@ setuptools.setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
-    package_dir={},
-    packages=["AIDK"],
+    packages=find_packages(exclude=["RecDP", "modelzoo", "example"]),
     python_requires=">=3.6",
     zip_safe=False,
     install_requires=[])

@@ -32,7 +32,9 @@ def mkdir_or_backup_then_mkdir(dest_path):
 def get_hash_string(in_str):
     return hashlib.md5(in_str.encode()).hexdigest()
 
-def timeout_input(printout, default, timeout = None):
+def timeout_input(printout, default, timeout = None, interactive = True):
+    if not interactive:
+        return default
     import sys, select
     print(printout)
     i, o, e = select.select([sys.stdin], [], [], timeout)

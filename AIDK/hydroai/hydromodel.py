@@ -1,3 +1,4 @@
+import os
 import json
 from collections import OrderedDict
 
@@ -23,7 +24,14 @@ class HydroModel:
         model parameters used to train this model, can be parameter
         suggested by sigopt or user defined.
     """
-    def __init__(self, settings, serialized_text=None):
+    def __new__(cls, settings=None, serialized_text=None, hydro_model_path=""):
+        if hydro_model_path != "" and not os.path.exists(hydro_model_path):
+            return None
+        obj = super().__new__(cls)
+        obj.__init__(settings, serialized_text, hydro_model_path)
+        return obj
+
+    def __init__(self, settings=None, serialized_text=None, hydro_model_path=""):
         """
         Create HydroModel instance
 
@@ -36,7 +44,11 @@ class HydroModel:
             optional
         serialized_text : str
             Json string, optional
-        """
+        """ 
+        if hydro_model_path != "" and os.path.exists(hydro_model_path):
+            with open(f"{hydro_model_path}", 'r') as f:
+                jdata = f.read()
+            serialized_text=[jdata]
         if serialized_text:
             self.load_json(serialized_text)
         else:
@@ -114,3 +126,7 @@ class HydroModel:
         for item in self.metrics:
             print(f"    {item['name']}: {item['value']}")
         print("===============================================")
+
+    def save_to_path(self, save_path):
+        with open(f"{save_path}", 'w') as f:
+            f.write(self.to_json())

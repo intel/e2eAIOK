@@ -2,27 +2,23 @@ import argparse
 import pathlib
 
 import yaml
-try:
-    import init_sda
-except:
-    pass
-from dataloader.hydrodataloader import *
-from hydroai.hydroconfig import *
-from hydroai.hydromodel import *
+from AIDK.dataloader.hydrodataloader import *
+from AIDK.hydroai.hydroconfig import *
+from AIDK.hydroai.hydromodel import *
 
-from SDA.modeladvisor.DIENAdvisor import *
-from SDA.modeladvisor.TestAdvisor import *
-from SDA.modeladvisor.DLRMAdvisor import *
-from SDA.modeladvisor.DLRMTorch110Advisor import *
+from AIDK.SDA.modeladvisor.DIENAdvisor import *
+from AIDK.SDA.modeladvisor.TestAdvisor import *
+from AIDK.SDA.modeladvisor.DLRMAdvisor import *
+from AIDK.SDA.modeladvisor.DLRMTorch110Advisor import *
 # from SDA.modeladvisor.ResNetAdvisor import *
-from SDA.modeladvisor.WnDAdvisor import *
-from SDA.modeladvisor.TwitterRecSysAdvisor import *
-from SDA.modeladvisor.TPCxAIAdvisor09 import *
-from SDA.modeladvisor.MiniGoAdvisor import *
-from SDA.modeladvisor.RNNTAdvisor import *
-from SDA.modeladvisor.UPMAdvisor import *
-from SDA.modeladvisor.BERTAdvisor import *
-
+from AIDK.SDA.modeladvisor.WnDAdvisor import *
+from AIDK.SDA.modeladvisor.TwitterRecSysAdvisor import *
+from AIDK.SDA.modeladvisor.TPCxAIAdvisor09 import *
+from AIDK.SDA.modeladvisor.MiniGoAdvisor import *
+from AIDK.SDA.modeladvisor.RNNTAdvisor import *
+from AIDK.SDA.modeladvisor.UPMAdvisor import *
+from AIDK.SDA.modeladvisor.BERTAdvisor import *
+from AIDK.SDA.modeladvisor.RegisteredAdvisor import *
 
 class SDA:
     """
@@ -43,7 +39,7 @@ class SDA:
         history best model object, if this attribute is not None, we
         can resume from a history experiment.
     """
-    def __init__(self, model, data_loader, settings, hydro_model=None):
+    def __init__(self, model="custom_registered", data_loader=None, settings={}, hydro_model=None):
         """
         Parameters
         ----------
@@ -59,16 +55,29 @@ class SDA:
             used with hydro.ai, optional.
         """
         self.model = model
+        if data_loader is None and 'data_path' in settings:
+            data_loader = HydroDataLoaderAdvisor.create_data_loader(
+                settings['data_path'], self.model)
         self.data_loader = data_loader
-        self.dataset_meta = self.data_loader.get_meta()
-        self.dataset_train = self.data_loader.get_train()
-        self.dataset_valid = self.data_loader.get_valid()
-        self.settings = settings
+        if self.data_loader != None:
+            self.dataset_meta = self.data_loader.get_meta()
+            self.dataset_train = self.data_loader.get_train()
+            self.dataset_valid = self.data_loader.get_valid()
+        else:
+            self.dataset_meta = None
+            self.dataset_train = None
+            self.dataset_valid = None
+        self.settings = default_settings(model, settings)
         self.hydro_model = hydro_model
         logging.basicConfig(
             level=logging.INFO,
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         self.logger = logging.getLogger('HYDRO.AI.SDA')
+        self.logger.info("""### Ready to submit current task  ###""")
+
+    def __del__(self):
+        with open(f"latest_hydro_model", 'w') as f:
+            f.write(self.hydro_model.to_json())
 
     def __create_model_advisor(self):
         if self.model.lower() == 'wnd':
@@ -105,8 +114,7 @@ class SDA:
             return BERTAdvisor(self.dataset_meta, self.dataset_train,
                                self.dataset_valid, self.settings)
         else:
-            return GenericAdvisor(self.dataset_meta, self.dataset_train,
-                                  self.dataset_valid, self.settings)
+            return RegisteredAdvisor(settings=self.settings)
 
     @staticmethod
     def get_model_zoo_list():
@@ -129,8 +137,9 @@ class SDA:
         """
         # 1. get model advisor
         # sigopt yaml will be created and sigopt connection will be setup
-        self.model_advisor = self.__create_model_advisor()
-        self.logger.info("Model Advisor created")
+        if "model_advisor" not in dir(self):
+            self.model_advisor = self.__create_model_advisor()
+            self.logger.info("Model Advisor created")
 
         # 2. initialize_sigopt
         if self.settings["enable_sigopt"]:
@@ -138,13 +147,16 @@ class SDA:
             experiment_id = self.hydro_model.sigopt_experiment_id if self.hydro_model else None
             experiment_id = self.model_advisor.initialize_sigopt(
                 experiment_id=experiment_id)
-            if self.hydro_model:
-                self.hydro_model.update(
-                    {'sigopt_experiment_id': experiment_id})
-                self.model_advisor.record_assignmet(
-                    self.hydro_model.model_parameters, self.hydro_model.model)
+            if not self.hydro_model:
+                self.hydro_model = HydroModel(self.settings)
+            self.hydro_model.update(
+                {'sigopt_experiment_id': experiment_id})
+            self.model_advisor.record_assignmet(
+                self.hydro_model.model_parameters, self.hydro_model.model)
         else:
             best_model_parameters = self.hydro_model.model_parameters if self.hydro_model else None
+            if not self.hydro_model:
+                self.hydro_model = HydroModel(self.settings)
             self.model_advisor.initialize_model_parameter(
                 assignments=best_model_parameters)
         self.logger.info("model parameter initialized")
@@ -153,14 +165,22 @@ class SDA:
         # reached numIter or target score
         self.logger.info("start to launch training")
         model_path, metrics, parameters = self.model_advisor.launch_train()
-        if self.hydro_model:
-            self.hydro_model.update({
-                'model': model_path,
-                'metrics': metrics,
-                'model_parameters': parameters
-            })
+        self.hydro_model.update({
+            'model': model_path,
+            'metrics': metrics,
+            'model_parameters': parameters
+        })
         self.logger.info("training script completed")
         return model_path, metrics
+
+    def snapshot(self):
+        return self.hydro_model
+
+    def register(self, info):
+        if "model_advisor" not in dir(self):
+            self.model_advisor = self.__create_model_advisor()
+            self.logger.info("Model Advisor created")
+        self.model_advisor.register(info)
 
 
 def parse_args(args):
@@ -188,6 +208,10 @@ def parse_args(args):
                         action="store_false",
                         default=True,
                         help='if disable model cache')
+    parser.add_argument('--interactive',
+                        dest="interative",
+                        action="store_true",
+                        help='enable interative mode')
     return parser.parse_args(args).__dict__
 
 
@@ -205,10 +229,11 @@ def main(input_args):
         hydro_model = HydroModel(None, serialized_text=[jdata])
         if hydro_model.model_params['model_name'] == settings['model_name']:
             hydro_model.explain()
-            r = timeout_input("Do you want to use this history hydro model? y or n", 'n', 10)
+            r = timeout_input("Do you want to use this history hydro model? y or n", 'n', 10, interative = settings["interative"])
             if r == 'n':
                 print("Skip history hydro model, create new hydro model")
                 hydro_model = HydroModel(settings)
+            self.logger.info("""Above info is history record of this model""")
         else:
             print("Detected history hydro model, but skip since model type is not the same")
             hydro_model = HydroModel(settings)

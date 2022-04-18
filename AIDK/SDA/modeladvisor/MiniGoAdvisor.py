@@ -3,9 +3,9 @@ import yaml
 import logging
 import time
 import os
-from common.utils import *
 
-from SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
+from AIDK.common.utils import *
+from AIDK.SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
 
 class MiniGoAdvisor(BaseModelAdvisor):
     def __init__(self, dataset_meta_path, train_path, eval_path, settings):

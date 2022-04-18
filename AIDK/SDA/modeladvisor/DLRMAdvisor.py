@@ -2,19 +2,17 @@ import subprocess
 import yaml
 import logging
 import time
-import sys
-from common.utils import *
 import os
-# import sys
-# sys.path.append("..")
 
-from SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
+from AIDK.common.utils import *
+from AIDK.SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
 
 class DLRMAdvisor(BaseModelAdvisor):
     '''
         Wide and Deep sigopt model optimization launcher
     '''
     def __init__(self, dataset_meta_path, train_path, eval_path, args):
+        args = setting_local_default(args)
         super().__init__(dataset_meta_path, train_path, eval_path, args)
         logging.basicConfig(
             level=logging.INFO,
@@ -36,18 +34,20 @@ class DLRMAdvisor(BaseModelAdvisor):
         if assignments:
             mlp_top_size = ["1024-1024-512-256-1","512-512-256-128-1","512-256-128-1","512-256-1","256-128-1","128-64-1","256-1","128-1"]
             mlp_bot_size = ["13-512-256-","13-512-256-","13-256-","13-128-"]
-            tuned_parameters['lamblr'] = str(assignments['lamb_lr'])
+            tuned_parameters['lamb_lr'] = str(assignments['lamb_lr'])
             tuned_parameters['learning_rate'] = str(assignments['learning_rate'])
-            tuned_parameters['lr_num_warmup_steps'] = str(assignments['warmup_steps'])
-            tuned_parameters['lr_decay_start_step'] = str(assignments['decay_start_steps'])
-            tuned_parameters['lr_num_decay_steps'] = str(assignments['num_decay_steps'])
-            tuned_parameters['arch_sparse_feature_size'] = str(assignments["sparse_feature_size"])
+            tuned_parameters['lr_num_warmup_steps'] = str(assignments['lr_num_warmup_steps'])
+            tuned_parameters['lr_decay_start_step'] = str(assignments['lr_decay_start_step'])
+            tuned_parameters['lr_num_decay_steps'] = str(assignments['lr_num_decay_steps'])
+            tuned_parameters['arch_sparse_feature_size'] = str(assignments["arch_sparse_feature_size"])
             tuned_parameters['arch_mlp_top'] = str(mlp_top_size[assignments["mlp_top_size"]])
-            tuned_parameters['arch_mlp_bot'] = str(mlp_bot_size[assignments["mlp_bot_size"]])+str(assignments["sparse_feature_size"])
+            tuned_parameters['arch_mlp_bot'] = str(mlp_bot_size[assignments["mlp_bot_size"]])+str(assignments["arch_sparse_feature_size"])
         else:
             mlp_top_size = ["1024-1024-512-256-1","512-512-256-128-1","512-256-128-1","512-256-1","256-128-1","128-64-1","256-1","128-1"]
             mlp_bot_size = ["13-512-256-","13-512-256-","13-256-","13-128-"]
-            tuned_parameters['lamblr'] = "16"
+            tuned_parameters['mlp_top_size'] = 0
+            tuned_parameters['mlp_bot_size'] = 0
+            tuned_parameters['lamb_lr'] = "16"
             tuned_parameters['learning_rate'] = "30"
             tuned_parameters['lr_num_warmup_steps'] = "4000"
             tuned_parameters['lr_decay_start_step'] = "5000"
@@ -69,10 +69,10 @@ class DLRMAdvisor(BaseModelAdvisor):
         config['experiment'] = 'DLRM'
         parameters = [{'name':'learning_rate','bounds':{'min':5,'max':50},'type':'int'},
                       {'name':'lamb_lr','bounds':{'min':5,'max':50},'type':'int'},
-                      {'name':'warmup_steps','bounds':{'min':2000,'max':4500},'type':'int'},
-                      {'name':'decay_start_steps','bounds':{'min':4501,'max':9000},'type':'int'},
-                      {'name':'num_decay_steps','bounds':{'min':5000,'max':15000},'type':'int'},
-                      {'name':'sparse_feature_size','grid': [128,64,16],'type':'int'},
+                      {'name':'lr_num_warmup_steps','bounds':{'min':2000,'max':4500},'type':'int'},
+                      {'name':'lr_decay_start_step','bounds':{'min':4501,'max':9000},'type':'int'},
+                      {'name':'lr_num_decay_steps','bounds':{'min':5000,'max':15000},'type':'int'},
+                      {'name':'arch_sparse_feature_size','grid': [128,64,16],'type':'int'},
                       {'name':'mlp_top_size','bounds':{'min':0,'max':7},'type':'int'},
                       {'name':'mlp_bot_size','bounds':{'min':0,'max':3},'type':'int'},]
         config['parameters'] = parameters        
@@ -115,10 +115,10 @@ class DLRMAdvisor(BaseModelAdvisor):
 
     def launch(self, args):
         # construct WnD launch command
-        cmd = f"{args['executable_python']} -u {args['program']} "
+        cmd = f"{self.train_python} -u {self.train_script} "
         cmd +=f"/home/vmagent/app/hydro.ai/modelzoo/dlrm/dlrm/dlrm_s_pytorch.py --mini-batch-size={args['train_batch_size']} --print-freq=16  " \
             + f"--test-mini-batch-size={args['test_batch_size']} --test-freq=800 " \
-            + f"--train-data-path={args['data_path']+'/train_data.bin'} --eval-data-path={args['data_path']+'/train_data.bin'} " \
+            + f"--train-data-path={self.train_path} --eval-data-path={self.test_path} " \
             + f"--nepochs=1 --day-feature-count={args['data_path'] + '/day_fea_count.npz'} " \
             + f"--loss-function=bce --round-targets=True --num-workers=0 --test-num-workers=0 --use-ipex " \
             + f" --dist-backend=ccl --print-time --data-generation=dataset --optimizer=1 --bf16 --data-set=terabyte " \
@@ -127,12 +127,12 @@ class DLRMAdvisor(BaseModelAdvisor):
             + f"--arch-sparse-feature-size={args['model_parameter']['tuned_parameters']['arch_sparse_feature_size']} " \
             + f"--arch-mlp-bot={args['model_parameter']['tuned_parameters']['arch_mlp_bot']} " \
             + f"--arch-mlp-top={args['model_parameter']['tuned_parameters']['arch_mlp_top']} " \
-            + f"--lamblr={args['model_parameter']['tuned_parameters']['lamblr']} " \
+            + f"--lamblr={args['model_parameter']['tuned_parameters']['lamb_lr']} " \
             + f"--learning-rate={args['model_parameter']['tuned_parameters']['learning_rate']} " \
             + f"--lr-num-warmup-steps={args['model_parameter']['tuned_parameters']['lr_num_warmup_steps']} " \
             + f"--lr-decay-start-step={args['model_parameter']['tuned_parameters']['lr_decay_start_step']} " \
             + f"--lr-num-decay-steps={args['model_parameter']['tuned_parameters']['lr_num_decay_steps']}"
-        print(f'training launch command: {cmd}')
+        self.logger.info(f'### Starting model training ###, launch cmd is: \n{cmd}')
         process = subprocess.Popen(cmd, shell=True)
         process.wait()
     
@@ -156,11 +156,30 @@ class DLRMAdvisor(BaseModelAdvisor):
             + f"--arch-sparse-feature-size={args['model_parameter']['tuned_parameters']['arch_sparse_feature_size']} " \
             + f"--arch-mlp-bot={args['model_parameter']['tuned_parameters']['arch_mlp_bot']} " \
             + f"--arch-mlp-top={args['model_parameter']['tuned_parameters']['arch_mlp_top']} " \
-            + f"--lamblr={args['model_parameter']['tuned_parameters']['lamblr']} " \
+            + f"--lamblr={args['model_parameter']['tuned_parameters']['lamb_lr']} " \
             + f"--learning-rate={args['model_parameter']['tuned_parameters']['learning_rate']} " \
             + f"--lr-num-warmup-steps={args['model_parameter']['tuned_parameters']['lr_num_warmup_steps']} " \
             + f"--lr-decay-start-step={args['model_parameter']['tuned_parameters']['lr_decay_start_step']} " \
             + f"--lr-num-decay-steps={args['model_parameter']['tuned_parameters']['lr_num_decay_steps']}"
-        print(f'training launch command: {cmd}')
+        self.logger.info(f'### Starting model training ###, launch cmd is: \n{cmd}')
         process = subprocess.Popen(cmd, shell=True)
         process.wait() 
+
+def setting_local_default(settings):
+    default = {
+        "ppn": 2,
+        "ccl_worker_num": 4,
+        "train_batch_size": 262144,
+        "test_batch_size": 131072,
+        "num_epochs": 1,
+        "cores": None,
+        "training_time_threshold": 10000,
+        "metric": "accuracy",
+        "metric_objective": "maximize",
+        "metric_threshold": 0.6,
+    }
+    for k, v in default.items():
+        if k not in settings:
+            settings[k] = v
+
+    return settings

@@ -1,12 +1,9 @@
 import logging
 import subprocess
-import sys
-import time
-
 import yaml
-from common.utils import *
-from SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
 
+from AIDK.common.utils import *
+from AIDK.SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
 
 class DIENAdvisor(BaseModelAdvisor):
     def __init__(self, dataset_meta_path, train_path, eval_path, settings):

@@ -1,8 +1,8 @@
-from common.utils import *
-from dataloader.hydrodataloader import *
+from AIDK.common.utils import *
+from AIDK.dataloader.hydrodataloader import *
 
-from hydroai.hydroconfig import *
-from hydroai.hydroserver import *
+from AIDK.hydroai.hydroconfig import *
+from AIDK.hydroai.hydroserver import *
 
 
 class HydroAutoLearner:
@@ -23,6 +23,7 @@ class HydroAutoLearner:
         self.settings.update(settings)
         self.settings.update(parse_config(self.settings['conf']))
         self.model_name = self.settings['model_name']
+        self.settings = default_settings(self.model_name, self.settings)
         if not self.settings['server']:
             self.server = HydroLocalServer()
         else:
@@ -44,9 +45,10 @@ class HydroAutoLearner:
             if self.learner_id:
                 n = timeout_input(
                     """We found history record of this training, do you still
-                    want to continue training(s for skip)""", 'c')
+                    want to continue training(s for skip)""", 'c',  interactive = self.settings["interative"])
                 if n == 's':
                     return
+                self.logger.info("""Above info is history record of this model""")
         if self.__is_in_stock_model(self.model_name):
             self.learner_id = self.server.submit_task(self.settings,
                                                       self.data_loader)

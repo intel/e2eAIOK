@@ -1,15 +1,13 @@
-import argparse
 import json
 import logging
 import sys
 import time
 from collections import OrderedDict
-
 import yaml
-from common.utils import *
-from hydroai.hydroconfig import *
 from sigopt import Connection
 
+from AIDK.common.utils import *
+from AIDK.hydroai.hydroconfig import *
 
 class BaseModelAdvisor:
     """Model Advisor Base, Model Advisor is used to create w/wo sigopt
@@ -35,6 +33,7 @@ class BaseModelAdvisor:
             level=logging.INFO,
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         self.logger = logging.getLogger('sigopt')
+        self.interative = settings["interative"]
 
         self.conn = None
         self.experiment = None
@@ -68,7 +67,7 @@ class BaseModelAdvisor:
         sigopt_config = self.generate_sigopt_yaml()
         yaml.dump(sigopt_config, sys.stdout)
         n = timeout_input("Please confirm with sigopt parameters?(n for exit)",
-                          default='y')
+                          default='y', interactive=self.interative)
         if n != 'y':
             exit()
         self.params['model_parameter'] = sigopt_config
@@ -76,6 +75,43 @@ class BaseModelAdvisor:
         self.conn, self.experiment = self._setup_sigopt_connection(
             sigopt_config, experiment_id)
         return self.experiment.id
+
+    def register(self, info):
+        for k, v in info.items():
+            if k == "score_metrics" and 'metrics' in dir(self):
+                if not isinstance(v, list) or not (len(v) > 0 and isinstance(v[0], tuple)):
+                    raise ValueError("[Register advisor] scores metrics should be a pair, ex: ('mean_accuracy', 'maximize')")
+                self.metrics = v
+            if k == "experiment_name" and 'experiment_name' in dir(self):
+                self.experiment_name = v
+            if k == "tune_training_time" and 'training_time_as_metrics' in dir(self):
+                self.training_time_as_metrics = True
+            if k == "hyper_parameters" and 'parameters' in dir(self):
+                if not isinstance(v, dict):
+                    raise ValueError("""
+        [Register advisor] hyper_parameters should be a dict, ex: 
+        {'max_depth':11, 'learning_rate':float(0.9), 'min_split_loss':float(7)}""")
+                self.parameters = v
+            if k == "sigopt_config" and 'sigopt_config' in dir(self):
+                if not isinstance(v, list) or not (len(v) > 0 and isinstance(v[0], dict)):
+                    raise ValueError("""
+        [Register advisor] sigopt_config should be a list, ex: 
+        [{
+            'name': 'learning_rate',
+            'bounds': {
+                'min': 0.0,
+                'max': 1.0
+            },
+            'type': 'double'
+        }]""")
+                self.sigopt_config = v
+                self.parameters = dict((i["name"], None) for i in v)
+            if k == "execute_cmd" and "execute_cmd_base" in dir(self):
+                self.execute_cmd_base = v
+            if k == "result_file_name" and "result_file_name" in dir(self):
+                self.result_file_name = v
+            if k == "observation_budget" and "observation_budget" in dir(self):
+                self.observation_budget = v
 
     def _setup_sigopt_connection(self, sigopt_config, experiment_id=None):
         name = sigopt_config["experiment"]

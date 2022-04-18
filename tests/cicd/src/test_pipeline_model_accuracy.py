@@ -2,7 +2,7 @@ import pickle
 import os
 import pytest
 import sqlite3
-from hydroai.hydromodel import *
+from AIDK.hydroai.hydromodel import *
 from example.sklearn_train import *
 
 def test_pipeline_sklearn_train_accuracy():
