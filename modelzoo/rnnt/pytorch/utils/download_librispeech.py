@@ -36,18 +36,15 @@ parser.add_argument('--skip_extract', action='store_true',
 args = parser.parse_args()
 args.e = args.e or args.dest
 
-
 df = pd.read_csv(args.csv, delimiter=',')
-
 
 if not args.skip_download:
     for url in df.url:
         fname = url.split('/')[-1]
-        print("Downloading %s:" % fname)
+        print(f"Downloading {fname}")
         download_file(url=url, dest_folder=args.dest, fname=fname)
 else:
     print("Skipping file download")
-
 
 if not args.skip_checksum:
     for index, row in df.iterrows():
@@ -61,12 +58,11 @@ if not args.skip_checksum:
 else:
     print("Skipping checksum")
 
-
 if not args.skip_extract:
     for url in df.url:
         fname = url.split('/')[-1]
         fpath = os.path.join(args.dest, fname)
-        print("Decompressing %s:" % fpath)
+        print(f"Decompressing {fpath}")
         extract(fpath=fpath, dest_folder=args.e)
 else:
     print("Skipping file extraction")

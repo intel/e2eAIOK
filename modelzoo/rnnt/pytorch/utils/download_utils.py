@@ -42,7 +42,6 @@ def download_file(url, dest_folder, fname, overwrite=False):
                            unit='MB', desc=fpath, leave=True)
         for chunk in chunks:
             fp.write(chunk)
-
     os.rename(tmp_fpath, fpath)
 
 

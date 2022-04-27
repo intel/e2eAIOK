@@ -19,7 +19,7 @@ def main(params):
     # ...
     
     # Please save model to params.saved_path
-    model_path = os.path.join(params.saved_path, "chk000000")
+    model_path = os.path.join(os.path.realpath(os.path.normpath(params.saved_path)), "chk000000")
     with open(model_path, 'w') as f:
         f.write(model)
 

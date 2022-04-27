@@ -330,7 +330,7 @@ def main():
         else:
             device = torch.device("cuda", 0)
             ngpus = torch.cuda.device_count()  # 1
-        print("Using {} GPU(s)...".format(ngpus))
+        print(f"Using {ngpus} GPU(s)...")
     else:
         device = torch.device("cpu")
         print("Using CPU...")

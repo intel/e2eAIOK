@@ -32,18 +32,15 @@ def mkdir_or_backup_then_mkdir(dest_path):
 def get_hash_string(in_str):
     return hashlib.md5(in_str.encode()).hexdigest()
 
-def timeout_input(printout, default, timeout = -1):
-    if timeout == -1:
-        n = str(input(printout) or default)
-        return n
+def timeout_input(printout, default, timeout = None):
+    import sys, select
+    print(printout)
+    i, o, e = select.select([sys.stdin], [], [], timeout)
+    if (i):
+        msg = sys.stdin.readline().strip()
+        return default if len(msg) == 0 else default
     else:
-        import sys, select
-        print(printout)
-        i, o, e = select.select([sys.stdin], [], [], timeout)
-        if (i):
-            return sys.stdin.readline().strip()
-        else:
-            return default
+        return default
 
 def parse_config(conf_path):
     settings = {}

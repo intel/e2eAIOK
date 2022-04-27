@@ -67,7 +67,7 @@ def main(params):
                 min_split_loss=params.min_split_loss)
 
     mean_accuracy = evaluate_xgboost_model(**args)
-    model_path = os.path.join(params.saved_path, "saved_dictionary.pkl")
+    model_path = os.path.join(os.path.realpath(os.path.normpath(params.saved_path)), "saved_dictionary.pkl")
     with open(model_path, 'wb') as f:
         pickle.dump(args, f)
     print(mean_accuracy)

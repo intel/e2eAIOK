@@ -1,12 +1,20 @@
 package com.intel.algorithm;
 
+import org.apache.commons.validator.GenericValidator;
+
 /**
  * For test use.
  */
 public class Main {
 
   public static void main(String[] args) {
-    int res = CosineDistanceKNN.search(6, args[0], args[1]);
+    int res;
+    if (GenericValidator.matchRegexp(args[0], ".*\\.csv") && GenericValidator.matchRegexp(args[1], ".*\\.csv")) {
+      res = CosineDistanceKNN.search(6, args[0], args[1]);
+    } else {
+      res = -1;
+    }
+    
     if (res == -1) {
       System.out.println("Failed in calling native function.");
       return;
