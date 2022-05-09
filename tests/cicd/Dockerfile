@@ -2,8 +2,8 @@
 
 FROM xuechendi/oneapi-aikit:hydro.ai
 
-ENV http_proxy "http://proxy-prc.intel.com:912"
-ENV https_proxy "http://proxy-prc.intel.com:912"
+ENV http_proxy "http://child-prc.intel.com:913"
+ENV https_proxy "http://child-prc.intel.com:913"
 ENV LD_PRELOAD /opt/intel/oneapi/intelpython/latest/envs/pytorch_1.10/lib/libiomp5.so
 
 RUN /opt/intel/oneapi/intelpython/latest/bin/pip install -U pyrecdp

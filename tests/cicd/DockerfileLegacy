@@ -2,9 +2,8 @@
 
 FROM xuechendi/oneapi-aikit:legacy_hydro.ai
 
-ENV http_proxy "http://proxy-prc.intel.com:912"
-ENV https_proxy "http://proxy-prc.intel.com:912"
+ENV http_proxy "http://child-prc.intel.com:913"
+ENV https_proxy "http://child-prc.intel.com:913"
 
 RUN apt-get update -y && apt-get -y install libunwind-dev
-RUN git clone https://github.com/mlperf/logging.git /home/vmagent/app/mlperf-logging
-RUN yes | /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/pip install -e /home/vmagent/app/mlperf-logging
+RUN /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/pip install "git+https://github.com/mlperf/logging.git@1.0.0"

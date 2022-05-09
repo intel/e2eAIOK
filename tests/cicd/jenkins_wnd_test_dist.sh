@@ -12,15 +12,20 @@ DATA_PATH=/home/vmagent/app/dataset/outbrain
 log_dir=$(date +%Y-%m-%d)_$(echo $RANDOM | md5sum | head -c 8)
 mkdir -p /home/vmagent/app/cicd_logs/aidk_cicd_wnd_$log_dir
 
+service ssh start
+ssh-keyscan -p 12345 -H 10.1.2.212 >> /root/.ssh/known_hosts
+ssh-keyscan -p 12345 -H 10.1.2.213 >> /root/.ssh/known_hosts
+
 # set AIDK CI default options
 USE_SIGOPT="${USE_SIGOPT:=1}"
 set -e
 # lauch AIDK wnd
 cd /home/vmagent/app/hydro.ai
+
 if [ $USE_SIGOPT == 1 ]; then
-  printf "y\ny\n" | SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN python run_hydroai.py --data_path $DATA_PATH --model_name $MODEL_NAME --conf conf/hydroai_defaults_wnd_example.conf 2>&1 | tee /home/vmagent/app/cicd_logs/aidk_cicd_wnd_$log_dir/aidk_cicd.log
+  printf "y\ny\n" | SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN python run_hydroai.py --data_path $DATA_PATH --model_name $MODEL_NAME --conf tests/cicd/conf/hydroai_defaults_wnd_dist_example.conf 2>&1 | tee /home/vmagent/app/cicd_logs/aidk_cicd_wnd_$log_dir/aidk_cicd.log
 else
-  printf "y\ny\n" | python run_hydroai.py --data_path $DATA_PATH --model_name $MODEL_NAME --conf conf/hydroai_defaults_wnd_example.conf --no_sigopt 2>&1 | tee /home/vmagent/app/cicd_logs/aidk_cicd_wnd_$log_dir/aidk_cicd.log
+  printf "y\ny\n" | python run_hydroai.py --data_path $DATA_PATH --model_name $MODEL_NAME --conf tests/cicd/conf/hydroai_defaults_wnd_dist_example.conf --no_sigopt 2>&1 | tee /home/vmagent/app/cicd_logs/aidk_cicd_wnd_$log_dir/aidk_cicd.log
 fi
 
 # test

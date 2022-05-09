@@ -1,0 +1,63 @@
+pipeline {
+    agent none
+    stages {
+        stage('prepare sr608') {
+            agent { 
+                label 'sr608'
+            }
+            steps {
+                sh 'cd /var/lib/jenkins/workspace/aidk_dist && git submodule update --init --recursive'
+            }
+        }
+        stage('prepare sr612') {
+            agent { 
+                label 'sr612'
+            }
+            steps {
+                checkout scm
+                sh 'cd /var/lib/jenkins/workspace/aidk_dist && git submodule update --init --recursive'
+            }
+        }
+        stage('prepare sr613') {
+            agent { 
+                label 'sr613'
+            }
+            steps {
+                checkout scm
+                sh 'cd /var/lib/jenkins/workspace/aidk_dist && git submodule update --init --recursive'
+            }
+        }
+        stage('Run distributed dlrm') {
+            agent { 
+                label 'sr608'
+            }
+            steps {
+                sh 'docker run --rm --entrypoint "" --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v /var/lib/jenkins/workspace/aidk_dist:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ caizheng1993/oneapi-aikit:legacy_hydro.ai /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=0 bash /home/vmagent/app/hydro.ai/tests/cicd/jenkins_dlrm_test_dist.sh"'
+                sh 'sudo rm -f hydroai.db'
+                sh 'sudo rm -rf result'
+                sh 'sudo rm -f modelzoo/dlrm/dlrm/dlrm.log'
+            }
+        }
+        stage('Run distributed dlrm torch110') {
+            agent { 
+                label 'sr608'
+            }
+            steps {
+                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v /var/lib/jenkins/workspace/aidk_dist:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ caizheng1993/oneapi-aikit:hydro.ai /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=0 bash /home/vmagent/app/hydro.ai/tests/cicd/jenkins_dlrm_torch110_test_dist.sh"'
+                sh 'sudo rm -f hydroai.db'
+                sh 'sudo rm -rf result'
+                sh 'sudo rm -f modelzoo/dlrm_torch1.10/dlrm/dlrm.log'
+            }
+        }
+        stage('Run distributed wnd') {
+            agent { 
+                label 'sr613'
+            }
+            steps {
+                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v /var/lib/jenkins/workspace/aidk_dist:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ caizheng1993/oneapi-aikit:hydro.ai /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=0 bash /home/vmagent/app/hydro.ai/tests/cicd/jenkins_wnd_test_dist.sh"'
+                sh 'sudo rm -f hydroai.db'
+                sh 'sudo rm -rf result'
+            }
+        }
+    }
+}

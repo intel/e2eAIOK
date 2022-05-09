@@ -109,6 +109,7 @@ class DLRMTorch110Advisor(BaseModelAdvisor):
         file1.close()
         self.mean_accuracy = float(lines[-1])
         metrics = self.update_metrics()
+        model_path = args['model_saved_path']
         return self.training_time, model_path, metrics
 
     def launch(self, args):
@@ -138,7 +139,11 @@ class DLRMTorch110Advisor(BaseModelAdvisor):
         ppn = args['ppn']
         hosts = args['hosts']
         model_saved_path = args['model_saved_path']
-        cmd = f"{self.train_python} -m intel_extension_for_pytorch.cpu.launch --distributed --nproc_per_node={ppn} --nnodes={len(hosts)} --hostfile {','.join(hosts)} "
+        if len(args['hosts']) == 1:
+            cmd = f"{self.train_python} -m intel_extension_for_pytorch.cpu.launch --distributed --nproc_per_node={ppn} --nnodes={len(hosts)} --hostfile {','.join(hosts)} "
+        else:
+            hostfile = args['hostfile']
+            cmd = f"{self.train_python} -m intel_extension_for_pytorch.cpu.launch --distributed --nproc_per_node={ppn} --nnodes={len(hosts)} --hostfile {hostfile} "
         cmd +=f"/home/vmagent/app/hydro.ai/modelzoo/dlrm_torch1.10/dlrm/dlrm_s_pytorch.py --mini-batch-size={args['train_batch_size']} --print-freq=16  " \
             + f"--test-mini-batch-size={args['test_batch_size']} --test-freq=800 " \
             + f"--train-data-path={self.train_path} --eval-data-path={self.test_path} " \
