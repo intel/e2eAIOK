@@ -1,7 +1,7 @@
 import argparse
 import time
 import init_denas
-from scores import compute_zen_score
+from scores import compute_de_score
 import sys
 import random
 import numpy as np
@@ -12,6 +12,7 @@ from utils import net_struct_utils
 from common.utils import *
 import logging
 import csv
+import gc
 
 class DeNasSearchEngine:
     def __init__(self, main_net = None, search_space = None, settings = {}):
@@ -20,18 +21,19 @@ class DeNasSearchEngine:
         self.max_search_iter = settings["max_search_iter"]
         self.population_size = settings["population_size"]
         self.popu_structure_list = []
-        self.num_classes = settings["num_classes"]
-        self.max_layers = settings["max_layers"]
-        self.budget_model_size = settings["budget_model_size"]
-        self.budget_flops = settings["budget_flops"]
-        self.input_image_size = settings["input_image_size"]
-        self.budget_latency = settings["budget_latency"]
-        self.batch_size = settings["batch_size"]
+        self.num_classes = int(settings["num_classes"])
+        self.max_layers = int(settings["max_layers"])
+        self.budget_model_size = int(settings["budget_model_size"])
+        self.budget_flops = int(settings["budget_flops"])
+        self.input_image_size = int(settings["input_image_size"])
+        self.budget_latency = int(settings["budget_latency"])
+        self.batch_size = int(settings["batch_size"])
 
-        self.init_structure = settings['init_structure']
+        self.init_structure = settings['plainnet_struct_txt']
         self.no_reslink = settings["no_reslink"]
         self.no_BN = settings["no_BN"]
         self.use_se = settings["use_se"]
+        self.model_type = settings["model_type"]
 
     def __del__(self):
         print("DeNasSearchEngine destructed.")
@@ -45,10 +47,11 @@ class DeNasSearchEngine:
         nas_score = 0
         latency = np.inf
         for loop_count in range(self.max_search_iter):
-            if loop_count >= 1 and loop_count % 1000 == 0:
-                max_score = self.get_best_structures()[0]
+            if loop_count >= 1 and loop_count % 10 == 0:
+                max_score = self.get_best_structures()[0][0]
+                min_score = self.get_best_structures()[0][1]
                 elasp_time = time.time() - start_timer
-                logging.info(f'loop_count={loop_count}/{self.max_search_iter}, max_score={max_score:4g}, time={elasp_time/3600:4g}h')
+                print(f'loop_count={loop_count}/{self.max_search_iter}, max_score={max_score:4g}, min_score={min_score:4g}, time={elasp_time/3600:4g}h')
 
             if self._should_early_stop(nas_score, latency):
                 break
@@ -86,21 +89,22 @@ class DeNasSearchEngine:
         latency = benchmark_network_latency.get_model_latency(model=the_model, batch_size=self.batch_size,
                                                                 resolution=self.input_image_size,
                                                                 in_channels=3, gpu=None, repeat_times=1,
-                                                                fp16=True)
+                                                                fp16=False)
         del the_model
-        torch.cuda.empty_cache()
+        gc.collect()
         return latency
 
     def _compute_nas_score(self, random_structure_str):
         # compute network zero-shot proxy score
         the_model = self.main_net(num_classes=self.num_classes, plainnet_struct=random_structure_str, no_create=False, no_reslink=True)
-        nas_core_info = compute_zen_score.compute_nas_score(model=the_model, gpu=None,
-                                                                        resolution=self.input_image_size,
-                                                                        mixup_gamma=1e-2, batch_size=self.batch_size,
-                                                                        repeat=1)
-        nas_core = nas_core_info['avg_nas_score']
+
+        nas_core = compute_de_score.do_compute_nas_score(model_type=self.model_type, model=the_model,
+                                                                    resolution=self.input_image_size,
+                                                                    batch_size=self.batch_size,
+                                                                    mixup_gamma=1e-2)
         del the_model
-        torch.cuda.empty_cache()
+        gc.collect()
+
         return nas_core
 
     def _should_early_stop(self, nas_score, latency):
@@ -177,7 +181,6 @@ class DeNasSearchEngine:
         assert hasattr(the_net, 'split')
         splitted_net_str = the_net.split(split_layer_threshold=6)
         return splitted_net_str
-
 
 class DeNasEASearchEngine(DeNasSearchEngine):
     def __init__(self, main_net = None, search_space = None, settings = {}):

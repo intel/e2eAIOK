@@ -6,27 +6,18 @@ conda activate pytorch_1.10
 pip install torchvision
 ```
 
-# Run quick try
+# Run quick try for CNN model
 
 ```
-python denas.py --log=DEBUG --max_search_iter 2 --conf ../conf/hydroai_defaults_denas_cv.conf
+python denas.py --max_search_iter 1004 --conf ../conf/denas/aidk_denas_cnn.conf
 
 
-{'domain': 'cv', 'max_search_iter': 2, 'budget_model_size': None, 'budget_flops': None, 'budget_latency': None, 'batch_size': 4096, 'save_dir': None, 'conf': '../conf/hydroai_defaults_denas_cv.conf', 'log': 'DEBUG', 'population_size': 512, 'num_classes': 1000, 'max_layers': 14, 'input_image_size': 224, 'no_reslink': True, 'no_BN': True, 'use_se': True, 'init_structure': 'SuperConvK3BNRELU(3,8,1,1)SuperResK3K3(8,16,1,8,1)SuperResK3K3(16,32,2,16,1)SuperResK3K3(32,64,2,32,1)SuperResK3K3(64,64,2,32,1)SuperConvK1BNRELU(64,128,1,1)'}
----debug use_se in SuperResK3K3(8,16,1,8,1)
----debug use_se in SuperResK3K3(16,32,2,16,1)
----debug use_se in SuperResK3K3(32,64,2,32,1)
----debug use_se in SuperResK3K3(64,64,2,32,1)
-DEBUG:root:num layers is 8
-DEBUG:root:  Get score of random structure: SuperConvK3BNRELU(3,8,1,1)SuperResK3K3(8,16,1,8,1)SuperResK7K7(16,16,2,8,3)SuperResK3K3(16,64,2,32,1)SuperResK3K3(64,64,2,32,1)SuperConvK1BNRELU(64,128,1,1) took 33.03823735000333 sec
-DEBUG:root:score is 28.56313705444336
-DEBUG:root:num layers is 8
-DEBUG:root:  Get score of random structure: SuperConvK3BNRELU(3,8,1,1)SuperResK1K7K1(8,40,1,16,3)SuperResK3K3(40,32,2,16,1)SuperResK3K3(32,64,2,32,1)SuperResK3K3(64,64,2,32,1)SuperConvK1BNRELU(64,128,1,1) took 186.0731563839945 sec
-DEBUG:root:score is 38.043975830078125
-DEBUG:root:Search for Best structure, took:  took 219.1387570130173 sec
-DeNas search completed, best structure is [(38.043975830078125, inf, 'SuperConvK3BNRELU(3,8,1,1)SuperResK1K7K1(8,40,1,16,3)SuperResK3K3(40,32,2,16,1)SuperResK3K3(32,64,2,32,1)SuperResK3K3(64,64,2,32,1)SuperConvK1BNRELU(64,128,1,1)')]
+{'domain': 'cv', 'max_search_iter': 1002, 'budget_model_size': 1000000, 'budget_flops': 10000000, 'budget_latency': 1, 'batch_size': 64, 'save_dir': '/Zen_NAS_search', 'conf': '../conf/aidk_denas_cv.conf', 'log': 'INFO', 'zero_shot_score': 'De_score2', 'search_space': 'SearchSpace/search_space_XXBL.py', 'max_layers': 18, 'input_image_size': 32, 'plainnet_struct_txt': 'SuperConvK3BNRELU(3,8,1,1)SuperResK3K3(8,16,1,8,1)SuperResK3K3(16,32,2,16,1)SuperResK3K3(32,64,2,32,1)SuperResK3K3(64,64,2,32,1)SuperConvK1BNRELU(64,128,1,1)', 'num_classes': 100, 'evolution_max_iter': 1004, 'population_size': 10, 'no_reslink': False, 'no_BN': False, 'use_se': False}
+loop_count=1000/1002, max_score=0.130189, min_score=0.000433214, time=0.0466935h
+DeNas search completed, best structure is [(tensor(0.1302), 0.000433214008808136, 'SuperConvK3BNRELU(3,8,1,1)SuperResK3K3(8,16,1,8,1)SuperResK3K3(16,32,2,16,1)SuperResK3K3(32,64,2,32,1)SuperResK1K3K1(64,24,2,64,3)SuperConvK1BNRELU(24,128,1,1)')]
 DeNasSearchEngine destructed.
 ```
+
 
 
 # Advanced
@@ -57,12 +48,13 @@ class DeMainNet:
 
 ### define scoring system
 
-* Modify denas.py:94 to your implemeted scoring package function
+* Modify scores/compute_de_score.py:228 to your implemeted scoring package function
 ```
-nas_core_info = compute_zen_score.compute_nas_score(model=the_model, gpu=None,
-                                                                        resolution=self.input_image_size,
-                                                                        mixup_gamma=1e-2, batch_size=self.batch_size,
-                                                                        repeat=1)
+def do_compute_nas_score(model_type, model, resolution, batch_size, mixup_gamma):
+    if model_type == "cnn":
+        do_compute_nas_score_cnn(model, resolution, batch_size, mixup_gamma)
+    elif model_type == "transformer":
+        do_compute_nas_score_transformer(model, resolution, batch_size, mixup_gamma)
 ```
 
 ### define search strategy
