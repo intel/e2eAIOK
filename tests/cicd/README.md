@@ -14,24 +14,28 @@ The easiest way to run test scripts is with Docker.
 Firstly, build docker for test.
 ```
 $ cd ${AIDK_codebase}/tests/cicd/
-$ docker build -t ${DOCKER_USERNAME}/oneapi-aikit:hydro.ai -f Dockerfile .
-$ docker build -t ${DOCKER_USERNAME}/oneapi-aikit:legacy_hydro.ai -f DockerfileLegacy .
+$ docker build -t test-aidk -f Dockerfile .
+$ docker build -t legacy-test-aidk -f DockerfileLegacy .
 ```
 
 Then, run test script for specific workflow.\
 For pipeline_test:
 ```
-$ docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v ${AIDK_codebase}:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ ${DOCKER_USERNAME}/oneapi-aikit:hydro.ai /bin/bash -c "SIGOPT_API_TOKEN=${SIGOPT_API_TOKEN} bash /home/vmagent/app/hydro.ai/tests/cicd/jenkins_pipeline_test.sh"
+$ docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v ${AIDK_codebase}:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ test-aidk /bin/bash -c "SIGOPT_API_TOKEN=${SIGOPT_API_TOKEN} USE_SIGOPT=0 bash /home/vmagent/app/hydro.ai/tests/cicd/jenkins_pipeline_test.sh"
 ```
 For DIEN:
 ```
-$ docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v ${AIDK_codebase}:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ ${DOCKER_USERNAME}/oneapi-aikit:hydro.ai /bin/bash -c "SIGOPT_API_TOKEN=${SIGOPT_API_TOKEN} bash /home/vmagent/app/hydro.ai/tests/cicd/jenkins_dien_test.sh"
+$ docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v ${AIDK_codebase}:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ test-aidk /bin/bash -c "SIGOPT_API_TOKEN=${SIGOPT_API_TOKEN} USE_SIGOPT=0 bash /home/vmagent/app/hydro.ai/tests/cicd/jenkins_dien_test.sh"
 ```
 For WnD:
 ```
-$ docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v ${AIDK_codebase}:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ ${DOCKER_USERNAME}/oneapi-aikit:hydro.ai /bin/bash -c "SIGOPT_API_TOKEN=${SIGOPT_API_TOKEN} bash /home/vmagent/app/hydro.ai/tests/cicd/jenkins_wnd_test.sh"
+$ docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v ${AIDK_codebase}:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ test-aidk /bin/bash -c "SIGOPT_API_TOKEN=${SIGOPT_API_TOKEN} USE_SIGOPT=0 bash /home/vmagent/app/hydro.ai/tests/cicd/jenkins_wnd_test.sh"
 ```
 For DLRM:
 ```
-$ docker run --rm --entrypoint "" --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v ${AIDK_codebase}:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ ${DOCKER_USERNAME}/oneapi-aikit:legacy_hydro.ai /bin/bash -c "SIGOPT_API_TOKEN=${SIGOPT_API_TOKEN} bash /home/vmagent/app/hydro.ai/tests/cicd/jenkins_dlrm_test.sh"
+$ docker run --rm --entrypoint "" --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v ${AIDK_codebase}:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ legacy-test-aidk /bin/bash -c "SIGOPT_API_TOKEN=${SIGOPT_API_TOKEN} USE_SIGOPT=0 bash /home/vmagent/app/hydro.ai/tests/cicd/jenkins_dlrm_test.sh"
+```
+For DLRM Torch110:
+```
+$ docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v ${AIDK_codebase}:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ test-aidk /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=0 bash /home/vmagent/app/hydro.ai/tests/cicd/jenkins_dlrm_torch110_test.sh"
 ```

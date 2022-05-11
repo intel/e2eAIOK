@@ -38,7 +38,7 @@ def timeout_input(printout, default, timeout = None):
     i, o, e = select.select([sys.stdin], [], [], timeout)
     if (i):
         msg = sys.stdin.readline().strip()
-        return default if len(msg) == 0 else default
+        return default if len(msg) == 0 else msg
     else:
         return default
 

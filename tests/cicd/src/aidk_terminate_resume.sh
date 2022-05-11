@@ -7,7 +7,7 @@ printf "%s\ny\ny\n" $SIGOPT_API_TOKEN | sigopt config
 printf "\n========= End Config Sigopt ==========\n"
 
 printf "========= Start First Job in background   ========="
-nohup printf "y\ny\n" | /opt/intel/oneapi/intelpython/latest/bin/python run_hydroai.py --model_name $MODEL_NAME --data_path $DATA_PATH &
+nohup printf "y\ny\n" | /opt/intel/oneapi/intelpython/latest/bin/python run_hydroai.py --model_name $MODEL_NAME --data_path $DATA_PATH --no_sigopt &
 sleep 3
 printf "========= First Job Started in background ========="
 
@@ -16,5 +16,5 @@ kill -15 $(pgrep python)
 echo "=========== End Pipeline Terminated ========="
 
 echo "========== Start Resume Context  =========="
-printf "y\ny\n" | /opt/intel/oneapi/intelpython/latest/bin/python run_hydroai.py --model_name $MODEL_NAME --data_path $DATA_PATH
+printf "y\ny\n" | /opt/intel/oneapi/intelpython/latest/bin/python run_hydroai.py --model_name $MODEL_NAME --data_path $DATA_PATH --no_sigopt
 echo "========== Finish Resume Context =========="
