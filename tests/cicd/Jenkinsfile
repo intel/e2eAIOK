@@ -22,6 +22,16 @@ pipeline {
                 sh 'rm -rf result'
             }
         }
+        stage('Run bert') {
+            agent {
+                label 'sr602'
+            }
+            steps {
+                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ test-aidk /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=0 bash /home/vmagent/app/hydro.ai/tests/cicd/jenkins_bert_test.sh"'
+                sh 'rm -f hydroai.db'
+                sh 'rm -rf result'
+            }
+        }
         stage('Run wnd') {
             agent { 
                 label 'sr602'
