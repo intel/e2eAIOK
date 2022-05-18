@@ -22,8 +22,6 @@
 import os
 import ray
 ray.shutdown()
-#ray.init(address="10.1.0.131:6379")
-#ray.init(address='auto', _redis_password='5241590000000000')
 ray.init(address="auto")
 
 import torch 

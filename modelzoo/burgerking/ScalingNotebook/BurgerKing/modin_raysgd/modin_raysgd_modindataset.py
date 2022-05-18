@@ -1,6 +1,6 @@
 import ray
 
-ray.init(address="auto", node_ip_address=None, redis_password="123")
+ray.init(address="auto", node_ip_address=None)
 
 
 import numpy as np
