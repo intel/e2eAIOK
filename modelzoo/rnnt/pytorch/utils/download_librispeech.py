@@ -36,7 +36,9 @@ parser.add_argument('--skip_extract', action='store_true',
 args = parser.parse_args()
 args.e = args.e or args.dest
 
+
 df = pd.read_csv(args.csv, delimiter=',')
+
 
 if not args.skip_download:
     for url in df.url:

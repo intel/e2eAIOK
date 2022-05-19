@@ -52,6 +52,16 @@ class RNNTAdvisor(BaseModelAdvisor):
             'name': 'WER',
             'threshold': 0.058
         } if 'metric' not in self.params else self.params['metric']
+        self.params['training_time_threshold'] = 86400
+        if 'metrics' in self.params:
+            for metric in self.params['metrics']:
+                if metric['name'] == 'WER':
+                    self.params['metric'] = {
+                        'name': 'WER',
+                        'threshold': metric['threshold']
+                    }
+                if metric['name'] == 'training_time':
+                    self.params['training_time_threshold'] = metric['threshold']
 
         self.params['beta1'] = 0.9 if 'beta1' not in self.params else self.params['beta1']
         self.params['beta2'] = 0.999 if 'beta2' not in self.params else self.params['beta2']
@@ -66,9 +76,9 @@ class RNNTAdvisor(BaseModelAdvisor):
         self.params['weight_decay'] = 1e-3 if 'weight_decay' not in self.params else self.params['weight_decay']
         self.params['grad_accumulation_steps'] = 1 if 'grad_accumulation_steps' not in self.params else self.params['grad_accumulation_steps']
         self.params['weights_init_scale'] = 0.5 if 'weights_init_scale' not in self.params else self.params['weights_init_scale']
-        self.params['seed'] = 30677 if 'seed' not in self.params else self.params['seed']
+        self.params['seed'] = 2021 if 'seed' not in self.params else self.params['seed']
         self.params['max_symbol_per_sample'] = 300 if 'max_symbol_per_sample' not in self.params else self.params['max_symbol_per_sample']
-        self.params['data_cpu_threads'] = 16 if 'data_cpu_threads' not in self.params else self.params['data_cpu_threads']
+        self.params['data_cpu_threads'] = 4 if 'data_cpu_threads' not in self.params else self.params['data_cpu_threads']
         self.params['min_seq_split_len'] = 20 if 'min_seq_split_len' not in self.params else self.params['min_seq_split_len']
         self.params['log_frequency'] = 1 if 'log_frequency' not in self.params else self.params['log_frequency']
         self.params['val_frequency'] = 1 if 'val_frequency' not in self.params else self.params['val_frequency']
@@ -82,7 +92,7 @@ class RNNTAdvisor(BaseModelAdvisor):
         self.val_manifests = meta['val_manifests']
     
     def update_metrics(self):
-        result_metrics_file = os.path.join(self.saved_path, "metric.txt")
+        result_metrics_file = os.path.join(self.params['model_saved_path'], "metric.txt")
         if not os.path.exists(result_metrics_file):
             raise FileNotFoundError(
                 f"{self.train_script} completed, while we can't find \
@@ -91,7 +101,7 @@ class RNNTAdvisor(BaseModelAdvisor):
             metric = f.readlines()
         metrics = []
         metrics.append({
-            'name': self.params['metric']['name'],
+            'name': 'WER',
             'value': float(metric[-1])
         })
         metrics.append({'name': 'training_time', 'value': self.training_time})
@@ -106,27 +116,19 @@ class RNNTAdvisor(BaseModelAdvisor):
                 'enc_n_hid']
             tuned_parameters['enc_rnn_layers'] = assignments[
                 'enc_rnn_layers']
-            tuned_parameters['enc_stack_time_factor'] = assignments[
-                'enc_stack_time_factor']
             tuned_parameters['pred_n_hid'] = assignments[
                 'pred_n_hid']
-            tuned_parameters['pred_rnn_layers'] = assignments[
-                'pred_rnn_layers']
             tuned_parameters['joint_n_hid'] = assignments[
                 'joint_n_hid']
             tuned_parameters['learning_rate'] = assignments['learning_rate']
             tuned_parameters['warmup_epochs'] = assignments['warmup_epochs']
-            tuned_parameters['hold_epochs'] = assignments['hold_epochs']
         else:
             tuned_parameters['enc_n_hid'] = 1024
             tuned_parameters['enc_rnn_layers'] = 2
-            tuned_parameters['enc_stack_time_factor'] = 2
             tuned_parameters['pred_n_hid'] = 512
-            tuned_parameters['pred_rnn_layers'] = 2
             tuned_parameters['joint_n_hid'] = 512
             tuned_parameters['learning_rate'] = float(0.007)
             tuned_parameters['warmup_epochs'] = 6
-            tuned_parameters['hold_epochs'] = 33
         config['tuned_parameters'] = tuned_parameters
         self.params['model_parameter'] = config
         self.params['model_saved_path'] = os.path.join(
@@ -149,22 +151,8 @@ class RNNTAdvisor(BaseModelAdvisor):
             },
             'type': 'int'
         }, {
-            'name': 'enc_stack_time_factor',
-            'bounds': {
-                'min': 1,
-                'max': 4
-            },
-            'type': 'int'
-        }, {
             'name': 'pred_n_hid',
             'grid': [64, 128, 256, 512],
-            'type': 'int'
-        }, {
-            'name': 'pred_rnn_layers',
-            'bounds': {
-                'min': 1,
-                'max': 3
-            },
             'type': 'int'
         }, {
             'name': 'joint_n_hid',
@@ -174,7 +162,7 @@ class RNNTAdvisor(BaseModelAdvisor):
             'name': 'learning_rate',
             'bounds': {
                 'min': 1.0e-4,
-                'max': 1.0e-1
+                'max': 1.0e-2
             },
             'type': 'double',
             'transformation': 'log'
@@ -183,13 +171,6 @@ class RNNTAdvisor(BaseModelAdvisor):
             'bounds': {
                 'min': 1,
                 'max': 8
-            },
-            'type': 'int'
-        }, {
-            'name': 'hold_epochs',
-            'bounds': {
-                'min': 10,
-                'max': 60
             },
             'type': 'int'
         }]
@@ -210,11 +191,10 @@ class RNNTAdvisor(BaseModelAdvisor):
         }, {
             'name': 'training_time',
             'objective': 'minimize',
-            'threshold': 18000
+            'threshold': 86400
         }]
-        user_defined_metrics = self.params['model_parameter']['metrics'] if (
-            'model_parameter' in self.params) and (
-                'metrics' in self.params['model_parameter']) else None
+        user_defined_metrics = self.params['metrics'] if (
+            'metrics' in self.params) else None
         if user_defined_metrics:
             self.logger.info(
                 f"Update with user defined parameters {user_defined_metrics}")
@@ -228,7 +208,6 @@ class RNNTAdvisor(BaseModelAdvisor):
 
     def train_model(self, args):
         start_time = time.time()
-        self.apply_model_params()
         if args['ppn'] > 1:
             self.dist_launch(args)
         else:
@@ -241,17 +220,19 @@ class RNNTAdvisor(BaseModelAdvisor):
     def dist_launch(self, args):
         ppn = args['ppn']
         hosts = args['hosts']
+        with open('hosts', 'w') as f:
+            for host in hosts:
+                f.writelines(str(host)+'\n')
 
         # construct rnnt launch command
-        cmd = f"{self.train_python} -m intel_extension_for_pytorch.cpu.launch --distributed --nproc_per_node={ppn} --nnodes={len(hosts)} --hostfile {','.join(hosts)} "
+        cmd = f"{self.train_python} -m intel_extension_for_pytorch.cpu.launch --distributed --nproc_per_node={ppn} --nnodes={len(hosts)} --hostfile hosts "
         cmd += f"{self.train_script} "
-        cmd += f"--output_dir {self.saved_path} "
-        cmd += f"--use_ipex --dist --dist_backend ccl "
+        cmd += f"--output_dir {args['model_saved_path']} "
+        cmd += f"--dist --dist_backend ccl "
         cmd += f"--batch_size {args['train_batch_size']} "
         cmd += f"--val_batch_size {args['eval_batch_size']} "
         cmd += f"--lr {args['model_parameter']['tuned_parameters']['learning_rate']} "
         cmd += f"--warmup_epochs {args['model_parameter']['tuned_parameters']['warmup_epochs']} "
-        cmd += f"--hold_epochs {args['model_parameter']['tuned_parameters']['hold_epochs']} "
         cmd += f"--beta1 {args['beta1']} "
         cmd += f"--beta2 {args['beta2']} "
         cmd += f"--max_duration {args['max_duration']} "
@@ -278,6 +259,14 @@ class RNNTAdvisor(BaseModelAdvisor):
         cmd += f"--log_frequency {args['log_frequency']} "
         cmd += f"--val_frequency {args['val_frequency']} "
         cmd += f"--prediction_frequency {args['prediction_frequency']} "
+        cmd += f"--training_time_threshold {args['training_time_threshold']} "
+        cmd += f"--enc_n_hid {args['model_parameter']['tuned_parameters']['enc_n_hid']} "
+        cmd += f"--enc_pre_rnn_layers {args['model_parameter']['tuned_parameters']['enc_rnn_layers']} "
+        cmd += f"--enc_post_rnn_layers {args['model_parameter']['tuned_parameters']['enc_rnn_layers']} "
+        cmd += f"--pred_n_hid {args['model_parameter']['tuned_parameters']['pred_n_hid']} "
+        cmd += f"--joint_n_hid {args['model_parameter']['tuned_parameters']['joint_n_hid']} "
+        cmd += f"--fuse_relu_dropout --multi_tensor_ema --apex_transducer_loss fp16 --apex_transducer_joint pack \
+            --buffer_pre_alloc --ema_update_type fp16 --apex_mlp --save_at_the_end "
         self.logger.info(f'training launch command: {cmd}')
 
         process = subprocess.Popen(cmd, shell=True)
@@ -287,13 +276,11 @@ class RNNTAdvisor(BaseModelAdvisor):
         # construct rnnt launch command
         cmd = f"{self.train_python} -m intel_extension_for_pytorch.cpu.launch --throughput_mode "
         cmd += f"{self.train_script} "
-        cmd += f"--output_dir {self.saved_path} "
-        cmd += f"--use_ipex "
+        cmd += f"--output_dir {args['model_saved_path']} "
         cmd += f"--batch_size {args['train_batch_size']} "
         cmd += f"--val_batch_size {args['eval_batch_size']} "
         cmd += f"--lr {args['model_parameter']['tuned_parameters']['learning_rate']} "
         cmd += f"--warmup_epochs {args['model_parameter']['tuned_parameters']['warmup_epochs']} "
-        cmd += f"--hold_epochs {args['model_parameter']['tuned_parameters']['hold_epochs']} "
         cmd += f"--beta1 {args['beta1']} "
         cmd += f"--beta2 {args['beta2']} "
         cmd += f"--max_duration {args['max_duration']} "
@@ -320,21 +307,13 @@ class RNNTAdvisor(BaseModelAdvisor):
         cmd += f"--log_frequency {args['log_frequency']} "
         cmd += f"--val_frequency {args['val_frequency']} "
         cmd += f"--prediction_frequency {args['prediction_frequency']} "
+        cmd += f"--training_time_threshold {args['training_time_threshold']} "
+        cmd += f"--enc_n_hid {args['model_parameter']['tuned_parameters']['enc_n_hid']} "
+        cmd += f"--enc_pre_rnn_layers {args['model_parameter']['tuned_parameters']['enc_rnn_layers']} "
+        cmd += f"--enc_post_rnn_layers {args['model_parameter']['tuned_parameters']['enc_rnn_layers']} "
+        cmd += f"--pred_n_hid {args['model_parameter']['tuned_parameters']['pred_n_hid']} "
+        cmd += f"--joint_n_hid {args['model_parameter']['tuned_parameters']['joint_n_hid']} "
         self.logger.info(f'training launch command: {cmd}')
 
         process = subprocess.Popen(cmd, shell=True)
         process.wait()
-
-    def apply_model_params(self):
-        config_file = self.params['model_config']
-        with open(config_file, 'r') as f:
-            config = yaml.load(f, Loader=yaml.FullLoader)
-            config['rnnt']['enc_n_hid'] = self.params['model_parameter']['tuned_parameters']['enc_n_hid']
-            config['rnnt']['enc_pre_rnn_layers'] = self.params['model_parameter']['tuned_parameters']['enc_rnn_layers']
-            config['rnnt']['enc_post_rnn_layers'] = self.params['model_parameter']['tuned_parameters']['enc_rnn_layers']
-            config['rnnt']['enc_stack_time_factor'] = self.params['model_parameter']['tuned_parameters']['enc_stack_time_factor']
-            config['rnnt']['pred_n_hid'] = self.params['model_parameter']['tuned_parameters']['pred_n_hid']
-            config['rnnt']['pred_rnn_layers'] = self.params['model_parameter']['tuned_parameters']['pred_rnn_layers']
-            config['rnnt']['joint_n_hid'] = self.params['model_parameter']['tuned_parameters']['joint_n_hid']
-        with open(config_file, 'w') as f:
-            yaml.dump(config, f)

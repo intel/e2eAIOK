@@ -23,7 +23,9 @@ from mlperf_logging.mllog import constants
 mllogger = mllog.get_mllogger()
 
 
-def configure_logger(output_dir, benchmark):
+def configure_logger(output_dir, benchmark, local_rank):
+    if local_rank == 0 and not os.path.exists(output_dir):
+        os.makedirs(output_dir)
     mllog.config(filename=os.path.join(output_dir, f'{benchmark}.log'))
     mllogger = mllog.get_mllogger()
     mllogger.logger.propagate = False

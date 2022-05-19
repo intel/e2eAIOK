@@ -18,81 +18,49 @@
 # to use the script:
 #   run_and_time.sh
 
-set -x
 set -e
 
+source config.sh
 # Only rank print 
 [ "${SLURM_LOCALID-}" -ne 0 ] && set +x
 
-CONDA_PREFIX=/opt/intel/oneapi/intelpython/latest/envs/rnnt
 
-# 设置默认值
 : "${AMP_LVL:=1}"
 : "${DALIDEVICE:=cpu}"
 : "${MODELCONFIG:=configs/baseline_v3-1023sp.yaml}"
-: "${BATCHSIZE:=32}"
-: "${EVAL_BATCHSIZE:=338}"
-: "${EPOCH:=80}"
-: "${SEED:=30677}"
-: "${LR:=0.007}"
-: "${WARMUP:=6}"
+: "${BATCHSIZE:=${BATCHSIZE}}"
+: "${EVAL_BATCHSIZE:=${BATCHSIZE}}"
+: "${EPOCH:=1}"
+: "${SEED:=2021}"
+: "${LR:=0.004}"
+: "${WARMUP:=4}"
 : "${GRAD_ACCUMULATION_STEPS:=1}"
 : "${VAL_FREQUENCY:=1}"
-: "${HOLD_EPOCHS:=33}"
-: "${EMA:=0.995}"
-: "${LR_DECAY_POWER:=0.939}"
+: "${HOLD_EPOCHS:=40}"
+: "${EMA:=0.999}"
+: "${LR_DECAY_POWER:=0.935}"
 : "${WEIGHTS_INIT_SCALE:=0.5}"
-: "${TRAIN_DATASET_DIR:="/mnt/sdd/LibriSpeech/LibriSpeech/train"}"
-: "${VALID_DATASET_DIR:="/mnt/sdd/LibriSpeech/LibriSpeech/valid"}"
+: "${TRAIN_DATASET_DIR:="/home/vmagent/app/dataset/LibriSpeech/train"}"
+: "${VALID_DATASET_DIR:="/home/vmagent/app/dataset/LibriSpeech/valid"}"
 : "${DALI_ONLY:=false}"
-: "${VECTORIZED_SA:=true}"
-: "${VECTORIZED_SAMPLER=true}"
+: "${VECTORIZED_SA:=false}"
+: "${VECTORIZED_SAMPLER=false}"
 : "${LOG_FREQUENCY=1}"
 : "${BETA1:=0.9}"
 : "${BETA2:=0.999}"
 : "${MAX_TRAIN_DURATION:=16.7}"
 
-: "${MAX_SYMBOL:=300}"
-: "${DATA_CPU_THREADS:=16}"
-
-: "${FUSE_RELU_DROPOUT:=false}"
-: "${MULTI_TENSOR_EMA:=true}"
-# : "${BATCH_EVAL_MODE:=cg_unroll_pipeline}"
-# : "${APEX_LOSS:=fp16}"
-# : "${APEX_JOINT:=pack}"
-: "${BUFFER_PREALLOC:=true}"
-# : "${EMA_UPDATE_TYPE:=fp16}"
-# : "${DIST_LAMB:=true}"
-: "${MULTILAYER_LSTM:=true}"
-: "${ENABLE_PREFETCH:=true}"
-# : "${BATCH_SPLIT_FACTOR:=4}"
-: "${TOKENIZED_TRANSCRIPT:=true}"
-: "${DIST_SAMPLER:=true}"
-: "${MIN_SEQ_SPLIT_LEN:=20}"
-: "${APEX_MLP:=true}"
-: "${PRE_SORT_FOR_SEQ_SPLIT:=true}"
-: "${JIT_TENSOR_FORMATION:=true}"
-
-: ${META_DIR:="/metadata"}
-: ${TRAIN_MANIFESTS:="$META_DIR/librispeech-train-clean-100-wav-tokenized.pkl \
-                      $META_DIR/librispeech-train-clean-360-wav-tokenized.pkl \
-                      $META_DIR/librispeech-train-other-500-wav-tokenized.pkl"}
-# : ${TRAIN_MANIFESTS:="$META_DIR/librispeech-train-clean-100-wav-tokenized.pkl"}
+: ${META_DIR:="/home/vmagent/app/dataset/LibriSpeech/metadata"}
+# : ${TRAIN_MANIFESTS:="$META_DIR/librispeech-train-clean-100-wav-tokenized.pkl \
+#                       $META_DIR/librispeech-train-clean-360-wav-tokenized.pkl \
+#                       $META_DIR/librispeech-train-other-500-wav-tokenized.pkl"}
+: ${TRAIN_MANIFESTS:="$META_DIR/librispeech-train-clean-100-wav-tokenized.pkl"}
 : ${VAL_MANIFESTS:="$META_DIR/librispeech-dev-clean-wav-tokenized.pkl"}
-
-# : ${TRAIN_MANIFESTS:="$DATASET_DIR/librispeech-train-clean-100-wav.json \
-#                       $DATASET_DIR/librispeech-train-clean-360-wav.json \
-#                       $DATASET_DIR/librispeech-train-other-500-wav.json"}
-# # : ${TRAIN_MANIFESTS:="$DATASET_DIR/librispeech-train-clean-100-wav.json"}
-# : ${VAL_MANIFESTS:="$DATASET_DIR/librispeech-dev-clean-wav.json"}
-
+: ${OUTPUT_DIR:="/results"}
+: ${TARGET:=0.7}
 
 : "${DIST:=true}"
 : "${DIST_BACKEND:=ccl}"
-
-
-: ${OUTPUT_DIR:="/results"}
-: ${TARGET:=0.058}
 
 # start timing
 start=$(date +%s)
@@ -102,12 +70,25 @@ echo "STARTING TIMING RUN AT $start_fmt"
 # run benchmark
 echo "running benchmark"
 
+export DATASET_DIR
 export TORCH_HOME="$(pwd)/torch-model-cache"
 
+mkdir -p /results
 
-mkdir -p results
+MODEL_ARGS="--enc_n_hid 256 \
+  --enc_pre_rnn_layers 1 \
+  --enc_stack_time_factor 8 \
+  --enc_post_rnn_layers 1 \
+  --enc_dropout 0.1 \
+  --pred_n_hid 128 \
+  --pred_rnn_layers 2 \
+  --pred_dropout 0.3 \
+  --joint_n_hid 128 \
+  --joint_dropout 0.3 \
+  --rnn_type lstm"
 # run training
-ARGS="--batch_size=$BATCHSIZE \
+ARGS="train.py \
+  --batch_size=$BATCHSIZE \
   --beta1=${BETA1} \
   --beta2=${BETA2} \
   --max_duration=${MAX_TRAIN_DURATION} \
@@ -126,6 +107,7 @@ ARGS="--batch_size=$BATCHSIZE \
   --seed $SEED \
   --train_dataset_dir=${TRAIN_DATASET_DIR} \
   --valid_dataset_dir=${VALID_DATASET_DIR} \
+  --cudnn_benchmark \
   --dali_device $DALIDEVICE \
   --weight_decay=1e-3 \
   --log_frequency=${LOG_FREQUENCY} \
@@ -134,7 +116,9 @@ ARGS="--batch_size=$BATCHSIZE \
   --prediction_frequency=1000000 \
   --weights_init_scale=${WEIGHTS_INIT_SCALE} \
   --val_manifests=${VAL_MANIFESTS} \
-  --train_manifests ${TRAIN_MANIFESTS}"
+  --train_manifests ${TRAIN_MANIFESTS} \
+  --save_at_the_end" # \
+  # --use_ipex"
 
 if [ $BUCKET -ne 0 ]; then
   ARGS="${ARGS} --num_buckets=${BUCKET}"
@@ -169,6 +153,7 @@ fi
 if [ "$DIST" = true ]; then
   ARGS="${ARGS} --dist --dist_backend=${DIST_BACKEND}"
 fi
+ARGS="${ARGS} ${MODEL_ARGS}"
 
 [ ! -z "${AMP_LVL}" ] && ARGS+=" --amp_level ${AMP_LVL}"
 [ ! -z "${DATA_CPU_THREADS}" ] && ARGS+=" --data_cpu_threads ${DATA_CPU_THREADS}"
@@ -189,32 +174,16 @@ fi
 [ "${JIT_TENSOR_FORMATION}" = true ] && ARGS+=" --jit_tensor_formation"
 [ "${DALI_DONT_USE_MMAP}" = true ] && ARGS+=" --dali_dont_use_mmap"
 
-
-# source /opt/intel/oneapi/intelpython/latest/envs/rnnt/.local/env/setvars.sh
-# export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/oneapi/intelpython/python3.7/envs/rnnt/lib/python3.7/site-packages/torch/lib/
-# export LD_PRELOAD=/opt/intel/oneapi/intelpython/latest/envs/rnnt/lib/libiomp5.so
+CONDA_PREFIX=/opt/intel/oneapi/intelpython/latest/envs/pytorch_1.10
 if [ "$DIST" = true ]; then
   echo "Distributed training"
-  # export CCL_WORKER_COUNT=1
-  # export CCL_WORKER_AFFINITY="0,18"
-
-  # export MASTER_ADDR="sr112"
-  # export MASTER_PORT="29500"
-
-  # mpiexec.hydra -np 2 -ppn 2 -hosts sr112 -genv I_MPI_PIN_DOMAIN [0x3fffe,0xffff80000,] \
-  #   -genv KMP_BLOCKTIME 1 -genv KMP_AFFINITY granularity=fine,compact,1,0 -genv OMP_NUM_THREADS 17 \
-  #   -print-rank-map \
-  #   ${CONDA_PREFIX}/bin/python -u train.py ${ARGS} --use_ipex
-  
-  ${CONDA_PREFIX}/bin/python -m intel_extension_for_pytorch.cpu.launch --distributed --nproc_per_node=2 --nnodes=1 --hostfile sr112 \
-    train.py ${ARGS} --use_ipex
+  ${CONDA_PREFIX}/bin/python -m intel_extension_for_pytorch.cpu.launch --distributed --use_logical_core --nproc_per_node=4 --nnodes=2 --hostfile hosts \
+    ${ARGS} 2>&1 | tee dist_train.log
   ret_code=$?
 
 else
   echo "Training"
-  export OMP_NUM_THREADS=36
-  # ${CONDA_PREFIX}/bin/python -u train.py ${ARGS} --use_ipex
-  ${CONDA_PREFIX}/bin/python -m intel_extension_for_pytorch.cpu.launch --distributed train.py ${ARGS} --use_ipex
+  ${CONDA_PREFIX}/bin/python -m intel_extension_for_pytorch.cpu.launch ${ARGS} 2>&1 | tee train.log
   ret_code=$?
 fi
 

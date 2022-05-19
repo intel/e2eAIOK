@@ -21,7 +21,7 @@ from mlperf import logging
 
 def rnn(input_size, hidden_size, num_layers,
         forget_gate_bias=1.0, dropout=0.0,
-        decoupled=False, **kwargs):
+        decoupled=False, rnn_type='lstm', **kwargs):
 
     kwargs = dict(
         input_size=input_size,
@@ -35,7 +35,10 @@ def rnn(input_size, hidden_size, num_layers,
     if decoupled:
         return DecoupledLSTM(**kwargs)
     else:
-        return LSTM(**kwargs)
+        if rnn_type == 'lstm':
+            return LSTM(**kwargs)
+        else:
+            return GRU(**kwargs)
 
 
 class LSTM(torch.nn.Module):
@@ -105,6 +108,71 @@ class LSTM(torch.nn.Module):
             # We guarantee this path will only be taken by training
             return [y0, y1], None
 
+class GRU(torch.nn.Module):
+
+    def __init__(self, input_size, hidden_size, num_layers, dropout,
+                 forget_gate_bias, weights_init_scale=1.0,
+                 hidden_hidden_bias_scale=0.0, **kwargs):
+        """Returns an GRU with bias init to `forget_gate_bias`.
+
+        Args:
+            input_size: See `torch.nn.GRU`.
+            hidden_size: See `torch.nn.GRU`.
+            num_layers: See `torch.nn.GRU`.
+            dropout: See `torch.nn.GRU`.
+            forget_gate_bias: For each layer and each direction, the total value of
+                to initialise the forget gate bias to.
+
+        Returns:
+            A `torch.nn.GRU`.
+        """
+        super(GRU, self).__init__()
+
+        self.gru = torch.nn.GRU(
+            input_size=input_size,
+            hidden_size=hidden_size,
+            num_layers=num_layers,
+            dropout=dropout,
+        )
+
+        self.dropout = torch.nn.Dropout(dropout) if dropout else None
+
+        if forget_gate_bias is not None:
+            for name, v in self.gru.named_parameters():
+                if "bias_ih" in name:
+                    bias = getattr(self.gru, name)
+                    bias.data[hidden_size:2*hidden_size].fill_(forget_gate_bias)
+                if "bias_hh" in name:
+                    bias = getattr(self.gru, name)
+                    bias.data[hidden_size:2*hidden_size] *= float(hidden_hidden_bias_scale)
+
+        for name, v in self.named_parameters():
+            if 'weight' in name or 'bias' in name:
+                v.data *= float(weights_init_scale)
+        tensor_name = kwargs['tensor_name']
+        logging.log_event(logging.constants.WEIGHTS_INITIALIZATION,
+                          metadata=dict(tensor=tensor_name))
+
+
+    def forward(self, x, h=None):
+        if type(x) is not list:
+            x, h = self.gru(x, h)
+            if self.dropout:
+                x = self.dropout(x)
+            return x, h
+        else:
+            # seq splitting path
+            if len(x) != 2:
+                raise NotImplementedError("Only number of seq segments equal to 2 is supported")
+            y0, h0 = self.gru(x[0], h)
+            hid0 = h0[:, :x[1].size(1)].contiguous()
+            y1, h1 = self.gru(x[1], hid0)
+            if self.dropout:
+                y0 = self.dropout(y0)
+                y1 = self.dropout(y1)
+            # h will not be used in training any way. Return None.
+            # We guarantee this path will only be taken by training
+            return [y0, y1], None
 
 class DecoupledBase(torch.nn.Module):
     """Base class for decoupled RNNs.

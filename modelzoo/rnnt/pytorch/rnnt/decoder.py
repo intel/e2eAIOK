@@ -23,34 +23,29 @@ import copy
 
 def graph_simple(func_or_module,
                  sample_args,
-                 graph_stream=None,
                  warmup_iters=2,
                  warmup_only=False):
     assert isinstance(sample_args, tuple)
-    stream = torch.cuda.Stream() if graph_stream is None else graph_stream
-    ambient_stream = torch.cuda.current_stream()
-    stream.wait_stream(ambient_stream)
-    with torch.cuda.stream(stream):
-        # warmup iters before capture
-        for _ in range(warmup_iters):
-            outputs  = func_or_module(*sample_args)
-
-        if warmup_iters > 0:
-            del outputs
-        # print("Graphing\n", flush=True)
-        # Capture forward pass
-        fwd_graph = torch.cuda._Graph()
-        fwd_graph.capture_begin()
+    # warmup iters before capture
+    for _ in range(warmup_iters):
         outputs  = func_or_module(*sample_args)
-        fwd_graph.capture_end()
 
-    ambient_stream.wait_stream(stream)
+    if warmup_iters > 0:
+        del outputs
+    # print("Graphing\n", flush=True)
+    # Capture forward pass
+    # fwd_graph = torch.cuda.CUDAGraph()
+    # fwd_graph.capture_begin()
+    # outputs  = func_or_module(*sample_args)
+    # fwd_graph.capture_end()
+
     def functionalized(*inputs):
         with torch.no_grad():
             for i, arg in zip(sample_args, inputs):
                 if i.data_ptr() != arg.data_ptr():
                     i.copy_(arg)
-        fwd_graph.replay()      
+        # fwd_graph.replay()    
+        outputs  = func_or_module(*sample_args)  
         return outputs
     return functionalized
 
@@ -129,13 +124,23 @@ class RNNTGreedyDecoder:
         with torch.no_grad():
             ema_model_eval = self._handle_ema_model(ema_model)
             self.model = ema_model_eval
-            feats = torch.ones(dict_meta_data["batch"], dict_meta_data["max_feat_len"], self.rnnt_config["joint_n_hid"], dtype=torch.float16, device='cpu')
+            feats = torch.ones(dict_meta_data["batch"], dict_meta_data["max_feat_len"], self.rnnt_config["joint_n_hid"], dtype=torch.float, device='cpu')
             feat_lens = torch.ones(dict_meta_data["batch"], dtype=torch.int32, device='cpu') * dict_meta_data["max_feat_len"]
             self._capture_cg(feats, feat_lens)
 
     def update_ema_model_eval(self, ema_model):
         ema_model_eval = self._handle_ema_model(ema_model)
-        self.model = ema_model_eval
+        if type(self.batch_eval_mode) == str and self.batch_eval_mode.startswith("cg"): 
+            if self.cg_captured == False:
+                raise Exception("CUDA graph for eval should be captured first before updating")
+            else:
+                # overflow_buf = torch.cuda.IntTensor([0])
+                # amp_C.multi_tensor_scale(65536, overflow_buf, [list(ema_model_eval.parameters()), list(self.model.parameters())], 1.0)
+
+                for p, p_eval in zip(self.model.parameters(), ema_model_eval.parameters()):
+                    p.copy_(p_eval)
+        else:
+            self.model = ema_model_eval
 
     def decode(self, x, out_lens):
         if self.batch_eval_mode is None:
@@ -258,33 +263,23 @@ class RNNTGreedyDecoder:
         non_blank_mask = (k != self.blank_idx)
 
         # update current label according to non_blank_mask
-        self.label_upd_stream.wait_stream(torch.cuda.current_stream())
-        with torch.cuda.stream(self.label_upd_stream):
-            current_label = current_label * ~non_blank_mask + k * non_blank_mask
-            label_tensor[arange_tensor, label_idx] = label_tensor[arange_tensor, label_idx] * complete_mask + current_label * ~complete_mask
+        current_label = current_label * ~non_blank_mask + k * non_blank_mask
+        label_tensor[arange_tensor, label_idx] = label_tensor[arange_tensor, label_idx] * complete_mask + current_label * ~complete_mask
 
-        self.hidden_upd_stream.wait_stream(torch.cuda.current_stream())
-        with torch.cuda.stream(self.hidden_upd_stream):
-            for i in range(2):
-                expand_mask = non_blank_mask.unsqueeze(0).unsqueeze(2).expand(hidden[0].size())
-                hidden[i] = hidden[i] * ~expand_mask + hidden_prime[i] * expand_mask
+        for i in range(2):
+            expand_mask = non_blank_mask.unsqueeze(0).unsqueeze(2).expand(hidden[0].size())
+            hidden[i] = hidden[i] * ~expand_mask + hidden_prime[i] * expand_mask
         
         # advance time_idx as needed
-        self.time_idx_upd_stream.wait_stream(torch.cuda.current_stream())
-        with torch.cuda.stream(self.time_idx_upd_stream):
-            num_symbol_added += non_blank_mask
-            exceed_mask = num_symbol_added >= self.max_symbols
-            advance_mask = (~non_blank_mask | exceed_mask)  & ~complete_mask
-            time_idx += advance_mask
-            num_symbol_added.masked_fill_(advance_mask, 0)
+        num_symbol_added += non_blank_mask
+        exceed_mask = num_symbol_added >= self.max_symbols
+        advance_mask = (~non_blank_mask | exceed_mask)  & ~complete_mask
+        time_idx += advance_mask
+        num_symbol_added.masked_fill_(advance_mask, 0)
 
         # handle time out
         num_total_symbol += non_blank_mask
         time_out_mask = num_total_symbol >= self.max_symbol_per_sample
-        
-        torch.cuda.current_stream().wait_stream(self.label_upd_stream)
-        torch.cuda.current_stream().wait_stream(self.hidden_upd_stream)
-        torch.cuda.current_stream().wait_stream(self.time_idx_upd_stream)
 
         label_idx += non_blank_mask & ~time_out_mask
         complete_mask = (time_idx >= out_len) | time_out_mask
@@ -305,13 +300,9 @@ class RNNTGreedyDecoder:
             func_to_be_captured = self._eval_main_loop_unroll
         else:
             func_to_be_captured = self._eval_main_loop_stream
-        self.label_upd_stream = torch.cuda.Stream()
-        self.hidden_upd_stream = torch.cuda.Stream()
-        self.time_idx_upd_stream = torch.cuda.Stream()
 
         cg = graph_simple(  func_to_be_captured,
                             tuple(t.clone() for t in list_input_tensor),
-                            torch.cuda.Stream(),
                             warmup_iters=2)
         return cg
 
@@ -540,22 +531,17 @@ class RNNTGreedyDecoder:
 
         
         batch_complete_cpu = torch.tensor(False, dtype=torch.bool, device='cpu')
-        copy_stream = torch.cuda.Stream()
         while True:
             list_input_tensor = [label_tensor, hidden[0], hidden[1], time_idx, label_idx, complete_mask, num_symbol_added, num_total_symbol, 
             current_label]
             label_tensor, hidden[0], hidden[1], time_idx, label_idx, complete_mask, batch_complete, num_symbol_added, num_total_symbol, \
             current_label = self.main_loop_cg(*list_input_tensor)
 
-            copy_stream.synchronize()
             # print(batch_complete_cpu)
             if torch.any(batch_complete_cpu):
                 break
 
-            copy_stream.wait_stream(torch.cuda.current_stream())
-
-            with torch.cuda.stream(copy_stream):
-                batch_complete_cpu.copy_(batch_complete, non_blocking=True)
+            batch_complete_cpu.copy_(batch_complete, non_blocking=True)
 
         label = []
         

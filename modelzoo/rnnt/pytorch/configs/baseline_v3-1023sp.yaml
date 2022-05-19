@@ -67,23 +67,23 @@ input_train:
     min_time: 0
     max_time: 0.03
 
-rnnt:
-  in_feats: 256  # n_filt x frame_stacking (+ padding to 32)
-  # init: xavier_uniform
-  # activation: relu
+# rnnt:
+#   in_feats: 256  # n_filt x frame_stacking (+ padding to 32)
+#   # init: xavier_uniform
+#   # activation: relu
 
-  enc_n_hid: 1024
-  enc_pre_rnn_layers: 2
-  enc_post_rnn_layers: 3
-  enc_stack_time_factor: 2
-  enc_dropout: 0.1
+#   enc_n_hid: 1024
+#   enc_pre_rnn_layers: 2
+#   enc_post_rnn_layers: 3
+#   enc_stack_time_factor: 2
+#   enc_dropout: 0.1
 
-  pred_n_hid: 512
-  pred_rnn_layers: 2
-  pred_dropout: 0.3
+#   pred_n_hid: 512
+#   pred_rnn_layers: 2
+#   pred_dropout: 0.3
 
-  joint_n_hid: 512
-  joint_dropout: 0.3
+#   joint_n_hid: 512
+#   joint_dropout: 0.3
 
-  forget_gate_bias: 1.0
-  decoupled_rnns: true
+#   forget_gate_bias: 1.0
+#   decoupled_rnns: true

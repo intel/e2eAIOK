@@ -206,7 +206,7 @@ def parse_args():
                     help='Disable mmap for DALI')
     io.add_argument('--training_time_threshold', type=int, default=None, 
                     help='Max training time before stopping training')
-    
+
     io.add_argument('--enc_n_hid', type=int, default=1024)
     io.add_argument('--enc_pre_rnn_layers', type=int, default=2)
     io.add_argument('--enc_stack_time_factor', type=int, default=2)
@@ -217,8 +217,6 @@ def parse_args():
     io.add_argument('--pred_dropout', type=float, default=0.3)
     io.add_argument('--joint_n_hid', type=int, default=512)
     io.add_argument('--joint_dropout', type=float, default=0.3)
-    io.add_argument('--rnn_type', type=str, default='lstm')
-
     return parser.parse_args()
 
 
@@ -242,14 +240,8 @@ def evaluate(epoch, step, val_loader, val_feat_proc, detokenize,
 
     for i, batch in enumerate(val_loader):
         print(f'{val_loader.pipeline_type} evaluation: {i:>10}/{len(val_loader):<10}', end='\r')
-
         audio, audio_lens, txt, txt_lens = batch
-
         feats, feat_lens = val_feat_proc([audio, audio_lens])
-
-        # if amp_level == 2:
-        #     feats = feats.half()
-        
         pred = greedy_decoder.decode(feats, feat_lens)
         agg['preds'] += helpers.gather_predictions([pred], detokenize)
         agg['txts'] += helpers.gather_transcripts([txt.cpu()], [txt_lens.cpu()], detokenize)
@@ -262,63 +254,6 @@ def evaluate(epoch, step, val_loader, val_feat_proc, detokenize,
     log((epoch,), step, 'dev_ema', {'wer': 100.0 * wer,
                                  'took': time.time() - start_time})
     return wer
-
-
-def train_step( model, loss_fn, args, batch_size, feats, feat_lens, txt, txt_lens, 
-                meta_data, train_loader, rnnt_graph):
-    if args.batch_split_factor == 1:
-        if rnnt_graph is not None:
-            log_probs, log_prob_lens = rnnt_graph.step(feats, feat_lens, txt, txt_lens, meta_data[0])
-        else:    
-            log_probs, log_prob_lens = model(feats, feat_lens, txt, txt_lens, meta_data[0])
-
-        loss = loss_fn(log_probs, log_prob_lens, txt, txt_lens, meta_data[0])
-        if args.enable_prefetch and train_loader is not None:
-            # if train_loader is None, that means we are doing dummy runs,
-            # so we don't need to prefetch
-            train_loader.data_iterator().prefetch()
-        loss /= args.grad_accumulation_steps
-
-        del log_probs, log_prob_lens
-
-        loss.backward()
-        if torch.isnan(loss).any():
-            raise Exception("Loss is NaN")
-
-        return loss.item()
-
-    else:
-        f, g, log_prob_lens = model.enc_pred(feats, feat_lens, txt, txt_lens)
-        f_2, g_2 = f.detach(), g.detach()
-        f_2.requires_grad = True
-        g_2.requires_grad = True
-        B_split = batch_size // args.batch_split_factor
-        loss_item = 0
-        for i in range(args.batch_split_factor):
-            
-            log_probs = model.joint(f_2[i*B_split:(i+1)*B_split], g_2[i*B_split:(i+1)*B_split], args.apex_transducer_joint, 
-                                    log_prob_lens[i*B_split:(i+1)*B_split], meta_data[i])
-            loss = loss_fn( log_probs, log_prob_lens[i*B_split:(i+1)*B_split], txt[i*B_split:(i+1)*B_split], 
-                            txt_lens[i*B_split:(i+1)*B_split], meta_data[i])
-
-            if args.enable_prefetch and train_loader is not None and i == 0:
-                # if train_loader is None, that means we are doing dummy runs,
-                # so we don't need to prefetch
-                train_loader.data_iterator().prefetch()
-            
-            loss /= (args.grad_accumulation_steps*args.batch_split_factor)
-            del log_probs
-            loss.backward()
-
-            if torch.isnan(loss).any():
-                raise Exception("Loss is NaN")
-
-            loss_item += loss.item()
-        
-        f.backward(f_2.grad)
-        g.backward(g_2.grad)
-
-        return loss_item,
 
 def apply_model_config(args, cfg):
     cfg['rnnt'] = {}
@@ -338,6 +273,8 @@ def apply_model_config(args, cfg):
 
 def main():
     args = parse_args()
+    logging.configure_logger(args.output_dir, 'RNNT')
+    logging.log_start(logging.constants.INIT_START)
 
     # set up distributed training
     if args.dist or (int(os.environ.get('WORLD_SIZE', 1)) > 1):
@@ -345,11 +282,6 @@ def main():
         world_size = dist.my_size
     else:
         world_size = 1
-
-    logging.configure_logger(args.output_dir, 'RNNT', dist.my_local_rank)
-    logging.log_start(logging.constants.INIT_START)
-
-    assert args.prediction_frequency is None or args.prediction_frequency % args.log_frequency == 0
 
     if args.seed is not None:
         logging.log_event(logging.constants.SEED, value=args.seed)
@@ -372,15 +304,6 @@ def main():
     assert args.batch_size % args.grad_accumulation_steps == 0, f'{args.batch_size} % {args.grad_accumulation_steps} != 0'
     logging.log_event(logging.constants.GRADIENT_ACCUMULATION_STEPS, value=args.grad_accumulation_steps)
     batch_size = args.batch_size // args.grad_accumulation_steps
-    if args.batch_split_factor != 1:
-        assert batch_size % args.batch_split_factor == 0, f'{batch_size} % {args.batch_split_factor} != 0'
-        assert args.dist_lamb, "dist LAMB must be used when batch split is enabled"
-
-    logging.log_event(logging.constants.SUBMISSION_BENCHMARK, value=logging.constants.RNNT)
-    logging.log_event(logging.constants.SUBMISSION_ORG, value='Intel')
-    logging.log_event(logging.constants.SUBMISSION_DIVISION, value=logging.constants.CLOSED) # closed or open
-    logging.log_event(logging.constants.SUBMISSION_STATUS, value=logging.constants.ONPREM) # on-prem/cloud/research
-    logging.log_event(logging.constants.SUBMISSION_PLATFORM, value='CPU')
 
     # set up the model
     tokenizer_kw = config.tokenizer(cfg)
@@ -390,8 +313,6 @@ def main():
     logging.log_event(logging.constants.MODEL_WEIGHTS_INITIALIZATION_SCALE, value=args.weights_init_scale)
     if args.fuse_relu_dropout:
         rnnt_config["fuse_relu_dropout"] = True
-    # if args.apex_transducer_joint is not None:
-    #     rnnt_config["apex_transducer_joint"] = args.apex_transducer_joint
     if args.weights_init_scale is not None:
         rnnt_config['weights_init_scale'] = args.weights_init_scale
     if args.hidden_hidden_bias_scale is not None:
@@ -400,9 +321,6 @@ def main():
         rnnt_config["decoupled_rnns"] = False
     if args.use_ipex:
         rnnt_config['use_ipex'] = True
-    rnnt_config['rnn_type'] = args.rnn_type
-    # if args.apex_mlp:
-    #     rnnt_config["apex_mlp"] = True
     model = RNNT(n_classes=tokenizer.num_labels + 1, **rnnt_config)
     blank_idx = tokenizer.num_labels
     loss_fn = RNNTLoss(blank_idx=blank_idx)
@@ -429,23 +347,13 @@ def main():
     kw = {'params': model.parameters(), 'lr': args.lr,
           'weight_decay': args.weight_decay}
 
-    initial_lrs = args.lr
-
-    print_once(f'Starting with LRs: {initial_lrs}')
     optimizer = ipex.optim._lamb.Lamb(betas=(args.beta1, args.beta2), eps=opt_eps, **kw)
 
-    # optimize with ipex
-    if args.use_ipex:
-        model, optimizer = ipex.optimize(model, optimizer=optimizer)
-        
-    adjust_lr = lambda step, epoch: lr_policy(
-            step, epoch, initial_lrs, optimizer, steps_per_epoch=steps_per_epoch,
-            warmup_epochs=args.warmup_epochs, hold_epochs=args.hold_epochs,
-            min_lr=args.min_lr, exp_gamma=args.lr_exp_gamma, dist_lamb=args.dist_lamb)
     # data parallel
     if world_size > 1:
         model = DDP(model)
     print_once(model)
+
     print_once('Setting up datasets...')
     (
         train_dataset_kw,
@@ -461,27 +369,6 @@ def main():
         val_padalign_kw,
         val_specaugm_kw,
     ) = config.input(cfg, 'val')
-
-    logging.log_event(logging.constants.DATA_TRAIN_MAX_DURATION,
-                      value=train_dataset_kw['max_duration'])
-    logging.log_event(logging.constants.DATA_SPEED_PERTURBATON_MAX,
-                      value=train_dataset_kw['speed_perturbation']['max_rate'])
-    logging.log_event(logging.constants.DATA_SPEED_PERTURBATON_MIN,
-                      value=train_dataset_kw['speed_perturbation']['min_rate'])
-    logging.log_event(logging.constants.DATA_SPEC_AUGMENT_FREQ_N,
-                      value=train_specaugm_kw['freq_masks'])
-    logging.log_event(logging.constants.DATA_SPEC_AUGMENT_FREQ_MIN,
-                      value=train_specaugm_kw['min_freq'])
-    logging.log_event(logging.constants.DATA_SPEC_AUGMENT_FREQ_MAX,
-                      value=train_specaugm_kw['max_freq'])
-    logging.log_event(logging.constants.DATA_SPEC_AUGMENT_TIME_N,
-                      value=train_specaugm_kw['time_masks'])
-    logging.log_event(logging.constants.DATA_SPEC_AUGMENT_TIME_MIN,
-                      value=train_specaugm_kw['min_time'])
-    logging.log_event(logging.constants.DATA_SPEC_AUGMENT_TIME_MAX,
-                      value=train_specaugm_kw['max_time'])
-    logging.log_event(logging.constants.GLOBAL_BATCH_SIZE,
-                      value=batch_size * world_size * args.grad_accumulation_steps)
 
     class PermuteAudio(torch.nn.Module):
         def forward(self, x):
@@ -561,33 +448,11 @@ def main():
         raise NotImplementedError("Pre sort only works with vectorized sampler for now")
     logging.log_event(logging.constants.DATA_TRAIN_NUM_BUCKETS, value=args.num_buckets)
 
-    if args.num_buckets is not None:
-        if args.vectorized_sampler:
-            builder = dali_sampler.VectorizedBucketingSampler
-        else:
-            builder = dali_sampler.BucketingSampler
+    sampler = dali_sampler.SimpleSampler(val_dataset_kw)
 
-        train_sampler = builder(
-            train_dataset_kw,
-            args.num_buckets,
-            batch_size,
-            world_size,
-            args.epochs,
-            sampler_seed,
-            args.dist_sampler,
-            args.pre_sort_for_seq_split
-        )
-    else:
-        train_sampler = dali_sampler.SimpleSampler(train_dataset_kw)
-
-    eval_sampler = dali_sampler.SimpleSampler(val_dataset_kw)
-
-    train_sampler.sample(   file_names=args.train_manifests, 
+    sampler.sample(   file_names=args.val_manifests, 
                             in_mem_file_list=args.in_mem_file_list,
                             tokenized_transcript=args.tokenized_transcript)
-    eval_sampler.sample(file_names=args.val_manifests, 
-                        in_mem_file_list=args.in_mem_file_list,
-                        tokenized_transcript=args.tokenized_transcript)
 
 
     # Setup DALI pipeline
@@ -597,29 +462,6 @@ def main():
         synthetic_seq_len = [args.synthetic_audio_seq_len, args.synthetic_text_seq_len]
     else:
         raise Exception("synthetic seq length for both text and audio need to be specified")
-    train_loader = DaliDataLoader(gpu_id=None,
-                                  dataset_path=args.train_dataset_dir,
-                                  config_data=train_dataset_kw,
-                                  config_features=train_features_kw,
-                                  json_names=args.train_manifests,
-                                  batch_size=batch_size,
-                                  sampler=train_sampler,
-                                  grad_accumulation_steps=args.grad_accumulation_steps,
-                                  pipeline_type="train",
-                                  device_type=args.dali_device,
-                                  tokenizer=tokenizer,
-                                  num_threads=args.data_cpu_threads,
-                                  synthetic_seq_len=synthetic_seq_len,
-                                  seed=dali_seed,
-                                  in_mem_file_list=args.in_mem_file_list,
-                                  enable_prefetch=args.enable_prefetch,
-                                  tokenized_transcript=args.tokenized_transcript,
-                                  preproc=train_preproc,
-                                  min_seq_split_len=args.min_seq_split_len,
-                                  pre_sort=args.pre_sort_for_seq_split,
-                                  jit_tensor_formation=args.jit_tensor_formation,
-                                  dont_use_mmap=args.dali_dont_use_mmap)
-
 
     val_loader = DaliDataLoader(gpu_id=None,
                                 dataset_path=args.valid_dataset_dir,
@@ -627,7 +469,7 @@ def main():
                                 config_features=val_features_kw,
                                 json_names=args.val_manifests,
                                 batch_size=args.val_batch_size,
-                                sampler=eval_sampler,
+                                sampler=sampler,
                                 pipeline_type="val",
                                 device_type=args.dali_device,
                                 tokenizer=tokenizer,
@@ -639,203 +481,32 @@ def main():
                                 dont_use_mmap=args.dali_dont_use_mmap)
 
 
-    steps_per_epoch = len(train_loader) // args.grad_accumulation_steps
-
-    logging.log_event(logging.constants.TRAIN_SAMPLES, value=train_loader.dataset_size)
     logging.log_event(logging.constants.EVAL_SAMPLES, value=val_loader.dataset_size)
-
-    logging.log_event(logging.constants.OPT_NAME, value='lamb')
-    logging.log_event(logging.constants.OPT_BASE_LR, value=args.lr)
-    logging.log_event(logging.constants.OPT_LAMB_EPSILON, value=opt_eps)
-    logging.log_event(logging.constants.OPT_LAMB_LR_DECAY_POLY_POWER, value=args.lr_exp_gamma)
-    logging.log_event(logging.constants.OPT_LR_WARMUP_EPOCHS, value=args.warmup_epochs)
-    logging.log_event(logging.constants.OPT_LAMB_LR_HOLD_EPOCHS, value=args.hold_epochs)
-    logging.log_event(logging.constants.OPT_LAMB_BETA_1, value=args.beta1)
-    logging.log_event(logging.constants.OPT_LAMB_BETA_2, value=args.beta2)
-    logging.log_event(logging.constants.OPT_GRADIENT_CLIP_NORM, value=args.clip_norm)
-    logging.log_event(logging.constants.OPT_LR_ALT_DECAY_FUNC, value=True)
-    logging.log_event(logging.constants.OPT_LR_ALT_WARMUP_FUNC, value=True)
-    logging.log_event(logging.constants.OPT_LAMB_LR_MIN, value=args.min_lr)
-    logging.log_event(logging.constants.OPT_WEIGHT_DECAY, value=args.weight_decay)
-
 
     # load checkpoint
     meta = {'best_wer': 10**6, 'start_epoch': 0}
     checkpointer = Checkpointer(args.output_dir, 'RNN-T',
                                 args.keep_milestones, use_amp=True)
-    if args.resume:
-        args.ckpt = checkpointer.last_checkpoint() or args.ckpt
+    # if args.resume:
+    #     args.ckpt = checkpointer.last_checkpoint() or args.ckpt
 
     if args.ckpt is not None:
         checkpointer.load(args.ckpt, model, ema_model, optimizer, meta)
 
-
-    start_epoch = meta['start_epoch']
-    best_wer = meta['best_wer']
-    last_wer = meta['best_wer']
     epoch = 1
-    step = start_epoch * steps_per_epoch + 1
+    step = 1
 
-    # training loop
-    model.train()
+    # eval loop
+    model.eval()
 
-    training_start_time = time.time()
-    training_utts = 0
-    with torch.profiler.profile(
-        schedule=torch.profiler.schedule(wait=0, warmup=0, active=2, repeat=1, skip_first=5),
-        on_trace_ready=torch.profiler.tensorboard_trace_handler(os.path.join(args.output_dir, 'trace')),
-        with_modules=True) as prof:
-        for epoch in range(start_epoch + 1, args.epochs + 1):
-
-            logging.log_start(logging.constants.BLOCK_START,
-                              metadata=dict(first_epoch_num=epoch,
-                                            epoch_count=1))
-            logging.log_start(logging.constants.EPOCH_START,
-                              metadata=dict(epoch_num=epoch))
-
-            epoch_utts = 0
-            accumulated_batches = 0
-            epoch_start_time = time.time()
-
-
-            if args.enable_prefetch:
-                train_loader.data_iterator().prefetch()
-
-            step_start_time = time.time()
-
-            for batch in train_loader:
-                if accumulated_batches == 0:
-                    optimizer.zero_grad()
-                    adjust_lr(step, epoch)
-                    step_utts = 0
-                    all_feat_lens = []
-                # feature proc
-                if args.enable_prefetch:
-                    # when prefetch is enabled, train_feat_proc at prefetch time
-                    feats, feat_lens, txt, txt_lens = batch
-                    meta_data = train_preproc.meta_data
-                else:
-                    audio, audio_lens, txt, txt_lens = batch
-                    feats, feat_lens = train_feat_proc([audio, audio_lens])
-                    meta_data = []
-                    B_split = batch_size // args.batch_split_factor
-                    for i in range(args.batch_split_factor):
-                        meta_data.append(train_preproc.get_packing_meta_data(   feats.size(0), 
-                                                                                feat_lens[i*B_split:(i+1)*B_split], 
-                                                                                txt_lens[i*B_split:(i+1)*B_split]))
-
-                if args.enable_seq_len_stats:
-                    all_feat_lens += feat_lens
-
-
-
-                loss_item= train_step( model, loss_fn, args, batch_size, feats, feat_lens, txt, txt_lens,
-                                        meta_data, train_loader, rnnt_graph)
-                step_utts += txt_lens.size(0) * world_size
-                epoch_utts += txt_lens.size(0) * world_size
-                accumulated_batches += 1
-                if accumulated_batches % args.grad_accumulation_steps == 0:
-
-                    optimizer.step()
-                    apply_ema(model, ema_model, args.ema)
-
-                    if step % args.log_frequency == 0:
-
-                        if args.prediction_frequency is None or step % args.prediction_frequency == 0:
-                            preds = greedy_decoder.decode(feats, feat_lens)
-                            wer, pred_utt, ref = greedy_wer(
-                                    preds,
-                                    txt,
-                                    txt_lens,
-                                    tokenizer.detokenize)
-                            print_once(f'  Decoded:   {pred_utt[:90]}')
-                            print_once(f'  Reference: {ref[:90]}')
-                            wer = {'wer': 100 * wer}
-                        else:
-                            wer = {}
-
-                        step_time = time.time() - step_start_time
-                        step_start_time = time.time()
-                        dict_log = {'loss': loss_item,
-                                     **wer,  # optional entry
-                                    'throughput': step_utts / step_time,
-                                    'took': step_time,
-                                    'lrate': optimizer._lr.item() if args.dist_lamb else optimizer.param_groups[0]['lr']} # TODO: eliminate sync
-
-                        if args.enable_seq_len_stats:
-                            dict_log["seq-len-min"] = min(all_feat_lens).item()
-                            dict_log["seq-len-max"] = max(all_feat_lens).item()
-
-                        log((epoch, step % steps_per_epoch or steps_per_epoch, steps_per_epoch),
-                            step, 'train', dict_log)
-
-
-
-                    step += 1
-                    accumulated_batches = 0
-                    # end of step
-                prof.step()
-
-            logging.log_end(logging.constants.EPOCH_STOP,
-                            metadata=dict(epoch_num=epoch))
-
-            epoch_time = time.time() - epoch_start_time
-            log((epoch,), None, 'train_avg', {'throughput': epoch_utts / epoch_time,
-                                              'took': epoch_time})
-            # logging throughput for dashboard
-            logging.log_event(key='throughput', value= epoch_utts / epoch_time)
-
-            if epoch % args.val_frequency == 0:
-                wer = evaluate(epoch, step, val_loader, val_feat_proc,
-                               tokenizer.detokenize, ema_model, loss_fn,
-                               greedy_decoder, args.amp_level)
-                last_wer = wer
-                if wer < best_wer and epoch >= args.save_best_from:
-                    checkpointer.save(model, ema_model, optimizer, epoch,
-                                      step, best_wer, is_best=True)
-                    best_wer = wer
-
-            save_this_epoch = (args.save_frequency is not None and epoch % args.save_frequency == 0) \
-                           or (epoch in args.keep_milestones)
-            if save_this_epoch:
-                checkpointer.save(model, ema_model, optimizer, epoch, step, best_wer)
-
-            training_utts += epoch_utts
-            logging.log_end(logging.constants.BLOCK_STOP, metadata=dict(first_epoch_num=epoch))
-
-            if last_wer <= args.target:
-                logging.log_end(logging.constants.RUN_STOP, metadata={'status': 'success'})
-                print_once(f'Finished after {args.epochs_this_job} epochs.')
-                break
-            if 0 < args.epochs_this_job <= epoch - start_epoch:
-                print_once(f'Finished after {args.epochs_this_job} epochs.')
-                break
-            # end of epoch
-            training_time = time.time() - training_start_time
-            if args.training_time_threshold is not None and training_time > args.training_time_threshold:
-                print_once('training time exceed threshold, stop training')
-                break
-    
-    print_once(prof.key_averages().table(sort_by='self_cpu_time_total'))
-
-    training_time = time.time() - training_start_time
-    print_once(f"Epoch {epoch}, Iteration {0} to {step} took {training_time} s, {training_time/step*1000} ms/iter, loss is  , test took {training_time} secs, test_auc is {str(best_wer)}")
-    log((), None, 'train_avg', {'throughput': training_utts / training_time})
-
-    if last_wer > args.target:
-        logging.log_end(logging.constants.RUN_STOP, metadata={'status': 'aborted'})
-
-    if epoch == args.epochs:
-        evaluate(epoch, step, val_loader, val_feat_proc, tokenizer.detokenize,
-                 ema_model, loss_fn, greedy_decoder, args.amp_level)
+    start_time = time.time()
+    wer = evaluate(epoch, step, val_loader, val_feat_proc, tokenizer.detokenize,
+            ema_model, loss_fn, greedy_decoder, args.amp_level)
+    eval_time = time.time() - start_time
+    print_once(f'evaluate throughput: {len(val_loader) * world_size * args.val_batch_size / eval_time}')
+    print_once(f'evaluate wer: {wer}')
 
     flush_log()
-    if args.save_at_the_end:
-        checkpointer.save(model, ema_model, optimizer, epoch, step, best_wer)
-    if dist.my_rank == 0:
-            file = os.path.join(args.output_dir, 'metric.txt')
-            with open(file, 'w') as f:
-                f.writelines(str(last_wer))
 
 
 if __name__ == "__main__":
