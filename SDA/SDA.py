@@ -18,6 +18,7 @@ from SDA.modeladvisor.DLRMTorch110Advisor import *
 from SDA.modeladvisor.WnDAdvisor import *
 from SDA.modeladvisor.TwitterRecSysAdvisor import *
 from SDA.modeladvisor.TPCxAIAdvisor09 import *
+from SDA.modeladvisor.MiniGoAdvisor import *
 from SDA.modeladvisor.RNNTAdvisor import *
 from SDA.modeladvisor.UPMAdvisor import *
 from SDA.modeladvisor.BERTAdvisor import *
@@ -94,6 +95,9 @@ class SDA:
         elif self.model.lower() == "tpcxai09":
             return TPCxAIAdvisor09(self.dataset_meta, self.dataset_train,
                                    self.dataset_valid, self.settings)
+        elif self.model.lower() == "minigo":
+            return MiniGoAdvisor(self.dataset_meta, self.dataset_train,
+                                   self.dataset_valid, self.settings)
         elif self.model.lower() == 'rnnt':
             return RNNTAdvisor(self.dataset_meta, self.dataset_train,
                                self.dataset_valid, self.settings)
@@ -106,7 +110,7 @@ class SDA:
 
     @staticmethod
     def get_model_zoo_list():
-        return ['wnd', 'dlrm', 'dlrm_torch110', 'dien', 'twitter_recsys', 'pipeline_test', 'rnnt', 'tpcxai09', 'upm', 'bert']
+        return ['wnd', 'dlrm', 'dlrm_torch110', 'dien', 'twitter_recsys', 'pipeline_test', 'rnnt', 'tpcxai09', 'minigo', 'upm', 'bert']
 
     def launch(self):
         """

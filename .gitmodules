@@ -13,3 +13,6 @@
 [submodule "tests/cicd/test_helper/bats-file"]
 	path = tests/cicd/test_helper/bats-file
 	url = https://github.com/ztombol/bats-file.git
+[submodule "modelzoo/third_party/mlperf_v1.0"]
+	path = modelzoo/third_party/mlperf_v1.0
+	url = https://github.com/mlcommons/training_results_v1.0.git

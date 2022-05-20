@@ -6,9 +6,18 @@ pipeline {
                 label 'sr602'
             }
             steps {
+                cleanWs()
                 checkout scm
-                sh 'rm -f hydroai.db'
-                sh 'rm -rf result'
+                sh 'cd tests/cicd && docker build -t test-aidk -f Dockerfile . && docker build -t legacy-test-aidk -f DockerfileLegacy .'
+            }
+        }
+        stage('prepare sr612') {
+            agent { 
+                label 'sr612'
+            }
+            steps {
+                cleanWs()
+                checkout scm
                 sh 'cd tests/cicd && docker build -t test-aidk -f Dockerfile . && docker build -t legacy-test-aidk -f DockerfileLegacy .'
             }
         }
@@ -18,6 +27,17 @@ pipeline {
             }
             steps {
                 sh 'docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ test-aidk /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=0 bash /home/vmagent/app/hydro.ai/tests/cicd/jenkins_pipeline_test.sh"'
+                sh 'rm -f hydroai.db'
+                sh 'rm -rf result'
+            }
+        }
+        stage('Run minigo') {
+            agent { 
+                label 'sr612'
+            }
+            steps {
+                sh 'cd modelzoo/minigo && bash patch_minigo.sh && cd ../..'
+                sh 'SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=0 bash tests/cicd/jenkins_minigo_test.sh'
                 sh 'rm -f hydroai.db'
                 sh 'rm -rf result'
             }
