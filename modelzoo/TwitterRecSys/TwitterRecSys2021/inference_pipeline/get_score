@@ -1,1 +1,0 @@
-docker run -v /mnt/nvme2/chendi/BlueWhale/docker/script/:/home/123 -v /mnt/nvme2/chendi/BlueWhale/docker/verify:/home/123/verify -w /home/123 --entrypoint ./run_score xuechendi/rsc_ubuntu

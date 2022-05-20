@@ -18,7 +18,7 @@ class TwitterRecSysAdvisor(BaseModelAdvisor):
         self.dataset_meta_path = dataset_meta_path
         self.saved_path = self.params['save_path']
         self.train_python = "/opt/intel/oneapi/intelpython/latest/bin/python"
-        self.train_script = "/home/vmagent/app/hydro.ai/modelzoo/TwitterRecSys/TwitterRecSys2021-intel-opt/model_hydroai/xgboost/train.py"
+        self.train_script = "/home/vmagent/app/hydro.ai/modelzoo/TwitterRecSys2021/model_hydroai/xgboost/train.py"
 
     def update_metrics(self):
         result_metrics_path = os.path.join(self.params['model_saved_path'],
