@@ -9,11 +9,9 @@ from AIDK.hydroai.hydromodel import *
 from AIDK.SDA.modeladvisor.DIENAdvisor import *
 from AIDK.SDA.modeladvisor.TestAdvisor import *
 from AIDK.SDA.modeladvisor.DLRMAdvisor import *
-from AIDK.SDA.modeladvisor.DLRMTorch110Advisor import *
 # from SDA.modeladvisor.ResNetAdvisor import *
 from AIDK.SDA.modeladvisor.WnDAdvisor import *
 from AIDK.SDA.modeladvisor.TwitterRecSysAdvisor import *
-from AIDK.SDA.modeladvisor.TPCxAIAdvisor09 import *
 from AIDK.SDA.modeladvisor.MiniGoAdvisor import *
 from AIDK.SDA.modeladvisor.RNNTAdvisor import *
 from AIDK.SDA.modeladvisor.UPMAdvisor import *
@@ -86,9 +84,6 @@ class SDA:
         elif self.model.lower() == 'dlrm':
             return DLRMAdvisor(self.dataset_meta, self.dataset_train,
                                self.dataset_valid, self.settings)
-        elif self.model.lower() == 'dlrm_torch110':
-            return DLRMTorch110Advisor(self.dataset_meta, self.dataset_train,
-                               self.dataset_valid, self.settings)
         elif self.model.lower() == 'dien':
             return DIENAdvisor(self.dataset_meta, self.dataset_train,
                                self.dataset_valid, self.settings)
@@ -101,9 +96,6 @@ class SDA:
         elif self.model.lower() == 'pipeline_test':
             return TestAdvisor(self.dataset_meta, self.dataset_train,
                                self.dataset_valid, self.settings)
-        elif self.model.lower() == "tpcxai09":
-            return TPCxAIAdvisor09(self.dataset_meta, self.dataset_train,
-                                   self.dataset_valid, self.settings)
         elif self.model.lower() == "minigo":
             return MiniGoAdvisor(self.dataset_meta, self.dataset_train,
                                    self.dataset_valid, self.settings)
@@ -118,7 +110,7 @@ class SDA:
 
     @staticmethod
     def get_model_zoo_list():
-        return ['wnd', 'dlrm', 'dlrm_torch110', 'dien', 'twitter_recsys', 'pipeline_test', 'rnnt', 'tpcxai09', 'minigo', 'upm', 'bert']
+        return ['wnd', 'dlrm', 'dien', 'twitter_recsys', 'pipeline_test', 'rnnt', 'minigo', 'upm', 'bert']
 
     def launch(self):
         """

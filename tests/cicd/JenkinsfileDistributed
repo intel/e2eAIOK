@@ -52,16 +52,6 @@ pipeline {
                 sh 'rm -rf result'
             }
         }
-        stage('Run distributed dlrm torch110') {
-            agent { 
-                label 'sr613'
-            }
-            steps {
-                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ test-aidk /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=0 bash /home/vmagent/app/hydro.ai/tests/cicd/jenkins_dlrm_torch110_test_dist.sh"'
-                sh 'rm -f hydroai.db'
-                sh 'rm -rf result'
-            }
-        }
         stage('clean sr612') {
             agent { 
                 label 'sr612'

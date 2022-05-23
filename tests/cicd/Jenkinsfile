@@ -83,15 +83,5 @@ pipeline {
                 sh 'rm -rf result'
             }
         }
-        stage('Run dlrm torch1.10') {
-            agent { 
-                label 'sr602'
-            }
-            steps {
-                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch110 /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=0 . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_dlrm_torch110_test.sh"'
-                sh 'rm -f hydroai.db'
-                sh 'rm -rf result'
-            }
-        }
     }
 }
