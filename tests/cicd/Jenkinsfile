@@ -1,24 +1,15 @@
 pipeline {
     agent none
     stages {
-        stage('prepare sr602') {
+        stage('prepare') {
             agent { 
-                label 'sr602'
+                label 'cluster'
             }
             steps {
                 cleanWs()
                 checkout scm
-                sh 'cd tests/cicd && docker build -t test-aidk -f Dockerfile . && docker build -t legacy-test-aidk -f DockerfileLegacy .'
-            }
-        }
-        stage('prepare sr612') {
-            agent { 
-                label 'sr612'
-            }
-            steps {
-                cleanWs()
-                checkout scm
-                sh 'cd tests/cicd && docker build -t test-aidk -f Dockerfile . && docker build -t legacy-test-aidk -f DockerfileLegacy .'
+                sh 'cd tests/cicd && docker build -t test-aidk -f Dockerfile . && docker build -t legacy-test-aidk -f DockerfileLegacy . && cd ../..'
+                sh 'cd Dockerfile-ubuntu18.04 && cp /root/.ssh/id_rsa ./ && docker build -t aidk-base . -f DockerfileBase && docker build -t aidk-tensorflow . -f DockerfileTensorflow && docker build -t aidk-pytorch . -f DockerfilePytorch && docker build -t aidk-pytorch110 . -f DockerfilePytorch110 && cd ..'
             }
         }
         stage('Run pipeline_test') {
@@ -52,12 +43,22 @@ pipeline {
                 sh 'rm -rf result'
             }
         }
+        stage('Run rnnt') {
+            agent { 
+                label 'sr602'
+            }
+            steps {
+                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ test-aidk /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=0 bash /home/vmagent/app/hydro.ai/tests/cicd/jenkins_rnnt_test.sh"'
+                sh 'rm -f hydroai.db'
+                sh 'rm -rf result'
+            }
+        }
         stage('Run wnd') {
             agent { 
                 label 'sr602'
             }
             steps {
-                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ test-aidk /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=0 bash /home/vmagent/app/hydro.ai/tests/cicd/jenkins_wnd_test.sh"'
+                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=0 . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_wnd_test.sh"'
                 sh 'rm -f hydroai.db'
                 sh 'rm -rf result'
             }
@@ -67,7 +68,7 @@ pipeline {
                 label 'sr602'
             }
             steps {
-                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ test-aidk /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=0 bash /home/vmagent/app/hydro.ai/tests/cicd/jenkins_dien_test.sh"'
+                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=0 . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_dien_test.sh"'
                 sh 'rm -f hydroai.db'
                 sh 'rm -rf result'
             }
@@ -77,7 +78,7 @@ pipeline {
                 label 'sr602'
             }
             steps {
-                sh 'docker run --rm --entrypoint "" --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ legacy-test-aidk /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=0 bash /home/vmagent/app/hydro.ai/tests/cicd/jenkins_dlrm_test.sh"'
+                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=0 . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_dlrm_test.sh"'
                 sh 'rm -f hydroai.db'
                 sh 'rm -rf result'
             }
@@ -87,17 +88,7 @@ pipeline {
                 label 'sr602'
             }
             steps {
-                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ test-aidk /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=0 bash /home/vmagent/app/hydro.ai/tests/cicd/jenkins_dlrm_torch110_test.sh"'
-                sh 'rm -f hydroai.db'
-                sh 'rm -rf result'
-            }
-        }
-        stage('Run rnnt') {
-            agent { 
-                label 'sr602'
-            }
-            steps {
-                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ test-aidk /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=0 bash /home/vmagent/app/hydro.ai/tests/cicd/jenkins_rnnt_test.sh"'
+                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch110 /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=0 . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_dlrm_torch110_test.sh"'
                 sh 'rm -f hydroai.db'
                 sh 'rm -rf result'
             }

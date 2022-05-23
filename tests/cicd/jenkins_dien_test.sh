@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# source spark env
-source /etc/profile.d/spark-env.sh
 # enable oneAPI
 source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force
 # set vars

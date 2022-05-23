@@ -3,6 +3,11 @@
 AIDK Integration Tests(Via BATS framework) provide end-to-end testing of AIDK and built-in workflows(pipeline_test/DIEN/WnD/DLRM), which simulate the real world usage scenarios of AIDK.\
 AIDK Unit Tests(Via Pytest framework) verify the code is working as expected by artificially created data of (input,expectation) pair.
 
+
+## How to create a test script for your workload
+
+Create a test script named jenkins_${model}_test.sh under tests/cicd folder, and then define your model specific MODEL_NAME, DATA_PATH, CONF_FILE.
+
 ## Prepare dataset
 
 Internal copy sr602:/mnt/DP_disk1/dataset

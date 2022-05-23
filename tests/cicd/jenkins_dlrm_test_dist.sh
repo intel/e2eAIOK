@@ -1,19 +1,7 @@
 #!/bin/bash
 
-# source oneapi env vars
-source /root/.oneapi_env_vars
-# init conda env
-__conda_setup="$('/opt/intel/oneapi/intelpython/latest/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "/opt/intel/oneapi/intelpython/latest/etc/profile.d/conda.sh" ]; then
-        . "/opt/intel/oneapi/intelpython/latest/etc/profile.d/conda.sh"
-    else
-        export PATH="/opt/intel/oneapi/intelpython/latest/bin:$PATH"
-    fi
-fi
-unset __conda_setup
+# enable oneAPI
+source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force
 # set vars
 MODEL_NAME="dlrm"
 DATA_PATH="/home/vmagent/app/dataset/criteo"

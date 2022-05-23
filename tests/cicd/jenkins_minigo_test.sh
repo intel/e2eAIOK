@@ -2,8 +2,7 @@
 
 source /opt/intel/oneapi/setvars.sh --force
 
-# >>> conda initialize >>>
-# !! Contents within this block are managed by 'conda init' !!
+# init conda
 __conda_setup="$('/root/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
 if [ $? -eq 0 ]; then
     eval "$__conda_setup"
@@ -15,7 +14,6 @@ else
     fi
 fi
 unset __conda_setup
-# <<< conda initialize <<<
 
 # set vars
 MODEL_NAME="minigo"
@@ -34,7 +32,7 @@ set -e
 cd modelzoo/third_party/mlperf_v1.0/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow
 conda activate minigo_xeon_opt
 yes "" | ./cc/configure_tensorflow.sh
-sed -i '/--winrate=/ s/=.*/=0.003/' ml_perf/flags/19/train_loop.flags
+sed -i '/--winrate=/ s/=.*/=0/' ml_perf/flags/19/train_loop.flags
 cd ../../../../../../../
 [[ -d result ]] || mkdir result
 if [ $USE_SIGOPT == 1 ]; then
