@@ -116,6 +116,7 @@ class DLRMAdvisor(BaseModelAdvisor):
     def launch(self, args):
         # construct WnD launch command
         cmd = f"{self.train_python} -u {self.train_script} "
+        model_saved_path = args['model_saved_path']
         cmd +=f"/home/vmagent/app/hydro.ai/modelzoo/dlrm/dlrm/dlrm_s_pytorch.py --mini-batch-size={args['train_batch_size']} --print-freq=16  " \
             + f"--test-mini-batch-size={args['test_batch_size']} --test-freq=800 " \
             + f"--train-data-path={self.train_path} --eval-data-path={self.test_path} " \
@@ -127,7 +128,7 @@ class DLRMAdvisor(BaseModelAdvisor):
             + f"--arch-sparse-feature-size={args['model_parameter']['tuned_parameters']['arch_sparse_feature_size']} " \
             + f"--arch-mlp-bot={args['model_parameter']['tuned_parameters']['arch_mlp_bot']} " \
             + f"--arch-mlp-top={args['model_parameter']['tuned_parameters']['arch_mlp_top']} " \
-            + f"--lamblr={args['model_parameter']['tuned_parameters']['lamb_lr']} " \
+            + f"--lamblr={args['model_parameter']['tuned_parameters']['lamb_lr']} --save-model={model_saved_path} " \
             + f"--learning-rate={args['model_parameter']['tuned_parameters']['learning_rate']} " \
             + f"--lr-num-warmup-steps={args['model_parameter']['tuned_parameters']['lr_num_warmup_steps']} " \
             + f"--lr-decay-start-step={args['model_parameter']['tuned_parameters']['lr_decay_start_step']} " \
@@ -156,7 +157,7 @@ class DLRMAdvisor(BaseModelAdvisor):
             + f"--arch-sparse-feature-size={args['model_parameter']['tuned_parameters']['arch_sparse_feature_size']} " \
             + f"--arch-mlp-bot={args['model_parameter']['tuned_parameters']['arch_mlp_bot']} " \
             + f"--arch-mlp-top={args['model_parameter']['tuned_parameters']['arch_mlp_top']} " \
-            + f"--lamblr={args['model_parameter']['tuned_parameters']['lamb_lr']} " \
+            + f"--lamblr={args['model_parameter']['tuned_parameters']['lamb_lr']} --save-model={model_saved_path} " \
             + f"--learning-rate={args['model_parameter']['tuned_parameters']['learning_rate']} " \
             + f"--lr-num-warmup-steps={args['model_parameter']['tuned_parameters']['lr_num_warmup_steps']} " \
             + f"--lr-decay-start-step={args['model_parameter']['tuned_parameters']['lr_decay_start_step']} " \
