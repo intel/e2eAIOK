@@ -74,7 +74,7 @@ class DIENAdvisor(BaseModelAdvisor):
         if assignments:
             tuned_parameters['batch_size'] = assignments['batch_size']
         else:
-            tuned_parameters['batch_size'] = 1024
+            tuned_parameters['batch_size'] = 256
         config['tuned_parameters'] = tuned_parameters
         self.params['model_parameter'] = config
         self.params['model_saved_path'] = os.path.join(

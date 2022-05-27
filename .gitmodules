@@ -16,3 +16,6 @@
 [submodule "modelzoo/third_party/mlperf_v1.0"]
 	path = modelzoo/third_party/mlperf_v1.0
 	url = https://github.com/mlcommons/training_results_v1.0.git
+[submodule "modelzoo/third_party/alibaba-ai-matrix"]
+	path = modelzoo/third_party/alibaba-ai-matrix
+	url = https://github.com/alibaba/ai-matrix.git
