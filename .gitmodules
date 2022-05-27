@@ -16,6 +16,9 @@
 [submodule "modelzoo/third_party/mlperf_v1.0"]
 	path = modelzoo/third_party/mlperf_v1.0
 	url = https://github.com/mlcommons/training_results_v1.0.git
+[submodule "modelzoo/third_party/DeepLearningExamples"]
+	path = modelzoo/third_party/DeepLearningExamples
+	url = https://github.com/NVIDIA/DeepLearningExamples.git
 [submodule "modelzoo/third_party/dlrm"]
 	path = modelzoo/third_party/dlrm
 	url = https://github.com/facebookresearch/dlrm.git
