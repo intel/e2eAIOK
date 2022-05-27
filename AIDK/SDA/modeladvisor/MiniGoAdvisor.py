@@ -79,7 +79,7 @@ class MiniGoAdvisor(BaseModelAdvisor):
     def dist_launch(self, args):
         hosts = args['hosts']
         rootnode = args['rootnode']
-        os.chdir('modelzoo/third_party/mlperf_v1.0/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow')
+        os.chdir('modelzoo/minigo')
         pre_cmd=f"sed -i '/--train_batch_size=/ s/=.*/={args['model_parameter']['tuned_parameters']['train_batch_size']}/' ml_perf/flags/19/train.flags"
         process = subprocess.Popen(pre_cmd, shell=True)
         process.wait()
@@ -90,4 +90,4 @@ class MiniGoAdvisor(BaseModelAdvisor):
         clean_cmd = f"pkill -f ml_perf"
         process = subprocess.Popen(clean_cmd, shell=True)
         process.wait()
-        os.chdir('../../../../../../../')
+        os.chdir('../../')

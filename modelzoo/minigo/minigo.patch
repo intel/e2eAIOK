@@ -467,7 +467,7 @@ index 6a01380..99bd145 100755
      2>&1 | tee "${log_dir}/train_loop.log"
  fi
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/train_loop.py b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/train_loop.py
-index 42fcee3..25c3822 100644
+index 42fcee3..0fda718 100644
 --- a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/train_loop.py
 +++ b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/train_loop.py
 @@ -82,16 +82,23 @@ flags.DEFINE_integer('numa_cores', None, 'The number of core for each numa '
@@ -506,7 +506,7 @@ index 42fcee3..25c3822 100644
 +    logging.info('finished evaluation minigo model for iter %s, winrate is %s', state.iter_num, state.win_rate)
 +    if state.win_rate >= FLAGS.winrate:
 +        logging.info('we have found minigo model better than target!!! iter %s winrate %s', state.iter_num, state.win_rate)
-+        metric_file = open("../../../../../../../result/metric.txt", "wt")
++        metric_file = open("../../result/metric.txt", "wt")
 +        n = metric_file.write(str(state.win_rate))
 +        metric_file.close()
      #resume selfplay

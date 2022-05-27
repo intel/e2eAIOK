@@ -29,11 +29,13 @@ mkdir -p $tmp_dir
 USE_SIGOPT="${USE_SIGOPT:=1}"
 set -e
 # lauch AIDK minigo
-cd modelzoo/third_party/mlperf_v1.0/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow
+cd modelzoo/minigo
 conda activate minigo_xeon_opt
 yes "" | ./cc/configure_tensorflow.sh
-sed -i '/--winrate=/ s/=.*/=0/' ml_perf/flags/19/train_loop.flags
-cd ../../../../../../../
+sed -i '/--winrate=/ s/=.*/=0.003/' ml_perf/flags/19/train_loop.flags
+sed -i '/--num_games=/ s/=.*/=4096/' ml_perf/flags/19/bootstrap.flags
+sed -i '/--min_games_per_iteration=/ s/=.*/=4096/' ml_perf/flags/19/train_loop.flags
+cd ../../
 [[ -d result ]] || mkdir result
 if [ $USE_SIGOPT == 1 ]; then
   printf "y\ny\n" | SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN python run_hydroai.py --data_path $DATA_PATH --model_name $MODEL_NAME --conf $CONF_FILE 2>&1 | tee $tmp_dir/aidk_cicd.log
