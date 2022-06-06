@@ -25,3 +25,6 @@
 [submodule "modelzoo/third_party/alibaba-ai-matrix"]
 	path = modelzoo/third_party/alibaba-ai-matrix
 	url = https://github.com/alibaba/ai-matrix.git
+[submodule "modelzoo/third_party/IntelAI_models"]
+	path = modelzoo/third_party/IntelAI_models
+	url = https://github.com/IntelAI/models.git
