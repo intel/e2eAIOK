@@ -1,5 +1,6 @@
 import argparse
 import pathlib
+import sys
 
 import yaml
 from AIDK.dataloader.hydrodataloader import *
@@ -37,7 +38,7 @@ class SDA:
         history best model object, if this attribute is not None, we
         can resume from a history experiment.
     """
-    def __init__(self, model="custom_registered", data_loader=None, settings={}, hydro_model=None):
+    def __init__(self, model="custom_registered", data_loader=None, settings={}, hydro_model=None, custom_result_path=None):
         """
         Parameters
         ----------
@@ -57,6 +58,7 @@ class SDA:
             data_loader = HydroDataLoaderAdvisor.create_data_loader(
                 settings['data_path'], self.model)
         self.data_loader = data_loader
+        self.custom_result_path = custom_result_path
         if self.data_loader != None:
             self.dataset_meta = self.data_loader.get_meta()
             self.dataset_train = self.data_loader.get_train()
@@ -74,7 +76,7 @@ class SDA:
         self.logger.info("""### Ready to submit current task  ###""")
 
     def __del__(self):
-        with open(f"latest_hydro_model", 'w') as f:
+        with open(f"{self.custom_result_path}/latest_hydro_model", 'w') as f:
             f.write(self.hydro_model.to_json())
 
     def __create_model_advisor(self):
@@ -174,36 +176,38 @@ class SDA:
             self.logger.info("Model Advisor created")
         self.model_advisor.register(info)
 
-
 def parse_args(args):
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '--model_name',
+    parser.add_argument('--model_name',
         type=str,
         required=True,
         help='could be in-stock model name or udm(user-define-model)')
     parser.add_argument('--data_path',
-                        type=str,
-                        required=True,
-                        help='Dataset path')
+        type=str,
+        required=True,
+        help='Dataset path')
     parser.add_argument('--conf',
-                        type=str,
-                        default='conf/hydroai_defaults.conf',
-                        help='hydroai defaults configuration')
+        type=str,
+        default='conf/hydroai_defaults.conf',
+        help='hydroai defaults configuration')
+    parser.add_argument('--custom_result_path',
+        type=str,
+        default=str(pathlib.Path(__file__).parent.absolute()),
+        help='custom result path')
     parser.add_argument('--no_sigopt',
-                        dest="enable_sigopt",
-                        action="store_false",
-                        default=True,
-                        help='if disable sigopt')
+        dest="enable_sigopt",
+        action="store_false",
+        default=True,
+        help='if disable sigopt')
     parser.add_argument('--no_model_cache',
-                        dest="enable_model_cache",
-                        action="store_false",
-                        default=True,
-                        help='if disable model cache')
+        dest="enable_model_cache",
+        action="store_false",
+        default=True,
+        help='if disable model cache')
     parser.add_argument('--interactive',
-                        dest="interative",
-                        action="store_true",
-                        help='enable interative mode')
+        dest="interative",
+        action="store_true",
+        help='enable interative mode')
     return parser.parse_args(args).__dict__
 
 
@@ -213,8 +217,7 @@ def main(input_args):
     settings.update(parse_config(settings['conf']))
     data_loader = HydroDataLoaderAdvisor.create_data_loader(
         settings['data_path'], settings['model_name'])
-
-    current_path = str(pathlib.Path(__file__).parent.absolute())
+    current_path = settings['custom_result_path']
     if settings["enable_model_cache"] and os.path.exists(f"{current_path}/latest_hydro_model"):
         with open(f"{current_path}/latest_hydro_model", 'r') as f:
             jdata = f.read()

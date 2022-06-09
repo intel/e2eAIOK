@@ -9,5 +9,5 @@ setup() {
 }
 
 @test "Check AIDK CI/CD hydroai.db existence" {
-    assert_file_exist /home/vmagent/app/hydro.ai/hydroai.db
+    assert_file_exist $CUSTOM_RESULT_PATH/hydroai.db
 }

@@ -7,18 +7,19 @@ class HydroDB:
     """
     This class is used to create one instance for hydro database
     """
-    def __init__(self):
-        if not os.path.exists('hydroai.db'):
+    def __init__(self, hydrodb_path):
+        self.hydrodb_path = hydrodb_path
+        if not os.path.exists(self.hydrodb_path):
             self.__init_db()
         else:
-            self.conn = sqlite3.connect('hydroai.db')
+            self.conn = sqlite3.connect(self.hydrodb_path)
             self.cur = self.conn.cursor()
 
     def __del__(self):
         self.conn.close()
 
     def __init_db(self):
-        self.conn = sqlite3.connect('hydroai.db')
+        self.conn = sqlite3.connect(self.hydrodb_path)
         self.cur = self.conn.cursor()
         self.cur.execute(
             '''CREATE TABLE models (learner_id text, hydro_model json)''')
@@ -73,8 +74,8 @@ class HydroDB:
                              (learner_id, hydro_model.to_json()))
         self.conn.commit()
 
-    def clear():
+    def clear(self):
         """
         Remove hydroai.db file
         """
-        os.remove('hydroai.db')
+        os.remove(self.hydrodb_path)

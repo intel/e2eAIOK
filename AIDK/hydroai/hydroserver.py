@@ -20,9 +20,9 @@ class HydroServer:
     db : HydroDB
         an DataBase instance used to fetch and update best model info
     """
-    def __init__(self):
+    def __init__(self, settings):
         # start db to store history queries / models and score board
-        self.db = HydroDB()
+        self.db = HydroDB(f"{settings['custom_result_path']}/hydroai.db")
         self.in_mem_model_tracker = {}
         logging.basicConfig(
             level=logging.INFO,
@@ -147,8 +147,8 @@ class HydroLocalServer(HydroServer):
     Hydro Local Server will be running as standalone mode
 
     '''
-    def __init__(self):
-        super().__init__()
+    def __init__(self, settings):
+        super().__init__(settings)
         pass
 
     def submit_task(self, settings, data_loader):
@@ -175,7 +175,7 @@ class HydroLocalServer(HydroServer):
         if (learner_id not in self.in_mem_model_tracker) or (not settings["enable_model_cache"]):
             self.in_mem_model_tracker[learner_id] = HydroModel(settings)
         self.sda = SDA(settings['model_name'], data_loader, settings,
-                       self.in_mem_model_tracker[learner_id])
+                       self.in_mem_model_tracker[learner_id], settings['custom_result_path'])
         model_path, metrics = self.sda.launch()
         return learner_id
 

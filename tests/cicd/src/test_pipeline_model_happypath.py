@@ -3,7 +3,7 @@ import sqlite3
 from AIDK.hydroai.hydromodel import *
 
 def test_pipeline_model_happypath_exist():
-    con = sqlite3.connect('/home/vmagent/app/hydro.ai/hydroai.db')
+    con = sqlite3.connect(f"{os.environ['CUSTOM_RESULT_PATH']}/hydroai.db")
     for row in con.execute("SELECT hydro_model FROM models"):
         hydro_model = HydroModel(None, row)
         model_saved_path = hydro_model.model

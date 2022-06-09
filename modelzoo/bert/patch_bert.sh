@@ -2,7 +2,7 @@
 get_original_model () {
     git init &&
     git remote add origin_bert https://github.com/IntelAI/models.git &&
-    git pull origin_bert master
+    git pull origin_bert r2.5
 }
 
 apply_patch () {

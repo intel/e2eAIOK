@@ -4,8 +4,6 @@
 FROM intel/oneapi-aikit:2021.4-devel-ubuntu18.04
 
 SHELL ["/bin/bash", "-c"]
-ENV http_proxy=http://child-prc.intel.com:913
-ENV https_proxy=http://child-prc.intel.com:913
 WORKDIR /root/
 ENV PATH /opt/intel/oneapi/intelpython/latest/condabin:$PATH
 RUN apt-get update -y && apt-get install -y git gcc-8 g++-8 \
@@ -47,8 +45,8 @@ SHELL ["/bin/bash", "-c"]
 RUN apt-get update -y && apt-get install -y openssh-server vim nano git \
             rsync wget curl gcc g++ build-essential pkg-config zlib1g-dev \
             zip unzip numactl flex ncurses-term python3 python3-pip
-RUN sed -i 's/#Port 22/Port 12346/g' /etc/ssh/sshd_config
-RUN sed -i 's/#   Port 22/    Port 12346/g' /etc/ssh/ssh_config
+RUN sed -i 's/#Port 22/Port 12344/g' /etc/ssh/sshd_config
+RUN sed -i 's/#   Port 22/    Port 12344/g' /etc/ssh/ssh_config
 RUN mkdir /root/.ssh
 COPY id_rsa /root/.ssh/id_rsa
 RUN ssh-keygen -y -f /root/.ssh/id_rsa > /root/.ssh/id_rsa.pub

@@ -24,8 +24,9 @@ class HydroAutoLearner:
         self.settings.update(parse_config(self.settings['conf']))
         self.model_name = self.settings['model_name']
         self.settings = default_settings(self.model_name, self.settings)
+        self.settings = { **self.settings, 'save_path': f"{self.settings['custom_result_path']}/result"}
         if not self.settings['server']:
-            self.server = HydroLocalServer()
+            self.server = HydroLocalServer(self.settings)
         else:
             raise NotImplementedError("Server mode is now under development.")
         self.data_loader = HydroDataLoaderAdvisor.create_data_loader(

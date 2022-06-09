@@ -2,6 +2,7 @@ import init_hydro
 from AIDK.hydroai.hydroautolearner import HydroAutoLearner
 import argparse
 import sys
+import pathlib
 
 
 def parse_args(args):
@@ -21,6 +22,11 @@ def parse_args(args):
         type=str,
         default='conf/hydroai_defaults.conf',
         help='hydroai defaults configuration')
+    parser.add_argument(
+        '--custom_result_path',
+        type=str,
+        default=str(pathlib.Path(__file__).parent.absolute()),
+        help='custom result path')
     parser.add_argument(
         '--executable_python',
         type=str,
