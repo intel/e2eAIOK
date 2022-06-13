@@ -681,3 +681,117 @@ def train_all_epochs(opt, model, optimizer, train_sampler, train_loader, criteri
     pass  # end for epoch in range(opt.start_epoch, opt.epochs):
 
     return training_status_info
+
+def main(opt, argv):
+    assert opt.save_dir is not None
+    start_time = time.time()
+
+    job_done_fn = os.path.join(opt.save_dir, 'train_image_classification.done')
+    if os.path.isfile(job_done_fn):
+        print('skip ' + job_done_fn)
+        return
+
+    opt = config_dist_env_and_opt(opt)
+
+    # create log
+    if opt.rank == 0:
+        log_filename = os.path.join(opt.save_dir, 'train_image_classification.log')
+        global_utils.create_logging(log_filename=log_filename)
+    else:
+        global_utils.create_logging(log_filename=None, level=logging.ERROR)
+
+    logging.info('argv=\n' + str(argv))
+    logging.info('opt=\n' + str(opt))
+    logging.info('-----')
+
+    # load dataset
+    data_loader_info = DataLoader.get_data(opt, argv)
+    train_loader = data_loader_info['train_loader']
+    val_loader = data_loader_info['val_loader']
+    train_sampler = data_loader_info['train_sampler']
+    num_train_samples = DataLoader.params_dict[opt.dataset]['num_train_samples']
+
+    # create model
+    model = ModelLoader.get_model(opt, argv)
+    model = init_model(model, opt, argv)
+    logging.info('loading model:')
+    logging.info(str(model))
+
+    if opt.load_parameters_from:
+        model = load_model(model, opt.load_parameters_from, opt.strict_load, map_location='cpu')
+
+    if opt.fp16:
+        model = model.half()
+
+    # set device
+    if opt.gpu is not None:
+        torch.cuda.set_device(opt.gpu)
+        model.cuda(opt.gpu)
+        logging.info('rank={}, using GPU {}'.format(opt.rank, opt.gpu))
+
+
+
+    # define loss function (criterion)
+    if (hasattr(opt, 'label_smoothing') and opt.label_smoothing) or (hasattr(opt, 'mixup') and opt.mixup):
+        criterion = cross_entropy
+    else:
+        criterion = nn.CrossEntropyLoss()
+        if not opt.dist_mode == 'cpu':
+            criterion = criterion.cuda(opt.gpu)
+
+    # get optimizer
+    optimizer = get_optimizer(model, opt)
+
+    logging.info('optimizer is :')
+    logging.info(str(optimizer))
+
+    # hvd and apex
+    model, optimizer = config_model_optimizer_hvd_and_apex(model, optimizer, opt)
+
+    training_status_info = {}
+    training_status_info['best_acc1'] = 0
+    training_status_info['best_acc5'] = 0
+    training_status_info['best_acc1_at_epoch'] = 0
+    training_status_info['best_acc5_at_epoch'] = 0
+    training_status_info['training_elasped_time'] = 0
+    training_status_info['validation_elasped_time'] = 0
+
+    map_location = 'cpu'
+    if opt.gpu is not None:
+        map_location = 'cuda:{}'.format(opt.gpu)
+
+    if opt.auto_resume and opt.resume is None:
+        latest_pth_fn = os.path.join(opt.save_dir, 'latest-params_rank0.pth')
+        if os.path.isfile(latest_pth_fn):
+            logging.info(('auto-resume from ' + latest_pth_fn))
+            model, optimizer, training_status_info, opt = resume_checkpoint(model, optimizer, latest_pth_fn, opt,
+                                                                            map_location=map_location)
+
+    if opt.resume:
+        assert not opt.auto_resume
+        logging.info(('resume from ' + opt.resume))
+        model, optimizer, training_status_info, opt = resume_checkpoint(model, optimizer, opt.resume, opt,
+                                                                        map_location=map_location)
+
+    if not opt.evaluate_only:
+        training_status_info = train_all_epochs(opt, model, optimizer, train_sampler, train_loader, criterion, val_loader,
+                         num_train_samples=num_train_samples,
+                         no_acc_eval=False, save_all_ranks=False,
+                         training_status_info=training_status_info)
+    else:
+        validate(val_loader, model, criterion, opt)
+
+    # mark job done
+    global_utils.save_pyobj(job_done_fn, training_status_info)
+
+    # # don't forget to release auto-assigned gpu, but this is done via AutoGPU class automatically
+    # if opt.dist_mode == 'auto':
+    #     global_utils.release_gpu(opt.gpu)
+    end_time = time.time()
+    print(F"Train time:{end_time - start_time}")
+
+
+
+if __name__ == "__main__":
+    opt = global_utils.parse_cmd_options(sys.argv)
+    main(opt, sys.argv)
