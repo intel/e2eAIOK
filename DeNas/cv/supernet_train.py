@@ -17,12 +17,12 @@ from timm.loss import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
 from timm.scheduler import create_scheduler
 from timm.optim import create_optimizer
 from timm.utils import NativeScaler
-from lib.datasets import build_dataset
+from cv.lib.datasets import build_dataset
 
-from lib.samplers import RASampler
-from lib import utils
-from lib.config import cfg, update_config_from_file
-from supernet_transformer import Vision_TransformerSuper
+from cv.lib.samplers import RASampler
+from cv.lib import utils
+from cv.lib.config import cfg, update_config_from_file
+from cv.supernet_transformer import Vision_TransformerSuper
 
 def decode_cand_tuple(cand_tuple):
     cand_tuple = cand_tuple[1:-1].split(",")

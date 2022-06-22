@@ -2,7 +2,7 @@ import torch
 import math
 import warnings
 from itertools import repeat
-from torch._six import container_abcs
+from collections import abc as container_abcs
 import torch.nn as nn
 
 def _no_grad_trunc_normal_(tensor, mean, std, a, b):
