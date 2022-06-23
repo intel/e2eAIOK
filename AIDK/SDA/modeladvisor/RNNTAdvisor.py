@@ -16,7 +16,7 @@ class RNNTAdvisor(BaseModelAdvisor):
 
         # set default required arguments
         self.init_default_params()
-        
+
         # check distributed configuration
         missing_params = []
         if self.params["ppn"] > 1:
@@ -68,7 +68,7 @@ class RNNTAdvisor(BaseModelAdvisor):
         self.params['lr_exp_gamma'] = 0.939 if 'lr_exp_gamma' not in self.params else self.params['lr_exp_gamma']
         self.params['epochs'] = 80 if 'epochs' not in self.params else self.params['epochs']
         self.params['epochs_this_job'] = 0 if 'epochs_this_job' not in self.params else self.params['epochs_this_job']
-        self.params['ema'] = 0.995 if 'ema' not in self.params else self.params['ema']
+        self.params['ema'] = 0.999 if 'ema' not in self.params else self.params['ema']
         self.params['model_config'] = 'modelzoo/rnnt/pytorch/configs/baseline_v3-1023sp.yaml' if 'model_config' not in self.params else self.params['model_config']
         self.params['dali_device'] = 'cpu' if 'dali_device' not in self.params else self.params['dali_device']
         self.params['weight_decay'] = 1e-3 if 'weight_decay' not in self.params else self.params['weight_decay']
@@ -88,7 +88,7 @@ class RNNTAdvisor(BaseModelAdvisor):
         print(meta)
         self.train_manifests = meta['train_manifests']
         self.val_manifests = meta['val_manifests']
-    
+
     def update_metrics(self):
         result_metrics_file = os.path.join(self.params['model_saved_path'], "metric.txt")
         if not os.path.exists(result_metrics_file):
@@ -110,14 +110,10 @@ class RNNTAdvisor(BaseModelAdvisor):
         config = {}
         tuned_parameters = {}
         if assignments:
-            tuned_parameters['enc_n_hid'] = assignments[
-                'enc_n_hid']
-            tuned_parameters['enc_rnn_layers'] = assignments[
-                'enc_rnn_layers']
-            tuned_parameters['pred_n_hid'] = assignments[
-                'pred_n_hid']
-            tuned_parameters['joint_n_hid'] = assignments[
-                'joint_n_hid']
+            tuned_parameters['enc_n_hid'] = 512
+            tuned_parameters['enc_rnn_layers'] = 2
+            tuned_parameters['pred_n_hid'] = 512
+            tuned_parameters['joint_n_hid'] = 512
             tuned_parameters['learning_rate'] = assignments['learning_rate']
             tuned_parameters['warmup_epochs'] = assignments['warmup_epochs']
         else:
@@ -137,26 +133,31 @@ class RNNTAdvisor(BaseModelAdvisor):
         config = {}
         config['project'] = self.params['model_parameter']['project']
         config['experiment'] = self.params['model_parameter']['experiment']
-        parameters = [{
-            'name': 'enc_n_hid',
-            'grid': [64, 128, 256, 512],
-            'type': 'int'
-        }, {
-            'name': 'enc_rnn_layers',
-            'bounds':{
-                'min': 1,
-                'max': 3
-            },
-            'type': 'int'
-        }, {
-            'name': 'pred_n_hid',
-            'grid': [64, 128, 256, 512],
-            'type': 'int'
-        }, {
-            'name': 'joint_n_hid',
-            'grid': [64, 128, 256, 512],
-            'type': 'int'
-        }, {
+        parameters = [
+        #     {
+        #     'name': 'enc_n_hid',
+        #     'grid': [64, 128, 256, 512],
+        #     'type': 'int'
+        # },
+        # {
+        #     'name': 'enc_rnn_layers',
+        #     'bounds':{
+        #         'min': 1,
+        #         'max': 3
+        #     },
+        #     'type': 'int'
+        # },
+        # {
+        #     'name': 'pred_n_hid',
+        #     'grid': [64, 128, 256, 512],
+        #     'type': 'int'
+        # },
+        # {
+        #     'name': 'joint_n_hid',
+        #     'grid': [64, 128, 256, 512],
+        #     'type': 'int'
+        # },
+        {
             'name': 'learning_rate',
             'bounds': {
                 'min': 1.0e-4,
@@ -164,7 +165,8 @@ class RNNTAdvisor(BaseModelAdvisor):
             },
             'type': 'double',
             'transformation': 'log'
-        }, {
+        },
+        {
             'name': 'warmup_epochs',
             'bounds': {
                 'min': 1,
@@ -184,7 +186,7 @@ class RNNTAdvisor(BaseModelAdvisor):
         config['metrics'] = [{
             'name': 'WER',
             'strategy': 'optimize',
-            'objective': 'maximize',
+            'objective': 'minimize',
             'threshold': 0.058
         }, {
             'name': 'training_time',
@@ -260,6 +262,7 @@ class RNNTAdvisor(BaseModelAdvisor):
         cmd += f"--training_time_threshold {args['training_time_threshold']} "
         cmd += f"--enc_n_hid {args['model_parameter']['tuned_parameters']['enc_n_hid']} "
         cmd += f"--enc_pre_rnn_layers {args['model_parameter']['tuned_parameters']['enc_rnn_layers']} "
+        cmd += f"--enc_stack_time_factor 8 "
         cmd += f"--enc_post_rnn_layers {args['model_parameter']['tuned_parameters']['enc_rnn_layers']} "
         cmd += f"--pred_n_hid {args['model_parameter']['tuned_parameters']['pred_n_hid']} "
         cmd += f"--joint_n_hid {args['model_parameter']['tuned_parameters']['joint_n_hid']} "

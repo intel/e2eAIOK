@@ -931,7 +931,7 @@ index 3d313a0..e448c3e 100644
 +
          return loss
 diff --git a/modelzoo/rnnt/pytorch/common/rnn.py b/modelzoo/rnnt/pytorch/common/rnn.py
-index 393a276..94fe117 100644
+index 393a276..a6a9f55 100644
 --- a/modelzoo/rnnt/pytorch/common/rnn.py
 +++ b/modelzoo/rnnt/pytorch/common/rnn.py
 @@ -19,10 +19,9 @@ import torch
@@ -958,7 +958,21 @@ index 393a276..94fe117 100644
  
  
  class LSTM(torch.nn.Module):
-@@ -106,6 +108,71 @@ class LSTM(torch.nn.Module):
+@@ -65,6 +67,7 @@ class LSTM(torch.nn.Module):
+             num_layers=num_layers,
+             dropout=dropout,
+         )
++        self.layer_norm = torch.nn.LayerNorm(hidden_size)
+ 
+         self.dropout = torch.nn.Dropout(dropout) if dropout else None
+ 
+@@ -102,10 +105,77 @@ class LSTM(torch.nn.Module):
+             if self.dropout:
+                 y0 = self.dropout(y0)
+                 y1 = self.dropout(y1)
++            y0 = self.layer_norm(y0)
++            y1 = self.layer_norm(y1)
+             # h will not be used in training any way. Return None.
              # We guarantee this path will only be taken by training
              return [y0, y1], None
  
@@ -1456,6 +1470,34 @@ index 0000000..1fc6480
 @@ -0,0 +1,2 @@
 +10.1.0.13
 +10.1.0.12
+diff --git a/modelzoo/rnnt/pytorch/hyperparameters_2048.sh b/modelzoo/rnnt/pytorch/hyperparameters_2048.sh
+deleted file mode 100644
+index 9bec453..0000000
+--- a/modelzoo/rnnt/pytorch/hyperparameters_2048.sh
++++ /dev/null
+@@ -1,6 +0,0 @@
+-export EPOCH=80
+-export LR=0.007
+-export EMA=0.995
+-export HOLD_EPOCHS=33
+-export LR_DECAY_POWER=0.939
+-
+diff --git a/modelzoo/rnnt/pytorch/hyperparameters_3072.sh b/modelzoo/rnnt/pytorch/hyperparameters_3072.sh
+deleted file mode 100644
+index 195fa3f..0000000
+--- a/modelzoo/rnnt/pytorch/hyperparameters_3072.sh
++++ /dev/null
+@@ -1,10 +0,0 @@
+-export EPOCH=120
+-export LR=0.009
+-export EMA=0.985
+-export WARMUP=6
+-export HOLD_EPOCHS=40
+-export LR_DECAY_POWER=0.940
+-export WEIGHTS_INIT_SCALE=0.35
+-export BETA1=0.9
+-export BETA2=0.995
+-
 diff --git a/modelzoo/rnnt/pytorch/inference.py b/modelzoo/rnnt/pytorch/inference.py
 new file mode 100644
 index 0000000..171fd64
@@ -2398,7 +2440,7 @@ index b833b61..a045ef2 100644
 +#                             max_f_len=dict_meta_data["max_f_len"]).mean()
 +#         return loss
 diff --git a/modelzoo/rnnt/pytorch/rnnt/model.py b/modelzoo/rnnt/pytorch/rnnt/model.py
-index f052a53..3e92de2 100644
+index f052a53..4315e6a 100644
 --- a/modelzoo/rnnt/pytorch/rnnt/model.py
 +++ b/modelzoo/rnnt/pytorch/rnnt/model.py
 @@ -20,16 +20,15 @@ import torch
@@ -2451,7 +2493,15 @@ index f052a53..3e92de2 100644
          super(RNNT, self).__init__()
  
          self.enc_lr_factor = enc_lr_factor
-@@ -131,6 +130,7 @@ class RNNT(nn.Module):
+@@ -123,6 +122,7 @@ class RNNT(nn.Module):
+         post_rnn_input_size = enc_stack_time_factor * enc_n_hid
+ 
+         enc_mod = {}
++        enc_mod["batch_norm"] = nn.BatchNorm1d(pre_rnn_input_size)
+         enc_mod["pre_rnn"] = rnn(input_size=pre_rnn_input_size,
+                                  hidden_size=enc_n_hid,
+                                  num_layers=enc_pre_rnn_layers,
+@@ -131,6 +131,7 @@ class RNNT(nn.Module):
                                   weights_init_scale=weights_init_scale,
                                   dropout=enc_dropout,
                                   decoupled=decoupled_rnns,
@@ -2459,7 +2509,7 @@ index f052a53..3e92de2 100644
                                   tensor_name='pre_rnn',
                                  )
  
-@@ -144,6 +144,7 @@ class RNNT(nn.Module):
+@@ -144,6 +145,7 @@ class RNNT(nn.Module):
                                    weights_init_scale=weights_init_scale,
                                    dropout=enc_dropout,
                                    decoupled=decoupled_rnns,
@@ -2467,7 +2517,7 @@ index f052a53..3e92de2 100644
                                    tensor_name='post_rnn',
                                  )
  
-@@ -163,6 +164,7 @@ class RNNT(nn.Module):
+@@ -163,6 +165,7 @@ class RNNT(nn.Module):
                  weights_init_scale=weights_init_scale,
                  dropout=pred_dropout,
                  decoupled=decoupled_rnns,
@@ -2475,7 +2525,7 @@ index f052a53..3e92de2 100644
                  tensor_name='dec_rnn',
              ),
          })
-@@ -178,16 +180,7 @@ class RNNT(nn.Module):
+@@ -178,16 +181,7 @@ class RNNT(nn.Module):
          logging.log_event(logging.constants.WEIGHTS_INITIALIZATION,
                            metadata=dict(tensor='joint_enc'))
  
@@ -2493,7 +2543,7 @@ index f052a53..3e92de2 100644
  
          if fuse_relu_dropout:
              self.joint_net = nn.Sequential(
-@@ -204,9 +197,6 @@ class RNNT(nn.Module):
+@@ -204,9 +198,6 @@ class RNNT(nn.Module):
                                metadata=dict(tensor='joint_net'))
          self.apex_transducer_joint = apex_transducer_joint
  
@@ -2503,7 +2553,7 @@ index f052a53..3e92de2 100644
          self.min_lstm_bs = min_lstm_bs
  
      def forward(self, x, x_lens, y, y_lens, dict_meta_data=None, state=None):
-@@ -221,15 +211,12 @@ class RNNT(nn.Module):
+@@ -221,15 +212,12 @@ class RNNT(nn.Module):
  
          return out, x_lens
  
@@ -2522,7 +2572,24 @@ index f052a53..3e92de2 100644
          return f, g, x_lens
  
      def _seq_merge(self, x):
-@@ -354,19 +341,12 @@ class RNNT(nn.Module):
+@@ -253,6 +241,16 @@ class RNNT(nn.Module):
+         if require_padding:
+             bs = x.size(1)
+             x = torch.nn.functional.pad(x, (0, 0, 0, self.min_lstm_bs - bs))
++        if type(x) is not list:
++            x = x.transpose(1, 2)
++            x = self.encoder["batch_norm"](x)
++            x = x.transpose(1, 2)
++        else:
++            x[0] = x[0].transpose(1, 2)
++            x[1] = x[1].transpose(1, 2)
++            x = [self.encoder["batch_norm"](x[0]), self.encoder["batch_norm"](x[1])]
++            x[0] = x[0].transpose(1, 2)
++            x[1] = x[1].transpose(1, 2)
+         x, _ = self.encoder["pre_rnn"](x, None)
+         x, x_lens = self.encoder["stack_time"](x, x_lens)
+         x, _ = self.encoder["post_rnn"](x, None)
+@@ -354,19 +352,12 @@ class RNNT(nn.Module):
          """
          # Combine the input states and the output states
  
@@ -2548,7 +2615,7 @@ index f052a53..3e92de2 100644
  
          del f, g
          return res
-@@ -429,7 +409,7 @@ class RNNTPredict(nn.Module):
+@@ -429,7 +420,7 @@ class RNNTPredict(nn.Module):
  
          if require_padding:
              g = g[:bs]
@@ -2880,10 +2947,10 @@ index e9ac375..0aaab68 100755
 +python scripts/tokenize_transcripts.py --output_dir /metadata/ --model /sentencepieces/librispeech1023.model ${DATA_DIR}/librispeech-*.json
 diff --git a/modelzoo/rnnt/pytorch/scripts/train.sh b/modelzoo/rnnt/pytorch/scripts/train.sh
 new file mode 100644
-index 0000000..bd00e8f
+index 0000000..38b78d9
 --- /dev/null
 +++ b/modelzoo/rnnt/pytorch/scripts/train.sh
-@@ -0,0 +1,204 @@
+@@ -0,0 +1,205 @@
 +#!/bin/bash
 +
 +# Copyright (c) 2018-2021, NVIDIA CORPORATION. All rights reserved.
@@ -2916,15 +2983,15 @@ index 0000000..bd00e8f
 +: "${MODELCONFIG:=configs/baseline_v3-1023sp.yaml}"
 +: "${BATCHSIZE:=${BATCHSIZE}}"
 +: "${EVAL_BATCHSIZE:=${BATCHSIZE}}"
-+: "${EPOCH:=1}"
++: "${EPOCH:=80}"
 +: "${SEED:=2021}"
-+: "${LR:=0.004}"
-+: "${WARMUP:=4}"
++: "${LR:=0.007}"
++: "${WARMUP:=10}"
 +: "${GRAD_ACCUMULATION_STEPS:=1}"
 +: "${VAL_FREQUENCY:=1}"
-+: "${HOLD_EPOCHS:=40}"
++: "${HOLD_EPOCHS:=33}"
 +: "${EMA:=0.999}"
-+: "${LR_DECAY_POWER:=0.935}"
++: "${LR_DECAY_POWER:=0.939}"
 +: "${WEIGHTS_INIT_SCALE:=0.5}"
 +: "${TRAIN_DATASET_DIR:="/home/vmagent/app/dataset/LibriSpeech/train"}"
 +: "${VALID_DATASET_DIR:="/home/vmagent/app/dataset/LibriSpeech/valid"}"
@@ -2943,7 +3010,7 @@ index 0000000..bd00e8f
 +: ${TRAIN_MANIFESTS:="$META_DIR/librispeech-train-clean-100-wav-tokenized.pkl"}
 +: ${VAL_MANIFESTS:="$META_DIR/librispeech-dev-clean-wav-tokenized.pkl"}
 +: ${OUTPUT_DIR:="/results"}
-+: ${TARGET:=0.7}
++: ${TARGET:=0.25}
 +
 +: "${DIST:=true}"
 +: "${DIST_BACKEND:=ccl}"
@@ -2961,15 +3028,15 @@ index 0000000..bd00e8f
 +
 +mkdir -p /results
 +
-+MODEL_ARGS="--enc_n_hid 256 \
-+  --enc_pre_rnn_layers 1 \
++MODEL_ARGS="--enc_n_hid 1024 \
++  --enc_pre_rnn_layers 2 \
 +  --enc_stack_time_factor 8 \
-+  --enc_post_rnn_layers 1 \
++  --enc_post_rnn_layers 3 \
 +  --enc_dropout 0.1 \
-+  --pred_n_hid 128 \
++  --pred_n_hid 512 \
 +  --pred_rnn_layers 2 \
 +  --pred_dropout 0.3 \
-+  --joint_n_hid 128 \
++  --joint_n_hid 512 \
 +  --joint_dropout 0.3 \
 +  --rnn_type lstm"
 +# run training
@@ -3088,8 +3155,9 @@ index 0000000..bd00e8f
 +result_name="RNN_SPEECH_RECOGNITION"
 +
 +echo "RESULT,$result_name,,$result,nvidia,$start_fmt"
++
 diff --git a/modelzoo/rnnt/pytorch/train.py b/modelzoo/rnnt/pytorch/train.py
-index de45eb0..62d0f6f 100644
+index de45eb0..66cc279 100644
 --- a/modelzoo/rnnt/pytorch/train.py
 +++ b/modelzoo/rnnt/pytorch/train.py
 @@ -21,14 +21,12 @@ import time
@@ -3572,7 +3640,7 @@ index de45eb0..62d0f6f 100644
 -
 +    # data parallel
 +    if world_size > 1:
-+        model = DDP(model)
++        model = DDP(model, find_unused_parameters=True)
 +    print_once(model)
      print_once('Setting up datasets...')
      (
@@ -3708,7 +3776,7 @@ index de45eb0..62d0f6f 100644
                                  dont_use_mmap=args.dali_dont_use_mmap)
  
  
-@@ -771,191 +678,148 @@ def main():
+@@ -771,189 +678,145 @@ def main():
  
      # training loop
      model.train()
@@ -4022,11 +4090,8 @@ index de45eb0..62d0f6f 100644
 +    print_once(prof.key_averages().table(sort_by='self_cpu_time_total'))
  
      training_time = time.time() - training_start_time
-+    print_once(f"Epoch {epoch}, Iteration {0} to {step} took {training_time} s, {training_time/step*1000} ms/iter, loss is  , test took {training_time} secs, test_auc is {str(best_wer)}")
      log((), None, 'train_avg', {'throughput': training_utts / training_time})
- 
-     if last_wer > args.target:
-@@ -968,6 +832,10 @@ def main():
+@@ -968,6 +831,10 @@ def main():
      flush_log()
      if args.save_at_the_end:
          checkpointer.save(model, ema_model, optimizer, epoch, step, best_wer)
