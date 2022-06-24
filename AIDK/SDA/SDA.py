@@ -10,7 +10,7 @@ from AIDK.hydroai.hydromodel import *
 from AIDK.SDA.modeladvisor.DIENAdvisor import *
 from AIDK.SDA.modeladvisor.TestAdvisor import *
 from AIDK.SDA.modeladvisor.DLRMAdvisor import *
-# from SDA.modeladvisor.ResNetAdvisor import *
+from AIDK.SDA.modeladvisor.ResNetAdvisor import *
 from AIDK.SDA.modeladvisor.WnDAdvisor import *
 from AIDK.SDA.modeladvisor.TwitterRecSysAdvisor import *
 from AIDK.SDA.modeladvisor.MiniGoAdvisor import *
@@ -107,12 +107,15 @@ class SDA:
         elif self.model.lower() == 'bert':
             return BERTAdvisor(self.dataset_meta, self.dataset_train,
                                self.dataset_valid, self.settings)
+        elif self.model.lower() == 'resnet':
+            return ResNetAdvisor(self.dataset_meta, self.dataset_train,
+                               self.dataset_valid, self.settings)
         else:
             return RegisteredAdvisor(settings=self.settings)
 
     @staticmethod
     def get_model_zoo_list():
-        return ['wnd', 'dlrm', 'dien', 'twitter_recsys', 'pipeline_test', 'rnnt', 'minigo', 'upm', 'bert']
+        return ['wnd', 'dlrm', 'dien', 'twitter_recsys', 'pipeline_test', 'rnnt', 'minigo', 'upm', 'bert', 'resnet']
 
     def launch(self):
         """

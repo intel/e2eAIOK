@@ -84,5 +84,14 @@ pipeline {
                 sh 'docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-base /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_bert_test.sh"'
             }
         }
+        stage('Run resnet') {
+            agent {
+                label 'sr602'
+            }
+            steps {
+                sh 'cd modelzoo/resnet  && bash patch_resnet.sh && cd ../..'
+                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_resnet_test.sh"'
+            }
+        }
     }
 }

@@ -1,0 +1,346 @@
+diff --git a/Intel/benchmarks/resnet/2-nodes-16s-8376H-tensorflow/mlperf_resnet/imagenet_main.py b/Intel/benchmarks/resnet/2-nodes-16s-8376H-tensorflow/mlperf_resnet/imagenet_main.py
+index af15c5b..366bae5 100644
+--- a/Intel/benchmarks/resnet/2-nodes-16s-8376H-tensorflow/mlperf_resnet/imagenet_main.py
++++ b/Intel/benchmarks/resnet/2-nodes-16s-8376H-tensorflow/mlperf_resnet/imagenet_main.py
+@@ -21,13 +21,19 @@ from __future__ import print_function
+ import os
+ import sys
+ import random
++import os
++
++sys.path.append("/home/vmagent/app/hydro.ai/modelzoo/resnet/")
++
+ 
+ import numpy.random
+ import tensorflow as tf  # pylint: disable=g-bad-import-order
++import imagenet_preprocessing
++import resnet_model
++import resnet_run_loop
+ 
+-from mlperf_resnet import imagenet_preprocessing
+-from mlperf_resnet import resnet_model
+-from mlperf_resnet import resnet_run_loop
++
++import time
+ 
+ # import horovod if the above resnet_run_loop indiciates MPI
+ if resnet_run_loop.is_mpi:
+@@ -220,12 +226,14 @@ class ImagenetModel(resnet_model.Model):
+     """
+ 
+     # For bigger models, we want to use "bottleneck" layers
+-    if resnet_size < 50:
+-      bottleneck = False
+-      final_size = 512
+-    else:
+-      bottleneck = True
+-      final_size = 2048
++    # if resnet_size < 50:
++    #   bottleneck = False
++    #   final_size = 512
++    # else:
++    #   bottleneck = True
++    #   final_size = 2048
++    bottleneck = True
++    final_size = 2048
+ 
+     super(ImagenetModel, self).__init__(
+         resnet_size=resnet_size,
+@@ -289,7 +297,9 @@ def imagenet_model_fn(features, labels, mode, params):
+   if params['fine_tune']:
+     base_lr = .1
+   else:
+-    base_lr = .128
++    base_lr = params['base_lr']
++  
++  # base_lr = 0.15
+ 
+   num_workers = 1 if resnet_run_loop.is_mpi == 0 else hvd.size()
+   global_batch_size = params['batch_size'] * num_workers
+@@ -304,10 +314,12 @@ def imagenet_model_fn(features, labels, mode, params):
+       labels=labels,
+       mode=mode,
+       model_class=ImagenetModel,
++      num_filters=params['num_filters'],
+       resnet_size=params['resnet_size'],
+       weight_decay=params['weight_decay'],
+       learning_rate_fn=learning_rate_fn,
+-      momentum=0.9,
++      momentum=params['momentum'],
++      kernel_size=params['kernel_size'],
+       data_format=params['data_format'],
+       version=params['version'],
+       loss_scale=params['loss_scale'],
+@@ -319,7 +331,16 @@ def imagenet_model_fn(features, labels, mode, params):
+   )
+ 
+ 
++
++"""
++num_filters
++momentum
++
++"""
++
++
+ def main(argv):
++  all_start = time.time()
+   parser = resnet_run_loop.ResnetArgParser(
+       resnet_size_choices=[18, 34, 50, 101, 152, 200])
+ 
+@@ -329,6 +350,7 @@ def main(argv):
+   )
+ 
+   flags = parser.parse_args(args=argv[2:])
++  print(F"flags:{flags}")
+ 
+   seed = int(argv[1])
+   print('Setting random seed = ', seed)
+@@ -342,6 +364,8 @@ def main(argv):
+   resnet_run_loop.resnet_main(seed,
+       flags, imagenet_model_fn, input_function,
+       shape=[_DEFAULT_IMAGE_SIZE, _DEFAULT_IMAGE_SIZE, _NUM_CHANNELS])
++  all_end = time.time()
++  print(F"Total time:{all_end - all_start}")
+ 
+ 
+ if __name__ == '__main__':
+diff --git a/Intel/benchmarks/resnet/2-nodes-16s-8376H-tensorflow/mlperf_resnet/resnet_run_loop.py b/Intel/benchmarks/resnet/2-nodes-16s-8376H-tensorflow/mlperf_resnet/resnet_run_loop.py
+index 4b5aeff..8f83dc1 100644
+--- a/Intel/benchmarks/resnet/2-nodes-16s-8376H-tensorflow/mlperf_resnet/resnet_run_loop.py
++++ b/Intel/benchmarks/resnet/2-nodes-16s-8376H-tensorflow/mlperf_resnet/resnet_run_loop.py
+@@ -25,9 +25,11 @@ from __future__ import print_function
+ 
+ import argparse
+ import os
++import time
++import sys
+ 
+-import tensorflow as tf  # pylint: disable=g-bad-import-order
+ 
++import tensorflow as tf  # pylint: disable=g-bad-import-order
+ from mlperf_compliance import mlperf_log
+ from mlperf_logging import mllog
+ from mlperf_compliance import tf_mlperf_log
+@@ -37,12 +39,14 @@ from mlperf_utils.export import export
+ from mlperf_utils.logs import hooks_helper
+ from mlperf_utils.logs import logger
+ from mlperf_utils.misc import model_helpers
+-
++from lars_optimizer import LARSOptimizer
++from tensorflow.python import eager
+ global is_mpi
+ try:
+     import horovod.tensorflow as hvd
+     hvd.init()
+     is_mpi = hvd.size()
++    print(F"horovod size:{is_mpi}")
+ except ImportError:
+     is_mpi = 0
+     print("No MPI horovod support, this is running in no-MPI mode!")
+@@ -146,8 +150,8 @@ def get_synth_input_fn(height, width, num_channels, num_classes):
+   """
+   def input_fn(is_training, data_dir, batch_size, *args, **kwargs):  # pylint: disable=unused-argument
+     images = tf.zeros((batch_size, height, width, num_channels), tf.float32)
+-    labels = tf.zeros((batch_size, num_classes), tf.int32)
+-    return tf.data.Dataset.from_tensors((images, labels)).repeat()
++    labels = tf.zeros((batch_size), tf.int32)
++    return tf.data.Dataset.from_tensors((images, labels))
+ 
+   return input_fn
+ 
+@@ -261,8 +265,8 @@ def learning_rate_with_decay(
+   return learning_rate_fn
+ 
+ 
+-def resnet_model_fn(features, labels, mode, model_class,
+-                    resnet_size, weight_decay, learning_rate_fn, momentum,
++def resnet_model_fn(features, labels, mode, model_class, num_filters,
++                    resnet_size, weight_decay, learning_rate_fn, momentum, kernel_size,
+                     data_format, version, loss_scale, loss_filter_fn=None,
+                     dtype=resnet_model.DEFAULT_DTYPE,
+                     label_smoothing=0.0, enable_lars=False,
+@@ -386,9 +390,8 @@ def resnet_model_fn(features, labels, mode, model_class,
+     tf.identity(learning_rate, name='learning_rate')
+     tf.compat.v1.summary.scalar('learning_rate', learning_rate)
+ 
+-
+     if enable_lars:
+-      optimizer = tf.compat.v1.train.LARSOptimizer(
++      optimizer = LARSOptimizer(
+           learning_rate=learning_rate,
+           momentum=momentum,
+           weight_decay=weight_decay,
+@@ -550,7 +553,11 @@ def resnet_main(seed, flags, model_function, input_function, shape=None):
+           'enable_lars': flags.enable_lars,
+           'weight_decay': flags.weight_decay,
+           'fine_tune': flags.fine_tune,
+-          'use_bfloat16': flags.use_bfloat16
++          'use_bfloat16': flags.use_bfloat16,
++          'num_filters' : flags.num_filters,
++          'momentum' : flags.momentum,
++          'kernel_size' : flags.kernel_size,
++          'base_lr' : flags.base_lr
+       })
+   eval_classifier = tf.estimator.Estimator(
+       model_fn=model_function, model_dir=model_dir.rsplit('/', 1)[0]+'/main', config=run_config,
+@@ -565,7 +572,11 @@ def resnet_main(seed, flags, model_function, input_function, shape=None):
+           'enable_lars': flags.enable_lars,
+           'weight_decay': flags.weight_decay,
+           'fine_tune': flags.fine_tune,
+-          'use_bfloat16': flags.use_bfloat16
++          'use_bfloat16': flags.use_bfloat16,
++          'num_filters' : flags.num_filters,
++          'momentum' : flags.momentum,
++          'kernel_size' : flags.kernel_size,
++          'base_lr' : flags.base_lr
+       })
+ 
+   if benchmark_log_dir is not None:
+@@ -584,6 +595,12 @@ def resnet_main(seed, flags, model_function, input_function, shape=None):
+   # The reference performs the first evaluation on the fourth epoch. (offset
+   # eval by 3 epochs)
+   success = False
++  train_start_time = time.time()
++  print(F"-----flags:{flags}")
++  print(F"flags.train_epochs // flags.epochs_between_evals:{flags.train_epochs // flags.epochs_between_evals}")
++  print(F"flags.train_epochs:{flags.train_epochs}")
++  print(F"flags.epochs_between_evals:{flags.epochs_between_evals}")
++# with eager.profiler.Profiler('.'):
+   for i in range(flags.train_epochs // flags.epochs_between_evals):
+     # Data for epochs_between_evals (i.e. 4 epochs between evals) worth of
+     # epochs is concatenated and run as a single block inside a session. For
+@@ -592,7 +609,7 @@ def resnet_main(seed, flags, model_function, input_function, shape=None):
+     mllogger.start(key=mllog.constants.BLOCK_START, value=i+1)
+     mllogger.event(key=mllog.constants.FIRST_EPOCH_NUM, value=i*flags.epochs_between_evals)
+     mllogger.event(key=mllog.constants.EPOCH_COUNT, value=flags.epochs_between_evals)
+-
++    
+     for j in range(flags.epochs_between_evals):
+       mllogger.event(key=mllog.constants.EPOCH_NUM,
+                               value=i * flags.epochs_between_evals + j)
+@@ -625,7 +642,7 @@ def resnet_main(seed, flags, model_function, input_function, shape=None):
+       formatter=formatter)
+ 
+     print('Starting a training cycle.')
+-
++    # proflier_hook = tf.estimator.ProfilerHook(save_steps=None, save_secs=None, output_dir='.', show_dataflow=True,show_memory=True)
+     def input_fn_train():
+       return input_function(
+           is_training=True,
+@@ -645,7 +662,6 @@ def resnet_main(seed, flags, model_function, input_function, shape=None):
+           train_steps = flags.max_train_steps
+       else:
+           train_steps = steps_per_eval_per_worker
+-
+       classifier.train(input_fn=input_fn_train, hooks=train_hooks + [compliance_hook],
+               steps=train_steps)
+     else:
+@@ -677,14 +693,18 @@ def resnet_main(seed, flags, model_function, input_function, shape=None):
+     # global_step count.
+     eval_hooks = [hvd.BroadcastGlobalVariablesHook(0)]
+     eval_results = eval_classifier.evaluate(input_fn=input_fn_eval,
+-                                       steps=flags.max_train_steps, hooks=eval_hooks)
++                                      steps=flags.max_train_steps, hooks=eval_hooks)
+     eval_results_per_worker = eval_results['accuracy']
+     allreduced_results = hvd.allreduce(eval_results_per_worker)
++    all_result = allreduced_results.numpy()
++    file = '/home/vmagent/app/hydro.ai/modelzoo/resnet/mlperf_resnet/metric.txt'
++    with open(file, 'w') as f:
++        f.writelines(str(all_result))
+     mllogger.event(key=mllog.constants.EVAL_SAMPLES, value=int(eval_results[_NUM_EXAMPLES_NAME]))
+     #mllogger.event(key=mllog.constants.EVAL_ACCURACY, value=float(eval_results['accuracy']))
+     mllogger.event(key=mllog.constants.EVAL_ACCURACY, value=float(allreduced_results))
+     mllogger.end(key=mllog.constants.EVAL_STOP)
+-    print(allreduced_results)
++    print(F"allreduced_results:{allreduced_results}")
+ 
+     if benchmark_logger:
+       benchmark_logger.log_estimator_evaluation_result(eval_results)
+@@ -693,6 +713,8 @@ def resnet_main(seed, flags, model_function, input_function, shape=None):
+         flags.stop_threshold, float(allreduced_results)):
+       success = True
+       break
++  train_end_time = time.time()
++  print(F"train total time:{train_end_time - train_start_time}")
+ 
+   mllogger.event(key=mllog.constants.RUN_STOP, value={"success": success})
+   mllogger.end(key=mllog.constants.RUN_STOP)
+diff --git a/Intel/benchmarks/resnet/2-nodes-16s-8376H-tensorflow/mlperf_resnet/run_and_time.sh b/Intel/benchmarks/resnet/2-nodes-16s-8376H-tensorflow/mlperf_resnet/run_and_time.sh
+new file mode 100755
+index 0000000..638bd20
+--- /dev/null
++++ b/Intel/benchmarks/resnet/2-nodes-16s-8376H-tensorflow/mlperf_resnet/run_and_time.sh
+@@ -0,0 +1,23 @@
++#/usr/bin/bash
++
++echo 3 > /proc/sys/vm/drop_caches 
++
++RANDOM_SEED=`date +%s`
++
++QUALITY=0.759
++
++set -e
++
++
++
++export OMP_NUM_THREADS=24
++#export OMP_NUM_THREADS=12
++
++export KMP_BLOCKTIME=1
++
++export KMP_AFFINITY="granularity=fine,compact,1,0"
++
++MODEL_DIR="./resnet_imagenet_${RANDOM_SEED}"
++
++
++horovodrun -n 2 HOROVOD_CPU_OPERATIONS=CCL CCL_ATL_TRANSPORT=mpi python imagenet_main.py 1623291220 --data_dir /home/vmagent/app/dataset/resnet/ --model_dir $MODEL_DIR --train_epochs 1 --stop_threshold $QUALITY --batch_size 1632 --version 1 --resnet_size 50 --epochs_between_evals 1 --inter_op_parallelism_threads 2 --intra_op_parallelism_threads 2 --use_bfloat16  --enable_lars --label_smoothing=0.1 --weight_decay=0.00005  2>&1 |tee lars-1epochs_eval_every_0_epochs_global_batch_size_3264_${RANDOM_SEED}.log
+diff --git a/Intel/benchmarks/resnet/2-nodes-16s-8376H-tensorflow/mlperf_utils/arg_parsers/parsers.py b/Intel/benchmarks/resnet/2-nodes-16s-8376H-tensorflow/mlperf_utils/arg_parsers/parsers.py
+index 4747ceb..9e3c9e0 100644
+--- a/Intel/benchmarks/resnet/2-nodes-16s-8376H-tensorflow/mlperf_utils/arg_parsers/parsers.py
++++ b/Intel/benchmarks/resnet/2-nodes-16s-8376H-tensorflow/mlperf_utils/arg_parsers/parsers.py
+@@ -111,9 +111,9 @@ class BaseParser(argparse.ArgumentParser):
+                train_epochs=True, epochs_between_evals=True,
+                stop_threshold=True, batch_size=True,
+                multi_gpu=False, num_gpu=True, hooks=True,
+-               enable_lars=True, label_smoothing=True, weight_decay=True, fine_tune=True):
++               enable_lars=True, label_smoothing=True, weight_decay=True, 
++               num_filters=True, base_lr=True, momentum=True, fine_tune=True, kernel_size=True):
+     super(BaseParser, self).__init__(add_help=add_help)
+-
+     if data_dir:
+       self.add_argument(
+           "--data_dir", "-dd", default="/tmp",
+@@ -180,6 +180,32 @@ class BaseParser(argparse.ArgumentParser):
+          help='[default: %(default)s] Weight decay coefficiant for l2 regularization.',
+          metavar="<WD>"
+       )
++    
++    if num_filters:
++      self.add_argument(
++         "--num_filters", "-nf", type=int, default=64,
++         help='[default: %(default)s] number filters of convolution layer ',
++         metavar="<NF>"
++      )
++
++    if kernel_size:
++      self.add_argument(
++         "--kernel_size", "-ks", type=int, default=7,
++         help='[default: %(default)s] kernel size of convolution layer ',
++         metavar="<KS>"
++      )
++    if base_lr:
++      self.add_argument(
++         "--base_lr", "-bl", type=float, default=0.128,
++         help='[default: %(default)s] base learning rate ',
++         metavar="<BL>"
++      )
++    if momentum:
++      self.add_argument(
++         "--momentum", "-mm", type=float, default=0.9,
++         help='[default: %(default)s] parameter for optimizer',
++         metavar="<MM>"
++      )
+ 
+     if fine_tune:
+       self.add_argument(
