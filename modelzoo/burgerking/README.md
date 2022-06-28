@@ -1,2 +1,0 @@
-# PoCs for Blue Whale
-

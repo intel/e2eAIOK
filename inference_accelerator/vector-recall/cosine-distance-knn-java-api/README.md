@@ -103,9 +103,9 @@ Github link: https://github.com/oneapi-src/oneDAL
 
   Navigate to `<PROJECT_HOME>/src/java`.
 
-  `javac com/intel/algorithm/Main.java`
+  `javac -classpath ".:../../lib/commons-validator-1.7.jar:../../lib/commons-beanutils-1.9.4.jar:../../lib/commons-collections-3.2.2.jar:../../lib/commons-digester-2.1.jar:../../lib/commons-logging-1.2.jar:" com/intel/algorithm/Main.java`
 
-  `java -Djava.library.path=. com.intel.algorithm.Main <PATH_TO_TRAIN_DATA> <PATH_TO_TEST_DATA> > output.log`
+  `java -Djava.library.path=. -classpath ".:../../lib/commons-validator-1.7.jar:../../lib/commons-beanutils-1.9.4.jar:../../lib/commons-collections-3.2.2.jar:../../lib/commons-digester-2.1.jar:../../lib/commons-logging-1.2.jar:" com.intel.algorithm.Main <PATH_TO_TRAIN_DATA> <PATH_TO_TEST_DATA> > output.log`
 
   The path for shared lib, `libknn.so`, is specified via `-Djava.library.path`. To run the class without depending execution position,
   you can set `CLASSPATH`, e.g. `export CLASSPATH=<PROJECT_HOME>/src/java:$CLASSPATH`.
@@ -143,9 +143,9 @@ To benchmark the algorithm's performance, you can run either pure C++ code or mi
   -lonedal -lonedal_thread -lJavaAPI -std=c++17 -fPIC -shared -o libknn.so -I$JAVA_HOME/include -I$JAVA_HOME/include/linux -I<PROJECT_HOME>/src/java
   -I<ONEDAL_RELEASE_HOME>/daal/latest/include -I<ONEDAL_RELEASE_HOME>/daal/latest/examples/oneapi/cpp/source`
 
-  `javac com/intel/algorithm/BenchmarkTest.java`
+  `javac -classpath ".:../../lib/commons-validator-1.7.jar:../../lib/commons-beanutils-1.9.4.jar:../../lib/commons-collections-3.2.2.jar:../../lib/commons-digester-2.1.jar:../../lib/commons-logging-1.2.jar:" com/intel/algorithm/BenchmarkTest.java`
 
-  `java -Djava.library.path=. com.intel.algorithm.BenchmarkTest 1000000 512 100 10`
+  `java -Djava.library.path=. -classpath ".:../../lib/commons-validator-1.7.jar:../../lib/commons-beanutils-1.9.4.jar:../../lib/commons-collections-3.2.2.jar:../../lib/commons-digester-2.1.jar:../../lib/commons-logging-1.2.jar:" com.intel.algorithm.BenchmarkTest 1000000 512 100 10`
 
   The meaning of the above given args is as same as that for pure C++ code.
 

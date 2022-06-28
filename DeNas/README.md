@@ -1,9 +1,16 @@
 # Quick Start
 
+### Build DeNas docker image
+
+* Before building docker image, firstly create SSH private key `id_rsa` under folder `Dockerfile-ubuntu18.04` to enbale passwordless SSH.
 ```
-scripts/run_docker
-conda activate pytorch_1.10
-pip install torchvision torchsummary easydict opencv-python scikit-image
+$ cd Dockerfile-ubuntu18.04
+$ docker build -t aidk-denas-pytorch110 . -f DockerfilePytorch110
+```
+### Run DeNas docker container
+```
+$ docker run -it --privileged --network host --device=/dev/dri -v ${dataset_path}:/home/vmagent/app/dataset -v ${AIDK_codebase}:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-denas-pytorch110 /bin/bash
+$ conda activate pytorch_1.10
 ```
 
 # Run quick try for CNN model

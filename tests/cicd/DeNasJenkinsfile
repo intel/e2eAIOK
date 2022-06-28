@@ -1,0 +1,40 @@
+pipeline {
+    agent none
+    stages {
+        stage('Prepare') {
+            steps {
+                script {
+                    def labels = ['sr602']
+                    def builders = [: ]
+                    for (x in labels) {
+                        def label = x
+                        builders[label] = {
+                            node(label) {
+                                cleanWs()
+                                checkout scm
+                                sh 'cd Dockerfile-ubuntu18.04 && cp /root/.ssh/id_rsa ./ && docker build -t aidk-denas-pytorch110 . -f DockerfilePytorch110 && cd .. && yes | docker image prune'
+                            }
+                        }
+                    }
+                    parallel builders
+                }
+            }
+        }
+        stage('Run DeNas CNN') {
+            agent {
+                label 'sr602'
+            }
+            steps {
+                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-denas-pytorch110 /bin/bash -c ". /home/vmagent/app/hydro.ai/tests/cicd/jenkins_denas_cnn.sh"'
+            }
+        }
+        stage('Run DeNas ViT') {
+            agent {
+                label 'sr602'
+            }
+            steps {
+                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-denas-pytorch110 /bin/bash -c ". /home/vmagent/app/hydro.ai/tests/cicd/jenkins_denas_vit.sh"'
+            }
+        }
+    }
+}

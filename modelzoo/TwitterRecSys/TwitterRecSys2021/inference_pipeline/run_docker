@@ -1,4 +1,0 @@
-#docker run --cpus 1 --memory 64G  --network none -v /mnt/nvme2/chendi/BlueWhale/docker/script/:/home/vmagent/app -v /mnt/nvme2/chendi/BlueWhale/docker/test:/home/vmagent/app/test -it xuechendi/rsc_ubuntu ./run
-#docker run --cpus 1 --memory 64G  --network none -v /mnt/nvme2/chendi/BlueWhale/docker/small_test/:/home/vmagent/app -v /mnt/nvme2/chendi/BlueWhale/docker/small_test/test:/home/vmagent/app/test -it xuechendi/rsc_ubuntu ./run
-#docker run --cpus 1 --memory 64G  --network none -v /mnt/nvme2/chendi/BlueWhale/docker/mem_test/:/home/vmagent/app -it xuechendi/rsc_ubuntu ./run
-docker run --cpus 1 --memory 64G --network none -v /mnt/nvme2/chendi/BlueWhale/docker/script/:/home/123 -v /mnt/nvme2/chendi/BlueWhale/docker/test:/home/123/test -w /home/123 --entrypoint ./run xuechendi/rsc_ubuntu

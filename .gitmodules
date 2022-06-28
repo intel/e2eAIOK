@@ -1,3 +1,30 @@
 [submodule "RecDP"]
 	path = RecDP
 	url = https://github.com/oap-project/recdp.git
+[submodule "tests/cicd/bats"]
+	path = tests/cicd/bats
+	url = https://github.com/bats-core/bats-core.git
+[submodule "tests/cicd/test_helper/bats-support"]
+	path = tests/cicd/test_helper/bats-support
+	url = https://github.com/bats-core/bats-support.git
+[submodule "tests/cicd/test_helper/bats-assert"]
+	path = tests/cicd/test_helper/bats-assert
+	url = https://github.com/bats-core/bats-assert.git
+[submodule "tests/cicd/test_helper/bats-file"]
+	path = tests/cicd/test_helper/bats-file
+	url = https://github.com/ztombol/bats-file.git
+[submodule "modelzoo/third_party/mlperf_v1.0"]
+	path = modelzoo/third_party/mlperf_v1.0
+	url = https://github.com/mlcommons/training_results_v1.0.git
+[submodule "modelzoo/third_party/DeepLearningExamples"]
+	path = modelzoo/third_party/DeepLearningExamples
+	url = https://github.com/NVIDIA/DeepLearningExamples.git
+[submodule "modelzoo/third_party/dlrm"]
+	path = modelzoo/third_party/dlrm
+	url = https://github.com/facebookresearch/dlrm.git
+[submodule "modelzoo/third_party/alibaba-ai-matrix"]
+	path = modelzoo/third_party/alibaba-ai-matrix
+	url = https://github.com/alibaba/ai-matrix.git
+[submodule "modelzoo/third_party/IntelAI_models"]
+	path = modelzoo/third_party/IntelAI_models
+	url = https://github.com/IntelAI/models.git

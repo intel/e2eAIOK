@@ -1,0 +1,18 @@
+# Dockerfile for AIDK(Legacy) integration test environment
+
+FROM xuechendi/oneapi-aikit:legacy_hydro.ai
+
+WORKDIR /home/vmagent/app
+ENV http_proxy "http://child-prc.intel.com:913"
+ENV https_proxy "http://child-prc.intel.com:913"
+ENV PATH /opt/intel/oneapi/intelpython/latest/condabin:$PATH
+
+RUN apt-get update -y && apt-get -y install libunwind-dev
+RUN sed -i 's/12345/12346/g' /etc/ssh/sshd_config
+RUN sed -i 's/12345/12346/g' /etc/ssh/ssh_config
+
+SHELL ["conda", "run", "-n", "pytorch_mlperf", "/bin/bash", "-c"]
+RUN python -m pip install pytest "git+https://github.com/mlperf/logging.git@1.0.0"
+
+SHELL ["/bin/bash", "-c"] 
+RUN conda init bash

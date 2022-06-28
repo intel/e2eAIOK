@@ -9,7 +9,12 @@ public class CosineDistanceKNN {
 
   // load generated shared library: libknn.so.
   static {
-    System.loadLibrary("knn");
+    try {
+      System.load(System.getProperty("user.dir") + "/libknn.so");
+    } catch (Throwable t) {
+      System.out.println("Failed to load knn with error: " + t);
+    }
+    
   }
 
   private static Table<Integer> indicesTable;

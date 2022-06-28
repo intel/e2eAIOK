@@ -1,0 +1,69 @@
+# Dockerfile for Pytorch (Legacy)
+# Used in ModelZoo: dlrm
+
+FROM intel/oneapi-aikit:2021.4-devel-ubuntu18.04
+
+WORKDIR /root/
+RUN apt-get update -y && apt-get install -y git libunwind-dev
+ENV PATH /opt/intel/oneapi/intelpython/latest/condabin:$PATH
+RUN yes | conda create -n pytorch_mlperf python=3.7
+SHELL ["conda", "run", "-n", "pytorch_mlperf", "/bin/bash", "-c"]
+
+# install GCC-8 and copy libs
+RUN conda install gxx_linux-64==8.4.0
+RUN cp /opt/intel/oneapi/intelpython/latest/lib/python3.7/_sysconfigdata_x86_64_conda_cos6_linux_gnu.py /opt/intel/oneapi/intelpython/latest/lib/python3.7/_sysconfigdata_x86_64_conda_linux_gnu.py
+RUN cp /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/python3.7/_sysconfigdata_x86_64_conda_cos6_linux_gnu.py /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/python3.7/_sysconfigdata_x86_64_conda_linux_gnu.py
+RUN cp -r /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/* /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/x86_64-conda-linux-gnu/sysroot/usr/lib64/
+
+# install required dependencies
+RUN python -m pip install sklearn onnx tqdm lark-parser pyyaml
+RUN conda install ninja cffi typing --no-update-deps
+RUN conda install intel-openmp mkl mkl-include numpy -c intel --no-update-deps
+RUN conda install -c conda-forge gperftools
+
+# git clone pytorch v1.5.0-rc3
+RUN git clone https://github.com/pytorch/pytorch.git && cd pytorch && git checkout tags/v1.5.0-rc3 -b v1.5-rc3 && git submodule sync && git submodule update --init --recursive
+# git clone ipex v0.2
+RUN git clone https://github.com/intel/intel-extension-for-pytorch.git && cd intel-extension-for-pytorch && git checkout tags/v0.2 -b v0.2 && git submodule sync && git submodule update --init --recursive
+# apply ipex patch to pytorch and install
+RUN cd intel-extension-for-pytorch && cp torch_patches/0001-enable-Intel-Extension-for-CPU-enable-CCL-backend.patch ../pytorch/ && cd ../pytorch && patch -p1 < 0001-enable-Intel-Extension-for-CPU-enable-CCL-backend.patch
+RUN cp -r /opt/intel/oneapi/intelpython/python3.7/envs/pytorch_mlperf/lib/* /opt/intel/oneapi/intelpython/python3.7/envs/pytorch_mlperf/x86_64-conda-linux-gnu/sysroot/usr/lib64/
+RUN cd pytorch && python setup.py install
+RUN cd intel-extension-for-pytorch && python setup.py install
+
+# git clone oneCCL and install
+RUN git clone https://github.com/oneapi-src/oneCCL.git && cd oneCCL && git checkout 2021.1-beta07-1 && mkdir build && cd build && cmake .. -DCMAKE_INSTALL_PREFIX=/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/.local && make install -j
+# git clone torchCCL and install
+RUN git clone https://github.com/intel/torch-ccl.git && cd torch-ccl && git checkout 2021.1-beta07-1
+RUN source /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/.local/env/setvars.sh && cd torch-ccl && python setup.py install
+
+# install sigopt
+RUN python -m pip install sigopt==7.5.0 prefetch_generator tensorboardX --ignore-installed
+# install other required dependencies
+RUN python -m pip install pandas psutil
+RUN python -m pip install "git+https://github.com/mlperf/logging.git@1.0.0"
+
+# for test
+RUN python -m pip install pytest
+# small fix for dlrm
+RUN python -m pip install protobuf==3.20
+
+SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
+RUN python -m pip install  --no-cache-dir --ignore-installed sigopt==7.5.0
+RUN python -m pip install transformers pandas
+
+SHELL ["/bin/bash", "-c"]
+
+RUN apt-get update -y && apt-get install -y openssh-server vim nano git \
+            rsync wget curl gcc g++ build-essential pkg-config zlib1g-dev \
+            zip unzip numactl flex ncurses-term python3 python3-pip
+RUN sed -i 's/#Port 22/Port 12346/g' /etc/ssh/sshd_config
+RUN sed -i 's/#   Port 22/    Port 12346/g' /etc/ssh/ssh_config
+RUN mkdir /root/.ssh
+COPY id_rsa /root/.ssh/id_rsa
+RUN ssh-keygen -y -f /root/.ssh/id_rsa > /root/.ssh/id_rsa.pub
+RUN cat /root/.ssh/id_rsa.pub > /root/.ssh/authorized_keys
+RUN chmod 600 /root/.ssh/authorized_keys
+
+RUN conda init bash
+ENTRYPOINT [""]

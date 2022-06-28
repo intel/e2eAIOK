@@ -1,7 +1,8 @@
 import init_hydro
-from hydroai.hydroautolearner import HydroAutoLearner
+from AIDK.hydroai.hydroautolearner import HydroAutoLearner
 import argparse
 import sys
+import pathlib
 
 
 def parse_args(args):
@@ -14,13 +15,18 @@ def parse_args(args):
     parser.add_argument(
         '--data_path',
         type=str,
-        required=True,
+        default="/home/vmagent/app/dataset/pipeline_test/",
         help='Dataset path')
     parser.add_argument(
         '--conf',
         type=str,
         default='conf/hydroai_defaults.conf',
         help='hydroai defaults configuration')
+    parser.add_argument(
+        '--custom_result_path',
+        type=str,
+        default=str(pathlib.Path(__file__).parent.absolute()),
+        help='custom result path')
     parser.add_argument(
         '--executable_python',
         type=str,
@@ -43,6 +49,11 @@ def parse_args(args):
         action="store_false",
         default=True,
         help='if disable model cache')
+    parser.add_argument(
+        '--interactive',
+        dest="interative",
+        action="store_true",
+        help='enable interative mode')
     return parser.parse_args(args).__dict__
 
 

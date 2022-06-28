@@ -51,7 +51,7 @@ Quick Start
     git clone https://github.com/intel-innersource/frameworks.bigdata.bluewhale.git
     git checkout hydro.ai
     git submodule update --init --recursive
-    docker run -it --privileged --network host --device-/dev/dri -v ${dataset_path}:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ docker.io/xuechendi/oneapi-aikit:hydro.ai /bin/bash
+    docker run -it --privileged --network host --device=/dev/dri --read-only -v ${dataset_path}:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ docker.io/xuechendi/oneapi-aikit:hydro.ai /bin/bash
     source /etc/profile.d/spark-env.sh
     
     # optional - config proxy
