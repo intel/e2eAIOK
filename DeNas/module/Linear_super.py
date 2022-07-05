@@ -35,14 +35,14 @@ class LinearSuper(nn.Linear):
         if bias:
             nn.init.constant_(self.bias, 0.)
 
-    def set_sample_config(self, sample_in_dim, sample_out_dim):
+    def set_sample_config(self, sample_in_dim, sample_out_dim, in_index=None, out_index=None):
         self.sample_in_dim = sample_in_dim
         self.sample_out_dim = sample_out_dim
 
-        self._sample_parameters()
+        self._sample_parameters(in_index=in_index, out_index=out_index)
 
-    def _sample_parameters(self):
-        self.samples['weight'] = sample_weight(self.weight, self.sample_in_dim, self.sample_out_dim)
+    def _sample_parameters(self, in_index=None, out_index=None):
+        self.samples['weight'] = sample_weight(self.weight, self.sample_in_dim, self.sample_out_dim, in_index=in_index, out_index=out_index)
         self.samples['bias'] = self.bias
         self.sample_scale = self.super_out_dim/self.sample_out_dim
         if self.bias is not None:
@@ -51,7 +51,10 @@ class LinearSuper(nn.Linear):
 
     def forward(self, x):
         self.sample_parameters()
-        return F.linear(x, self.samples['weight'], self.samples['bias']) * (self.sample_scale if self.scale else 1)
+        if self.bias is not None:
+            return F.linear(x, self.samples['weight'].to(x.device), self.samples['bias'].to(x.device))
+        else:
+            return F.linear(x, self.samples['weight'].to(x.device))
 
     def calc_sampled_param_num(self):
         assert 'weight' in self.samples.keys()
@@ -68,14 +71,26 @@ class LinearSuper(nn.Linear):
         total_flops += sequence_length *  np.prod(self.samples['weight'].size())
         return total_flops
 
-def sample_weight(weight, sample_in_dim, sample_out_dim):
-    sample_weight = weight[:, :sample_in_dim]
-    sample_weight = sample_weight[:sample_out_dim, :]
+def sample_weight(weight, sample_in_dim, sample_out_dim, in_index=None, out_index=None):
+    
+    if in_index is None:
+        sample_weight = weight[:, :sample_in_dim]
+    else:
+        sample_weight = weight.index_select(1, in_index.to(weight.device))
+
+    if out_index is None:
+        sample_weight = sample_weight[:sample_out_dim, :]
+    else:
+        sample_weight = sample_weight.index_select(0, out_index.to(sample_weight.device))
 
     return sample_weight
 
 
-def sample_bias(bias, sample_out_dim):
-    sample_bias = bias[:sample_out_dim]
+def sample_bias(bias, sample_out_dim, out_index=None):
+    
+    if out_index is None:
+        sample_bias = bias[:sample_out_dim]
+    else:
+        sample_bias = bias.index_select(0, out_index.to(bias.device))
 
     return sample_bias
