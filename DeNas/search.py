@@ -1,7 +1,7 @@
 import random
 import sys
-import torch
 import argparse
+import torch
 import yaml
 import numpy as np
 
@@ -14,14 +14,12 @@ def parse_args(args):
     parser = argparse.ArgumentParser('DE-NAS')
     parser.add_argument('--domain', type=str, default=None, choices=['cnn','vit'], help='DE-NAS search domain')
     parser.add_argument('--conf', type=str, default=None, help='DE-NAS conf file')
-    input_args = edict(parser.parse_args(args).__dict__)
     settings = {}
-    settings.update(input_args)
-    settings.update(parse_config(input_args.conf))
+    settings.update(parser.parse_args(args).__dict__)
+    settings.update(parse_config(settings['conf']))
     return edict(settings)
 
 def main(params):
-
     if params.domain == 'cnn':
         from cv.third_party.ZenNet import DeSearchSpaceXXBL as search_space
         from cv.third_party.ZenNet import DeMainNet as super_net

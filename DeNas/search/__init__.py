@@ -1,1 +1,1 @@
-__all__ = ['utils','SearchEngineFactory','BaseSearchEngine','RandomSearchEngine','EvolutionarySearchEngine','CNNRandomSearchEngine']
+__all__ = ['utils','SearchEngineFactory','BaseSearchEngine','RandomSearchEngine','EvolutionarySearchEngine']

@@ -1,68 +1,19 @@
-import os
-import random
-
 from search.BaseSearchEngine import BaseSearchEngine
-from search.utils import decode_cand_tuple
 from scores.compute_de_score import do_compute_nas_score
+from cv.utils.vit import vit_is_legal, vit_populate_random_func, vit_mutation_random_func, vit_crossover_random_func
 
 class EvolutionarySearchEngine(BaseSearchEngine):
 
-    def __init__(self, params, super_net=None, search_space=None):
+    def __init__(self, params=None, super_net=None, search_space=None):
         super().__init__(params,super_net,search_space)
-        self.model_type = params.model_type
-        self.batch_size = params.batch_size
-        self.max_epochs = params.max_epochs
-        self.select_num = params.select_num
-        self.population_num = params.population_num
-        self.m_prob = params.m_prob
-        self.s_prob =params.s_prob
-        self.param_limits = params.param_limits
-        self.min_param_limits = params.min_param_limits
-        self.output_dir = params.output_dir
-        self.crossover_num = params.crossover_num
-        self.mutation_num = params.mutation_num
-        self.memory = []
-        self.vis_dict = {}
-        self.keep_top_k = {self.select_num: [], 50: []}
-        self.epoch = 0
         self.candidates = []
-        self.top_accuracies = []
+        self.top_candidates = []
+        self.vis_dict = {}
 
-    def is_legal(self, cand):
-        assert isinstance(cand, tuple)
-        if cand not in self.vis_dict:
-            self.vis_dict[cand] = {}
-        info = self.vis_dict[cand]
-        if 'visited' in info:
-            return False
-        depth, mlp_ratio, num_heads, embed_dim = decode_cand_tuple(cand)
-        sampled_config = {}
-        sampled_config['layer_num'] = depth
-        sampled_config['mlp_ratio'] = mlp_ratio
-        sampled_config['num_heads'] = num_heads
-        sampled_config['embed_dim'] = [embed_dim]*depth
-        n_parameters = self.super_net.get_sampled_params_numel(sampled_config)
-        info['params'] =  n_parameters / 10.**6
-        if info['params'] > self.param_limits:
-            return False
-        if info['params'] < self.min_param_limits:
-            return False
-        nas_score = do_compute_nas_score(model_type = self.model_type, model=self.super_net, 
-                                                        resolution=224,
-                                                        batch_size=self.batch_size,
-                                                        mixup_gamma=0.01)
-        info['acc'] = nas_score
-        info['visited'] = True
-        return True
-
-    def update_top_k(self, candidates, *, k, key, reverse=True):
-        assert k in self.keep_top_k
-        t = self.keep_top_k[k]
-        t += candidates
-        t.sort(key=key, reverse=reverse)
-        self.keep_top_k[k] = t[:k]
-
-    def stack_random_cand(self, random_func, *, batchsize=10):
+    '''
+    Higher order function that stack random candidates
+    '''
+    def stack_random_cand(self, random_func, batchsize=10):
         while True:
             cands = [random_func() for _ in range(batchsize)]
             for cand in cands:
@@ -71,131 +22,120 @@ class EvolutionarySearchEngine(BaseSearchEngine):
             for cand in cands:
                 yield cand
 
-    def get_random_cand(self):
-        cand_tuple = list()
-        dimensions = ['mlp_ratio', 'num_heads']
-        depth = random.choice(self.search_space['depth'])
-        cand_tuple.append(depth)
-        for dimension in dimensions:
-            for i in range(depth):
-                cand_tuple.append(random.choice(self.search_space[dimension]))
+    '''
+    EA populate function for random structure
+    '''
+    def populate_random_func(self):
+        if self.params.domain == "vit":
+            return vit_populate_random_func(self.search_space)
 
-        cand_tuple.append(random.choice(self.search_space['embed_dim']))
-        return tuple(cand_tuple)
+    '''
+    EA mutation function for random structure
+    '''
+    def mutation_random_func(self):
+        if self.params.domain == "vit":
+            return vit_mutation_random_func(self.params.m_prob, self.params.s_prob, self.search_space, self.top_candidates)
 
-    def get_random(self, num):
-        cand_iter = self.stack_random_cand(self.get_random_cand)
-        while len(self.candidates) < num:
+    '''
+    EA crossover function for random structure
+    '''
+    def crossover_random_func(self):
+        if self.params.domain == "vit":
+            return vit_crossover_random_func(self.top_candidates)
+
+    '''
+    Supernet decoupled EA populate process
+    '''
+    def get_populate(self):
+        cand_iter = self.stack_random_cand(self.populate_random_func)
+        while len(self.candidates) < self.params.population_num:
             cand = next(cand_iter)
-            if not self.is_legal(cand):
+            if not self.cand_islegal(cand):
                 continue
+            self.cand_evaluate(cand)
             self.candidates.append(cand)
-            print('random {}/{}'.format(len(self.candidates), num))
+            print('random {}/{} structure {} nas_score {}'.format(len(self.candidates), self.params.population_num, cand, self.vis_dict[cand]['acc']))
         print('random_num = {}'.format(len(self.candidates)))
 
-    def get_mutation(self, k, mutation_num, m_prob, s_prob):
-        assert k in self.keep_top_k
+    '''
+    Supernet decoupled EA mutation process
+    '''
+    def get_mutation(self):
         res = []
-        max_iters = mutation_num * 10
-
-        def random_func():
-            cand = list(random.choice(self.keep_top_k[k]))
-            depth, mlp_ratio, num_heads, embed_dim = decode_cand_tuple(cand)
-            random_s = random.random()
-            # depth
-            if random_s < s_prob:
-                new_depth = random.choice(self.search_space['depth'])
-                if new_depth > depth:
-                    mlp_ratio = mlp_ratio + [random.choice(self.search_space['mlp_ratio']) for _ in range(new_depth - depth)]
-                    num_heads = num_heads + [random.choice(self.search_space['num_heads']) for _ in range(new_depth - depth)]
-                else:
-                    mlp_ratio = mlp_ratio[:new_depth]
-                    num_heads = num_heads[:new_depth]
-                depth = new_depth
-            # mlp_ratio
-            for i in range(depth):
-                random_s = random.random()
-                if random_s < m_prob:
-                    mlp_ratio[i] = random.choice(self.search_space['mlp_ratio'])
-            # num_heads
-            for i in range(depth):
-                random_s = random.random()
-                if random_s < m_prob:
-                    num_heads[i] = random.choice(self.search_space['num_heads'])
-            # embed_dim
-            random_s = random.random()
-            if random_s < s_prob:
-                embed_dim = random.choice(self.search_space['embed_dim'])
-            result_cand = [depth] + mlp_ratio + num_heads + [embed_dim]
-            return tuple(result_cand)
-
-        cand_iter = self.stack_random_cand(random_func)
-        while len(res) < mutation_num and max_iters > 0:
+        max_iters = 10 * self.params.mutation_num  
+        cand_iter = self.stack_random_cand(self.mutation_random_func)
+        while len(res) < self.params.mutation_num and max_iters > 0:
             max_iters -= 1
             cand = next(cand_iter)
-            if not self.is_legal(cand):
+            if not self.cand_islegal(cand):
                 continue
+            self.cand_evaluate(cand)
             res.append(cand)
-            print('mutation {}/{}'.format(len(res), mutation_num))
+            print('mutation {}/{} structure {} nas_score {}'.format(len(res), self.params.mutation_num, cand, self.vis_dict[cand]['acc']))
         print('mutation_num = {}'.format(len(res)))
         return res
 
-    def get_crossover(self, k, crossover_num):
-        assert k in self.keep_top_k
+    '''
+    Supernet decoupled EA crossover process
+    '''
+    def get_crossover(self):
         res = []
-        max_iters = 10 * crossover_num
-
-        def random_func():
-            p1 = random.choice(self.keep_top_k[k])
-            p2 = random.choice(self.keep_top_k[k])
-            max_iters_tmp = 50
-            while len(p1) != len(p2) and max_iters_tmp > 0:
-                max_iters_tmp -= 1
-                p1 = random.choice(self.keep_top_k[k])
-                p2 = random.choice(self.keep_top_k[k])
-            return tuple(random.choice([i, j]) for i, j in zip(p1, p2))
-
-        cand_iter = self.stack_random_cand(random_func)
-        while len(res) < crossover_num and max_iters > 0:
+        max_iters = 10 * self.params.crossover_num
+        cand_iter = self.stack_random_cand(self.crossover_random_func)
+        while len(res) < self.params.crossover_num and max_iters > 0:
             max_iters -= 1
             cand = next(cand_iter)
-            if not self.is_legal(cand):
+            if not self.cand_islegal(cand):
                 continue
+            self.cand_evaluate(cand)
             res.append(cand)
-            print('crossover {}/{}'.format(len(res), crossover_num))
+            print('crossover {}/{} structure {} nas_score {}'.format(len(res), self.params.crossover_num, cand, self.vis_dict[cand]['acc']))
         print('crossover_num = {}'.format(len(res)))
         return res
 
+    '''
+    Keep top candidates of select_num
+    '''
+    def update_population_pool(self):
+        t = self.top_candidates
+        t += self.candidates
+        t.sort(key=lambda x: self.vis_dict[x]['acc'], reverse=True)
+        self.top_candidates = t[:self.params.select_num]
+
+    '''
+    Judge sample structure legal or not
+    '''
+    def cand_islegal(self, cand):
+        if self.params.domain == "vit":
+            return vit_is_legal(cand, self.vis_dict, self.super_net, self.params.max_param_limits, self.params.min_param_limits)
+
+    '''
+    Compute nas score for sample structure
+    '''
+    def cand_evaluate(self, cand):
+        nas_score = do_compute_nas_score(model_type = self.params.model_type, model=self.super_net, 
+                                                        resolution=self.params.img_size,
+                                                        batch_size=self.params.batch_size,
+                                                        mixup_gamma=1e-2)
+        self.vis_dict[cand]['acc'] = nas_score
+
+    '''
+    Unified API for EvolutionarySearchEngine
+    '''
     def search(self):
-        print(
-            'population_num = {} select_num = {} mutation_num = {} crossover_num = {} random_num = {} max_epochs = {}'.format(
-                self.population_num, self.select_num, self.mutation_num, self.crossover_num,
-                self.population_num - self.mutation_num - self.crossover_num, self.max_epochs))
-        self.get_random(self.population_num)
-        while self.epoch < self.max_epochs:
-            print('epoch = {}'.format(self.epoch))
-            self.memory.append([])
-            for cand in self.candidates:
-                self.memory[-1].append(cand)
-            self.update_top_k(
-                self.candidates, k=self.select_num, key=lambda x: self.vis_dict[x]['acc'])
-            self.update_top_k(
-                self.candidates, k=50, key=lambda x: self.vis_dict[x]['acc'])
-            tmp_accuracy = []
-            for i, cand in enumerate(self.keep_top_k[50]):
-                print('No.{} {} Top-1 val acc = {}, params = {}'.format(
-                    i + 1, cand, self.vis_dict[cand]['acc'], self.vis_dict[cand]['params']))
-                tmp_accuracy.append(self.vis_dict[cand]['acc'])
-            self.top_accuracies.append(tmp_accuracy)
-            mutation = self.get_mutation(
-                self.select_num, self.mutation_num, self.m_prob, self.s_prob)
-            crossover = self.get_crossover(self.select_num, self.crossover_num)
+        self.get_populate()
+        for epoch in range(self.params.max_epochs):
+            print('epoch = {}'.format(epoch))
+            self.update_population_pool()
+            mutation = self.get_mutation()
+            crossover = self.get_crossover()
             self.candidates = mutation + crossover
-            self.get_random(self.population_num)
-            self.epoch += 1
-        print(F"Best score:{self.top_accuracies[0][0]}")
-        with open(os.path.join(self.output_dir, "best_model_structure.txt"), 'w') as f:
-            f.write(str(self.keep_top_k[50][0]))
-    
+            self.get_populate()
+        with open("best_model_structure.txt", 'w') as f:
+            f.write(str(self.get_best_structures()))
+
+    '''
+    Unified API to get best searched structure
+    '''
     def get_best_structures(self):
-        return self.keep_top_k[50][0]
+        return self.top_candidates[0]

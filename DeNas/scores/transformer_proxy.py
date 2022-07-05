@@ -115,7 +115,6 @@ def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, 
     model.zero_grad()
     input = torch.randn(size=[batch_size, 3, resolution, resolution],  dtype=dtype)
     disversity_score_list = compute_diversity_score(model, input)
-    print(F"len:{len(disversity_score_list)}")
 
     disversity_score = 0
     for grad_abs in disversity_score_list:

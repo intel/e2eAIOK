@@ -9,7 +9,7 @@ $ docker build -t aidk-denas-pytorch110 . -f DockerfilePytorch110
 ```
 ### Run DeNas docker container
 ```
-$ docker run -it --privileged --network host --device=/dev/dri -v ${dataset_path}:/home/vmagent/app/dataset -v ${AIDK_codebase}:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-denas-pytorch110 /bin/bash
+$ docker run --shm-size=10g -it --privileged --network host --device=/dev/dri -v ${dataset_path}:/home/vmagent/app/dataset -v ${AIDK_codebase}:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-denas-pytorch110 /bin/bash
 $ conda activate pytorch_1.10
 ```
 

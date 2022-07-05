@@ -10,4 +10,4 @@ python -u search.py --domain cnn --conf ../conf/denas/cv/aidk_denas_cnn.conf
 cd /home/vmagent/app/hydro.ai
 
 # test
-LANG=C tests/cicd/bats/bin/bats tests/cicd/test_denas_cnn.bats
+LANG=C tests/cicd/bats/bin/bats tests/cicd/test_denas.bats

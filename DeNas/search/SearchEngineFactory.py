@@ -1,11 +1,9 @@
 from search.RandomSearchEngine import RandomSearchEngine
 from search.EvolutionarySearchEngine import EvolutionarySearchEngine
-from search.CNNRandomSearchEngine import CNNRandomSearchEngine
 
 SEARCHER_TYPES = {
         "RandomSearchEngine": RandomSearchEngine,
         "EvolutionarySearchEngine": EvolutionarySearchEngine,
-        "CNNRandomSearchEngine": CNNRandomSearchEngine
 }
 
 class SearchEngineFactory(object):
