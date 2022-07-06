@@ -30,6 +30,15 @@ pipeline {
                 sh 'docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch110 /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/docker_torchccl_test.sh"'
             }
         }
+        stage('Run minigo') {
+            agent {
+                label 'sr612'
+            }
+            steps {
+                sh 'cd modelzoo/minigo && bash patch_minigo.sh && cd ../..'
+                sh 'SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT bash tests/cicd/jenkins_minigo_test.sh'
+            }
+        }
         stage('Run wnd') {
             agent {
                 label 'sr602'
@@ -64,15 +73,6 @@ pipeline {
             steps {
                 sh 'cd modelzoo/rnnt/pytorch && bash patch_rnnt.sh && cd ../../..'
                 sh 'docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch110 /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_rnnt_test.sh"'
-            }
-        }
-        stage('Run minigo') {
-            agent {
-                label 'sr612'
-            }
-            steps {
-                sh 'cd modelzoo/minigo && bash patch_minigo.sh && cd ../..'
-                sh 'SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT bash tests/cicd/jenkins_minigo_test.sh'
             }
         }
         stage('Run bert') {
