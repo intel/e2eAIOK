@@ -97,9 +97,9 @@ def do_compute_nas_score_cnn_plus(model_type, model, resolution, batch_size, mix
     return nas_score
 
 
-def do_compute_nas_score(model_type, model, resolution, batch_size, mixup_gamma):
+def do_compute_nas_score(model_type, model, resolution, batch_size, mixup_gamma, subconfig=None):
     if model_type == "cnn":
         return do_compute_nas_score_cnn(model_type, model, resolution, batch_size, mixup_gamma)
-    elif model_type == "transformer":
-        return do_compute_nas_score_transformer(model_type, model, resolution, batch_size, mixup_gamma)
+    elif model_type == "transformer" or model_type == "bert":
+        return do_compute_nas_score_transformer(model_type, model, resolution, batch_size, mixup_gamma, subconfig)
 

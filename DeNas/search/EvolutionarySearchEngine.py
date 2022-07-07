@@ -1,6 +1,7 @@
 from search.BaseSearchEngine import BaseSearchEngine
 from scores.compute_de_score import do_compute_nas_score
 from cv.utils.vit import vit_is_legal, vit_populate_random_func, vit_mutation_random_func, vit_crossover_random_func
+from  nlp.utils import bert_populate_random_func, bert_is_legal, bert_mutation_random_func, bert_crossover_random_func, get_subconfig
 
 class EvolutionarySearchEngine(BaseSearchEngine):
 
@@ -28,6 +29,8 @@ class EvolutionarySearchEngine(BaseSearchEngine):
     def populate_random_func(self):
         if self.params.domain == "vit":
             return vit_populate_random_func(self.search_space)
+        elif self.params.domain == "bert":
+            return bert_populate_random_func(self.search_space)
 
     '''
     EA mutation function for random structure
@@ -35,6 +38,8 @@ class EvolutionarySearchEngine(BaseSearchEngine):
     def mutation_random_func(self):
         if self.params.domain == "vit":
             return vit_mutation_random_func(self.params.m_prob, self.params.s_prob, self.search_space, self.top_candidates)
+        elif self.params.domain == "bert":
+            return bert_mutation_random_func(self.params.m_prob, self.params.s_prob, self.search_space, self.top_candidates)
 
     '''
     EA crossover function for random structure
@@ -42,6 +47,8 @@ class EvolutionarySearchEngine(BaseSearchEngine):
     def crossover_random_func(self):
         if self.params.domain == "vit":
             return vit_crossover_random_func(self.top_candidates)
+        elif self.params.domain == "bert":
+            return bert_crossover_random_func(self.top_candidates)
 
     '''
     Supernet decoupled EA populate process
@@ -108,15 +115,21 @@ class EvolutionarySearchEngine(BaseSearchEngine):
     def cand_islegal(self, cand):
         if self.params.domain == "vit":
             return vit_is_legal(cand, self.vis_dict, self.super_net, self.params.max_param_limits, self.params.min_param_limits)
+        elif self.params.domain == "bert":
+            return bert_is_legal(cand, self.vis_dict, self.params)
 
     '''
     Compute nas score for sample structure
     '''
     def cand_evaluate(self, cand):
+        subconfig = None
+        if self.params.domain == "bert":
+            subconfig = get_subconfig(cand)
         nas_score = do_compute_nas_score(model_type = self.params.model_type, model=self.super_net, 
                                                         resolution=self.params.img_size,
                                                         batch_size=self.params.batch_size,
-                                                        mixup_gamma=1e-2)
+                                                        mixup_gamma=1e-2,
+                                                        subconfig=subconfig)
         self.vis_dict[cand]['acc'] = nas_score
 
     '''

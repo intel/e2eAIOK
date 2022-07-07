@@ -16,7 +16,7 @@ from module.layernorm_super import LayerNormSuper as SuperBertLayerNorm
 from module.nlp.bert_embedding_super import SuperBertEmbeddings
 from module.nlp.bert_encoder_super import SuperBertEncoder
 from module.nlp.bert_pooler_super import SuperBertPooler
-from third_party.transformer.file_utils import *
+from nlp.third_party.transformer.file_utils import *
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',

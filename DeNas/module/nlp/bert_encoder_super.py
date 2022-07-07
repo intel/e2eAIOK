@@ -5,12 +5,14 @@ import copy
 
 import torch
 from torch import nn
+import sys
+sys.path.append("..")
 
-from Linear_super import LinearSuper as SuperLinear
-from layernorm_super import LayerNormSuper as SuperBertLayerNorm
+from module.Linear_super import LinearSuper as SuperLinear
+from module.layernorm_super import LayerNormSuper as SuperBertLayerNorm
 
-from bert_attention_super import SuperBertAttention
-from bert_intermediate_super import SuperBertIntermediate
+from module.nlp.bert_attention_super import SuperBertAttention
+from module.nlp.bert_intermediate_super import SuperBertIntermediate
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',
@@ -21,7 +23,7 @@ class SuperBertOutput(nn.Module):
     def __init__(self, config):
         super(SuperBertOutput, self).__init__()
         self.dense = SuperLinear(config.intermediate_size, config.hidden_size)
-        self.LayerNorm = SuperBertLayerNorm(config.hidden_size, eps=config.layer_norm_eps)
+        self.LayerNorm = SuperBertLayerNorm(config.hidden_size)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
     def set_sample_config(self, intermediate_size, sample_embed_dim):

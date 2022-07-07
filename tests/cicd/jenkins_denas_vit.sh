@@ -6,6 +6,7 @@ conda activate pytorch_1.10
 
 # launch denas for vit-based supernet
 cd /home/vmagent/app/hydro.ai/DeNas
+sed -i '/max_epochs:/ s/:.*/: 1/' ../conf/denas/cv/aidk_denas_vit.conf
 python -u search.py --domain vit --conf ../conf/denas/cv/aidk_denas_vit.conf
 cd /home/vmagent/app/hydro.ai
 

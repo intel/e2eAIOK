@@ -4,8 +4,10 @@ import logging
 import torch
 from torch import nn
 import torch.nn.functional as F
+import sys
+sys.path.append("..")
 
-from layernorm_super import LayerNormSuper as SuperBertLayerNorm
+from module.layernorm_super import LayerNormSuper as SuperBertLayerNorm
 
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
@@ -42,7 +44,7 @@ class SuperBertEmbeddings(nn.Module):
 
         # self.LayerNorm is not snake-cased to stick with TensorFlow model variable name and be able to load
         # any TensorFlow checkpoint file
-        self.LayerNorm = SuperBertLayerNorm(config.hidden_size, eps=config.layer_norm_eps)
+        self.LayerNorm = SuperBertLayerNorm(config.hidden_size)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.sample_embed_dim = None
 

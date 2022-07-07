@@ -54,7 +54,7 @@ RUN python -m pip install pytest
 # small fix for rnnt
 RUN python -m pip install protobuf==3.20
 # install denas required dependencies
-RUN python -m pip install torchvision torchsummary easydict opencv-python scikit-image timm
+RUN python -m pip install torchvision torchsummary easydict opencv-python scikit-image timm boto3
 
 SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
 RUN python -m pip install  --no-cache-dir --ignore-installed sigopt==7.5.0

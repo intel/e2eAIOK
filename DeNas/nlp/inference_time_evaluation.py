@@ -19,15 +19,17 @@ import time
 import os
 import random
 import yaml
-import sys 
+import sys
 sys.path.append("..") 
 
 import torch
+from easydict import EasyDict as edict
 import numpy as np
 
-from nlp.supernert_bert import SuperTinyBertForPreTraining, BertConfig
+from nlp.supernert_bert import SuperBertModel, SuperBertEncoder, BertConfig
+from module.Linear_super import LinearSuper
 from third_party.transformer.tokenization import BertTokenizer
-from searcher import generate_search_space
+from nlp.utils import generate_search_space
 
 
 def text_padding(max_seq_length, device, batch_size):
@@ -91,7 +93,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     config = BertConfig.from_pretrained(os.path.join(args.bert_model, 'bert_config.json'))
-    model = SuperTinyBertForPreTraining.from_scratch(args.bert_model, config)
+    model = SuperBertModel.from_scratch(args.bert_model, config)
     tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=True)
 
     device = 'cpu'
@@ -105,7 +107,9 @@ if __name__ == "__main__":
     torch.manual_seed(args.seed)
 
     # build arch space
-    layer_numbers, hidden_sizes, ffn_sizes, qkv_sizes, qkv_sizes_mlm, head_sizes = generate_search_space(args)
+    cfg = edict(yaml.safe_load(open(args.search_space_config)))
+    search_space = generate_search_space(cfg["SEARCH_SPACE"])
+    layer_numbers, hidden_sizes, ffn_sizes, qkv_sizes, head_sizes = search_space["layer_num"], search_space["hidden_size"], search_space["ffn_size"], search_space["hidden_size"], search_space["head_num"]
 
     # Test BERT-base time
     config = dict()

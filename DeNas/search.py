@@ -7,12 +7,14 @@ import numpy as np
 
 from easydict import EasyDict as edict
 from cv.supernet_transformer import Vision_TransformerSuper
+from nlp.supernert_bert import SuperBertModel, BertConfig
+from nlp.utils import generate_search_space
 from search.SearchEngineFactory import SearchEngineFactory
 from search.utils import Timer, parse_config
 
 def parse_args(args):
     parser = argparse.ArgumentParser('DE-NAS')
-    parser.add_argument('--domain', type=str, default=None, choices=['cnn','vit'], help='DE-NAS search domain')
+    parser.add_argument('--domain', type=str, default=None, choices=['cnn','vit', 'bert'], help='DE-NAS search domain')
     parser.add_argument('--conf', type=str, default=None, help='DE-NAS conf file')
     settings = {}
     settings.update(parser.parse_args(args).__dict__)
@@ -43,6 +45,13 @@ def main(params):
                                     change_qkv=params.change_qkv, abs_pos=params.abs_pos)
         search_space = {'num_heads': cfg.SEARCH_SPACE.NUM_HEADS, 'mlp_ratio': cfg.SEARCH_SPACE.MLP_RATIO,
                         'embed_dim': cfg.SEARCH_SPACE.EMBED_DIM , 'depth': cfg.SEARCH_SPACE.DEPTH}
+    
+    elif params.domain == 'bert':
+        with open(params.supernet_cfg) as f:
+            cfg = edict(yaml.safe_load(f))
+        config = BertConfig.from_json_file(params.pretrained_bert_config)
+        super_net = SuperBertModel.from_scratch(params.pretrained_bert, config)
+        search_space = generate_search_space(cfg["SEARCH_SPACE"])
 
     '''
     Unified Call for DE-NAS Search Engine

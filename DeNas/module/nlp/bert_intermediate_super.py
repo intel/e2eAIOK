@@ -6,8 +6,10 @@ import logging
 
 import torch
 from torch import nn
+import sys
+sys.path.append("..")
 
-from Linear_super import LinearSuper as SuperLinear
+from module.Linear_super import LinearSuper as SuperLinear
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',

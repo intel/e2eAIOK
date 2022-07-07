@@ -2,12 +2,14 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import math
+import sys
+sys.path.append("..")
 
 import torch
 from torch import nn
 
-from Linear_super import LinearSuper as SuperLinear
-from layernorm_super import LayerNormSuper as SuperBertLayerNorm
+from module.Linear_super import LinearSuper as SuperLinear
+from module.layernorm_super import LayerNormSuper as SuperBertLayerNorm
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',
@@ -100,7 +102,7 @@ class SuperBertSelfOutput(nn.Module):
             qkv_size = config.hidden_size
 
         self.dense = SuperLinear(qkv_size, config.hidden_size)
-        self.LayerNorm = SuperBertLayerNorm(config.hidden_size, eps=config.layer_norm_eps)
+        self.LayerNorm = SuperBertLayerNorm(config.hidden_size)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
     def set_sample_config(self, qkv_size, sample_embed_dim, in_index=None):
