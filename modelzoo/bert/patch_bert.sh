@@ -11,5 +11,6 @@ apply_patch () {
     git apply bert.patch
 }
 
+
 get_original_model
 apply_patch
