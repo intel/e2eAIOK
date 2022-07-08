@@ -9,7 +9,6 @@ import json
 import yaml
 import math
 from pathlib import Path
-from timm.data import Mixup
 from typing import Iterable, Optional
 from timm.utils import accuracy, ModelEma
 from timm.models import create_model
@@ -17,12 +16,12 @@ from timm.loss import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
 from timm.scheduler import create_scheduler
 from timm.optim import create_optimizer
 from timm.utils import NativeScaler
-from cv.lib.datasets import build_dataset
+from lib.datasets import build_dataset
 
-from cv.lib.samplers import RASampler
-from cv.lib import utils
-from cv.lib.config import cfg, update_config_from_file
-from cv.supernet_transformer import Vision_TransformerSuper
+from lib.samplers import RASampler
+from lib import utils
+from lib.config import cfg, update_config_from_file
+from supernet_transformer import Vision_TransformerSuper
 
 def decode_cand_tuple(cand_tuple):
     cand_tuple = cand_tuple[1:-1].split(",")
@@ -35,9 +34,8 @@ def decode_cand_tuple(cand_tuple):
 def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
                     data_loader: Iterable, optimizer: torch.optim.Optimizer,
                     device: torch.device, epoch: int, loss_scaler, max_norm: float = 0,
-                    model_ema: Optional[ModelEma] = None, mixup_fn: Optional[Mixup] = None,
-                    teacher_model: torch.nn.Module = None,
-                    teach_loss: torch.nn.Module = None, choices=None, mode='super'):
+                    model_ema: Optional[ModelEma] = None,
+                    choices=None, mode='super'):
     model.train()
     criterion.train()
 
@@ -57,13 +55,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
 
    
         outputs = model(samples)
-        if teacher_model:
-            with torch.no_grad():
-                teach_output = teacher_model(samples)
-            _, teacher_label = teach_output.topk(1, 1, True, True)
-            loss = 1 / 2 * criterion(outputs, targets) + 1 / 2 * teach_loss(outputs, teacher_label.squeeze())
-        else:
-            loss = criterion(outputs, targets)
+        loss = criterion(outputs, targets)
 
         loss_value = loss.item()
 
@@ -105,6 +97,7 @@ def evaluate(data_loader, model, device):
         # compute output
 
         output = model(images)
+        
         loss = criterion(output, target)
 
         acc1, acc5 = accuracy(output, target, topk=(1, 5))
@@ -130,8 +123,6 @@ def get_args_parser():
     # custom parameters
     parser.add_argument('--platform', default='pai', type=str, choices=['itp', 'pai', 'aml'],
                         help='Name of model to train')
-    parser.add_argument('--teacher_model', default='', type=str,
-                        help='Name of teacher model to train')
     parser.add_argument('--relative_position', action='store_true')
     parser.add_argument('--gp', action='store_true')
     parser.add_argument('--change_qkv', action='store_true')
@@ -230,19 +221,7 @@ def get_args_parser():
     parser.add_argument('--resplit', action='store_true', default=False,
                         help='Do not random erase first (clean) augmentation split')
 
-    # * Mixup params
-    parser.add_argument('--mixup', type=float, default=0.8,
-                        help='mixup alpha, mixup enabled if > 0. (default: 0.8)')
-    parser.add_argument('--cutmix', type=float, default=1.0,
-                        help='cutmix alpha, cutmix enabled if > 0. (default: 1.0)')
-    parser.add_argument('--cutmix-minmax', type=float, nargs='+', default=None,
-                        help='cutmix min/max ratio, overrides alpha and enables cutmix if set (default: None)')
-    parser.add_argument('--mixup-prob', type=float, default=1.0,
-                        help='Probability of performing mixup or cutmix when either/both is enabled')
-    parser.add_argument('--mixup-switch-prob', type=float, default=0.5,
-                        help='Probability of switching to cutmix when both mixup and cutmix enabled')
-    parser.add_argument('--mixup-mode', type=str, default='batch',
-                        help='How to apply mixup/cutmix params. Per "batch", "pair", or "elem"')
+  
 
     # Dataset parameters
     parser.add_argument('--data-path', default='./data/imagenet/', type=str,
@@ -255,6 +234,8 @@ def get_args_parser():
 
     parser.add_argument('--output_dir', default='./',
                         help='path where to save, empty for no saving')
+    parser.add_argument('--best_structure_dir', default='./',
+                        help='path where to save, empty for no saving')                    
     parser.add_argument('--device', default='cpu',
                         help='device to use for training / testing')
     parser.add_argument('--seed', default=0, type=int)
@@ -341,13 +322,7 @@ def main(args):
         pin_memory=args.pin_mem, drop_last=False
     )
 
-    mixup_fn = None
-    mixup_active = args.mixup > 0 or args.cutmix > 0. or args.cutmix_minmax is not None
-    if mixup_active:
-        mixup_fn = Mixup(
-            mixup_alpha=args.mixup, cutmix_alpha=args.cutmix, cutmix_minmax=args.cutmix_minmax,
-            prob=args.mixup_prob, switch_prob=args.mixup_switch_prob, mode=args.mixup_mode,
-            label_smoothing=args.smoothing, num_classes=args.nb_classes)
+  
 
     print(f"Creating SuperVisionTransformer")
     
@@ -362,7 +337,7 @@ def main(args):
                                     max_relative_position=args.max_relative_position,
                                     relative_position=args.relative_position,
                                     change_qkv=args.change_qkv, abs_pos=not args.no_abs_pos)
-    with open(os.path.join("./", "best_model_structure.txt"), 'r') as f:
+    with open(os.path.join(args.best_structure_dir, "best_model_structure.txt"), 'r') as f:
         lines = f.readlines()
     depth, mlp_ratio, num_heads, embed_dim = decode_cand_tuple(lines[-1])
 
@@ -372,23 +347,8 @@ def main(args):
     model_config['num_heads'] = num_heads
     model_config['embed_dim'] = [embed_dim]*depth
     n_parameters = model.get_sampled_params_numel(model_config)
-    print(F"layer num:{model.sample_layer_num}")
-    print(F"mlp_ratio:{model.sample_mlp_ratio}")
-    print(F"num_heads:{model.sample_num_heads}")
-    print(F"embed_dim:{model.sample_embed_dim}")
+    print("model parameters size: {}".format(n_parameters))
 
-
-    if args.teacher_model:
-        teacher_model = create_model(
-            args.teacher_model,
-            pretrained=True,
-            num_classes=args.nb_classes,
-        )
-        # teacher_model.to(device)
-        teacher_loss = LabelSmoothingCrossEntropy(smoothing=args.smoothing)
-    else:
-        teacher_model = None
-        teacher_loss = None
 
     model_ema = None
 
@@ -398,24 +358,14 @@ def main(args):
         model = torch.nn.parallel.DistributedDataParallel(model)
         model_without_ddp = model.module
 
-    n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print('number of params:', n_parameters)
-
     linear_scaled_lr = args.lr * args.batch_size * utils.get_world_size() / 512.0
     args.lr = linear_scaled_lr
     optimizer = create_optimizer(args, model_without_ddp)
     loss_scaler = NativeScaler()
     lr_scheduler, _ = create_scheduler(args, optimizer)
 
-    # criterion = LabelSmoothingCrossEntropy()
 
-    if args.mixup > 0.:
-        # smoothing is handled with mixup label transform
-        criterion = SoftTargetCrossEntropy()
-    elif args.smoothing:
-        criterion = LabelSmoothingCrossEntropy(smoothing=args.smoothing)
-    else:
-        criterion = torch.nn.CrossEntropyLoss()
+    criterion = torch.nn.CrossEntropyLoss()
 
     output_dir = Path(args.output_dir)
 
@@ -454,9 +404,7 @@ def main(args):
         train_stats = train_one_epoch(
             model, criterion, data_loader_train,
             optimizer, device, epoch, loss_scaler,
-            args.clip_grad, model_ema, mixup_fn,
-            teacher_model=teacher_model,
-            teach_loss=teacher_loss,
+            args.clip_grad, model_ema
         )
 
         lr_scheduler.step(epoch)
@@ -493,7 +441,7 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser('AutoFormer training and evaluation script', parents=[get_args_parser()])
+    parser = argparse.ArgumentParser('ViT training and evaluation script', parents=[get_args_parser()])
     args = parser.parse_args()
     if args.output_dir:
         Path(args.output_dir).mkdir(parents=True, exist_ok=True)
