@@ -1,3 +1,4 @@
+import logging
 from abc import ABC, abstractmethod
  
 class BaseSearchEngine(ABC):
@@ -7,6 +8,9 @@ class BaseSearchEngine(ABC):
         self.super_net = super_net
         self.search_space = search_space
         self.params = params
+        logging.basicConfig(level=logging.INFO,
+                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        self.logger = logging.getLogger('DENAS')
     
     @abstractmethod
     def search(self):

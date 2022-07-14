@@ -4,7 +4,7 @@ def vit_decode_cand_tuple(cand):
     depth = cand[0]
     return depth, list(cand[1:depth+1]), list(cand[depth + 1: 2 * depth + 1]), cand[-1]
 
-def vit_is_legal(cand, vis_dict, super_net, max_param_limits, min_param_limits):
+def vit_is_legal(cand, vis_dict, params, super_net):
     if cand not in vis_dict:
         vis_dict[cand] = {}
     info = vis_dict[cand]
@@ -18,9 +18,9 @@ def vit_is_legal(cand, vis_dict, super_net, max_param_limits, min_param_limits):
     sampled_config['embed_dim'] = [embed_dim]*depth
     n_parameters = super_net.get_sampled_params_numel(sampled_config)
     info['params'] =  n_parameters / 10.**6
-    if info['params'] > max_param_limits:
+    if info['params'] > params.max_param_limits:
         return False
-    if info['params'] < min_param_limits:
+    if info['params'] < params.min_param_limits:
         return False
     info['visited'] = True
     return True

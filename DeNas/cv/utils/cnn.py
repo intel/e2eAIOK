@@ -1,32 +1,32 @@
 import random
 
-def cnn_is_legal(cand, vis_dict, super_net, budget_num_layers, budget_model_size, budget_flops, num_classes, img_size):
+def cnn_is_legal(cand, vis_dict, super_net, params):
     if cand not in vis_dict:
         vis_dict[cand] = {}
     info = vis_dict[cand]
     if 'visited' in info:
         return False
     the_model = None
-    if budget_num_layers is not None:
+    if params.budget_num_layers is not None:
         if the_model is None:
-            the_model = super_net(num_classes=num_classes, plainnet_struct=cand,
+            the_model = super_net(num_classes=params.num_classes, plainnet_struct=cand,
                                     no_create=True, no_reslink=False)
         the_layers = the_model.get_num_layers()
-        if budget_num_layers < the_layers:
+        if params.budget_num_layers < the_layers:
             return False
-    if budget_model_size is not None:
+    if params.budget_model_size is not None:
         if the_model is None:
-            the_model = super_net(num_classes=num_classes, plainnet_struct=cand,
+            the_model = super_net(num_classes=params.num_classes, plainnet_struct=cand,
                                     no_create=True, no_reslink=False)
         the_model_size = the_model.get_model_size()
-        if budget_model_size < the_model_size:
+        if params.budget_model_size < the_model_size:
             return False
-    if budget_flops is not None:
+    if params.budget_flops is not None:
         if the_model is None:
-            the_model = super_net(num_classes=num_classes, plainnet_struct=cand,
+            the_model = super_net(num_classes=params.num_classes, plainnet_struct=cand,
                                     no_create=True, no_reslink=False)
-        the_model_flops = the_model.get_FLOPs(img_size)
-        if budget_flops < the_model_flops:
+        the_model_flops = the_model.get_FLOPs(params.img_size)
+        if params.budget_flops < the_model_flops:
             return False
     info['visited'] = True
     return True

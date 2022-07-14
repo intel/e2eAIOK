@@ -1,7 +1,8 @@
+import numpy as np
 from search.BaseSearchEngine import BaseSearchEngine
 from scores.compute_de_score import do_compute_nas_score
 from cv.utils.vit import vit_is_legal, vit_populate_random_func, vit_mutation_random_func, vit_crossover_random_func
-from  nlp.utils import bert_populate_random_func, bert_is_legal, bert_mutation_random_func, bert_crossover_random_func, get_subconfig
+from nlp.utils import LatencyPredictor, bert_populate_random_func, bert_is_legal, bert_mutation_random_func, bert_crossover_random_func, get_subconfig
 
 class EvolutionarySearchEngine(BaseSearchEngine):
 
@@ -59,10 +60,12 @@ class EvolutionarySearchEngine(BaseSearchEngine):
             cand = next(cand_iter)
             if not self.cand_islegal(cand):
                 continue
+            if not self.cand_islegal_latency(cand):
+                continue
             self.cand_evaluate(cand)
             self.candidates.append(cand)
-            print('random {}/{} structure {} nas_score {}'.format(len(self.candidates), self.params.population_num, cand, self.vis_dict[cand]['acc']))
-        print('random_num = {}'.format(len(self.candidates)))
+            self.logger.info('random {}/{} structure {} nas_score {}'.format(len(self.candidates), self.params.population_num, cand, self.vis_dict[cand]['acc']))
+        self.logger.info('random_num = {}'.format(len(self.candidates)))
 
     '''
     Supernet decoupled EA mutation process
@@ -76,10 +79,12 @@ class EvolutionarySearchEngine(BaseSearchEngine):
             cand = next(cand_iter)
             if not self.cand_islegal(cand):
                 continue
+            if not self.cand_islegal_latency(cand):
+                continue
             self.cand_evaluate(cand)
             res.append(cand)
-            print('mutation {}/{} structure {} nas_score {}'.format(len(res), self.params.mutation_num, cand, self.vis_dict[cand]['acc']))
-        print('mutation_num = {}'.format(len(res)))
+            self.logger.info('mutation {}/{} structure {} nas_score {}'.format(len(res), self.params.mutation_num, cand, self.vis_dict[cand]['acc']))
+        self.logger.info('mutation_num = {}'.format(len(res)))
         return res
 
     '''
@@ -94,10 +99,12 @@ class EvolutionarySearchEngine(BaseSearchEngine):
             cand = next(cand_iter)
             if not self.cand_islegal(cand):
                 continue
+            if not self.cand_islegal_latency(cand):
+                continue
             self.cand_evaluate(cand)
             res.append(cand)
-            print('crossover {}/{} structure {} nas_score {}'.format(len(res), self.params.crossover_num, cand, self.vis_dict[cand]['acc']))
-        print('crossover_num = {}'.format(len(res)))
+            self.logger.info('crossover {}/{} structure {} nas_score {}'.format(len(res), self.params.crossover_num, cand, self.vis_dict[cand]['acc']))
+        self.logger.info('crossover_num = {}'.format(len(res)))
         return res
 
     '''
@@ -114,36 +121,71 @@ class EvolutionarySearchEngine(BaseSearchEngine):
     '''
     def cand_islegal(self, cand):
         if self.params.domain == "vit":
-            return vit_is_legal(cand, self.vis_dict, self.super_net, self.params.max_param_limits, self.params.min_param_limits)
+            return vit_is_legal(cand, self.vis_dict, self.params, self.super_net)
         elif self.params.domain == "bert":
-            return bert_is_legal(cand, self.vis_dict, self.params)
+            return bert_is_legal(cand, self.vis_dict)
 
     '''
     Compute nas score for sample structure
     '''
     def cand_evaluate(self, cand):
         subconfig = None
-        if self.params.domain == "bert":
+        if self.params.domain == "vit":
+            model = self.super_net
+        elif self.params.domain == "bert":
             subconfig = get_subconfig(cand)
-        nas_score = do_compute_nas_score(model_type = self.params.model_type, model=self.super_net, 
+            model = self.super_net
+        nas_score = do_compute_nas_score(model_type = self.params.model_type, model=model, 
                                                         resolution=self.params.img_size,
                                                         batch_size=self.params.batch_size,
                                                         mixup_gamma=1e-2,
                                                         subconfig=subconfig)
         self.vis_dict[cand]['acc'] = nas_score
+    
+    '''
+    Hardware-aware implementation
+    '''
+    def cand_islegal_latency(self, cand):
+        if "budget_latency_max" in self.params or "budget_latency_min" in self.params:
+            latency = self.get_latency(cand)
+            if "budget_latency_max" in self.params and self.params.budget_latency_max < latency:
+                return False
+            if "budget_latency_min" in self.params and self.params.budget_latency_min > latency:
+                return False
+        return True
+
+    '''
+    Compute latency for sample structure
+    '''
+    def get_latency(self, cand):
+        if 'latency' in self.vis_dict[cand]:
+            return self.vis_dict[cand]['latency']
+        latency = np.inf
+        if self.params.domain == "bert":
+            sampled_config = {}
+            sampled_config['sample_layer_num'] = cand[0]
+            sampled_config['sample_num_attention_heads'] = [cand[1]]*cand[0]
+            sampled_config['sample_qkv_sizes'] = [cand[2]]*cand[0]
+            sampled_config['sample_hidden_size'] = cand[3]
+            sampled_config['sample_intermediate_sizes'] = [cand[4]]*cand[0]
+            predictor = LatencyPredictor(feature_norm=self.params.feature_norm, lat_norm=self.params.lat_norm, feature_dim=self.params.feature_dim, hidden_dim=self.params.hidden_dim, ckpt_path=self.params.ckpt_path)
+            predictor.load_ckpt()
+            latency = predictor.predict_lat(sampled_config)
+        self.vis_dict[cand]['latency'] = latency
+        return self.vis_dict[cand]['latency']
 
     '''
     Unified API for EvolutionarySearchEngine
     '''
     def search(self):
-        self.get_populate()
         for epoch in range(self.params.max_epochs):
-            print('epoch = {}'.format(epoch))
+            self.logger.info('epoch = {}'.format(epoch))
+            self.get_populate()
             self.update_population_pool()
             mutation = self.get_mutation()
             crossover = self.get_crossover()
             self.candidates = mutation + crossover
-            self.get_populate()
+        self.update_population_pool()
         with open("best_model_structure.txt", 'w') as f:
             f.write(str(self.get_best_structures()))
 

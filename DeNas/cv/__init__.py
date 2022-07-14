@@ -1,1 +1,1 @@
-__all__ = ['lib','third_party','utils','DeNet','supernet_train','supernet_transformer','train_image_classification']
+__all__ = ['lib','third_party','utils','benchmark_network_latency','DeNet','supernet_train','supernet_transformer','train_image_classification']

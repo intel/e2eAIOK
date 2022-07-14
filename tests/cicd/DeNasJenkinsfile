@@ -4,7 +4,7 @@ pipeline {
         stage('Prepare') {
             steps {
                 script {
-                    def labels = ['sr602']
+                    def labels = ['sr613']
                     def builders = [: ]
                     for (x in labels) {
                         def label = x
@@ -22,7 +22,7 @@ pipeline {
         }
         stage('Run DeNas CNN') {
             agent {
-                label 'sr602'
+                label 'sr613'
             }
             steps {
                 sh 'docker run --rm --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-denas-pytorch110 /bin/bash -c ". /home/vmagent/app/hydro.ai/tests/cicd/jenkins_denas_cnn.sh"'
@@ -30,7 +30,7 @@ pipeline {
         }
         stage('Run DeNas ViT') {
             agent {
-                label 'sr602'
+                label 'sr613'
             }
             steps {
                 sh 'docker run --rm --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-denas-pytorch110 /bin/bash -c ". /home/vmagent/app/hydro.ai/tests/cicd/jenkins_denas_vit.sh"'
@@ -38,7 +38,7 @@ pipeline {
         }
         stage('Run DeNas Bert') {
             agent {
-                label 'sr602'
+                label 'sr613'
             }
             steps {
                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-denas-pytorch110 /bin/bash -c ". /home/vmagent/app/hydro.ai/tests/cicd/jenkins_denas_bert.sh"' 

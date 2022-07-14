@@ -42,30 +42,11 @@ def bert_populate_random_func(search_space):
 
     return tuple(cand_tuple)
 
-def bert_is_legal(cand, vis_dict, params):
-    assert isinstance(cand, tuple)
+def bert_is_legal(cand, vis_dict):
     if cand not in vis_dict:
         vis_dict[cand] = {}
     info = vis_dict[cand]
     if 'visited' in info:
-        return False
-    sampled_config = {}
-    sampled_config['sample_layer_num'] = cand[0]
-    sampled_config['sample_num_attention_heads'] = [cand[1]]*cand[0]
-    sampled_config['sample_qkv_sizes'] = [cand[2]]*cand[0]
-    sampled_config['sample_hidden_size'] = cand[3]
-    sampled_config['sample_intermediate_sizes'] = [cand[4]]*cand[0]
-    
-    predictor = LatencyPredictor(feature_norm=params.feature_norm, lat_norm=params.lat_norm, feature_dim=params.feature_dim, hidden_dim=params.hidden_dim, ckpt_path=params.ckpt_path)
-    predictor.load_ckpt()
-    latency = params.bert_lat / params.latency_constraint
-    latency_min , latency_max = 0.85 * latency, 1.1 * latency
-
-    lat_ = predictor.predict_lat(sampled_config)
-    info['latency'] = lat_
-    if info['latency'] > latency_max:
-        return False
-    if info['latency'] < latency_min:
         return False
     info['visited'] = True
     return True
