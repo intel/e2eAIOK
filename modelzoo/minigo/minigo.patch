@@ -259,21 +259,38 @@ index f089e5e..0dc31c8 100644
      python -m mlperf_logging.compliance_checker --config 0.7.0/closed_minigo.yaml --ruleset 0.7.0 result.txt
  ```
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/flags/19/selfplay.flags b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/flags/19/selfplay.flags
-index 9d49f1f..358efad 100644
+index 9d49f1f..8465df3 100644
 --- a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/flags/19/selfplay.flags
 +++ b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/flags/19/selfplay.flags
-@@ -20,8 +20,8 @@
+@@ -3,9 +3,9 @@
+ # This flagfile also serves as the base for the boostrap & eval stages of
+ # the RL loop.
+ 
+---num_readouts=800
+---fastplay_frequency=0.75
+---fastplay_readouts=80
++--num_readouts=600
++--fastplay_frequency=0.8
++--fastplay_readouts=60
+ --value_init_penalty=0.2
+ --holdout_pct=0.0
+ --disable_resign_pct=0.0
+@@ -16,12 +16,13 @@
+ --dirichlet_alpha=0.03
+ --noise_mix=0.3
+ 
+---cache_size_mb=2048
++--cache_size_mb=4096
  --verbose=false
  
  --selfplay_threads=1
----parallel_search=1
----parallel_inference=1
+ --parallel_search=1
+ --parallel_inference=1
 ---concurrent_games_per_thread=1
-+--parallel_search=8
-+--parallel_inference=8
-+--concurrent_games_per_thread=8
++--concurrent_games_per_thread=6
  
  --target_pruning=1
++
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/flags/19/train_loop.flags b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/flags/19/train_loop.flags
 index d469db9..6ae9101 100644
 --- a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/flags/19/train_loop.flags
@@ -358,7 +375,7 @@ index 523a705..bbee33a 100755
  }
  
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/init_from_checkpoint.sh b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/init_from_checkpoint.sh
-index e89c6de..89f09cb 100755
+index e89c6de..abcd5d2 100755
 --- a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/init_from_checkpoint.sh
 +++ b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/init_from_checkpoint.sh
 @@ -25,12 +25,11 @@
@@ -374,13 +391,13 @@ index e89c6de..89f09cb 100755
 +if [[ -v HOSTLIST ]]
 +then
 +  # Generate cc parallel lib
-+  mpirun -bootstrap ssh -ppn 1 -hosts $HOSTLIST ml_perf/scripts/cc_libgen_parallel_selfplay.sh --base_dir=$base_dir --board_size=$board_size 2>&1 >/dev/null
++  mpirun -bootstrap ssh -ppn 1 -hosts $HOSTLIST ml_perf/scripts/cc_libgen_parallel_selfplay.sh --base_dir=$base_dir --board_size=$board_size
 +fi
  
  # Initialize a clean directory structure.
  for var_name in flag_dir golden_chunk_dir golden_chunk_tmp_dir holdout_dir \
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/run_minigo.sh b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/run_minigo.sh
-index 9d841aa..bcb53ae 100755
+index 9d841aa..b1b3c12 100755
 --- a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/run_minigo.sh
 +++ b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/run_minigo.sh
 @@ -5,6 +5,8 @@ timestamp=$(date +%s)
@@ -415,7 +432,7 @@ index 9d841aa..bcb53ae 100755
 -# evaluation
 -./ml_perf/scripts/run_mlperf_eval.sh $1  2>&1 | tee eval.stdout
 +# evaluation (evaluation part moved to train_loop)
-+./ml_perf/scripts/run_mlperf_eval.sh $1 --target=$target 2>&1 | tee eval.stdout
++# ./ml_perf/scripts/run_mlperf_eval.sh $1 --target=$target 2>&1 | tee eval.stdout
  
  # Clean up temporary directories
  ./ml_perf/scripts/clean.sh $1
@@ -495,7 +512,7 @@ index 6a01380..99bd145 100755
      2>&1 | tee "${log_dir}/train_loop.log"
  fi
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/train_loop.py b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/train_loop.py
-index 42fcee3..521091d 100644
+index 42fcee3..76e2390 100644
 --- a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/train_loop.py
 +++ b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/train_loop.py
 @@ -82,16 +82,25 @@ flags.DEFINE_integer('numa_cores', None, 'The number of core for each numa '
@@ -507,7 +524,7 @@ index 42fcee3..521091d 100644
 +flags.DEFINE_list('devices', '', 'List of devices to run on.')
 +flags.DEFINE_string('target', '', 'Path of the target model.')
 +flags.DEFINE_string('sgf_dir', '', 'Directory to write SGFs to.')
-+flags.DEFINE_integer('num_games', 256, 'Number of games to run.')
++flags.DEFINE_integer('num_games', 100, 'Number of games to run.')
 +flags.DEFINE_float('winrate', 0.5,
 +                   'Fraction of games that a model must beat the target by.')
 +flags.DEFINE_boolean('eval', False,
