@@ -21,7 +21,7 @@ src/
 ```
 
 ## 2. WorkFlow
-<img src='./structure.png' width="700px"/>
+<img src='./doc/imgs/structure.png' width="700px"/>
 
 1. `TaskManager` read config from `task_config.xml`, and will create datasets, backbone network, discriminator network, model manager, tensorboard writer, logger. Furthermore, TaskManger will set hyper-parameters such as learning rate, early stopping tolerance, max epoch etc.
 2. All components and the TaskManager will be passed to TLEngine constructor:
@@ -29,18 +29,18 @@ src/
    - `_evaluate_epoch`: to perform transfer learning evaluating, which only focuses on target domain test data.
 
 ## 3. Task Config
-<img src='./config.png' width="500px"/>
+<img src='./doc/imgs/config.png' width="500px"/>
 
 1. `global` : global config, such as random seed, debug mode, model dir, logging, tensor board etc.
 
-   <img src='./config_global.png' width="700px"/>
+   <img src='./doc/imgs/config_global.png' width="700px"/>
 2. `task` : task config, such as task type(classification or regression), num class
 
-   <img src='./config_task.png' width="700px"/>
+   <img src='./doc/imgs/config_task.png' width="700px"/>
 3. `datasets`: dataset config, such as num worker, batch size, dataset type(train_source or train_target or test_target), data location, label location, img mode, transform etc.
    `USPS_vs_MNIST` datasets is on 'BDF Storage & E2E - General/New Projects/2022_06 Transfer Learning/dataset_example/USPS_vs_MNIST.zip'
 
-   <img src='./config_dataset.png' width="700px"/>
+   <img src='./doc/imgs/config_dataset.png' width="700px"/>
 5. `network`: network structure config, such as backbone network, discriminator network.
 
-   <img src='./config_network.png' width="700px"/>
+   <img src='./doc/imgs/config_network.png' width="700px"/>

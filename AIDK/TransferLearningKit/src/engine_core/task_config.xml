@@ -13,56 +13,93 @@
         </tensorboard>
     </global>
     <task comment="task config">
-        <classification name="MNIST transfer to USPS" comment="classification task config">
-            <num_class comment="num class" required="1">10</num_class>
+<!--        <classification name="MNIST transfer to USPS" comment="classification task config">-->
+        <classification name="Office31 Webcam transfer to amazon" comment="classification task config">
+<!--            <num_classes comment="num classes" required="1">10</num_classes>-->
+            <num_classes comment="num classes" required="1">31</num_classes>
         </classification>
     </task>
     <datasets comment="dataset config">
         <num_worker comment="dataset worker num">1</num_worker>
-        <batch_size comment="batch size"> 128 </batch_size>
-        <dataset name="MNIST_train" type="train_source" formatter="1" required="1" comment="specific dataset">
-            <data comment="data location" required="1">C:/Users/hua1/PycharmProjects/TransferLearning/dataset/USPS_vs_MNIST/MNIST</data>
-            <label comment="label location" required="1">C:/Users/hua1/PycharmProjects/TransferLearning/dataset/USPS_vs_MNIST/MNIST/mnist_train.txt</label>
-            <img_mode comment="img mode, could be L or RGB">L</img_mode>
+        <batch_size comment="batch size"> 16 </batch_size>
+<!--        <dataset name="MNIST_train" type="train_source" formatter="ImageList" required="1" comment="specific dataset">-->
+<!--            <data comment="data location" required="1">C:/Users/hua1/PycharmProjects/TransferLearning/dataset/USPS_vs_MNIST/MNIST</data>-->
+<!--            <label comment="label location" required="1">C:/Users/hua1/PycharmProjects/TransferLearning/dataset/USPS_vs_MNIST/MNIST/mnist_train.txt</label>-->
+<!--            <img_mode comment="img mode, could be L or RGB">L</img_mode>-->
+<!--            <transform comment="img transform function, must be an expression">-->
+<!--                transforms.Compose([-->
+<!--                transforms.Resize((28,28)),-->
+<!--                transforms.ToTensor(),-->
+<!--                transforms.Normalize((0.5,),(0.5,))])-->
+<!--            </transform>-->
+<!--        </dataset>-->
+<!--        <dataset name="USPS_train" type="train_target" formatter="ImageList" required="1" comment="specific dataset">-->
+<!--            <data comment="data location" required="1">C:/Users/hua1/PycharmProjects/TransferLearning/dataset/USPS_vs_MNIST/USPS</data>-->
+<!--            <label comment="label location" required="1">C:/Users/hua1/PycharmProjects/TransferLearning/dataset/USPS_vs_MNIST/USPS/usps_train.txt</label>-->
+<!--            <img_mode comment="img mode, could be L or RGB">L</img_mode>-->
+<!--            <transform comment="img transform function, must be an expression">-->
+<!--                transforms.Compose([-->
+<!--                transforms.Resize((28,28)),-->
+<!--                transforms.ToTensor(),-->
+<!--                transforms.Normalize((0.5,),(0.5,))])-->
+<!--            </transform>-->
+<!--        </dataset>-->
+<!--        <dataset name="USPS_test" type="test_target" formatter="ImageList" required="1" comment="specific dataset">-->
+<!--            <data comment="data location" required="1">C:/Users/hua1/PycharmProjects/TransferLearning/dataset/USPS_vs_MNIST/USPS</data>-->
+<!--            <label comment="label location" required="1">C:/Users/hua1/PycharmProjects/TransferLearning/dataset/USPS_vs_MNIST/USPS/usps_test.txt</label>-->
+<!--            <img_mode comment="img mode, could be L or RGB">L</img_mode>-->
+<!--            <transform comment="img transform function, must be an expression">-->
+<!--                transforms.Compose([-->
+<!--                transforms.Resize((28,28)),-->
+<!--                transforms.ToTensor(),-->
+<!--                transforms.Normalize((0.5,),(0.5,))])-->
+<!--            </transform>-->
+<!--        </dataset>-->
+        <dataset name="Office31_webcam_train" type="train_source" formatter="Office31" required="1" comment="specific dataset">
+            <data comment="data location" required="1">C:/Users/hua1/PycharmProjects/TransferLearning/dataset/office31/webcam</data>
+            <img_mode comment="img mode, could be L or RGB">RGB</img_mode>
             <transform comment="img transform function, must be an expression">
                 transforms.Compose([
-                transforms.Resize((28,28)),
+                transforms.Resize(224),
                 transforms.ToTensor(),
-                transforms.Normalize((0.5,),(0.5,))])
+                transforms.Normalize(
+                mean=[0.5, 0.5, 0.5],
+                std=[0.5, 0.5, 0.5])])
             </transform>
         </dataset>
-        <dataset name="USPS_train" type="train_target" formatter="1" required="1" comment="specific dataset">
-            <data comment="data location" required="1">C:/Users/hua1/PycharmProjects/TransferLearning/dataset/USPS_vs_MNIST/USPS</data>
-            <label comment="label location" required="1">C:/Users/hua1/PycharmProjects/TransferLearning/dataset/USPS_vs_MNIST/USPS/usps_train.txt</label>
-            <img_mode comment="img mode, could be L or RGB">L</img_mode>
+        <dataset name="Office31_amazon_train" type="train_target" formatter="Office31" required="1" comment="specific dataset">
+            <data comment="data location" required="1">C:/Users/hua1/PycharmProjects/TransferLearning/dataset/office31/amazon</data>
+            <img_mode comment="img mode, could be L or RGB">RGB</img_mode>
             <transform comment="img transform function, must be an expression">
                 transforms.Compose([
-                transforms.Resize((28,28)),
+                transforms.Resize(224),
                 transforms.ToTensor(),
-                transforms.Normalize((0.5,),(0.5,))])
+                transforms.Normalize(
+                mean=[0.5, 0.5, 0.5],
+                std=[0.5, 0.5, 0.5])])
             </transform>
         </dataset>
-        <dataset name="USPS_test" type="test_target" formatter="1" required="1" comment="specific dataset">
-            <data comment="data location" required="1">C:/Users/hua1/PycharmProjects/TransferLearning/dataset/USPS_vs_MNIST/USPS</data>
-            <label comment="label location" required="1">C:/Users/hua1/PycharmProjects/TransferLearning/dataset/USPS_vs_MNIST/USPS/usps_test.txt</label>
-            <img_mode comment="img mode, could be L or RGB">L</img_mode>
-            <transform comment="img transform function, must be an expression">
-                transforms.Compose([
-                transforms.Resize((28,28)),
-                transforms.ToTensor(),
-                transforms.Normalize((0.5,),(0.5,))])
-            </transform>
-        </dataset>
+<!--        <dataset name="Office31_amazon_test" type="test_target" formatter="Office31" required="1" comment="specific dataset">-->
+<!--            <data comment="data location" required="1">C:/Users/hua1/PycharmProjects/TransferLearning/dataset/office31/amazon</data>-->
+<!--            <img_mode comment="img mode, could be L or RGB">RGB</img_mode>-->
+<!--            <transform comment="img transform function, must be an expression">-->
+<!--                transforms.Compose([-->
+<!--                transforms.Resize(224),-->
+<!--                transforms.ToTensor(),-->
+<!--                transforms.Normalize(-->
+<!--                mean=[0.5, 0.5, 0.5],-->
+<!--                std=[0.5, 0.5, 0.5])])-->
+<!--            </transform>-->
+<!--        </dataset>-->
     </datasets>
     <training comment="training config">
         <backbone_lr comment="backbone learning rate">0.01</backbone_lr>
         <backbone_weight_decay comment="backbone training weight decay for SGD">0.0005</backbone_weight_decay>
         <backbone_momentum comment="backbone training momentum for SGD">0.9</backbone_momentum>
-        <backbone_pretraining comment="backbone pretraining config" path="">0</backbone_pretraining>
         <discriminator_lr comment="discriminator learning rate">0.01</discriminator_lr>
         <discriminator_weight_decay comment="discriminator training weight decay for SGD">0.0005</discriminator_weight_decay>
         <discriminator_momentum comment="discriminator training momentum for SGD">0.9</discriminator_momentum>
-        <epochs comment="training epoch num">1</epochs>
+        <epochs comment="training epoch num">20</epochs>
         <log_interval comment="log interval (iteration) in training">10</log_interval>
         <target_label_enable comment="enable target labels as supervised info when training">0</target_label_enable>
        <earlystopping_tolerance comment="earlystop when the verification metric does not improve within this number of epoch">3</earlystopping_tolerance>
@@ -70,27 +107,37 @@
     </training>
     <network comment="network structure config">
         <backbone comment="backbone config" required="1">
-            <predefined name="lenet" comment="predifined backbone">
+<!--            <predefined name="lenet" comment="predifined backbone">-->
+<!--            </predefined>-->
+            <predefined name="resnet18" comment="predifined backbone">
+                <pretrained comment="backbone pretrained">
+                    <path comment="pretrained model path">../pretrained/resnet18.pth</path>
+                    <layer_pattern comment="which layer to pretraining">.*conv[0-9]\.weight$
+                    .*downsample\.[0-9]\.weight$
+                    .*downsample\.[0-9]\.bias$</layer_pattern>
+                </pretrained>
             </predefined>
         </backbone>
         <discriminator comment="discriminator config" required="1">
-                <adversarial name="CDAN" comment="adversarial-based transfer learning config">
-                    <input_size comment="input dimension">500</input_size>
-                    <hidden_size comment="hidden layer dimension">500</hidden_size>
-                    <dropout comment="dropout rate">0.0</dropout>
-                    <enable_random_layer comment="whether enable random layer, see CDAN paper">1</enable_random_layer>
-                    <enable_entropy_weight comment="whether enable entropy weight, see CDAN paper">1</enable_entropy_weight>
-                    <backbone_output_size comment="backbone output size">10</backbone_output_size>
-                    <grl_coeff_alpha comment="alpha to control shape of coeff which is used for gradient rever layer">1</grl_coeff_alpha>
-                    <grl_coeff_high comment="alpha to control max value of coeff which is used for gradient rever layer">0.1</grl_coeff_high>
-                </adversarial>
-<!--            <adversarial name="DANN" comment="adversarial-based transfer learning config" comment="adversarial-based transfer learning config">-->
-<!--                <input_size comment="input dimension">500</input_size>-->
-<!--                <hidden_size comment="hidden layer dimension">500</hidden_size>-->
-<!--                <dropout comment="dropout rate">0.0</dropout>-->
-<!--                <grl_coeff_alpha comment="alpha to control shape of coeff which is used for gradient rever layer">1</grl_coeff_alpha>-->
-<!--                <grl_coeff_high comment="alpha to control max value of coeff which is used for gradient rever layer">0.1</grl_coeff_high>-->
-<!--            </adversarial>-->
+<!--                <adversarial name="CDAN" comment="adversarial-based transfer learning config">-->
+<!--                    <input_size comment="input dimension">500</input_size>-->
+<!--                    <hidden_size comment="hidden layer dimension">500</hidden_size>-->
+<!--                    <dropout comment="dropout rate">0.0</dropout>-->
+<!--                    <enable_random_layer comment="whether enable random layer, see CDAN paper">1</enable_random_layer>-->
+<!--                    <enable_entropy_weight comment="whether enable entropy weight, see CDAN paper">1</enable_entropy_weight>-->
+<!--                    <backbone_output_size comment="backbone output size">10</backbone_output_size>-->
+<!--                    <grl_coeff_alpha comment="alpha to control shape of coeff which is used for gradient rever layer">1</grl_coeff_alpha>-->
+<!--                    <grl_coeff_high comment="alpha to control max value of coeff which is used for gradient rever layer">0.1</grl_coeff_high>-->
+<!--                </adversarial>-->
+            <adversarial name="DANN" comment="adversarial-based transfer learning config">
+<!--                <input_size comment="input dimension" required="1">500</input_size>-->
+                <input_size comment="input dimension" required="1">512</input_size>
+<!--                <hidden_size comment="hidden layer dimension" required="1">500</hidden_size>-->
+                <hidden_size comment="hidden layer dimension" required="1">256</hidden_size>
+                <dropout comment="dropout rate">0.0</dropout>
+                <grl_coeff_alpha comment="alpha to control shape of coeff which is used for gradient rever layer">1</grl_coeff_alpha>
+                <grl_coeff_high comment="alpha to control max value of coeff which is used for gradient rever layer">0.1</grl_coeff_high>
+            </adversarial>
         </discriminator>
     </network>
 </xml>

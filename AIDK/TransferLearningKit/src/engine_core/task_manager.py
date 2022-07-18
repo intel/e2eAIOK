@@ -10,6 +10,7 @@ import torch.nn as nn
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from dataset.image_list import ImageList
+from dataset.office31 import Office31
 from torchvision import transforms
 
 class TaskManager:
@@ -42,10 +43,6 @@ class TaskManager:
         self.traing_backbone_lr = float(bs.find('backbone_lr').string)
         self.traing_backbone_weight_decay = float(bs.find('backbone_weight_decay').string)
         self.traing_backbone_momentum = float(bs.find('backbone_momentum').string)
-        backbone_pretraining_node = bs.find('backbone_pretraining')
-        self.backbone_pretraining = int(backbone_pretraining_node.string) > 0
-        if self.backbone_pretraining:  # backbone pretraining
-            pass
 
         self.traing_discriminator_lr = float(bs.find('discriminator_lr').string)
         self.traing_discriminator_weight_decay = float(bs.find('discriminator_weight_decay').string)
@@ -60,7 +57,6 @@ class TaskManager:
         self._str += '\n\tTraining:traing_backbone_lr[%s],' \
                      'traing_backbone_weight_decay[%s],' \
                      'traing_backbone_momentum[%s],' \
-                     'backbone_pretraining[%s],' \
                      'traing_discriminator_lr[%s],' \
                      'traing_discriminator_weight_decay[%s],' \
                      'traing_discriminator_momentum[%s],' \
@@ -72,7 +68,6 @@ class TaskManager:
             self.traing_backbone_lr,
             self.traing_backbone_weight_decay,
             self.traing_backbone_momentum,
-            self.backbone_pretraining,
             self.traing_discriminator_lr,
             self.traing_discriminator_weight_decay,
             self.traing_discriminator_momentum,
@@ -102,7 +97,7 @@ class TaskManager:
         :param bs: bs segment which containing task-specific setting
         :return:
         '''
-        self.task_classificaton_num_class = int(bs.find('classification').find('num_class').string)
+        self.task_classificaton_num_class = int(bs.find('classification').find('num_classes').string)
         self._str += '\n\tTask:task_classificaton_num_class[%s]' % self.task_classificaton_num_class
 
     def createDiscriminator(self,num_iter_per_epoch):
@@ -128,10 +123,16 @@ class TaskManager:
         :return: a backbone model
         '''
         node = self._bs.find("backbone").find("predefined")
-        kwargs = {'num_class': self.task_classificaton_num_class}
+        pretrained = node.find('pretrained')
+        kwargs = {'num_classes': self.task_classificaton_num_class}
+        if pretrained:
+            kwargs['pretrained_path'] = pretrained.find('path').string
+            kwargs['pretrained_layer_pattern'] = [item for item in pretrained.find('layer_pattern').string.strip().split("\n") if item]
+            self.backbone_pretrained = True
+
         if node:
             backbone =  createBackbone(node.attrs['name'],**kwargs)
-            self._str += '\n\tBackbone: %s' % backbone
+            self._str += '\n\tBackbone[pretrained = %s]: %s' % (self.backbone_pretrained,backbone)
             return backbone
         else:  # customized
             logging.error("Create backbone failed!")
@@ -180,13 +181,23 @@ class TaskManager:
         self._str += '\n\tDatasets: batch size[%s], num worker [%s]' % (self.batch_size,self.num_worker)
 
         for seg in bs.find_all('dataset'):
+            formatter = seg.attrs['formatter']
             train_type = seg.attrs['type']
             data_path = seg.find('data').string
-            label_path = seg.find('label').string
             kwargs = {"data_transform": eval(seg.find('transform').string.strip()),
-                      "img_mode":seg.find('img_mode').string}
-            datasets[train_type] = ImageList(data_path, open(label_path).readlines(), **kwargs)
-            self._str += '\n\t\tDataset [%s] : %s'%(train_type,datasets[train_type])
+                      "img_mode": seg.find('img_mode').string}
+
+            if formatter == 'ImageList':
+                label_path = seg.find('label').string
+                kwargs['label_records'] = open(label_path).readlines()
+                dataset = ImageList(data_path,**kwargs)
+            elif formatter == 'Office31':
+                dataset = Office31(data_path,**kwargs)
+            else:
+                logging.error("unknown formatter [%s]"%formatter)
+                raise RuntimeError("unknown formatter [%s]"%formatter)
+            datasets[train_type] =  dataset
+            self._str += '\n\t\tDataset [%s] : %s'%(train_type,dataset)
         return datasets
 
     def __str__(self):

@@ -7,13 +7,13 @@ class LeNet(nn.Module):
     ''' LeNet backbone
 
     '''
-    def __init__(self,class_num):
+    def __init__(self,num_classes):
         ''' init method
 
-        :param class_num: class num
+        :param num_classes: num classes
         '''
         super(LeNet, self).__init__()
-        self.class_num = class_num
+        self.num_classes = num_classes
         self.conv_layers = nn.Sequential(
             nn.Conv2d(1, 20, kernel_size=5),
             nn.MaxPool2d(2),
@@ -25,7 +25,7 @@ class LeNet(nn.Module):
         )
 
         self.fc_layers = nn.Sequential(nn.Linear(50 * 4 * 4, 500), nn.ReLU(), nn.Dropout(p=0.5))
-        self.classifier = nn.Linear(500, class_num)
+        self.classifier = nn.Linear(500, num_classes)
 
     def forward(self, x):
         x = self.conv_layers(x)

@@ -7,6 +7,7 @@ import torch.nn as nn
 import logging
 from .utils import init_weights,EarlyStopping
 import time
+import datetime
 
 class TLEngine:
     ''' Transfer Learning Engine
@@ -29,14 +30,17 @@ class TLEngine:
         self._early_stopping = EarlyStopping(tolerance_epoch=task_manager.earlystopping_tolerance,
                                              delta=task_manager.earlystopping_delta,is_max=True)
 
-        self._initializeModel()
+        self._initializeModel(backbone_pretrained=task_manager.backbone_pretrained)
         self._createOptimizer()
-    def _initializeModel(self):
+    def _initializeModel(self,backbone_pretrained = False):
         ''' initialize model
 
         :return:
         '''
-        self._backbone.apply(init_weights)
+        if not backbone_pretrained:
+            self._backbone.apply(init_weights)
+        else:
+            logging.info("Skip init backbone because of pretraining")
         self._discriminator.apply(init_weights)
     def _createOptimizer(self):
         ''' create optimizer for backbone and discriminator
@@ -68,7 +72,8 @@ class TLEngine:
         if current_epoch > 1:
             self._discriminator_optimizer.step()
 
-    def _train_epoch(self,source_train_dataloader,target_train_dataloader,current_epoch,train_source_iter_num ,train_target_iter_num):
+    def _train_epoch(self,source_train_dataloader,target_train_dataloader,current_epoch,train_source_iter_num
+                     ,train_target_iter_num,total_epoch):
         ''' train epoch
 
         :param source_train_dataloader: source train dataloader
@@ -76,6 +81,7 @@ class TLEngine:
         :param current_epoch: current epoch
         :param train_source_iter_num: training source iter num per epoch
         :param train_target_iter_num: training target iter num per epoch
+        :param total_epoch: total epoch
         :return:
         '''
         self._backbone.train()      # set training flag
@@ -130,8 +136,8 @@ class TLEngine:
             self._tensorboard_writer.add_histogram('discriminator_feature/target', discriminator_feature_target,global_iter_idx)
 
             if (global_iter_idx) % self._task_manager.training_log_interval == 0:
-                out_str = 'Train Epoch: %s [%s/%s (%0.1f)]\tLoss: %0.3f\tBackbone Loss:%0.3f\tDiscriminator Loss:%0.3f'%(
-                    current_epoch,
+                out_str = '%s Train Epoch: %s/%s [%s/%s (%0.1f)]\tLoss: %0.3f\tBackbone Loss:%0.3f\tDiscriminator Loss:%0.3f'%(
+                    datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),current_epoch,total_epoch,
                     batch_idx * self._task_manager.batch_size,
                     num_iter_per_epoch * self._task_manager.batch_size,
                     100. * batch_idx / num_iter_per_epoch,
@@ -191,7 +197,8 @@ class TLEngine:
         '''
         for epoch in range(1, self._task_manager.traing_epochs + 1):
             self._train_epoch(source_train_dataloader, target_train_dataloader, epoch,
-                              train_source_iter_num ,train_target_iter_num)
+                              train_source_iter_num ,train_target_iter_num,
+                              self._task_manager.traing_epochs)
             test_loss,test_acc = self._evaluate_epoch(self._backbone,target_valid_dataloader,epoch,False)
             self._early_stopping(test_acc,self._backbone.state_dict())
             self._tensorboard_writer.flush()
