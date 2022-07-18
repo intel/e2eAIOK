@@ -126,9 +126,11 @@ class TaskManager:
         pretrained = node.find('pretrained')
         kwargs = {'num_classes': self.task_classificaton_num_class}
         if pretrained:
-            kwargs['pretrained_path'] = pretrained.find('path').string
-            kwargs['pretrained_layer_pattern'] = [item for item in pretrained.find('layer_pattern').string.strip().split("\n") if item]
             self.backbone_pretrained = True
+            self.pretrained_path = pretrained.find('path').string
+            self.pretrained_layer_pattern = [item for item in pretrained.find('layer_pattern').string.strip().split("\n") if item]
+        else:
+            self.backbone_pretrained = False
 
         if node:
             backbone =  createBackbone(node.attrs['name'],**kwargs)
@@ -192,6 +194,9 @@ class TaskManager:
                 kwargs['label_records'] = open(label_path).readlines()
                 dataset = ImageList(data_path,**kwargs)
             elif formatter == 'Office31':
+                label_path = seg.find('label').string
+                kwargs['label_map'] = {item.split('\t')[0]:int(item.split('\t')[1])
+                                       for item in open(label_path).readlines()}
                 dataset = Office31(data_path,**kwargs)
             else:
                 logging.error("unknown formatter [%s]"%formatter)

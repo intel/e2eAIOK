@@ -23,8 +23,8 @@
         <num_worker comment="dataset worker num">1</num_worker>
         <batch_size comment="batch size"> 16 </batch_size>
 <!--        <dataset name="MNIST_train" type="train_source" formatter="ImageList" required="1" comment="specific dataset">-->
-<!--            <data comment="data location" required="1">C:/Users/hua1/PycharmProjects/TransferLearning/dataset/USPS_vs_MNIST/MNIST</data>-->
-<!--            <label comment="label location" required="1">C:/Users/hua1/PycharmProjects/TransferLearning/dataset/USPS_vs_MNIST/MNIST/mnist_train.txt</label>-->
+<!--            <data comment="data location" required="1">/home/vmagent/app/dataset/MNIST</data>-->
+<!--            <label comment="label location" required="1">/home/vmagent/app/dataset/MNIST/mnist_train.txt</label>-->
 <!--            <img_mode comment="img mode, could be L or RGB">L</img_mode>-->
 <!--            <transform comment="img transform function, must be an expression">-->
 <!--                transforms.Compose([-->
@@ -34,8 +34,8 @@
 <!--            </transform>-->
 <!--        </dataset>-->
 <!--        <dataset name="USPS_train" type="train_target" formatter="ImageList" required="1" comment="specific dataset">-->
-<!--            <data comment="data location" required="1">C:/Users/hua1/PycharmProjects/TransferLearning/dataset/USPS_vs_MNIST/USPS</data>-->
-<!--            <label comment="label location" required="1">C:/Users/hua1/PycharmProjects/TransferLearning/dataset/USPS_vs_MNIST/USPS/usps_train.txt</label>-->
+<!--            <data comment="data location" required="1">/home/vmagent/app/dataset/USPS</data>-->
+<!--            <label comment="label location" required="1">/home/vmagent/app/dataset/USPS/usps_train.txt</label>-->
 <!--            <img_mode comment="img mode, could be L or RGB">L</img_mode>-->
 <!--            <transform comment="img transform function, must be an expression">-->
 <!--                transforms.Compose([-->
@@ -45,8 +45,8 @@
 <!--            </transform>-->
 <!--        </dataset>-->
 <!--        <dataset name="USPS_test" type="test_target" formatter="ImageList" required="1" comment="specific dataset">-->
-<!--            <data comment="data location" required="1">C:/Users/hua1/PycharmProjects/TransferLearning/dataset/USPS_vs_MNIST/USPS</data>-->
-<!--            <label comment="label location" required="1">C:/Users/hua1/PycharmProjects/TransferLearning/dataset/USPS_vs_MNIST/USPS/usps_test.txt</label>-->
+<!--            <data comment="data location" required="1">/home/vmagent/app/dataset/USPS</data>-->
+<!--            <label comment="label location" required="1">/home/vmagent/app/dataset/USPS/usps_test.txt</label>-->
 <!--            <img_mode comment="img mode, could be L or RGB">L</img_mode>-->
 <!--            <transform comment="img transform function, must be an expression">-->
 <!--                transforms.Compose([-->
@@ -56,7 +56,8 @@
 <!--            </transform>-->
 <!--        </dataset>-->
         <dataset name="Office31_webcam_train" type="train_source" formatter="Office31" required="1" comment="specific dataset">
-            <data comment="data location" required="1">C:/Users/hua1/PycharmProjects/TransferLearning/dataset/office31/webcam</data>
+            <data comment="data location" required="1">/home/vmagent/app/dataset/webcam</data>
+            <label comment="label location" required="1">/home/vmagent/app/dataset/label_map.txt</label>
             <img_mode comment="img mode, could be L or RGB">RGB</img_mode>
             <transform comment="img transform function, must be an expression">
                 transforms.Compose([
@@ -68,7 +69,8 @@
             </transform>
         </dataset>
         <dataset name="Office31_amazon_train" type="train_target" formatter="Office31" required="1" comment="specific dataset">
-            <data comment="data location" required="1">C:/Users/hua1/PycharmProjects/TransferLearning/dataset/office31/amazon</data>
+            <data comment="data location" required="1">/home/vmagent/app/dataset/amazon</data>
+            <label comment="label location" required="1">/home/vmagent/app/dataset/label_map.txt</label>
             <img_mode comment="img mode, could be L or RGB">RGB</img_mode>
             <transform comment="img transform function, must be an expression">
                 transforms.Compose([
@@ -80,7 +82,8 @@
             </transform>
         </dataset>
 <!--        <dataset name="Office31_amazon_test" type="test_target" formatter="Office31" required="1" comment="specific dataset">-->
-<!--            <data comment="data location" required="1">C:/Users/hua1/PycharmProjects/TransferLearning/dataset/office31/amazon</data>-->
+<!--            <data comment="data location" required="1">/home/vmagent/app/dataset/amazon</data>-->
+<!--            <label comment="label location" required="1">/home/vmagent/app/dataset/label_map.txt</label>-->
 <!--            <img_mode comment="img mode, could be L or RGB">RGB</img_mode>-->
 <!--            <transform comment="img transform function, must be an expression">-->
 <!--                transforms.Compose([-->
@@ -111,7 +114,7 @@
 <!--            </predefined>-->
             <predefined name="resnet18" comment="predifined backbone">
                 <pretrained comment="backbone pretrained">
-                    <path comment="pretrained model path">../pretrained/resnet18.pth</path>
+                    <path comment="pretrained model path">/home/vmagent/app/pretrained_model/resnet18.pth</path>
                     <layer_pattern comment="which layer to pretraining">.*conv[0-9]\.weight$
                     .*downsample\.[0-9]\.weight$
                     .*downsample\.[0-9]\.bias$</layer_pattern>
@@ -127,7 +130,7 @@
 <!--                    <enable_entropy_weight comment="whether enable entropy weight, see CDAN paper">1</enable_entropy_weight>-->
 <!--                    <backbone_output_size comment="backbone output size">10</backbone_output_size>-->
 <!--                    <grl_coeff_alpha comment="alpha to control shape of coeff which is used for gradient rever layer">1</grl_coeff_alpha>-->
-<!--                    <grl_coeff_high comment="alpha to control max value of coeff which is used for gradient rever layer">0.1</grl_coeff_high>-->
+<!--                    <grl_coeff_high comment="alpha to conftrol max value of coeff which is used for gradient rever layer">0.1</grl_coeff_high>-->
 <!--                </adversarial>-->
             <adversarial name="DANN" comment="adversarial-based transfer learning config">
 <!--                <input_size comment="input dimension" required="1">500</input_size>-->

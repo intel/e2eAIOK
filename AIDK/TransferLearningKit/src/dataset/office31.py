@@ -9,8 +9,19 @@ import logging
 import os
 
 class Office31(Dataset):
-    def __init__(self, data_path, data_transform=None, img_mode='RGB'):
+    ''' Office31 Dataset
+
+    '''
+    def __init__(self, data_path, label_map,data_transform=None, img_mode='RGB'):
+        ''' Init method
+
+        :param data_path: img data location
+        :param label_map: map from label name to label id
+        :param data_transform: data tramsform
+        :param img_mode: img mode
+        '''
         self.data_path = data_path
+        self._label_map = label_map
         self.data_transform = data_transform
         self.img_mode = img_mode
         self._getFileAndImgPath(data_path)
@@ -28,22 +39,14 @@ class Office31(Dataset):
 
     def _getFileAndImgPath(self,root_path):
         _next_idx = 0
-        self.label_idx_map = {}
         self.imgs = []
 
         for label_name in sorted(os.listdir(root_path)):
-            ########### register label index #########
-            if label_name not in self.label_idx_map:
-                label_idx = _next_idx
-                _next_idx += 1
-                self.label_idx_map[label_name] = label_idx
-            else:
-                label_idx = self.label_idx_map[label_name]
-            ############### list image ##############
             label_path = "%s/%s"%(root_path,label_name)
+            label_id = self._label_map[label_name]
             for img_name in os.listdir(label_path):
                 img_path = "%s/%s"%(label_path,img_name)
-                self.imgs.append((img_path,label_idx))
+                self.imgs.append((img_path,label_id))
         logging.info("[%s] label cnt [%s]"%(root_path,_next_idx))
         print("[%s] label cnt [%s]"%(root_path,_next_idx))
 

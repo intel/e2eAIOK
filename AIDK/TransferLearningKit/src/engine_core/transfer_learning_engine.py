@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 import logging
 from .utils import init_weights,EarlyStopping
+from .backbone.utils import copyParameterFromPretrained
 import time
 import datetime
 
@@ -30,18 +31,24 @@ class TLEngine:
         self._early_stopping = EarlyStopping(tolerance_epoch=task_manager.earlystopping_tolerance,
                                              delta=task_manager.earlystopping_delta,is_max=True)
 
-        self._initializeModel(backbone_pretrained=task_manager.backbone_pretrained)
+        self._initializeModel(task_manager.backbone_pretrained,
+                              task_manager.pretrained_path,
+                              task_manager.pretrained_layer_pattern)
         self._createOptimizer()
-    def _initializeModel(self,backbone_pretrained = False):
+    def _initializeModel(self,backbone_pretrained = False,pretrained_path=None,pretrained_layer_pattern=None):
         ''' initialize model
 
+        :param backbone_pretrained: whether use pretraining
+        :param pretrained_path: where to load pretrained model
+        :param pretrained_layer_pattern: which layer of backbone should be pretrained
         :return:
         '''
-        if not backbone_pretrained:
-            self._backbone.apply(init_weights)
-        else:
-            logging.info("Skip init backbone because of pretraining")
+        self._backbone.apply(init_weights)
         self._discriminator.apply(init_weights)
+        if backbone_pretrained:
+            copyParameterFromPretrained(self._backbone, torch.load(pretrained_path), pretrained_layer_pattern)
+            logging.info("Backbone pretraining")
+
     def _createOptimizer(self):
         ''' create optimizer for backbone and discriminator
 

@@ -15,10 +15,7 @@ def createBackbone(backbone_name,**kwargs):
         model = LeNet(kwargs['num_classes'])#.cuda()
         return model
     elif backbone_name.lower() == 'resnet18':
-        pretrained_path = kwargs['pretrained_path'] if 'pretrained_path' in kwargs else None
-        pretrained_layer_pattern = kwargs['pretrained_layer_pattern'] if 'pretrained_layer_pattern' in kwargs else None
-        model = resnet18(num_classes=kwargs['num_classes'],pretrained_path=pretrained_path,
-                         pretrained_layer_pattern=pretrained_layer_pattern)
+        model = resnet18(num_classes=kwargs['num_classes'])
         return model
     else:
         logging.error("[%s] is not supported"%backbone_name)

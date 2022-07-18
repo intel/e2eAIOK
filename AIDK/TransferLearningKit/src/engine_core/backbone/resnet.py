@@ -152,67 +152,32 @@ class ResNet(nn.Module):
 
 
 
-def resnet18(pretrained_path=None, pretrained_layer_pattern=None,**kwargs):
+def resnet18(**kwargs):
     """Constructs a ResNet-18 model.
 
-    Args:
-        pretrained_path (string): If set, returns a model pre-trained on ImageNet
-        pretrained_layer_pattern: If set, specify which layer to be pretrained
     """
-    model = ResNet(BasicBlock, [2, 2, 2, 2], **kwargs)
-    if pretrained_path:
-        logging.info("pretrained resnet18")
-        copyParameterFromPretrained(model,torch.load(pretrained_path),pretrained_layer_pattern)
-    return model
+    return ResNet(BasicBlock, [2, 2, 2, 2], **kwargs)
 
-def resnet34(pretrained_path=None, pretrained_layer_pattern=None, **kwargs):
+def resnet34(**kwargs):
     """Constructs a ResNet-34 model.
 
-    Args:
-        pretrained_path (string): If set, returns a model pre-trained on ImageNet
-        pretrained_layer_pattern: If set, specify which layer to be pretrained
     """
-    model = ResNet(BasicBlock, [3, 4, 6, 3], **kwargs)
-    if pretrained_path:
-        logging.info("pretrained resnet34")
-        copyParameterFromPretrained(model, torch.load(pretrained_path), pretrained_layer_pattern)
-    return model
+    return ResNet(BasicBlock, [3, 4, 6, 3], **kwargs)
 
-def resnet50(pretrained_path=None, pretrained_layer_pattern=None, **kwargs):
+def resnet50(**kwargs):
     """Constructs a ResNet-50 model.
 
-    Args:
-        pretrained_path (string): If set, returns a model pre-trained on ImageNety
-        pretrained_layer_pattern: If set, specify which layer to be pretrained
     """
-    model = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
-    if pretrained_path:
-        logging.info("pretrained resnet50")
-        copyParameterFromPretrained(model, torch.load(pretrained_path), pretrained_layer_pattern)
-    return model
+    return ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
 
-def resnet101(pretrained_path=None, pretrained_layer_pattern=None, **kwargs):
+def resnet101(**kwargs):
     """Constructs a ResNet-101 model.
 
-    Args:
-        pretrained_path (string): If set, returns a model pre-trained on ImageNet
-        pretrained_layer_pattern: If set, specify which layer to be pretrained
     """
-    model = ResNet(Bottleneck, [3, 4, 23, 3], **kwargs)
-    if pretrained_path:
-        logging.info("pretrained resnet101")
-        copyParameterFromPretrained(model, torch.load(pretrained_path), pretrained_layer_pattern)
-    return model
+    return ResNet(Bottleneck, [3, 4, 23, 3], **kwargs)
 
-def resnet152(pretrained_path=None,pretrained_layer_pattern=None, **kwargs):
+def resnet152(**kwargs):
     """Constructs a ResNet-152 model.
 
-    Args:
-        pretrained_path (string): If set, returns a model pre-trained on ImageNet
-        pretrained_layer_pattern: If set, specify which layer to be pretrained
     """
-    model = ResNet(Bottleneck, [3, 8, 36, 3], **kwargs)
-    if pretrained_path:
-        logging.info("pretrained resnet152")
-        copyParameterFromPretrained(model, torch.load(pretrained_path), pretrained_layer_pattern)
-    return model
+    return ResNet(Bottleneck, [3, 8, 36, 3], **kwargs)
