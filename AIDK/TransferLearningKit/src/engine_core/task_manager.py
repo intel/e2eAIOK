@@ -129,12 +129,16 @@ class TaskManager:
             self.backbone_pretrained = True
             self.pretrained_path = pretrained.find('path').string
             self.pretrained_layer_pattern = [item for item in pretrained.find('layer_pattern').string.strip().split("\n") if item]
+            self._str += '\n\t Backbone Pretrained:[%s], path [%s], layer pattern [%s]'%(self.backbone_pretrained,
+                                                                                         self.pretrained_path,
+                                                                                         self.pretrained_layer_pattern)
         else:
             self.backbone_pretrained = False
+            self._str += '\n\t Backbone Pretrained:[%s]' % (self.backbone_pretrained)
 
         if node:
             backbone =  createBackbone(node.attrs['name'],**kwargs)
-            self._str += '\n\tBackbone[pretrained = %s]: %s' % (self.backbone_pretrained,backbone)
+            self._str += '\n\tBackbone: %s' % (backbone)
             return backbone
         else:  # customized
             logging.error("Create backbone failed!")

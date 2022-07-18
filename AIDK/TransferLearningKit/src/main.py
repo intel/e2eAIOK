@@ -5,8 +5,42 @@ from torch.utils.data import Dataset
 from engine_core.transfer_learning_engine import TLEngine
 from engine_core.task_manager import TaskManager
 from engine_core.model_manager import ModelManager
-from torch.utils.data import random_split
+from sklearn.model_selection import train_test_split
+import numpy as np
 import logging
+
+def stradifiedDataset(dataset,ratio_list):
+    ####################### check #######################
+    if np.abs(np.sum(ratio_list) - 1.0) >= 1e-8:
+        logging.error("Sum of ratio_list not equal 1.0: [%s]"%(",".join(str(i) for i in ratio_list)))
+        raise RuntimeError("Sum of ratio_list not equal 1.0: [%s]"%(",".join(str(i) for i in ratio_list)))
+    if len(ratio_list) == 1:
+        logging.info("ratio_list only one element")
+        return dataset
+    ############################## split ##################
+    idx = 0
+    labels = [] # all label
+    for (no,(_,label)) in enumerate(dataset):
+        idx += 1
+        labels.append(label)
+    logging.info('dataset size:%s'%idx)
+
+    head,*tail_list = ratio_list # deep copy
+    X = np.arange(0,idx)         # init X
+    Y = labels
+    datasets = []
+    while tail_list:
+        head_X, tail_X, head_Y, tail_Y = train_test_split(X,Y,train_size=head, stratify=Y)
+        datasets.append(torch.utils.data.Subset(dataset, head_X))
+        ##### reset #####
+        tail_list = [i/(1-head) for i in tail_list] # normalize
+        head, *tail_list = tail_list
+        X = tail_X
+        Y = tail_Y
+
+    datasets.append(torch.utils.data.Subset(dataset, X)) # the remain
+
+    return datasets
 
 def createDatasets(task_manager):
     ''' create all datasets
@@ -19,23 +53,11 @@ def createDatasets(task_manager):
     train_target_dataset = datasets['train_target']
 
     if 'test_target' in datasets:
-        all_test_dataset = datasets['test_target']
-        all_test_size = len(all_test_dataset)
-        validate_size = all_test_size // 2
-        test_size = all_test_size - validate_size
-        logging.info("validate size [%s], test size [%s]" % (validate_size, test_size))
-        (validate_target_dataset, test_target_dataset) = random_split(all_test_dataset, [validate_size, test_size])
+        (validate_target_dataset, test_target_dataset) = stradifiedDataset(datasets['test_target'], [0.5,0.5])
     else: # no test dataset
-        all_size = len(train_target_dataset)
-        train_size = int(all_size * 0.7)
-        validate_size = int(all_size * 0.2)
-        test_size = all_size - validate_size - train_size
-        (train_target_dataset, validate_target_dataset, test_target_dataset) = random_split(
-            train_target_dataset, [train_size, validate_size, test_size])
-        logging.info("validate size [%s], test size [%s]" % (validate_size, test_size))
+        (train_target_dataset, validate_target_dataset, test_target_dataset) = stradifiedDataset(train_target_dataset, [0.7,0.2,0.1])
     return (train_source_dataset,train_target_dataset,
             validate_target_dataset, test_target_dataset)
-
 
 if __name__ == '__main__':
     task_manager = TaskManager("./engine_core/task_config.xml")

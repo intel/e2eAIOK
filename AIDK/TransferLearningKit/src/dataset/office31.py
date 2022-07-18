@@ -38,7 +38,6 @@ class Office31(Dataset):
             raise ValueError("mode muse be one of: 'RGB','L' (ignore letter case), but found :%s"%img_mode)
 
     def _getFileAndImgPath(self,root_path):
-        _next_idx = 0
         self.imgs = []
 
         for label_name in sorted(os.listdir(root_path)):
@@ -47,8 +46,6 @@ class Office31(Dataset):
             for img_name in os.listdir(label_path):
                 img_path = "%s/%s"%(label_path,img_name)
                 self.imgs.append((img_path,label_id))
-        logging.info("[%s] label cnt [%s]"%(root_path,_next_idx))
-        print("[%s] label cnt [%s]"%(root_path,_next_idx))
 
     def __getitem__(self, index):
         path, label = self.imgs[index]
