@@ -36,7 +36,6 @@ class ImageList(Dataset):
             logging.error("mode muse be one of: 'RGB','L' (ignore letter case), but found :%s"%img_mode)
             raise ValueError("mode muse be one of: 'RGB','L' (ignore letter case), but found :%s"%img_mode)
 
-
     def __getitem__(self, index):
         path, label = self.imgs[index]
         img = self.loader(path)
