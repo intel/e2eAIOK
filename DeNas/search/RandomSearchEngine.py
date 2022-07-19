@@ -41,11 +41,11 @@ class RandomSearchEngine(BaseSearchEngine):
     '''
     def cand_islegal(self, cand):
         if self.params.domain == "cnn":
-            return cnn_is_legal(cand, self.vis_dict, self.super_net, self.params)
+            return cnn_is_legal(cand, self.vis_dict, self.params, self.super_net)
         elif self.params.domain == "vit":
-            return vit_is_legal(cand, self.vis_dict, self.super_net, self.params)
+            return vit_is_legal(cand, self.vis_dict, self.params, self.super_net)
         elif self.params.domain == "bert":
-            return bert_is_legal(cand, self.vis_dict, self.params)
+            return bert_is_legal(cand, self.vis_dict)
 
     '''
     Compute nas score for sample structure

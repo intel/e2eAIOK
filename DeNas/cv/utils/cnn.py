@@ -1,6 +1,6 @@
 import random
 
-def cnn_is_legal(cand, vis_dict, super_net, params):
+def cnn_is_legal(cand, vis_dict, params, super_net):
     if cand not in vis_dict:
         vis_dict[cand] = {}
     info = vis_dict[cand]
