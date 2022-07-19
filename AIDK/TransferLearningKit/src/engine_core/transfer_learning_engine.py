@@ -45,7 +45,7 @@ class TLEngine:
         '''
         self._backbone.apply(init_weights)
         self._discriminator.apply(init_weights)
-        if backbone_pretrained:
+        if backbone_pretrained and pretrained_path and pretrained_layer_pattern:
             copyParameterFromPretrained(self._backbone, torch.load(pretrained_path), pretrained_layer_pattern)
             logging.info("Backbone pretraining")
 
@@ -127,8 +127,8 @@ class TLEngine:
                 backbone_loss += self._backbone.loss(output_logit_target,label_target,self._tensorboard_writer)
 
             discriminator_loss =  self._discriminator.loss(discriminator_feature_source,output_logit_source,label_source,
-                                                          discriminator_feature_target,output_logit_target,label_target,
-                                                          self._tensorboard_writer)
+                                                         discriminator_feature_target,output_logit_target,label_target,
+                                                         self._tensorboard_writer)
             loss = backbone_loss + discriminator_loss
             loss.backward()
             self._stepOptimizer(current_epoch)

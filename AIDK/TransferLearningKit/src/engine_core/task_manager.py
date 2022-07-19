@@ -134,6 +134,8 @@ class TaskManager:
                                                                                          self.pretrained_layer_pattern)
         else:
             self.backbone_pretrained = False
+            self.pretrained_path = None
+            self.pretrained_layer_pattern = None
             self._str += '\n\t Backbone Pretrained:[%s]' % (self.backbone_pretrained)
 
         if node:
@@ -179,6 +181,10 @@ class TaskManager:
         return SummaryWriter(path,filename_suffix=filename_suffix)
 
     def createDatasets(self):
+        ''' Create Datasets
+
+        :return: all datasets specified by configuration
+        '''
         datasets = {}
         bs = self._bs.find('datasets')
         self.batch_size = int(bs.find("batch_size").string)
@@ -190,8 +196,7 @@ class TaskManager:
             formatter = seg.attrs['formatter']
             train_type = seg.attrs['type']
             data_path = seg.find('data').string
-            kwargs = {"data_transform": eval(seg.find('transform').string.strip()),
-                      "img_mode": seg.find('img_mode').string}
+            kwargs = {"img_mode": seg.find('img_mode').string}
 
             if formatter == 'ImageList':
                 label_path = seg.find('label').string
@@ -208,6 +213,59 @@ class TaskManager:
             datasets[train_type] =  dataset
             self._str += '\n\t\tDataset [%s] : %s'%(train_type,dataset)
         return datasets
+
+    def _retrieveDataTransform(self,transform_dict,key_list):
+        ''' retrieve data transform from transform_dict
+
+        :param transform_dict: { key -> transform}
+        :param key_list: retrieve key, the high priority the first
+        :return: transform
+        '''
+        for key in key_list:
+            if key in transform_dict:
+                return transform_dict[key]
+        return None
+
+    def createDataTransforms(self):
+        ''' create data transforms
+
+        :return: (source_train_transform,target_train_transform,target_infer_transform)
+        '''
+        transform_dict = {}
+        bs = self._bs.find('transforms')
+        self._str += '\n\tData Transforms:'
+        if not bs: # No transform
+            return (None,None,None)
+
+        for seg in bs.find_all('transform'):
+            domain_type = seg.attrs['domain_type']
+            train_type = seg.attrs['training_type']
+            print(seg.string.strip())
+            transform_dict[(domain_type,train_type)] = eval(seg.string.strip())
+            self._str += '\n\t\ttransform [(%s,%s)] : %s' % (domain_type,train_type,
+                                                           transform_dict[(domain_type,train_type)])
+        #################### retrieve ###############
+        source_training_key_list =[('source','training'),('source','training'),
+                                   ('source','all'),('source','all'),
+                                   ('all','training'),('all','training'),
+                                   ('all','all'),('all','all')]
+        source_train_transform = self._retrieveDataTransform(transform_dict,source_training_key_list)
+        target_training_key_list = [('target', 'training'), ('target', 'training'),
+                                    ('target', 'all'), ('target', 'all'),
+                                    ('all', 'training'), ('all', 'training'),
+                                    ('all', 'all'), ('all', 'all')]
+        target_train_transform = self._retrieveDataTransform(transform_dict, target_training_key_list)
+        target_inferring_key_list = [('target', 'inferring'), ('target', 'inferring'),
+                                    ('target', 'all'), ('target', 'all'),
+                                    ('all', 'inferring'), ('all', 'inferring'),
+                                    ('all', 'all'), ('all', 'all')]
+        target_infer_transform = self._retrieveDataTransform(transform_dict, target_inferring_key_list)
+
+        self._str += '\n\t\tsource_train_transform : %s' % source_train_transform
+        self._str += '\n\t\ttarget_train_transform : %s' % target_train_transform
+        self._str += '\n\t\ttarget_infer_transform : %s' % target_infer_transform
+
+        return (source_train_transform,target_train_transform,target_infer_transform)
 
     def __str__(self):
         return self._str

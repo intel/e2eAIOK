@@ -12,22 +12,17 @@ class Office31(Dataset):
     ''' Office31 Dataset
 
     '''
-    def __init__(self, data_path, label_map,data_transform=None, img_mode='RGB'):
+    def __init__(self, data_path, label_map, img_mode='RGB'):
         ''' Init method
 
         :param data_path: img data location
         :param label_map: map from label name to label id
-        :param data_transform: data tramsform
         :param img_mode: img mode
         '''
         self.data_path = data_path
         self._label_map = label_map
-        self.data_transform = data_transform
         self.img_mode = img_mode
         self._getFileAndImgPath(data_path)
-
-        if data_transform is not None:
-            logging.debug("Applying data_transform on %s" % data_path)
 
         if img_mode.upper() == 'RGB':
             self.loader = rgb_loader
@@ -50,8 +45,6 @@ class Office31(Dataset):
     def __getitem__(self, index):
         path, label = self.imgs[index]
         img = self.loader(path)
-        if self.data_transform is not None:
-            img = self.data_transform(img)
 
         return img, label
 
@@ -59,6 +52,4 @@ class Office31(Dataset):
         return len(self.imgs)
 
     def __str__(self):
-        return 'ImageList: image num [%s], data_transform [%s], img_mode [%s]'%(
-            len(self.imgs),self.data_transform,self.img_mode
-        )
+        return 'Office31: image num [%s],img_mode[%s]'%(len(self.imgs),self.img_mode)

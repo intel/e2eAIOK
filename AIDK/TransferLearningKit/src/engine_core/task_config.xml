@@ -13,87 +13,43 @@
         </tensorboard>
     </global>
     <task comment="task config">
-<!--        <classification name="MNIST transfer to USPS" comment="classification task config">-->
         <classification name="Office31 Webcam transfer to amazon" comment="classification task config">
-<!--            <num_classes comment="num classes" required="1">10</num_classes>-->
             <num_classes comment="num classes" required="1">31</num_classes>
         </classification>
     </task>
+    <transforms comment="data augmentation config">
+        <transform comment="transform, must be an expression. 'all' for all dataset. 'training' for training." domain_type="all" training_type="training">
+        transforms.Compose([
+                transforms.Resize(224),
+                transforms.RandomRotation(degrees=(0, 180)),
+                transforms.ColorJitter(brightness=0.5,hue=0.3),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225])])
+        </transform>
+        <transform comment="transform, must be an expression. 'all' for all dataset. 'inferring' for training." domain_type="all" training_type="inferring">
+             transforms.Compose([
+                transforms.Resize(224),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225])])
+        </transform>
+    </transforms>
     <datasets comment="dataset config">
         <num_worker comment="dataset worker num">1</num_worker>
         <batch_size comment="batch size"> 16 </batch_size>
-<!--        <dataset name="MNIST_train" type="train_source" formatter="ImageList" required="1" comment="specific dataset">-->
-<!--            <data comment="data location" required="1">/home/vmagent/app/dataset/MNIST</data>-->
-<!--            <label comment="label location" required="1">/home/vmagent/app/dataset/MNIST/mnist_train.txt</label>-->
-<!--            <img_mode comment="img mode, could be L or RGB">L</img_mode>-->
-<!--            <transform comment="img transform function, must be an expression">-->
-<!--                transforms.Compose([-->
-<!--                transforms.Resize((28,28)),-->
-<!--                transforms.ToTensor(),-->
-<!--                transforms.Normalize((0.5,),(0.5,))])-->
-<!--            </transform>-->
-<!--        </dataset>-->
-<!--        <dataset name="USPS_train" type="train_target" formatter="ImageList" required="1" comment="specific dataset">-->
-<!--            <data comment="data location" required="1">/home/vmagent/app/dataset/USPS</data>-->
-<!--            <label comment="label location" required="1">/home/vmagent/app/dataset/USPS/usps_train.txt</label>-->
-<!--            <img_mode comment="img mode, could be L or RGB">L</img_mode>-->
-<!--            <transform comment="img transform function, must be an expression">-->
-<!--                transforms.Compose([-->
-<!--                transforms.Resize((28,28)),-->
-<!--                transforms.ToTensor(),-->
-<!--                transforms.Normalize((0.5,),(0.5,))])-->
-<!--            </transform>-->
-<!--        </dataset>-->
-<!--        <dataset name="USPS_test" type="test_target" formatter="ImageList" required="1" comment="specific dataset">-->
-<!--            <data comment="data location" required="1">/home/vmagent/app/dataset/USPS</data>-->
-<!--            <label comment="label location" required="1">/home/vmagent/app/dataset/USPS/usps_test.txt</label>-->
-<!--            <img_mode comment="img mode, could be L or RGB">L</img_mode>-->
-<!--            <transform comment="img transform function, must be an expression">-->
-<!--                transforms.Compose([-->
-<!--                transforms.Resize((28,28)),-->
-<!--                transforms.ToTensor(),-->
-<!--                transforms.Normalize((0.5,),(0.5,))])-->
-<!--            </transform>-->
-<!--        </dataset>-->
         <dataset name="Office31_webcam_train" type="train_source" formatter="Office31" required="1" comment="specific dataset">
             <data comment="data location" required="1">/home/vmagent/app/dataset/webcam</data>
             <label comment="label location" required="1">/home/vmagent/app/dataset/label_map.txt</label>
             <img_mode comment="img mode, could be L or RGB">RGB</img_mode>
-            <transform comment="img transform function, must be an expression">
-                transforms.Compose([
-                transforms.Resize(224),
-                transforms.ToTensor(),
-                transforms.Normalize(
-                mean=[0.5, 0.5, 0.5],
-                std=[0.5, 0.5, 0.5])])
-            </transform>
         </dataset>
         <dataset name="Office31_amazon_train" type="train_target" formatter="Office31" required="1" comment="specific dataset">
             <data comment="data location" required="1">/home/vmagent/app/dataset/amazon</data>
             <label comment="label location" required="1">/home/vmagent/app/dataset/label_map.txt</label>
             <img_mode comment="img mode, could be L or RGB">RGB</img_mode>
-            <transform comment="img transform function, must be an expression">
-                transforms.Compose([
-                transforms.Resize(224),
-                transforms.ToTensor(),
-                transforms.Normalize(
-                mean=[0.5, 0.5, 0.5],
-                std=[0.5, 0.5, 0.5])])
-            </transform>
         </dataset>
-<!--        <dataset name="Office31_amazon_test" type="test_target" formatter="Office31" required="1" comment="specific dataset">-->
-<!--            <data comment="data location" required="1">/home/vmagent/app/dataset/amazon</data>-->
-<!--            <label comment="label location" required="1">/home/vmagent/app/dataset/label_map.txt</label>-->
-<!--            <img_mode comment="img mode, could be L or RGB">RGB</img_mode>-->
-<!--            <transform comment="img transform function, must be an expression">-->
-<!--                transforms.Compose([-->
-<!--                transforms.Resize(224),-->
-<!--                transforms.ToTensor(),-->
-<!--                transforms.Normalize(-->
-<!--                mean=[0.5, 0.5, 0.5],-->
-<!--                std=[0.5, 0.5, 0.5])])-->
-<!--            </transform>-->
-<!--        </dataset>-->
     </datasets>
     <training comment="training config">
         <backbone_lr comment="backbone learning rate">0.01</backbone_lr>
@@ -110,14 +66,10 @@
     </training>
     <network comment="network structure config">
         <backbone comment="backbone config" required="1">
-<!--            <predefined name="lenet" comment="predifined backbone">-->
-<!--            </predefined>-->
             <predefined name="resnet18" comment="predifined backbone">
                 <pretrained comment="backbone pretrained">
                     <path comment="pretrained model path">/home/vmagent/app/pretrained_model/resnet18.pth</path>
-                    <layer_pattern comment="which layer to pretraining">.*conv[0-9]\.weight$
-                    .*downsample\.[0-9]\.weight$
-                    .*downsample\.[0-9]\.bias$</layer_pattern>
+                    <layer_pattern comment="which layer to pretraining">^[^f]</layer_pattern>
                 </pretrained>
             </predefined>
         </backbone>
@@ -133,9 +85,7 @@
 <!--                    <grl_coeff_high comment="alpha to conftrol max value of coeff which is used for gradient rever layer">0.1</grl_coeff_high>-->
 <!--                </adversarial>-->
             <adversarial name="DANN" comment="adversarial-based transfer learning config">
-<!--                <input_size comment="input dimension" required="1">500</input_size>-->
                 <input_size comment="input dimension" required="1">512</input_size>
-<!--                <hidden_size comment="hidden layer dimension" required="1">500</hidden_size>-->
                 <hidden_size comment="hidden layer dimension" required="1">256</hidden_size>
                 <dropout comment="dropout rate">0.0</dropout>
                 <grl_coeff_alpha comment="alpha to control shape of coeff which is used for gradient rever layer">1</grl_coeff_alpha>
