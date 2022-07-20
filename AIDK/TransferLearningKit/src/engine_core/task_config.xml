@@ -21,8 +21,6 @@
         <transform comment="transform, must be an expression. 'all' for all dataset. 'training' for training." domain_type="all" training_type="training">
         transforms.Compose([
                 transforms.Resize(224),
-                transforms.RandomRotation(degrees=(0, 180)),
-                transforms.ColorJitter(brightness=0.5,hue=0.3),
                 transforms.ToTensor(),
                 transforms.Normalize(
                 mean=[0.485, 0.456, 0.406],
@@ -41,13 +39,13 @@
         <num_worker comment="dataset worker num">1</num_worker>
         <batch_size comment="batch size"> 16 </batch_size>
         <dataset name="Office31_webcam_train" type="train_source" formatter="Office31" required="1" comment="specific dataset">
-            <data comment="data location" required="1">/home/vmagent/app/dataset/webcam</data>
-            <label comment="label location" required="1">/home/vmagent/app/dataset/label_map.txt</label>
+            <data comment="data location" required="1">C:/Users/hua1/PycharmProjects/TransferLearning/datasets/office31/webcam</data>
+            <label comment="label location" required="1">C:/Users/hua1/PycharmProjects/TransferLearning/datasets/office31/label_map.txt</label>
             <img_mode comment="img mode, could be L or RGB">RGB</img_mode>
         </dataset>
         <dataset name="Office31_amazon_train" type="train_target" formatter="Office31" required="1" comment="specific dataset">
-            <data comment="data location" required="1">/home/vmagent/app/dataset/amazon</data>
-            <label comment="label location" required="1">/home/vmagent/app/dataset/label_map.txt</label>
+            <data comment="data location" required="1">C:/Users/hua1/PycharmProjects/TransferLearning/datasets/office31/amazon</data>
+            <label comment="label location" required="1">C:/Users/hua1/PycharmProjects/TransferLearning/datasets/office31/label_map.txt</label>
             <img_mode comment="img mode, could be L or RGB">RGB</img_mode>
         </dataset>
     </datasets>
@@ -68,8 +66,15 @@
         <backbone comment="backbone config" required="1">
             <predefined name="resnet18" comment="predifined backbone">
                 <pretrained comment="backbone pretrained">
-                    <path comment="pretrained model path">/home/vmagent/app/pretrained_model/resnet18.pth</path>
-                    <layer_pattern comment="which layer to pretraining">^[^f]</layer_pattern>
+                    <path comment="pretrained model path">../pretrained/resnet18.pth</path>
+                    <layer_pattern comment="which layer to pretraining, and whether is trainable(1), seperate by ':'">
+                    ^conv1.* : 1
+                    ^bn1.* : 1
+                    ^layer1 : 1
+                    ^layer2 : 1
+                    ^layer3 : 1
+                    ^layer4 : 0
+                    </layer_pattern>
                 </pretrained>
             </predefined>
         </backbone>

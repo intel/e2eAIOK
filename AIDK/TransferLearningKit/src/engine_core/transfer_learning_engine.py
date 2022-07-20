@@ -34,7 +34,7 @@ class TLEngine:
         self._initializeModel(task_manager.backbone_pretrained,
                               task_manager.pretrained_path,
                               task_manager.pretrained_layer_pattern)
-        self._createOptimizer()
+        self._createOptimizer() # must after initialize model
     def _initializeModel(self,backbone_pretrained = False,pretrained_path=None,pretrained_layer_pattern=None):
         ''' initialize model
 
@@ -54,7 +54,7 @@ class TLEngine:
 
         :return:
         '''
-        self._backbone_optimizer = optim.SGD(self._backbone.parameters(),
+        self._backbone_optimizer = optim.SGD(filter(lambda p: p.requires_grad, self._backbone.parameters()),
                                     lr=self._task_manager.traing_backbone_lr,
                                     weight_decay=self._task_manager.traing_backbone_weight_decay,
                                     momentum=self._task_manager.traing_backbone_momentum)

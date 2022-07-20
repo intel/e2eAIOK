@@ -128,7 +128,12 @@ class TaskManager:
         if pretrained:
             self.backbone_pretrained = True
             self.pretrained_path = pretrained.find('path').string
-            self.pretrained_layer_pattern = [item for item in pretrained.find('layer_pattern').string.strip().split("\n") if item]
+            self.pretrained_layer_pattern = {}
+            for item in pretrained.find('layer_pattern').string.strip().split("\n"):
+                if item:
+                    _pattern = item.split(":")
+                    self.pretrained_layer_pattern[_pattern[0].strip()] = int(_pattern[1].strip())
+
             self._str += '\n\t Backbone Pretrained:[%s], path [%s], layer pattern [%s]'%(self.backbone_pretrained,
                                                                                          self.pretrained_path,
                                                                                          self.pretrained_layer_pattern)
