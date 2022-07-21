@@ -4,15 +4,45 @@ import torch
 from torch import nn
 import numpy as np
 import gc
-from scores.basic_utils import *
 import torch
 from module.Linear_super import LinearSuper
 from module.layernorm_super import LayerNormSuper
 from module.multihead_super import AttentionSuper
+from module.embedding_super import PatchembedSuper
 from cv.supernet_transformer import TransformerEncoderLayer
+from cv.benchmark_network_latency import get_model_latency
 from nlp.supernert_bert import SuperBertEncoder
 
 from torchsummary import summary
+
+def network_weight_gaussian_init(net, model_type):
+    with torch.no_grad():
+        if model_type == "transformer":   
+            for m in net.modules():
+                if isinstance(m, LinearSuper):
+                    nn.init.normal_(m.weight)
+                    if hasattr(m, 'bias') and m.bias is not None:
+                        nn.init.zeros_(m.bias)
+                elif isinstance(m, TransformerEncoderLayer):
+                    nn.init.ones_(m.fc1.weight)
+                    nn.init.zeros_(m.fc1.bias)
+                    nn.init.ones_(m.fc2.weight)
+                    nn.init.zeros_(m.fc2.bias)
+                    nn.init.ones_(m.attn_layer_norm.weight)
+                    nn.init.zeros_(m.attn_layer_norm.bias)
+                    nn.init.ones_(m.ffn_layer_norm.weight)
+                    nn.init.zeros_(m.ffn_layer_norm.bias)
+                elif isinstance(m, LayerNormSuper):
+                    nn.init.normal_(m.weight)
+                    if hasattr(m, 'bias') and m.bias is not None:
+                        nn.init.zeros_(m.bias)
+                elif isinstance(m, PatchembedSuper):
+                    nn.init.normal_(m.proj.weight)
+                    if hasattr(m.proj, 'bias') and m.proj.bias is not None:
+                        nn.init.zeros_(m.proj.bias)
+                else:
+                    continue
+    return net
 
 def get_linear_layer_metric_array(model_type, net, metric):
     metric_array = []
@@ -118,10 +148,9 @@ def compute_sliency_score(model_type, net, *inputs):
 
     return grads_abs
 
-
 def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, mixup_gamma, subconfig=None):
     
-    network_weight_gaussian_init(model)
+    network_weight_gaussian_init(model,model_type)
     model.train()
     model.requires_grad_(True)
     model.zero_grad()
@@ -152,15 +181,21 @@ def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, 
     elif model_type == "bert":
         grads_abs_list = compute_sliency_score(model_type, model, input_ids, input_masks, input_segments, subconfig)
    
-    score = 0
+    saliency_score = 0
     for grad_abs in grads_abs_list:
         if len(grad_abs.shape) == 4:
-            score += float(torch.mean(torch.sum(grad_abs, dim=[1,2,3])))
+            saliency_score += float(torch.mean(torch.sum(grad_abs, dim=[1,2,3])))
         elif len(grad_abs.shape) == 2:
-            score += float(torch.mean(torch.sum(grad_abs, dim=[1])))
+            saliency_score += float(torch.mean(torch.sum(grad_abs, dim=[1])))
         else:
             raise RuntimeError('only support grad shape of 4 or 2')
-
-    nas_score = disversity_score + score
+    if model_type == "transformer":
+        latency = get_model_latency(model=model, batch_size=batch_size,
+                                                        resolution=resolution,
+                                                        in_channels=3, gpu=None, repeat_times=3,
+                                                        fp16=False)
+        nas_score = (disversity_score + saliency_score)/(1 + latency*10000)
+    else:
+        nas_score = disversity_score + saliency_score
 
     return nas_score

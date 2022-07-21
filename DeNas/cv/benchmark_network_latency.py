@@ -21,7 +21,7 @@ def get_model_latency(model, batch_size, resolution, in_channels, gpu, repeat_ti
     the_image = torch.randn(batch_size, in_channels, resolution, resolution, dtype=dtype,
                             device=device)
     model.eval()
-    warmup_T = 3
+    warmup_T = 1
     with torch.no_grad():
         for i in range(warmup_T):
             the_output = model(the_image)
