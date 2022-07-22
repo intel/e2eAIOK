@@ -3,7 +3,7 @@
 # set vars
 MODEL_NAME="minigo"
 DATA_PATH="/mnt/DP_disk1/dataset/minigo"
-CONF_FILE="conf/hydroai_defaults_minigo_example.conf"
+CONF_FILE="tests/cicd/conf/hydroai_defaults_minigo_example.conf"
 
 # enable oneAPI
 source /opt/intel/oneapi/setvars.sh --force
@@ -23,6 +23,7 @@ conda activate minigo_xeon_opt
 yes "" | ./cc/configure_tensorflow.sh
 # make MiniGo CI/CD test process faster
 sed -i '/--winrate=/ s/=.*/=0.003/' ml_perf/flags/19/train_loop.flags
+sed -i '/--eval=/ s/=.*/=1/' ml_perf/flags/19/train_loop.flags
 sed -i '/--num_games=/ s/=.*/=4096/' ml_perf/flags/19/bootstrap.flags
 sed -i '/--min_games_per_iteration=/ s/=.*/=4096/' ml_perf/flags/19/train_loop.flags
 cd ../../

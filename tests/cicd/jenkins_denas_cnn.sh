@@ -2,7 +2,7 @@
 
 # init conda env
 eval "$('/opt/intel/oneapi/intelpython/latest/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
-conda activate pytorch_1.10
+conda activate pytorch-1.10.0
 
 # launch denas for cnn-based supernet
 cd /home/vmagent/app/hydro.ai/DeNas

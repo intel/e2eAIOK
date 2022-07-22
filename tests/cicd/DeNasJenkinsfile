@@ -1,10 +1,12 @@
 pipeline {
-    agent none
+    agent {
+        label 'sr612'
+    }
     stages {
         stage('Prepare') {
             steps {
                 script {
-                    def labels = ['sr613']
+                    def labels = ['sr612']
                     def builders = [: ]
                     for (x in labels) {
                         def label = x
@@ -12,7 +14,7 @@ pipeline {
                             node(label) {
                                 cleanWs()
                                 checkout scm
-                                sh 'cd Dockerfile-ubuntu18.04 && cp /root/.ssh/id_rsa ./ && docker build -t aidk-denas-pytorch110 . -f DockerfilePytorch110 && cd .. && yes | docker image prune'
+                                sh 'cd Dockerfile-ubuntu18.04 && docker build -t aidk-pytorch110 . -f DockerfilePytorch110 && cd .. && yes | docker container prune && yes | docker image prune'
                             }
                         }
                     }
@@ -22,27 +24,46 @@ pipeline {
         }
         stage('Run DeNas CNN') {
             agent {
-                label 'sr613'
+                label 'sr612'
             }
             steps {
-                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-denas-pytorch110 /bin/bash -c ". /home/vmagent/app/hydro.ai/tests/cicd/jenkins_denas_cnn.sh"'
+                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch110 /bin/bash -c ". /home/vmagent/app/hydro.ai/tests/cicd/jenkins_denas_cnn.sh"'
             }
         }
         stage('Run DeNas ViT') {
             agent {
-                label 'sr613'
+                label 'sr612'
             }
             steps {
-                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-denas-pytorch110 /bin/bash -c ". /home/vmagent/app/hydro.ai/tests/cicd/jenkins_denas_vit.sh"'
+                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch110 /bin/bash -c ". /home/vmagent/app/hydro.ai/tests/cicd/jenkins_denas_vit.sh"'
             }
         }
         stage('Run DeNas Bert') {
             agent {
-                label 'sr613'
+                label 'sr612'
             }
             steps {
-               sh 'docker run --rm --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-denas-pytorch110 /bin/bash -c ". /home/vmagent/app/hydro.ai/tests/cicd/jenkins_denas_bert.sh"' 
+               sh 'docker run --rm --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch110 /bin/bash -c ". /home/vmagent/app/hydro.ai/tests/cicd/jenkins_denas_bert.sh"' 
             }
+        }
+    }
+    post {
+        always {
+            echo 'One way or another, I have finished'
+            deleteDir()
+            sh 'if [[ $(docker ps -q | wc -l) -ne 0 ]]; then docker ps -q | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi'
+        }
+        success {
+            echo 'I succeeded!'
+        }
+        unstable {
+            echo 'I am unstable :/'
+        }
+        failure {
+            echo 'I failed :('
+        }
+        changed {
+            echo 'Things were different before...'
         }
     }
 }

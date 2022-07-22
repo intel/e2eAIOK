@@ -2,11 +2,10 @@
 
 ### Build DeNas docker image
 
-* Before building docker image, firstly create SSH private key `id_rsa` under folder `Dockerfile-ubuntu18.04` to enbale passwordless SSH.
 
 ```
 $ cd Dockerfile-ubuntu18.04
-$ docker build -t aidk-denas-pytorch110 . -f DockerfilePytorch110
+$ docker build -t aidk-pytorch110 . -f DockerfilePytorch110
 ```
 
 ### Run DeNas docker container

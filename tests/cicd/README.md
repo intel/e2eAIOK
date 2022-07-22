@@ -15,11 +15,9 @@ copy model specific dataset to `/mnt/DP_disk1/dataset/{model_specific_dataset}`
 ## Test scripts that can be run manually by developer
 
 The easiest way to run test scripts is with Docker.\
-Firstly, build AIDK docker image.\
-Before building AIDK docker image, firstly create SSH private key `id_rsa` under `Dockerfile-ubuntu18.04` to enbale passwordless SSH.
+Firstly, build AIDK docker image.
 ```
-$ cd ${AIDK_codebase}/Dockerfile-ubuntu18.04
-$ docker build -t aidk-base . -f DockerfileBase
+$ cd Dockerfile-ubuntu18.04
 $ docker build -t aidk-tensorflow . -f DockerfileTensorflow
 $ docker build -t aidk-pytorch . -f DockerfilePytorch
 $ docker build -t aidk-pytorch110 . -f DockerfilePytorch110
@@ -28,7 +26,7 @@ $ docker build -t aidk-pytorch110 . -f DockerfilePytorch110
 Then, run test script for specific workflow.\
 For pipeline_test:
 ```
-$ docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v ${AIDK_codebase}:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-base /bin/bash -c "SIGOPT_API_TOKEN=${SIGOPT_API_TOKEN} USE_SIGOPT=${USE_SIGOPT} . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_pipeline_test.sh"
+$ docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v ${AIDK_codebase}:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=${SIGOPT_API_TOKEN} USE_SIGOPT=${USE_SIGOPT} . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_pipeline_test.sh"
 ```
 For DIEN:
 ```
@@ -48,5 +46,5 @@ docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs
 ```
 For BERT:
 ```
-docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v ${AIDK_codebase}:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-base /bin/bash -c "SIGOPT_API_TOKEN=${SIGOPT_API_TOKEN} USE_SIGOPT=${USE_SIGOPT} . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_bert_test.sh"
+docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v ${AIDK_codebase}:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=${SIGOPT_API_TOKEN} USE_SIGOPT=${USE_SIGOPT} . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_bert_test.sh"
 ```
