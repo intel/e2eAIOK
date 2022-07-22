@@ -1,74 +1,28 @@
-# Dockerfile for Pytorch 1.10
-# Used in ModelZoo: rnnt
+FROM intel/oneapi-aikit:2022.2-devel-ubuntu18.04
 
-FROM intel/oneapi-aikit:2021.4-devel-ubuntu18.04
-
+SHELL ["/bin/bash", "-c"]
 WORKDIR /root/
-RUN apt-get update -y && apt-get install -y git sox
 ENV PATH /opt/intel/oneapi/intelpython/latest/condabin:$PATH
-RUN yes | conda create -n pytorch_1.10 python=3.7
-SHELL ["conda", "run", "-n", "pytorch_1.10", "/bin/bash", "-c"]
+RUN apt-get update -y && apt-get install -y libsndfile1-dev openssh-server
 
-# install GCC-8 and copy libs
-RUN yes | conda install gxx_linux-64==9.3.0
-RUN cp /opt/intel/oneapi/intelpython/latest/envs/pytorch_1.10/lib/python3.7/_sysconfigdata_x86_64_conda_cos6_linux_gnu.py /opt/intel/oneapi/intelpython/latest/envs/pytorch_1.10/lib/python3.7/_sysconfigdata_x86_64_conda_linux_gnu.py
-
-# install required dependencies
-RUN python -m pip install pyyaml
-RUN yes | conda install ninja setuptools cmake cffi typing
-RUN yes | conda install intel-openmp==2021.4.0 mkl==2021.4.0 mkl-include==2021.4.0 numpy -c intel --no-update-deps
-RUN python -m pip install torch==1.10.0+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
-
-# git clone oneCCL and install
-RUN git clone https://github.com/oneapi-src/oneCCL.git && cd oneCCL \
-        && git checkout 2f108a6 && mkdir build && cd build \
-        && cmake .. -DCMAKE_INSTALL_PREFIX=/opt/intel/oneapi/intelpython/latest/envs/pytorch_1.10/.local && make install -j
-# set vars
-ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:/opt/intel/oneapi/intelpython/latest/envs/pytorch_1.10/.local/lib/
-ENV Torch_DIR /opt/intel/oneapi/intelpython/latest/envs/pytorch_1.10/lib/python3.7/site-packages/torch/share/cmake/Torch
-# git clone torchCCL and install
-RUN git clone https://github.com/intel/torch-ccl.git && cd torch-ccl && git checkout ccl_torch1.10 \
-    && git submodule sync && git submodule update --init --recursive && python setup.py install
-# install other required dependencies
-RUN python -m pip install intel-extension-for-pytorch==1.10.0 -f https://software.intel.com/ipex-whl-stable
-RUN python -m pip install psutil
-ENV LD_PRELOAD "/opt/intel/oneapi/intelpython/latest/envs/pytorch_1.10/lib/libiomp5.so"
-RUN python -c "import torch_ccl"
-RUN python -m pip install sigopt==7.5.0 prefetch_generator tensorboardX
-RUN python -m pip install --no-cache --disable-pip-version-check -U https://github.com/NVIDIA/dllogger/archive/26a0f8f1958de2c0c460925ff6102a4d2486d6cc.zip https://github.com/mlcommons/logging/archive/e220700d547f5256e856c80c8f3f67242f2c7e7c.zip tensorboard==2.3.0 unidecode==1.1.1 inflect==4.1.0 soundfile==0.10.3.post1 librosa==0.8.0 sox==1.4.1 sentencepiece==0.1.94 pandas==1.1.5
-
-# install PyTorch binding for WarpRNNT
+SHELL ["conda", "run", "-n", "pytorch-1.10.0", "/bin/bash", "-c"]
+RUN python -m pip install pyyaml typing cffi cmake ninja numpy Unidecode prefetch_generator \
+            onnx tqdm inflect sentencepiece librosa tensorboard sigopt pytest
+RUN python -m pip install oneccl_bind_pt==1.10.0 -f https://developer.intel.com/ipex-whl-stable
+RUN python -m pip install --extra-index-url https://developer.download.nvidia.com/compute/redist --upgrade nvidia-dali-cuda110==1.9.0
+RUN python -m pip install git+https://github.com/NVIDIA/dllogger#egg=dllogger
+RUN python -m pip install "git+https://github.com/mlperf/logging.git@1.0.0"
 RUN git clone https://github.com/HawkAaron/warp-transducer && cd warp-transducer \
     && mkdir build && cd build \
     && cmake .. && make && cd ../pytorch_binding \
     && python setup.py install
-# install other required dependencies
-RUN python -m pip install torch_optimizer
-RUN python -m pip install --extra-index-url https://developer.download.nvidia.com/compute/redist --upgrade nvidia-dali-cuda110==1.9.0
-RUN python -m pip install onnx tqdm
-RUN python -m pip install "git+https://github.com/mlperf/logging.git@1.0.0"
-
-# for test
-RUN python -m pip install pytest
-# small fix for rnnt
-RUN python -m pip install protobuf==3.20
+RUN python -m pip install torchvision torchsummary easydict opencv-python scikit-image timm boto3
 
 SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
-RUN python -m pip install  --no-cache-dir --ignore-installed sigopt==7.5.0
-RUN python -m pip install transformers pandas
+RUN python -m pip install --no-cache-dir --ignore-installed sigopt pytest
 
 SHELL ["/bin/bash", "-c"]
-
-RUN apt-get update -y && apt-get install -y openssh-server vim nano git \
-            rsync wget curl gcc g++ build-essential pkg-config zlib1g-dev \
-            zip unzip numactl flex ncurses-term python3 python3-pip
 RUN sed -i 's/#Port 22/Port 12345/g' /etc/ssh/sshd_config
 RUN sed -i 's/#   Port 22/    Port 12345/g' /etc/ssh/ssh_config
-RUN mkdir /root/.ssh
-COPY id_rsa /root/.ssh/id_rsa
-RUN ssh-keygen -y -f /root/.ssh/id_rsa > /root/.ssh/id_rsa.pub
-RUN cat /root/.ssh/id_rsa.pub > /root/.ssh/authorized_keys
-RUN chmod 600 /root/.ssh/authorized_keys
-
 RUN conda init bash
 ENTRYPOINT [""]

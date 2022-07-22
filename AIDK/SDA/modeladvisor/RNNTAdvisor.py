@@ -34,7 +34,7 @@ class RNNTAdvisor(BaseModelAdvisor):
         self.dataset_meta_path = dataset_meta_path
         self.parse_meta_file(self.dataset_meta_path)
         self.saved_path = self.params['save_path']
-        self.train_python = "/opt/intel/oneapi/intelpython/latest/envs/pytorch_1.10/bin/python"
+        self.train_python = "/opt/intel/oneapi/intelpython/latest/envs/pytorch-1.10.0/bin/python"
         self.train_script = "/home/vmagent/app/hydro.ai/modelzoo/rnnt/pytorch/train.py"
 
     def init_default_params(self):

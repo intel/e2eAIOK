@@ -1,7 +1,7 @@
 #!/bin/bash
 get_original_model () {
     git init &&
-    git remote add origin_bert https://github.com/IntelAI/models.git &&
+    git config remote.origin_bert.url >&- || git remote add origin_bert https://github.com/IntelAI/models.git &&
     git pull origin_bert r2.5
 }
 
@@ -10,7 +10,6 @@ apply_patch () {
     git apply --check bert.patch &&
     git apply bert.patch
 }
-
 
 get_original_model
 apply_patch
