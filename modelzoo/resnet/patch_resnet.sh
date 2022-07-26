@@ -11,8 +11,6 @@ apply_patch () {
 
 }
 
-
-
 get_original_model
 
 apply_patch
