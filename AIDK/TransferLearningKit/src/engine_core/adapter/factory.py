@@ -1,25 +1,25 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-from .adversarial.CDAN import CDAN
-from .adversarial.DANN import DANN
+from .adversarial.cdan_adapter import CDANAdapter
+from .adversarial.dann_adapter import DANNAdapter
 import logging
 
-def createDiscriminator(discriminator_name,**kwargs):
-    ''' create discriminator by name
+def createAdapter(adapter_name, **kwargs):
+    ''' create adapter by name
 
-    :param discriminator_name: discriminator name
-    :param kwargs: kwargs to create discriminator
-    :return: a discriminator model
+    :param adapter_name: adapter name
+    :param kwargs: kwargs to create adapter
+    :return: a adapter model
     '''
-    if discriminator_name == 'DANN':
-        return DANN(in_feature=int(kwargs['input_size']),
+    if adapter_name == 'DANN':
+        return DANNAdapter(in_feature=int(kwargs['input_size']),
                     hidden_size=int(kwargs['hidden_size']),
                     dropout_rate=float(kwargs['dropout']),
                     grl_coeff_alpha=float(kwargs['grl_coeff_alpha']),
                     grl_coeff_high=float(kwargs['grl_coeff_high']),
                     max_iter=int(kwargs['max_iter']))
-    elif discriminator_name == 'CDAN':
-        return CDAN(in_feature=int(kwargs['input_size']),
+    elif adapter_name == 'CDAN':
+        return CDANAdapter(in_feature=int(kwargs['input_size']),
                     hidden_size=int(kwargs['hidden_size']),
                     dropout_rate=float(kwargs['dropout']),
                     grl_coeff_alpha=float(kwargs['grl_coeff_alpha']),
@@ -29,5 +29,5 @@ def createDiscriminator(discriminator_name,**kwargs):
                     enable_random_layer= int(kwargs['enable_random_layer']) > 0,
                     enable_entropy_weight= int(kwargs['enable_entropy_weight']) > 0)
     else:
-        logging.error("[%s] is not supported" % discriminator_name)
-        raise NotImplementedError("[%s] is not supported" % discriminator_name)
+        logging.error("[%s] is not supported" % adapter_name)
+        raise NotImplementedError("[%s] is not supported" % adapter_name)

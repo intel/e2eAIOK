@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 from .lenet import LeNet
-from .resnet import resnet18
+from .resnet import resnet18,resnet50
 import logging
 
 def createBackbone(backbone_name,**kwargs):
@@ -16,6 +16,9 @@ def createBackbone(backbone_name,**kwargs):
         return model
     elif backbone_name.lower() == 'resnet18':
         model = resnet18(num_classes=kwargs['num_classes'])
+        return model
+    elif backbone_name.lower() == 'resnet50':
+        model = resnet50(num_classes=kwargs['num_classes'])
         return model
     else:
         logging.error("[%s] is not supported"%backbone_name)

@@ -1,10 +1,14 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
+# @Author : Hua XiaoZhuan          
+# @Time   : 7/27/2022 3:13 PM
+
 import torch.nn as nn
 import torch
 import logging
+import datetime
 
-def init_weights(layer):
+def initWeights(layer):
     ''' Initialize layer parameters
 
     :param layer: the layer to be initialized
@@ -52,12 +56,22 @@ class EarlyStopping():
         self.optimal_metric = None
 
     def __call__(self, validation_metric,model_state_dict):
-        if self.optimal_metric is not None and \
-                ((self._is_max and validation_metric < self.optimal_metric - self._delta)
+        if self.optimal_metric is not None:
+            if ((self._is_max and validation_metric < self.optimal_metric - self._delta)
                  or ((not self._is_max) and validation_metric > self.optimal_metric + self._delta)):
-            self._counter += 1
+                self._counter += 1
+            else:
+                logging.info("Reset earlystop counter")
+                self._counter = 0
         else:
             self.optimal_model = model_state_dict
             self.optimal_metric = validation_metric
         if self._counter >= self._tolerance_epoch:
             self.early_stop = True
+
+    def __str__(self):
+        _str = 'EarlyStopping:%s\n'%self._tolerance_epoch
+        _str += '\tdelta:%s\n'%self._delta
+        _str += '\tis_max:%s\n' % self._is_max
+        return _str
+

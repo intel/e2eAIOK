@@ -5,8 +5,8 @@ import torch
 import logging
 from .grl import GradientReverseLayer
 
-class AdversarialNetwork(nn.Module):
-    ''' AdversarialNetwork used for adversarial transfer learning
+class AdversarialAdapter(nn.Module):
+    ''' AdversarialNetwork used for adversarial domain adaption
 
     '''
     def __init__(self, in_feature, hidden_size,dropout_rate,grl_coeff_alpha,grl_coeff_high,max_iter):
@@ -19,7 +19,7 @@ class AdversarialNetwork(nn.Module):
         :param grl_coeff_high: GradientReverseLayer coef high
         :param max_iter: max iter for one epoch
         '''
-        super(AdversarialNetwork, self).__init__()
+        super(AdversarialAdapter, self).__init__()
         self.ad_layer1 = nn.Linear(in_feature, hidden_size)
         self.ad_layer2 = nn.Linear(hidden_size, hidden_size//2)
         self.ad_layer3 = nn.Linear(hidden_size//2, 1)
@@ -32,7 +32,7 @@ class AdversarialNetwork(nn.Module):
                                         max_iter=max_iter,enable_step=self.training)
         self.iter_num = 0
 
-    def forward(self, x):
+    def forward(self, x,**kwargs):
         x = self.grl(x)
         # coeff = np.float(2.0 * self.grl_coeff_high / (1.0 + np.exp(-self.grl_coeff_alpha * self.iter_num / self.max_iter)) - self.grl_coeff_high)
         # if self.iter_num % 10 ==0:
@@ -51,30 +51,25 @@ class AdversarialNetwork(nn.Module):
             self.iter_num += 1
         return y
 
-    def make_label(self,shape,is_source):
-        ''' create discriminator label. If source, label is 1, else 0.
+    @classmethod
+    def make_label(cls,shape,is_source):
+        ''' create adapter label. If is_source = True then label is 1, else 0.
 
         :param shape: label shape
         :param is_source: whether it is source
-        :return: discriminator label
+        :return: adapter label
         '''
         if is_source:
             return torch.ones(shape,dtype=torch.float)   #.cuda()
         else:
             return torch.zeros(shape, dtype=torch.float)  # .cuda()
 
-    def loss(self,discriminator_feature_source,backbone_output_source,backbone_label_source,
-                  discriminator_feature_target,backbone_output_target,backbone_label_target,
-             tensorboard_writer = None):
-        ''' discriminator loss function
+    def loss(self,output_prob,label,**kwargs):
+        ''' adapter loss function
 
-        :param discriminator_feature_source: discriminator input feature of source
-        :param backbone_output_source: backbone logit output of source
-        :param backbone_label_source: backbone ground truth of source
-        :param discriminator_feature_target: discriminator input feature of target
-        :param backbone_output_target: backbone logit output of target
-        :param backbone_label_target: backbone ground truth of target
-        :param tensorboard_writer: tensorboard writer
+        :param output_prob: output probability
+        :param label: ground truth
+        :param kwargs: kwargs
         :return: loss
         '''
         raise NotImplementedError("must implement loss function")
