@@ -74,6 +74,7 @@ def trainEpoch(model, metric_fn_map, optimizer, train_dataloader, epoch_steps,
             add_tensorboard_metric(tensorboard_writer, 'Train', metric_values, cur_epoch,cur_step,epoch_steps)
 
         optimizer.step()
+        break
 
 def evaluateEpoch(model, metric_fn_map, dataloader,tensorboard_writer,cur_epoch,epoch_steps,test_flag):
     ''' evaluate epoch
@@ -160,23 +161,23 @@ class Trainer:
         _str += "\tlogging_interval:%s\n" % self._logging_interval
         return _str
 
-    def train(self, train_dataloader,epoch_steps,valid_dataloader):
-        ''' train function
+    def train(self, train_dataloader,epoch_steps,valid_dataloader,model_path):
+        ''' train function, and save the best trained model to model_path
 
         :param train_dataloader: train dataloader
         :param epoch_steps: steps per epoch
         :param valid_dataloader: validation dataloader
-        :return: the best trained model
+        :param model_path: model path
+        :return:
         '''
-        backbone = self._model.backbone() if isinstance(self._model,TransferrableModel) else self._model
 
         for epoch in range(1, self._training_epochs + 1):
             trainEpoch(self._model, self._validate_metric_fn_map, self._optimizer, train_dataloader,
                        epoch_steps, self._tensorboard_writer,epoch,self._logging_interval)
-            metrics_map = evaluateEpoch(backbone, self._validate_metric_fn_map, valid_dataloader,
+            metrics_map = evaluateEpoch(self._model, self._validate_metric_fn_map, valid_dataloader,
                                         self._tensorboard_writer,cur_epoch=epoch,
                                         epoch_steps=epoch_steps,test_flag=False)
-            self._early_stopping(metrics_map[self._early_stop_metric], backbone.state_dict())
+            self._early_stopping(metrics_map[self._early_stop_metric], self._model.state_dict())
             self._tensorboard_writer.flush()
             if self._early_stopping.early_stop:
                 logging.warning("Early stop after epoch:%s, the best acc is %s" % (epoch,
@@ -184,8 +185,9 @@ class Trainer:
                 break
 
         if self._early_stopping.optimal_model is not None:
-            backbone.load_state_dict(self._early_stopping.optimal_model)
-        return backbone
+            self._model.load_state_dict(self._early_stopping.optimal_model)
+
+        torch.save(self._model.state_dict(), model_path)
 
 class Evaluator:
     ''' The Evaluator

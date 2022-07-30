@@ -91,7 +91,7 @@ We provide a wrapper class `ComposedDataset` which composes target dataset and s
         loss_value.backward()
   ```
 
-5. If we need to logging the training loss or training metrics, we suggest to distinguish the new model and the original model:
+5. If we need to logging the training loss or training metrics, we suggest to distinguish the new model and the original model, because maybe we want to log more details about transfer learning:
   ```
   for (cur_step,(data, label)) in enumerate(train_dataloader):
      ...
@@ -100,11 +100,6 @@ We provide a wrapper class `ComposedDataset` which composes target dataset and s
                metric_values = model.get_training_metrics(output,label,loss_value,metric_fn_map)
           else: # original model metrics
                ...
-  ```
-6. When evaluating with the new model, we need to use backbone:
-  ```
-  backbone = self._model.backbone() if isinstance(self._model,TransferrableModel) else self._model
-  metrics_map = evaluateEpoch(backbone, ...)
   ```
 
 ## 2. Project Structure

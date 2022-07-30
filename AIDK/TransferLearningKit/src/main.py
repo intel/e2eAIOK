@@ -57,7 +57,7 @@ if __name__ == '__main__':
     weight_decay = 0.0005
     momentum = 0.9
 
-    training_epochs = 10
+    training_epochs = 2
     logging_interval_step = 10
 
     num_classes = 10
@@ -107,4 +107,4 @@ if __name__ == '__main__':
     trainer = Trainer(model,optimizer,early_stopping,validate_metric_fn_map,'acc', training_epochs,
                  tensorboard_writer,logging_interval_step)
     logging.info("trainer:%s"%trainer)
-    trainer.train(train_loader,epoch_steps,validate_loader)
+    trainer.train(train_loader,epoch_steps,validate_loader,"../model/model.pth")
