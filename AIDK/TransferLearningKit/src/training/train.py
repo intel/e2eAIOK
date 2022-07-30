@@ -55,12 +55,8 @@ def trainEpoch(model, metric_fn_map, optimizer, train_dataloader, epoch_steps,
     for (cur_step,(data, label)) in enumerate(train_dataloader):
         # data, label = data.cuda(), label.cuda()
         optimizer.zero_grad()
-        if isinstance(train_dataloader.dataset, ComposedDataset) and (not isinstance(model, TransferrableModel)):
-            output = model(data[0])
-            loss_value = model.loss(output, label[0])
-        else:
-            output = model(data)
-            loss_value = model.loss(output, label)
+        output = model(data)
+        loss_value = model.loss(output, label)
         loss_value.backward()
 
         if cur_step % logging_interval == 0:
@@ -69,12 +65,11 @@ def trainEpoch(model, metric_fn_map, optimizer, train_dataloader, epoch_steps,
             else:
                 metric_values = {"loss": loss_value}
                 for (metric_name, metric_fn) in sorted(metric_fn_map.items()):
-                    metric_value = metric_fn(output, label[0] if isinstance(train_dataloader.dataset,ComposedDataset) else label)
+                    metric_value = metric_fn(output, label)
                     metric_values[metric_name] = metric_value
             add_tensorboard_metric(tensorboard_writer, 'Train', metric_values, cur_epoch,cur_step,epoch_steps)
 
         optimizer.step()
-        break
 
 def evaluateEpoch(model, metric_fn_map, dataloader,tensorboard_writer,cur_epoch,epoch_steps,test_flag):
     ''' evaluate epoch

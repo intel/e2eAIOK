@@ -9,7 +9,7 @@ from dataset.image_list import ImageList
 from dataset.composed_dataset import ComposedDataset
 from engine_core.backbone.factory import createBackbone
 from engine_core.adapter.factory import createAdapter
-from engine_core.transferrable_model import make_transferrable,TransferStrategy
+from engine_core.transferrable_model import make_transferrable,TransferStrategy,TransferrableModel
 from training.train import Trainer
 import torch.optim as optim
 from training.utils import EarlyStopping
@@ -99,6 +99,8 @@ if __name__ == '__main__':
 
     model = make_transferrable(model,adapter,distiller,TransferStrategy.OnlyDomainAdaptionStrategy,
                                enable_target_training_label=False)
+    if (not isinstance(model,TransferrableModel)) and (isinstance(train_dataset,ComposedDataset)):
+        raise RuntimeError("ComposedDataset can not be used in original model")
     optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()),
                           lr=learning_rate, weight_decay=weight_decay, momentum=momentum)
     logging.info('transferrable model:%s' % model)

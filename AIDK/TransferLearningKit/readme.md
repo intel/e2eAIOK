@@ -78,20 +78,13 @@ We provide a wrapper class `ComposedDataset` which composes target dataset and s
      ```
     The new generated model act the same role as original model, and both can replace each other.
 
-4. There would exist a conflict if we provide a composed dataset and an original model. So the training iteration should be adjusted by:
-  ```
- for (cur_step,(data, label)) in enumerate(train_dataloader):
-        optimizer.zero_grad()
-        if isinstance(train_dataloader.dataset, ComposedDataset) and (not isinstance(model, TransferrableModel)):
-            output = model(data[0])
-            loss_value = model.loss(output, label[0])
-        else:
-            output = model(data)
-            loss_value = model.loss(output, label)
-        loss_value.backward()
-  ```
-
-5. If we need to logging the training loss or training metrics, we suggest to distinguish the new model and the original model, because maybe we want to log more details about transfer learning:
+    **Notice**: There would exist a conflict if we provide a composed dataset and an original model. We need to prevent this as follows:
+    ```
+    model = make_transferrable(model,adapter,distiller,...)
+    if (not isinstance(model,TransferrableModel)) and (isinstance(train_dataset,ComposedDataset)):
+        raise RuntimeError("ComposedDataset can not be used in original model")
+    ```
+4. If we need to logging the training loss or training metrics, we suggest to distinguish the new model and the original model, because maybe we want to log more details about transfer learning:
   ```
   for (cur_step,(data, label)) in enumerate(train_dataloader):
      ...
@@ -155,7 +148,7 @@ Our workflow is the Traditional Workflow with Transfer Learning Kit integrated.
     create evaluator
     evaluate test data
    ```
-   And the training workflow maybe:
+   And the training sub-workflow maybe:
    ```commandline
     iterate dataloader
     output = model(data)
