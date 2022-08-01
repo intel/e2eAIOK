@@ -16,6 +16,7 @@ from training.utils import EarlyStopping
 from training.metrics import accuracy
 import logging
 from torchvision import transforms
+import torch.nn as nn
 def createDatasets():
     ''' create all datasets
 
@@ -82,6 +83,7 @@ if __name__ == '__main__':
     tensorboard_writer = SummaryWriter("../tensorboard_log",filename_suffix="_adapter")
     early_stopping = EarlyStopping(tolerance_epoch=3, delta=0.0001, is_max=True)
     model = createBackbone('LeNet',num_classes=num_classes)
+    loss = nn.CrossEntropyLoss()
     epoch_steps = len(train_dataset)//batch_size
     logging.info("epoch_steps:%s"%epoch_steps)
     # adapter = None # createAdapter('DANN',input_size=model.adapter_size,hidden_size=500,dropout=0.0,
@@ -97,7 +99,7 @@ if __name__ == '__main__':
     logging.info('adapter:%s' % adapter)
     logging.info('distiller:%s' % distiller)
 
-    model = make_transferrable(model,adapter,distiller,TransferStrategy.OnlyDomainAdaptionStrategy,
+    model = make_transferrable(model,loss,adapter,distiller,TransferStrategy.OnlyDomainAdaptionStrategy,
                                enable_target_training_label=False)
     if (not isinstance(model,TransferrableModel)) and (isinstance(train_dataset,ComposedDataset)):
         raise RuntimeError("ComposedDataset can not be used in original model")

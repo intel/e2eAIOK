@@ -330,21 +330,29 @@ class TransferrableModel(nn.Module):
 
         return metric_values
 
-def make_transferrable(model,adapter,distiller,transfer_strategy,enable_target_training_label):
+def make_transferrable(model,loss,adapter,distiller,transfer_strategy,enable_target_training_label):
     ''' make a model transferrable
 
-    :param model: the backbone model
+    :param model: the backbone model. If model does not have loss method, then use loss argument.
+    :param loss : loss function for model,signature: loss(output_logit, label). If model has loss attribute, then loss could be none.
     :param adapter: an adapter
     :param distiller: a distiller
     :param transfer_strategy: transfer strategy
     :param enable_target_training_label: During training, whether use target training label or not.
     :return: a TransferrableModel
     '''
+    if not hasattr(model,"loss"):
+        setattr(model,"loss",loss)
+        logging.info("Set loss function for model")
+    else:
+        logging.info("Use model.loss()")
+
     return TransferrableModel(model,adapter,distiller,transfer_strategy,enable_target_training_label)
 
-def transferrable(adapter,distiller,transfer_strategy,enable_target_training_label):
+def transferrable(loss,adapter,distiller,transfer_strategy,enable_target_training_label):
     ''' a decorator to make instances of class transferrable
 
+    :param loss: loss function for ModelClass, signature: loss(output_logit, label). If ModelClass has loss attribute, then loss could be none.
     :param adapter: an adapter
     :param distiller: a distiller
     :param transfer_strategy: transfer strategy
@@ -353,6 +361,13 @@ def transferrable(adapter,distiller,transfer_strategy,enable_target_training_lab
     '''
     def wrapper(ModelClass):
         def _wrapper(*args, **kargs):
-            return TransferrableModel(ModelClass(*args, **kargs),adapter,distiller,transfer_strategy,enable_target_training_label)
+            model = ModelClass(*args, **kargs)
+            if not hasattr(model, "loss"):
+                setattr(model, "loss", loss)
+                logging.info("Set loss function for model")
+            else:
+                logging.info("Use model.loss()")
+
+            return TransferrableModel(model,adapter,distiller,transfer_strategy,enable_target_training_label)
         return _wrapper
     return wrapper
