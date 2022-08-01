@@ -8,6 +8,7 @@ import torch
 import logging
 from .adapter.adversarial.adversarial_adapter import AdversarialAdapter
 from collections import namedtuple
+import torch.fx
 
 from enum import Enum
 class TransferStrategy(Enum):
@@ -59,7 +60,7 @@ class TransferrableModel(nn.Module):
         '''
         super(TransferrableModel, self).__init__()
         self.backbone = backbone
-        super(TransferrableModel, self).__dict__['backbone'] = backbone
+        self.__dict__['backbone'] = backbone
         self.adapter = adapter
         self.distiller = distiller
         self.transfer_strategy = transfer_strategy
@@ -76,16 +77,20 @@ class TransferrableModel(nn.Module):
         :param item:
         :return:
         '''
-        # for special build-in method
-        # or train/eval mode change, otherwise it is always in backbone's eval mode
-        # or train mode
-        if item.startswith("__") or \
-                item in ('train','eval','training') or \
-                object.__getattribute__(self,"training"):
-            return object.__getattribute__(self,item)
-        else:   # eval mode
-            backbone = object.__getattribute__(self,'backbone')
-            return object.__getattribute__(backbone,item)
+        if item == '__dict__': # this is special
+            return object.__getattribute__(self, item)
+
+        __dict__ = object.__getattribute__(self, "__dict__")
+        is_eval = "training" in __dict__ and (not __dict__["training"])
+        if is_eval: # eval mode
+            if item in ('train',): # from eval to train
+                instance = self
+            else:
+                instance = __dict__['backbone'].__dict__['original'] # the original model
+        else: # train mode
+            instance = self
+
+        return object.__getattribute__(instance, item)
 
     def __str__(self):
         _str = 'TransferrableModel:transfer_strategy = %s, enable_target_training_label = %s\n'%(
@@ -108,7 +113,7 @@ class TransferrableModel(nn.Module):
         :param x: backbone input
         :return: TransferrableModelOutput
         '''
-        backbone_output = self.backbone(x)
+        backbone_output = self.backbone(x)[0]
         return TransferrableModelOutput(backbone_output,None,None)
 
     def _finetune_loss(self,output,label):
@@ -127,8 +132,8 @@ class TransferrableModel(nn.Module):
         :param x: backbone input
         :return: TransferrableModelOutput
         '''
-        backbone_output = self.backbone(x)
-        distiller_input = self.backbone.adapter_input
+        backbone_output,others = self.backbone(x)
+        distiller_input = others[0]
         distiller_output = self.distiller(distiller_input)
         return TransferrableModelOutput(backbone_output, distiller_output,None)
 
@@ -155,10 +160,10 @@ class TransferrableModel(nn.Module):
         :param x_src: source domain data
         :return: (TransferrableModelOutput for x_tgt, TransferrableModelOutput for x_src)
         '''
-        backbone_output_src = self.backbone(x_src)
-        adapter_output_src = self.adapter(self.backbone.adapter_input, backbone_output=backbone_output_src) if self.adapter is not None else None
-        backbone_output_tgt = self.backbone(x_tgt)
-        adapter_output_tgt = self.adapter(self.backbone.adapter_input, backbone_output=backbone_output_tgt) if self.adapter is not None else None
+        backbone_output_src,others_src = self.backbone(x_src)
+        adapter_output_src = self.adapter(others_src[1], backbone_output=backbone_output_src) if self.adapter is not None else None
+        backbone_output_tgt,others_tgt = self.backbone(x_tgt)
+        adapter_output_tgt = self.adapter(others_tgt[1], backbone_output=backbone_output_tgt) if self.adapter is not None else None
         return (
             TransferrableModelOutput(backbone_output_tgt,None,adapter_output_tgt),
             TransferrableModelOutput(backbone_output_src, None, adapter_output_src),
@@ -203,12 +208,13 @@ class TransferrableModel(nn.Module):
         :param x_src: source domain data
         :return:  (TransferrableModelOutput for x_tgt, TransferrableModelOutput for x_src)
         '''
-        backbone_output_src= self.backbone(x_src)
-        adapter_output_src = self.adapter(self.backbone.adapter_input)
-        distiller_output_src = self.distiller(self.backbone.distiller_input)
-        backbone_output_tgt = self.backbone(x_tgt)
-        adapter_output_tgt = self.adapter(self.backbone.adapter_input)
-        distiller_output_tgt = self.distiller(self.backbone.distiller_input)
+        backbone_output_src,others_src= self.backbone(x_src)
+        distiller_output_src = self.distiller(others_src[0])
+        adapter_output_src = self.adapter(others_src[1])
+
+        backbone_output_tgt,others_tgt = self.backbone(x_tgt)
+        distiller_output_tgt = self.distiller(others_tgt[0])
+        adapter_output_tgt = self.adapter(others_tgt[1])
 
         return TransferrableModelOutput(backbone_output_tgt,distiller_output_tgt,adapter_output_tgt), \
                TransferrableModelOutput(backbone_output_src,distiller_output_src,adapter_output_src)
@@ -330,34 +336,115 @@ class TransferrableModel(nn.Module):
 
         return metric_values
 
-def make_transferrable(model,loss,adapter,distiller,transfer_strategy,enable_target_training_label):
+def extract_distiller_adapter_features(model,intermediate_layer_name_for_distiller,
+                                     intermediate_layer_name_for_adapter):
+
+    ''' extract input feature for distiller and adapter
+
+    :param model: model
+    :param intermediate_layer_name_for_distiller: the intermediate_layer_name of model for distiller
+    :param intermediate_layer_name_for_adapter: the intermediate_layer_name of model for adapter
+    :return: modified model
+    '''
+    gm: torch.fx.GraphModule = torch.fx.symbolic_trace(model)
+    print("GraphModule")
+    gm.graph.print_tabular()
+
+    def find_node(graph,node_name):
+        ''' find node from GraphModule by node_name
+
+        :param graph: a GraphModule
+        :param node_name: node name
+        :return: the target node
+        '''
+        candidate_nodes =  [node for node in graph.nodes if node.name == node_name]
+        if len(candidate_nodes) != 1:
+            raise RuntimeError("Can not find layer name [%s] from [%s] : find [%s] result" % (
+                node_name, ";".join(node.name for node in graph.nodes), len(candidate_nodes)
+            ))
+        return candidate_nodes[0]
+    ##############         retrieve the node           ##################
+    distiller_node = find_node(gm.graph,intermediate_layer_name_for_distiller)
+    adapter_node = find_node(gm.graph,intermediate_layer_name_for_adapter)
+    output_node = find_node(gm.graph,"output")
+    #############          replace the output          ##################
+    with gm.graph.inserting_after(output_node):
+        original_args = output_node.args[0] # output_node.args is always a tuple, and the first element is the real output
+        distiller_adapter_inputs = (distiller_node,adapter_node)
+        new_args = (original_args,distiller_adapter_inputs)
+        new_node = gm.graph.output(new_args)
+        output_node.replace_all_uses_with(new_node)
+
+    gm.graph.erase_node(output_node) # Remove the old node from the graph
+
+    gm.recompile()   # Recompile the forward() method of `gm` from its Graph
+    print("After recompile")
+    gm.graph.lint()  # Does some checks to make sure the Graph is well-formed.
+
+    return gm
+
+def set_attribute(obj_name,obj,attr_name,attr):
+    ''' set attribute for obj
+
+    :param obj_name: obj name
+    :param obj: obj
+    :param attr_name: attribute name
+    :param attr: attribute
+    :return:
+    '''
+    if not hasattr(obj, attr_name):
+        obj.__dict__[attr_name] = attr
+        logging.info("Set %s for %s"%(attr_name,obj_name))
+    else:
+        logging.info("Use %s.%s"%(obj_name,attr_name))
+
+def make_transferrable(model,loss,
+                       distiller_feature_size,distiller_feature_layer_name,
+                       adapter_feature_size,adapter_feature_layer_name,
+                       distiller,adapter,transfer_strategy,enable_target_training_label):
     ''' make a model transferrable
 
     :param model: the backbone model. If model does not have loss method, then use loss argument.
     :param loss : loss function for model,signature: loss(output_logit, label). If model has loss attribute, then loss could be none.
-    :param adapter: an adapter
+    :param distiller_feature_size: input feature size of distiller
+    :param distiller_feature_layer_name: specify the layer output, which is from model, as input feature of distiller
+    :param adapter_feature_size: input feature size of adapter
+    :param adapter_feature_layer_name: specify the layer output, which is from model, as input feature of adapter
     :param distiller: a distiller
+    :param adapter: an adapter
     :param transfer_strategy: transfer strategy
     :param enable_target_training_label: During training, whether use target training label or not.
     :return: a TransferrableModel
     '''
-    if not hasattr(model,"loss"):
-        setattr(model,"loss",loss)
-        logging.info("Set loss function for model")
-    else:
-        logging.info("Use model.loss()")
+    #################### modify output #######################
+    new_model = extract_distiller_adapter_features(model,distiller_feature_layer_name,adapter_feature_layer_name)
+    #################### set attribute  #################
+    set_attribute("model",model,"loss",loss)
+    set_attribute("model", model, "distiller_feature_size", distiller_feature_size)
+    set_attribute("model", model, "adapter_feature_size", adapter_feature_size)
 
-    return TransferrableModel(model,adapter,distiller,transfer_strategy,enable_target_training_label)
+    set_attribute("new_model", new_model, "loss", loss)
+    set_attribute("new_model", new_model, "distiller_feature_size", distiller_feature_size)
+    set_attribute("new_model", new_model, "adapter_feature_size", adapter_feature_size)
+    set_attribute("new_model", new_model, "original", model) # remember the orignal one
 
-def transferrable(loss,adapter,distiller,transfer_strategy,enable_target_training_label):
+    return TransferrableModel(new_model,adapter,distiller,transfer_strategy,enable_target_training_label)
+
+def transferrable(loss,distiller_feature_size,distiller_feature_layer_name,
+                       adapter_feature_size,adapter_feature_layer_name,
+                       distiller,adapter,transfer_strategy,enable_target_training_label):
     ''' a decorator to make instances of class transferrable
 
-    :param loss: loss function for ModelClass, signature: loss(output_logit, label). If ModelClass has loss attribute, then loss could be none.
-    :param adapter: an adapter
+    :param loss : loss function for model,signature: loss(output_logit, label). If model has loss attribute, then loss could be none.
+    :param distiller_feature_size: input feature size of distiller
+    :param distiller_feature_layer_name: specify the layer output, which is from model, as input feature of distiller
+    :param adapter_feature_size: input feature size of adapter
+    :param adapter_feature_layer_name: specify the layer output, which is from model, as input feature of adapter
     :param distiller: a distiller
+    :param adapter: an adapter
     :param transfer_strategy: transfer strategy
     :param enable_target_training_label: During training, whether use target training label or not.
-    :return:
+    :return: a wrapper
     '''
     def wrapper(ModelClass):
         def _wrapper(*args, **kargs):
@@ -368,6 +455,9 @@ def transferrable(loss,adapter,distiller,transfer_strategy,enable_target_trainin
             else:
                 logging.info("Use model.loss()")
 
-            return TransferrableModel(model,adapter,distiller,transfer_strategy,enable_target_training_label)
+            return make_transferrable(model,loss,
+                       distiller_feature_size,distiller_feature_layer_name,
+                       adapter_feature_size,adapter_feature_layer_name,
+                       distiller,adapter,transfer_strategy,enable_target_training_label)
         return _wrapper
     return wrapper

@@ -106,9 +106,6 @@ class ResNet(nn.Module):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
-        self.adapter_input = None
-        self.adapter_size = 512 * block.expansion
-
     def _make_layer(self, block, planes, blocks, stride=1):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
@@ -141,18 +138,7 @@ class ResNet(nn.Module):
         x = x.view(x.size(0), -1)
         y = self.fc(x)
 
-        self.adapter_input = x
         return y
-
-    def loss(self, output_logit, label):
-        ''' loss function
-
-        :param output_logit: model prediction (raw logit)
-        :param label: ground truth
-        :return:
-        '''
-        return nn.CrossEntropyLoss()(output_logit,label)  # The `input` is expected to contain raw, unnormalized scores for each class.
-
 
 def resnet18(**kwargs):
     """Constructs a ResNet-18 model.

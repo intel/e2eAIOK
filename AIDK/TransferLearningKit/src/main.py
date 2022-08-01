@@ -89,23 +89,36 @@ if __name__ == '__main__':
     # adapter = None # createAdapter('DANN',input_size=model.adapter_size,hidden_size=500,dropout=0.0,
     #                         grl_coeff_alpha=5.0,grl_coeff_high=1.0,
     #                         max_iter=epoch_steps)
-    adapter = createAdapter('CDAN',input_size=model.adapter_size*num_classes,hidden_size=model.adapter_size,
-                            dropout=0.0,grl_coeff_alpha=5.0,grl_coeff_high=1.0,max_iter=epoch_steps,
-                            backbone_output_size=num_classes,enable_random_layer=0,enable_entropy_weight=0)
-    distiller = None
+
     logging.info('tensorboard_writer :%s' % tensorboard_writer)
     logging.info('early_stopping :%s' % early_stopping)
     logging.info('backbone:%s' % model)
+
+    distiller_feature_size = None
+    distiller_feature_layer_name = 'x'
+    distiller = None
+
+    adapter_feature_size = 500
+    adapter_feature_layer_name = 'fc_layers_2'
+    adapter = createAdapter('CDAN', input_size=adapter_feature_size * num_classes, hidden_size=adapter_feature_size,
+                            dropout=0.0, grl_coeff_alpha=5.0, grl_coeff_high=1.0, max_iter=epoch_steps,
+                            backbone_output_size=num_classes, enable_random_layer=0, enable_entropy_weight=0)
+
+    model = make_transferrable(model,loss,distiller_feature_size,distiller_feature_layer_name,
+                               adapter_feature_size, adapter_feature_layer_name,
+                               distiller,adapter,TransferStrategy.OnlyDomainAdaptionStrategy,
+                               enable_target_training_label=False)
     logging.info('adapter:%s' % adapter)
     logging.info('distiller:%s' % distiller)
-
-    model = make_transferrable(model,loss,adapter,distiller,TransferStrategy.OnlyDomainAdaptionStrategy,
-                               enable_target_training_label=False)
+    logging.info('transferrable model:%s' % model)
     if (not isinstance(model,TransferrableModel)) and (isinstance(train_dataset,ComposedDataset)):
         raise RuntimeError("ComposedDataset can not be used in original model")
+    if (isinstance(model,TransferrableModel)) \
+            and model.transfer_strategy in (TransferStrategy.OnlyDistillationStrategy,TransferStrategy.DistillationAndAdaptionStrategy)\
+            and (not isinstance(train_dataset,ComposedDataset)):
+        raise RuntimeError("TransferrableModel with distillation strategy must use ComposedDataset")
     optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()),
                           lr=learning_rate, weight_decay=weight_decay, momentum=momentum)
-    logging.info('transferrable model:%s' % model)
     #################################### train and evaluate ###################
     validate_metric_fn_map = {'acc':accuracy}
     trainer = Trainer(model,optimizer,early_stopping,validate_metric_fn_map,'acc', training_epochs,

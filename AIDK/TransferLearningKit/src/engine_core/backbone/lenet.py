@@ -26,24 +26,10 @@ class LeNet(nn.Module):
 
         self.fc_layers = nn.Sequential(nn.Linear(50 * 4 * 4, 500), nn.ReLU(), nn.Dropout(p=0.5))
         self.classifier = nn.Linear(500, num_classes)
-        self.adapter_input = None
-        self.adapter_size = 500
 
     def forward(self, x):
         x = self.conv_layers(x)
         x = x.view(x.size(0), -1)
         x = self.fc_layers(x)
         y = self.classifier(x)
-        self.adapter_input = x
         return y
-
-
-
-    def loss(self,output_logit,label):
-        ''' loss function
-
-        :param output_logit: model prediction (raw logit)
-        :param label: ground truth
-        :return:
-        '''
-        return nn.CrossEntropyLoss()(output_logit, label) # The `input` is expected to contain raw, unnormalized scores for each class.

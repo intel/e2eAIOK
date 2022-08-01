@@ -2,28 +2,9 @@
 
 ## 1. Usage
 
-The transfer learning kit is easily integrated following the follow steps:
+The transfer learning kit is easily integrated following the follow steps without any modification on original model:
 
-1. The original model should provide the follow properties: loss function, distiller input, distiller input size, adapter input, adapter input size, without any structure modification on original model.
-  ```
-  class ABCNet(nn.Module):
-        ...
-        def __init__(self,num_classes):
-            ...
-            self.distiller_input       # distiller input, which is the intermediate component output of the model
-            self.distiller_input_size  # distiller input size
-            self.adapter_input         # adapter input, which is the intermediate component output of the model
-            self.adapter_input_size    # adapter input size
-        ...
-        def loss(self,output, label):
-        ''' loss function
-
-        :param output: model prediction
-        :param label: ground truth
-        :return: loss function
-        '''  
-  ```
-2. To transfer knowledge from a target-similar dataset to target task, we need to provide 2 datasets: the target-similar dataset(called `source dataset`), the target dataset. To be compatible with original workflow, 
+1. To transfer knowledge from a target-similar dataset to target task, we need to provide 2 datasets: the target-similar dataset(called `source dataset`), the target dataset. To be compatible with original workflow, 
 We provide a wrapper class `ComposedDataset` which composes target dataset and source dataset into a composed dataset. 
   ```
   from dataset.composed_dataset import ComposedDataset
@@ -35,47 +16,44 @@ We provide a wrapper class `ComposedDataset` which composes target dataset and s
   composed_train_dataset = ComposedDataset(target_train_dataset,source_train_dataset)
   # now composed_train_dataset act the same role as target_train_dataset
   ```
-3. We need to wrap the original model with a distiller and an adapter by `make_transferrable()`:
-   - We can transfer knowledge from a pretrained model and finetune on our own task. We can achieve this with one line modified:
-     ```commandline
-     from engine_core.transferrable_model import make_transferrable,TransferStrategy
-     # ...
-     model = make_transferrable(model,adapter=None,distiller=None,transfer_strategy=TransferStrategy.OnlyFinetuneStrategy,
-     enable_target_training_label=True)
-     # ...
-     ```
-   - We can transfer knowledge from a pretrained model and distill it. We can achieve this by two lines modified:
-     ```commandline
-     from engine_core.transferrable_model import make_transferrable,TransferStrategy
-     from engine_core.distiller.basic_distiller import BasicDistiller
-     # ...
-     distiller = BasicDistiller(...)
-     model = make_transferrable(model,adapter=None,distiller=distiller,transfer_strategy=TransferStrategy.OnlyDistillationStrategy,
-     enable_target_training_label=True)
-     # ...
-     ```
-   - We can transfer knowledge from a target-similar dataset to target task. We can achieve this by two lines modified:
-     ```commandline
-     from engine_core.transferrable_model import make_transferrable,TransferStrategy
-     from engine_core.adapter.factory import createAdapter
-     # ...
-     adapter = createAdapter('CDAN',...)
-     model = make_transferrable(model,adapter=adapter,distiller=None,transfer_strategy=TransferStrategy.OnlyDomainAdaptionStrategy,
-     enable_target_training_label=True)
-     # ...
-     ```
-   - We can both transfer knowledge from a pretrained model and target-similar dataset to target task. We can achieve this by three lines modified:
-     ```commandline
-     from engine_core.transferrable_model import make_transferrable,TransferStrategy
-     from engine_core.distiller.basic_distiller import BasicDistiller
-     from engine_core.adapter.factory import createAdapter
-     # ...
-     distiller = BasicDistiller(...)
-     adapter = createAdapter('CDAN',...)
-     model = make_transferrable(model,adapter=adapter,distiller=distiller,transfer_strategy=TransferStrategy.DistillationAndAdaptionStrategy,
-     enable_target_training_label=True)
-     # ...
-     ```
+2. We need to wrap the original model with a distiller and an adapter by `make_transferrable()`:
+    ```
+    distiller_feature_size = None
+    distiller_feature_layer_name = 'x'
+    distiller = None
+
+    adapter_feature_size = 500
+    adapter_feature_layer_name = 'fc_layers_2'
+    adapter = createAdapter('CDAN', input_size=adapter_feature_size * num_classes, hidden_size=adapter_feature_size,
+                            dropout=0.0, grl_coeff_alpha=5.0, grl_coeff_high=1.0, max_iter=epoch_steps,
+                            backbone_output_size=num_classes, enable_random_layer=0, enable_entropy_weight=0)
+
+    model = make_transferrable(model,loss,distiller_feature_size,distiller_feature_layer_name,
+                               adapter_feature_size, adapter_feature_layer_name,
+                               distiller,adapter,TransferStrategy.OnlyDomainAdaptionStrategy,
+                               enable_target_training_label=False)
+    ```
+    - param model: the backbone model. If model does not have loss method, then use loss argument.
+    - param loss : loss function for model,signature: loss(output_logit, label). If model has loss attribute, then loss could be none.
+    - param distiller_feature_size: input feature size of distiller
+    - param distiller_feature_layer_name: specify the layer output, which is from model, as input feature of distiller
+    - param adapter_feature_size: input feature size of adapter
+    - param adapter_feature_layer_name: specify the layer output, which is from model, as input feature of adapter
+    - param distiller: a distiller
+    - param adapter: an adapter
+    - param transfer_strategy: transfer strategy
+    - param enable_target_training_label: During training, whether use target training label or not.
+    - return: a TransferrableModel
+   
+    And the strategy could be:
+    ```
+    OnlyFinetuneStrategy               : pretraining-finetuning, and the pretrained model is the same as the target model
+    OnlyDistillationStrategy           : distillation
+    OnlyDomainAdaptionStrategy         : domain adaption
+    FinetuneAndDomainAdaptionStrategy  : pretraining-finetuning and domain adaption
+    DistillationAndAdaptionStrategy    : distillation and domain adaption
+    ```
+    
     The new generated model act the same role as original model, and both can replace each other.
 
     **Notice**: There would exist a conflict if we provide a composed dataset and an original model. We need to prevent this as follows:
@@ -83,6 +61,10 @@ We provide a wrapper class `ComposedDataset` which composes target dataset and s
     model = make_transferrable(model,adapter,distiller,...)
     if (not isinstance(model,TransferrableModel)) and (isinstance(train_dataset,ComposedDataset)):
         raise RuntimeError("ComposedDataset can not be used in original model")
+    if (isinstance(model,TransferrableModel)) \
+            and model.transfer_strategy in (TransferStrategy.OnlyDistillationStrategy,TransferStrategy.DistillationAndAdaptionStrategy)\
+            and (not isinstance(train_dataset,ComposedDataset)):
+        raise RuntimeError("TransferrableModel with distillation strategy must use ComposedDataset")
     ```
 4. If we need to logging the training loss or training metrics, we suggest to distinguish the new model and the original model, because maybe we want to log more details about transfer learning:
   ```
