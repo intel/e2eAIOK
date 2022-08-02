@@ -6,7 +6,7 @@ from torch.utils.data import random_split
 from torch.utils.tensorboard import SummaryWriter
 import time
 from dataset.image_list import ImageList
-from dataset.composed_dataset import ComposedDataset
+
 from engine_core.backbone.factory import createBackbone
 from engine_core.adapter.factory import createAdapter
 from engine_core.transferrable_model import make_transferrable,TransferStrategy,TransferrableModel
@@ -17,33 +17,6 @@ from training.metrics import accuracy
 import logging
 from torchvision import transforms
 import torch.nn as nn
-def createDatasets():
-    ''' create all datasets
-
-    :return: (train_dataset, validation_dataset,test_dataset)
-    '''
-    transform = transforms.Compose([
-        transforms.Resize(28),
-        transforms.ToTensor(),
-        # transforms.Normalize(
-        # mean=[0.485, 0.456, 0.406],
-        # std=[0.229, 0.224, 0.225])
-    ])
-    target_test_dataset = ImageList("../datasets/USPS_vs_MNIST/MNIST",
-                                    open("../datasets/USPS_vs_MNIST/MNIST/mnist_test.txt").readlines(),
-                                    transform,'L')
-    target_train_dataset = ImageList("../datasets/USPS_vs_MNIST/MNIST",
-                                    open("../datasets/USPS_vs_MNIST/MNIST/mnist_train.txt").readlines(),
-                                     transform,'L')
-    source_train_dataset = ImageList("../datasets/USPS_vs_MNIST/USPS",
-                                    open("../datasets/USPS_vs_MNIST/USPS/usps_train.txt").readlines(),
-                                     transform,'L')
-
-    test_len = len(target_test_dataset)
-    target_test_dataset,target_validation_dataset = random_split(target_test_dataset,[test_len//2,test_len-test_len//2])
-    return ComposedDataset(target_train_dataset,source_train_dataset),target_validation_dataset,target_test_dataset
-
-
 if __name__ == '__main__':
     logging.basicConfig(filename="../log/%s.txt"%int(time.time()), level=logging.INFO,
                         format='%(asctime)s %(levelname)s [%(filename)s %(funcName)s %(lineno)d]: %(message)s',
@@ -64,7 +37,22 @@ if __name__ == '__main__':
     num_classes = 10
     # os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_id
     ######################## create dataset and dataloader #####################
-    (train_dataset,validation_dataset,test_dataset) = createDatasets()
+    transform = transforms.Compose([
+        transforms.Resize(28),
+        transforms.ToTensor(),
+        # transforms.Normalize(
+        # mean=[0.485, 0.456, 0.406],
+        # std=[0.229, 0.224, 0.225])
+    ])
+    test_dataset = ImageList("../datasets/USPS_vs_MNIST/MNIST",
+                                    open("../datasets/USPS_vs_MNIST/MNIST/mnist_test.txt").readlines(),
+                                    transform, 'L')
+    train_dataset = ImageList("../datasets/USPS_vs_MNIST/MNIST",
+                                     open("../datasets/USPS_vs_MNIST/MNIST/mnist_train.txt").readlines(),
+                                     transform, 'L')
+    test_len = len(test_dataset)
+    test_dataset, validation_dataset = random_split(test_dataset,[test_len // 2, test_len - test_len // 2])
+
     logging.info("train_dataset:" + str(train_dataset))
     logging.info("validation_dataset:" + str(validation_dataset))
     logging.info("test_dataset:" + str(test_dataset))
@@ -106,17 +94,14 @@ if __name__ == '__main__':
 
     model = make_transferrable(model,loss,distiller_feature_size,distiller_feature_layer_name,
                                adapter_feature_size, adapter_feature_layer_name,
-                               distiller,adapter,TransferStrategy.OnlyDomainAdaptionStrategy,
+                               distiller,adapter,train_loader,ImageList("../datasets/USPS_vs_MNIST/USPS",
+                                    open("../datasets/USPS_vs_MNIST/USPS/usps_train.txt").readlines(),
+                                     transform,'L'),
+                               TransferStrategy.OnlyDomainAdaptionStrategy,
                                enable_target_training_label=False)
     logging.info('adapter:%s' % adapter)
     logging.info('distiller:%s' % distiller)
     logging.info('transferrable model:%s' % model)
-    if (not isinstance(model,TransferrableModel)) and (isinstance(train_dataset,ComposedDataset)):
-        raise RuntimeError("ComposedDataset can not be used in original model")
-    if (isinstance(model,TransferrableModel)) \
-            and model.transfer_strategy in (TransferStrategy.OnlyDistillationStrategy,TransferStrategy.DistillationAndAdaptionStrategy)\
-            and (not isinstance(train_dataset,ComposedDataset)):
-        raise RuntimeError("TransferrableModel with distillation strategy must use ComposedDataset")
     optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()),
                           lr=learning_rate, weight_decay=weight_decay, momentum=momentum)
     #################################### train and evaluate ###################

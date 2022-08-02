@@ -4,44 +4,28 @@
 
 The transfer learning kit is easily integrated following the follow steps without any modification on original model:
 
-1. To transfer knowledge from a target-similar dataset to target task, we need to provide 2 datasets: the target-similar dataset(called `source dataset`), the target dataset. To be compatible with original workflow, 
-We provide a wrapper class `ComposedDataset` which composes target dataset and source dataset into a composed dataset. 
-  ```
-  from dataset.composed_dataset import ComposedDataset
-  target_train_dataset = ...
-  target_validation_dataset = ...
-  target_test_dataset = ...
-  
-  source_train_dataset = ...
-  composed_train_dataset = ComposedDataset(target_train_dataset,source_train_dataset)
-  # now composed_train_dataset act the same role as target_train_dataset
-  ```
-2. We need to wrap the original model with a distiller and an adapter by `make_transferrable()`:
+1. We need to wrap the original model with a distiller and an adapter by `make_transferrable()`:
     ```
-    distiller_feature_size = None
-    distiller_feature_layer_name = 'x'
-    distiller = None
-
-    adapter_feature_size = 500
-    adapter_feature_layer_name = 'fc_layers_2'
-    adapter = createAdapter('CDAN', input_size=adapter_feature_size * num_classes, hidden_size=adapter_feature_size,
-                            dropout=0.0, grl_coeff_alpha=5.0, grl_coeff_high=1.0, max_iter=epoch_steps,
-                            backbone_output_size=num_classes, enable_random_layer=0, enable_entropy_weight=0)
-
-    model = make_transferrable(model,loss,distiller_feature_size,distiller_feature_layer_name,
-                               adapter_feature_size, adapter_feature_layer_name,
-                               distiller,adapter,TransferStrategy.OnlyDomainAdaptionStrategy,
-                               enable_target_training_label=False)
+    model = ... # orignal model
+    model = make_transferrable(model,loss,
+                       distiller_feature_size,distiller_feature_layer_name,
+                       adapter_feature_size,adapter_feature_layer_name,
+                       distiller,adapter,
+                       training_dataloader,adaption_source_domain_training_dataset,
+                       transfer_strategy,enable_target_training_label)
+    # model act as the original one
     ```
     - param model: the backbone model. If model does not have loss method, then use loss argument.
     - param loss : loss function for model,signature: loss(output_logit, label). If model has loss attribute, then loss could be none.
-    - param distiller_feature_size: input feature size of distiller
-    - param distiller_feature_layer_name: specify the layer output, which is from model, as input feature of distiller
-    - param adapter_feature_size: input feature size of adapter
-    - param adapter_feature_layer_name: specify the layer output, which is from model, as input feature of adapter
-    - param distiller: a distiller
-    - param adapter: an adapter
-    - param transfer_strategy: transfer strategy
+    - param distiller_feature_size: input feature size of distiller. If no distillation, then could be none.
+    - param distiller_feature_layer_name: specify the layer output, which is from model, as input feature of distiller. If no distillation, then could be none.
+    - param adapter_feature_size: input feature size of adapter. If no adaption, then could be none.
+    - param adapter_feature_layer_name: specify the layer output, which is from model, as input feature of adapter. If no adaption, then could be none.
+    - param distiller: a distiller. If no distillation, then could be none.
+    - param adapter: an adapter. If no adaption, then could be none.
+    - param training_dataloader: training dataloader.
+    - param adaption_source_domain_training_dataset: source domain training dataset for adaption. If no adaption, then could be none.
+    - param transfer_strategy: transfer strategy.
     - param enable_target_training_label: During training, whether use target training label or not.
     - return: a TransferrableModel
    
@@ -56,17 +40,7 @@ We provide a wrapper class `ComposedDataset` which composes target dataset and s
     
     The new generated model act the same role as original model, and both can replace each other.
 
-    **Notice**: There would exist a conflict if we provide a composed dataset and an original model. We need to prevent this as follows:
-    ```
-    model = make_transferrable(model,adapter,distiller,...)
-    if (not isinstance(model,TransferrableModel)) and (isinstance(train_dataset,ComposedDataset)):
-        raise RuntimeError("ComposedDataset can not be used in original model")
-    if (isinstance(model,TransferrableModel)) \
-            and model.transfer_strategy in (TransferStrategy.OnlyDistillationStrategy,TransferStrategy.DistillationAndAdaptionStrategy)\
-            and (not isinstance(train_dataset,ComposedDataset)):
-        raise RuntimeError("TransferrableModel with distillation strategy must use ComposedDataset")
-    ```
-4. If we need to logging the training loss or training metrics, we suggest to distinguish the new model and the original model, because maybe we want to log more details about transfer learning:
+2. If we need to logging the training loss or training metrics, we suggest to distinguish the new model and the original model, because maybe we want to log more details about transfer learning:
   ```
   for (cur_step,(data, label)) in enumerate(train_dataloader):
      ...

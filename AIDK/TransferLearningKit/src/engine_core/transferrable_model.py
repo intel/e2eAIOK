@@ -9,6 +9,7 @@ import logging
 from .adapter.adversarial.adversarial_adapter import AdversarialAdapter
 from collections import namedtuple
 import torch.fx
+from dataset.composed_dataset import ComposedDataset
 
 from enum import Enum
 class TransferStrategy(Enum):
@@ -401,18 +402,22 @@ def set_attribute(obj_name,obj,attr_name,attr):
 def make_transferrable(model,loss,
                        distiller_feature_size,distiller_feature_layer_name,
                        adapter_feature_size,adapter_feature_layer_name,
-                       distiller,adapter,transfer_strategy,enable_target_training_label):
+                       distiller,adapter,
+                       training_dataloader,adaption_source_domain_training_dataset,
+                       transfer_strategy,enable_target_training_label):
     ''' make a model transferrable
 
     :param model: the backbone model. If model does not have loss method, then use loss argument.
     :param loss : loss function for model,signature: loss(output_logit, label). If model has loss attribute, then loss could be none.
-    :param distiller_feature_size: input feature size of distiller
-    :param distiller_feature_layer_name: specify the layer output, which is from model, as input feature of distiller
-    :param adapter_feature_size: input feature size of adapter
-    :param adapter_feature_layer_name: specify the layer output, which is from model, as input feature of adapter
-    :param distiller: a distiller
-    :param adapter: an adapter
-    :param transfer_strategy: transfer strategy
+    :param distiller_feature_size: input feature size of distiller. If no distillation, then could be none.
+    :param distiller_feature_layer_name: specify the layer output, which is from model, as input feature of distiller. If no distillation, then could be none.
+    :param adapter_feature_size: input feature size of adapter. If no adaption, then could be none.
+    :param adapter_feature_layer_name: specify the layer output, which is from model, as input feature of adapter. If no adaption, then could be none.
+    :param distiller: a distiller. If no distillation, then could be none.
+    :param adapter: an adapter. If no adaption, then could be none.
+    :param training_dataloader: training dataloader.
+    :param adaption_source_domain_training_dataset: source domain training dataset for adaption. If no adaption, then could be none.
+    :param transfer_strategy: transfer strategy.
     :param enable_target_training_label: During training, whether use target training label or not.
     :return: a TransferrableModel
     '''
@@ -427,12 +432,17 @@ def make_transferrable(model,loss,
     set_attribute("new_model", new_model, "distiller_feature_size", distiller_feature_size)
     set_attribute("new_model", new_model, "adapter_feature_size", adapter_feature_size)
     set_attribute("new_model", new_model, "original", model) # remember the orignal one
+    ###################### set dataset ##################
+    if adaption_source_domain_training_dataset is not None:
+        logging.info("Make composed dataset")
+        training_dataloader.__dict__["dataset"] = ComposedDataset(training_dataloader.dataset,adaption_source_domain_training_dataset)
 
     return TransferrableModel(new_model,adapter,distiller,transfer_strategy,enable_target_training_label)
 
 def transferrable(loss,distiller_feature_size,distiller_feature_layer_name,
-                       adapter_feature_size,adapter_feature_layer_name,
-                       distiller,adapter,transfer_strategy,enable_target_training_label):
+                  adapter_feature_size,adapter_feature_layer_name,distiller,adapter,
+                  training_dataloader,adaption_source_domain_training_dataset,
+                  transfer_strategy,enable_target_training_label):
     ''' a decorator to make instances of class transferrable
 
     :param loss : loss function for model,signature: loss(output_logit, label). If model has loss attribute, then loss could be none.
@@ -442,6 +452,8 @@ def transferrable(loss,distiller_feature_size,distiller_feature_layer_name,
     :param adapter_feature_layer_name: specify the layer output, which is from model, as input feature of adapter
     :param distiller: a distiller
     :param adapter: an adapter
+    :param training_dataloader: training dataloader.
+    :param adaption_source_domain_training_dataset: source domain training dataset for adaption. If no adaption, then could be none.
     :param transfer_strategy: transfer strategy
     :param enable_target_training_label: During training, whether use target training label or not.
     :return: a wrapper
@@ -457,7 +469,8 @@ def transferrable(loss,distiller_feature_size,distiller_feature_layer_name,
 
             return make_transferrable(model,loss,
                        distiller_feature_size,distiller_feature_layer_name,
-                       adapter_feature_size,adapter_feature_layer_name,
-                       distiller,adapter,transfer_strategy,enable_target_training_label)
+                       adapter_feature_size,adapter_feature_layer_name,distiller,adapter,
+                       training_dataloader,adaption_source_domain_training_dataset,
+                       transfer_strategy,enable_target_training_label)
         return _wrapper
     return wrapper
