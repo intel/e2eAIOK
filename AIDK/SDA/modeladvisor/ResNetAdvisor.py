@@ -101,7 +101,7 @@ class ResNetAdvisor(BaseModelAdvisor):
             + f"--model_dir '{self.model_saved_path}' --train_epochs '{args['num_epochs']}' " \
             + f"--stop_threshold '{args['metric_threshold']}' --batch_size '{args['global_batch_size']}' --version 1 --resnet_size '{args['model_parameter']['tuned_parameters']['resnet_size']}' " \
             + f"--epochs_between_evals 4 --inter_op_parallelism_threads 2 --intra_op_parallelism_threads 2 " \
-            + f"--use_bfloat16  --enable_lars --weight_decay '{args['model_parameter']['tuned_parameters']['weight_decay']}' --kernel_size '{args['model_parameter']['tuned_parameters']['kernel_size']}'"
+            + f"--enable_lars --weight_decay '{args['model_parameter']['tuned_parameters']['weight_decay']}' --kernel_size '{args['model_parameter']['tuned_parameters']['kernel_size']}'"
         if args["use_synthetic_data"]:
             cmd += f"--use_synthetic_data"
         
@@ -121,7 +121,7 @@ class ResNetAdvisor(BaseModelAdvisor):
             + f"--model_dir '{self.model_saved_path}' --train_epochs '{args['num_epochs']}' " \
             + f"--stop_threshold '{args['metric_threshold']}' --batch_size '{204}' --version 1 --resnet_size '{args['model_parameter']['tuned_parameters']['resnet_size']}' " \
             + f"--epochs_between_evals 1 --inter_op_parallelism_threads 2 --intra_op_parallelism_threads 2 " \
-            + f"--use_bfloat16  --enable_lars --weight_decay '{args['model_parameter']['tuned_parameters']['weight_decay']}' --kernel_size '{args['model_parameter']['tuned_parameters']['kernel_size']}' " \
+            + f"--enable_lars --weight_decay '{args['model_parameter']['tuned_parameters']['weight_decay']}' --kernel_size '{args['model_parameter']['tuned_parameters']['kernel_size']}' " \
             + f"--base_lr '{args['model_parameter']['tuned_parameters']['base_lr']}' --momentum '{args['model_parameter']['tuned_parameters']['momentum']}' "
 
         if args["use_synthetic_data"]:
