@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+import os
 import torch
 from torch.utils.data import Dataset
 from torch.utils.data import random_split
@@ -18,6 +19,8 @@ import logging
 from torchvision import transforms
 import torch.nn as nn
 if __name__ == '__main__':
+    os.makedirs(os.path.dirname("../log/"), exist_ok=True)
+    os.makedirs(os.path.dirname("../model"),exist_ok=True)
     logging.basicConfig(filename="../log/%s.txt"%int(time.time()), level=logging.INFO,
                         format='%(asctime)s %(levelname)s [%(filename)s %(funcName)s %(lineno)d]: %(message)s',
                         datefmt='%m/%d/%Y %I:%M:%S %p',
