@@ -48,10 +48,10 @@ class SigoptSearchEngine(BaseSearchEngine):
                 observation_budget=1000,
                 metrics=[dict(name='DeScore', objective='maximize')],
                 parameters=[
-                    dict(name="LAYER_NUM", type="int", grid=[*self.search_space['layer_num']]),
-                    dict(name="HEAD_NUM", type="int", grid=[*self.search_space['head_num']]),
-                    dict(name="HIDDEN_SIZE", type="int", grid=[*self.search_space['hidden_size']]),
-                    dict(name="INTERMEDIATE_SIZE", type="int", grid=[*self.search_space['ffn_size']]),
+                    dict(name="LAYER_NUM", type="int", bounds=dict(min=self.params.cfg["SEARCH_SPACE"]['LAYER_NUM']['bounds']['min'], max=self.params.cfg["SEARCH_SPACE"]['LAYER_NUM']['bounds']['max'])),
+                    dict(name="HEAD_NUM", type="int", bounds=dict(min=self.params.cfg["SEARCH_SPACE"]['HEAD_NUM']['bounds']['min'], max=self.params.cfg["SEARCH_SPACE"]['HEAD_NUM']['bounds']['max'])),
+                    dict(name="HIDDEN_SIZE", type="int", bounds=dict(min=self.params.cfg["SEARCH_SPACE"]['HIDDEN_SIZE']['bounds']['min']/self.params.cfg["SEARCH_SPACE"]['HIDDEN_SIZE']['bounds']['step'], max=self.params.cfg["SEARCH_SPACE"]['HIDDEN_SIZE']['bounds']['max']/self.params.cfg["SEARCH_SPACE"]['HIDDEN_SIZE']['bounds']['step'])),
+                    dict(name="INTERMEDIATE_SIZE", type="int", bounds=dict(min=self.params.cfg["SEARCH_SPACE"]['INTERMEDIATE_SIZE']['bounds']['min']/self.params.cfg["SEARCH_SPACE"]['INTERMEDIATE_SIZE']['bounds']['step'], max=self.params.cfg["SEARCH_SPACE"]['INTERMEDIATE_SIZE']['bounds']['max']/self.params.cfg["SEARCH_SPACE"]['INTERMEDIATE_SIZE']['bounds']['step'])),
                 ],
             )
             for _ in range(experiment.observation_budget):
@@ -60,8 +60,8 @@ class SigoptSearchEngine(BaseSearchEngine):
                     suggestion.assignments['LAYER_NUM'], 
                     suggestion.assignments['HEAD_NUM'], 
                     64*suggestion.assignments['HEAD_NUM'], 
-                    suggestion.assignments['HIDDEN_SIZE'], 
-                    suggestion.assignments['INTERMEDIATE_SIZE'],
+                    suggestion.assignments['HIDDEN_SIZE']*self.params.cfg["SEARCH_SPACE"]['HIDDEN_SIZE']['bounds']['step'], 
+                    suggestion.assignments['INTERMEDIATE_SIZE']*self.params.cfg["SEARCH_SPACE"]['INTERMEDIATE_SIZE']['bounds']['step'],
                 )
                 if not self.cand_islegal(cand):
                     continue
@@ -72,7 +72,7 @@ class SigoptSearchEngine(BaseSearchEngine):
                     value=nas_score,
                 )
             best_assignments = conn.experiments(experiment.id).best_assignments().fetch().data[0].assignments
-            self.best_struct = (best_assignments['LAYER_NUM'],best_assignments['HEAD_NUM'],64*best_assignments['HEAD_NUM'],best_assignments['HIDDEN_SIZE'],best_assignments['INTERMEDIATE_SIZE'])
+            self.best_struct = (best_assignments['LAYER_NUM'],best_assignments['HEAD_NUM'],64*best_assignments['HEAD_NUM'],best_assignments['HIDDEN_SIZE']*self.params.cfg["SEARCH_SPACE"]['HIDDEN_SIZE']['bounds']['step'],best_assignments['INTERMEDIATE_SIZE']*self.params.cfg["SEARCH_SPACE"]['INTERMEDIATE_SIZE']['bounds']['step'])
         elif self.params.domain == "vit":
             experiment = conn.experiments().create(
                 name= 'vit denas',

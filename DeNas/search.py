@@ -48,6 +48,7 @@ def main(params):
     elif params.domain == 'bert':
         with open(params.supernet_cfg) as f:
             cfg = edict(yaml.safe_load(f))
+            params.cfg = cfg
         config = BertConfig.from_json_file(params.pretrained_bert_config)
         super_net = SuperBertModel.from_scratch(params.pretrained_bert, config)
         search_space = generate_search_space(cfg["SEARCH_SPACE"])
