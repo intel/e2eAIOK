@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 from .lenet import LeNet
-from .resnet import resnet18,resnet50
+from torchvision.models import resnet18,resnet50
 import logging
 
 def createBackbone(backbone_name,**kwargs):

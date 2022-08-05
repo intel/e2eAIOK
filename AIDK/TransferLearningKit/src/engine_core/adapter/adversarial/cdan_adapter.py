@@ -18,6 +18,7 @@ class RandomLayer(nn.Module):
         :param output_dim: output dim
         '''
         super(RandomLayer, self).__init__()
+        self.input_dim_list = input_dim_list
         self.input_num = len(input_dim_list)
         self.output_dim = output_dim
         self.random_matrix = [torch.randn(input_dim_list[i], output_dim)  # random matrix (no trainable)
@@ -74,6 +75,19 @@ class CDANAdapter(AdversarialAdapter):
         if self._enable_entropy_weight:
             logging.info("CDAN enable entropy weight")
 
+    def _forward_input(self,adapter_input,backbone_output):
+        ''' get forward input
+
+        :param adapter_input: original adapter input
+        :param backbone_output: backbone output
+        :return: modified adapter input
+        '''
+        if self._random_layer is None:
+            size = backbone_output.size(1) * adapter_input.size(1)
+            return torch.bmm(backbone_output.unsqueeze(2), adapter_input.unsqueeze(1)).view(-1, size)  # outer product of feature and output
+        else: # random layer for computation efficiency
+            return self._random_layer.forward([adapter_input,backbone_output])          # fixed random layer
+
     def forward(self, x,**kwargs):
         ''' CDAN forward
 
@@ -83,13 +97,22 @@ class CDANAdapter(AdversarialAdapter):
         '''
         adapter_input = x
         backbone_output = kwargs['backbone_output']
+        new_input = self._forward_input(adapter_input,backbone_output)
+        return super(CDANAdapter, self).forward(new_input)
 
-        if self._random_layer is None:
-            op_out = torch.bmm(backbone_output.unsqueeze(2), adapter_input.unsqueeze(1))  # outer product of feature and output
-            return super(CDANAdapter, self).forward(op_out.view(-1, backbone_output.size(1) * adapter_input.size(1)))
-        else:  # random layer for computation efficiency
-            random_out = self._random_layer.forward([adapter_input,backbone_output])  # fixed random layer
-            return super(CDANAdapter, self).forward(random_out.view(-1, random_out.size(1)))
+    def _normalized_entropy_weight(self,backbone_output):
+        ''' get the normalized entropy as weight
+
+        :param backbone_output: backbone raw out, which is not the probability
+        :return: normalized weight
+        '''
+        backbone_prediction = nn.Softmax(dim=1)(backbone_output)
+        entropy = torch.mean(torch.special.entr(backbone_prediction), dim=1)
+        entropy = self.entropy_grl(entropy)
+        entropy = 1.0 + torch.exp(-entropy)  # entropy as weight
+        ########### weight normalization ###########
+        sum_weight = torch.sum(entropy).detach().item()  # simplify gradient
+        return entropy/sum_weight
 
     def loss(self,output_prob,label,**kwargs):
         ''' adapter loss function
@@ -99,15 +122,9 @@ class CDANAdapter(AdversarialAdapter):
         :param kwargs: kwargs, must contain backbone_output
         :return: loss
         '''
-        backbone_output = kwargs['backbone_output']
-        backbone_prediction = nn.Softmax(dim=1)(backbone_output)
-
         if self._enable_entropy_weight:  # quantify the uncertainty of classifier predictions by the entropy, to emphasize those easy-to-transfer exmples
-            entropy = torch.mean(torch.special.entr(backbone_prediction), dim=1)
-            entropy = self.entropy_grl(entropy)
-            entropy = 1.0 + torch.exp(-entropy)               # entropy as weight
-            ########### weight normalization ###########
-            sum_weight = torch.sum(entropy).detach().item()                # simplify gradient
-            return torch.sum(entropy * nn.BCELoss(reduction='none')(output_prob, label))/sum_weight
+            backbone_output = kwargs['backbone_output']
+            normalized_weight = self._normalized_entropy_weight(backbone_output)
+            return torch.sum(normalized_weight * nn.BCELoss(reduction='none')(output_prob, label))
         else:
             return nn.BCELoss()(output_prob, label)

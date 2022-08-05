@@ -20,8 +20,15 @@ class TransferStrategy(Enum):
     OnlyDistillationStrategy = 10    # distillation
     OnlyDomainAdaptionStrategy = 20  # domain adaption
     FinetuneAndDomainAdaptionStrategy = 30 # pretraining-finetuning and domain adaption
-    DistillationAndAdaptionStrategy = 40   # distillation and domain adaption
+    DistillationAndDomainAdaptionStrategy = 40   # distillation and domain adaption
 
+ALL_STRATEGIES = [
+    TransferStrategy.OnlyFinetuneStrategy,
+    TransferStrategy.OnlyDistillationStrategy,
+    TransferStrategy.OnlyDomainAdaptionStrategy,
+    TransferStrategy.FinetuneAndDomainAdaptionStrategy,
+    TransferStrategy.DistillationAndDomainAdaptionStrategy
+]
 
 TransferrableModelOutput = namedtuple('TransferrableModelOutput',
                                       ['backbone_output','distiller_output','adapter_output'])
@@ -62,6 +69,9 @@ class TransferrableModel(nn.Module):
         super(TransferrableModel, self).__init__()
         self.backbone = backbone
         self.__dict__['backbone'] = backbone
+        if 'original' not in self.backbone.__dict__:
+            raise RuntimeError("Backbone must have original attribute.")
+
         self.adapter = adapter
         self.distiller = distiller
         self.transfer_strategy = transfer_strategy
@@ -81,16 +91,15 @@ class TransferrableModel(nn.Module):
         if item == '__dict__': # this is special
             return object.__getattribute__(self, item)
 
-        __dict__ = object.__getattribute__(self, "__dict__")
-        is_eval = "training" in __dict__ and (not __dict__["training"])
+        attr_dict = object.__getattribute__(self, "__dict__")
+        is_eval = "training" in attr_dict and (not attr_dict["training"])
         if is_eval: # eval mode
             if item in ('train',): # from eval to train
                 instance = self
             else:
-                instance = __dict__['backbone'].__dict__['original'] # the original model
+                instance = attr_dict['backbone'].__dict__['original'] # the original model
         else: # train mode
             instance = self
-
         return object.__getattribute__(instance, item)
 
     def __str__(self):
@@ -267,14 +276,17 @@ class TransferrableModel(nn.Module):
         elif self.transfer_strategy == TransferStrategy.OnlyDistillationStrategy:
             x = x if isinstance(x, torch.Tensor) else x[0] # x may be a tuple
             return self._distillation_forward(x)
-        elif self.transfer_strategy == TransferStrategy.OnlyDomainAdaptionStrategy or \
-            self.transfer_strategy == TransferStrategy.FinetuneAndDomainAdaptionStrategy:
+        elif self.transfer_strategy == TransferStrategy.OnlyDomainAdaptionStrategy:
             if isinstance(x,torch.Tensor):
                 raise RuntimeError("TransferrableModel forward for OnlyDomainAdaptionStrategy should be tuple or list, not be %s"%type(x))
             return self._adaption_forward(x[0],x[1])
-        elif self.transfer_strategy == TransferStrategy.DistillationAndAdaptionStrategy:
+        elif self.transfer_strategy == TransferStrategy.FinetuneAndDomainAdaptionStrategy:
+            if isinstance(x,torch.Tensor):
+                raise RuntimeError("TransferrableModel forward for FinetuneAndDomainAdaptionStrategy should be tuple or list, not be %s"%type(x))
+            return self._adaption_forward(x[0],x[1])
+        elif self.transfer_strategy == TransferStrategy.DistillationAndDomainAdaptionStrategy:
             if isinstance(x, torch.Tensor):
-                raise RuntimeError("TransferrableModel forward for DistillationAndAdaptionStrategy should be tuple or list, not be %s" % type(x))
+                raise RuntimeError("TransferrableModel forward for DistillationAndDomainAdaptionStrategy should be tuple or list, not be %s" % type(x))
             return self._distillation_and_adaption_forward(x[0], x[1])
         else:
             raise RuntimeError("Unknown transfer_strategy [%s] " % self.transfer_strategy)
@@ -295,7 +307,7 @@ class TransferrableModel(nn.Module):
             return self._adaption_loss(output[0].backbone_output,output[1].backbone_output,
                                        output[0].adapter_output,output[1].adapter_output,
                                        label[0],label[1])
-        elif self.transfer_strategy == TransferStrategy.DistillationAndAdaptionStrategy:
+        elif self.transfer_strategy == TransferStrategy.DistillationAndDomainAdaptionStrategy:
             return self._distillation_and_adaption_loss(
                                         output[0].backbone_output, output[1].backbone_output,
                                         output[1].distiller_output, output[1].distiller_output,
@@ -325,12 +337,16 @@ class TransferrableModel(nn.Module):
             if self.transfer_strategy in [
                 TransferStrategy.OnlyDomainAdaptionStrategy,
                 TransferStrategy.FinetuneAndDomainAdaptionStrategy,
-                TransferStrategy.DistillationAndAdaptionStrategy]:
+                TransferStrategy.DistillationAndDomainAdaptionStrategy]:
                 if (isinstance(label, torch.Tensor)):
                     raise RuntimeError("label in adaption must be a collection, not %s" % (type(label)))
-                index = 0 if self.enable_target_training_label else 1  # 0 is target domain output, 1 is source domain output
-                metric_value = metric_fn(output[index].backbone_output, label[index])
-                metric_values[metric_name] = metric_value
+
+                # 0 is target domain output, 1 is source domain output
+                metric_value = metric_fn(output[1].backbone_output, label[1])
+                metric_values["%s_src_domain"%metric_name] = metric_value
+                if self.enable_target_training_label:
+                    metric_value = metric_fn(output[0].backbone_output, label[0])
+                    metric_values["%s_target_domain" % metric_name] = metric_value
             else:
                 metric_value = metric_fn(output.backbone_output, label if isinstance(label, torch.Tensor) else label[0])
                 metric_values[metric_name] = metric_value
@@ -343,8 +359,8 @@ def extract_distiller_adapter_features(model,intermediate_layer_name_for_distill
     ''' extract input feature for distiller and adapter
 
     :param model: model
-    :param intermediate_layer_name_for_distiller: the intermediate_layer_name of model for distiller
-    :param intermediate_layer_name_for_adapter: the intermediate_layer_name of model for adapter
+    :param intermediate_layer_name_for_distiller: the intermediate_layer_name of model for distiller. Maybe None or empty
+    :param intermediate_layer_name_for_adapter: the intermediate_layer_name of model for adapter. Maybe None or empty
     :return: modified model
     '''
     gm: torch.fx.GraphModule = torch.fx.symbolic_trace(model)
@@ -365,8 +381,8 @@ def extract_distiller_adapter_features(model,intermediate_layer_name_for_distill
             ))
         return candidate_nodes[0]
     ##############         retrieve the node           ##################
-    distiller_node = find_node(gm.graph,intermediate_layer_name_for_distiller)
-    adapter_node = find_node(gm.graph,intermediate_layer_name_for_adapter)
+    distiller_node = find_node(gm.graph,intermediate_layer_name_for_distiller) if intermediate_layer_name_for_distiller else None
+    adapter_node = find_node(gm.graph,intermediate_layer_name_for_adapter) if intermediate_layer_name_for_adapter else None
     output_node = find_node(gm.graph,"output")
     #############          replace the output          ##################
     with gm.graph.inserting_after(output_node):
@@ -421,6 +437,37 @@ def make_transferrable(model,loss,
     :param enable_target_training_label: During training, whether use target training label or not.
     :return: a TransferrableModel
     '''
+    ######## check input #####
+    if not hasattr(model,"loss"):
+        if loss is None:
+            raise RuntimeError("Need loss for model")
+    if transfer_strategy in [TransferStrategy.OnlyDistillationStrategy,
+                             TransferStrategy.DistillationAndDomainAdaptionStrategy]:
+        if not distiller_feature_size:
+            raise RuntimeError("Need distiller_feature_size for Distillation")
+        if not distiller_feature_layer_name:
+            raise RuntimeError("Need distiller_feature_layer_name for Distillation")
+        if distiller is None:
+            raise RuntimeError("Need distiller for Distillation")
+    if transfer_strategy in [TransferStrategy.OnlyDomainAdaptionStrategy,
+                             TransferStrategy.FinetuneAndDomainAdaptionStrategy,
+                             TransferStrategy.DistillationAndDomainAdaptionStrategy]:
+        if not adapter_feature_size:
+            raise RuntimeError("Need adapter_feature_size for Adaption")
+        if not adapter_feature_layer_name:
+            raise RuntimeError("Need adapter_feature_layer_name for Adaption")
+        if adapter is None:
+            raise RuntimeError("Need adapter for Adaption")
+        if training_dataloader is None:
+            raise RuntimeError("Need training_dataloader for Adaption")
+        if adaption_source_domain_training_dataset is None:
+            raise RuntimeError("Need adaption_source_domain_training_dataset for Adaption")
+    if transfer_strategy == TransferStrategy.OnlyFinetuneStrategy:
+        if not enable_target_training_label:
+            raise RuntimeError("Need enable_target_training_label for OnlyFinetune")
+
+    if type(training_dataloader.dataset) is ComposedDataset:
+        raise RuntimeError("training_dataloader should not be ComposedDataset")
     #################### modify output #######################
     new_model = extract_distiller_adapter_features(model,distiller_feature_layer_name,adapter_feature_layer_name)
     #################### set attribute  #################
@@ -433,10 +480,11 @@ def make_transferrable(model,loss,
     set_attribute("new_model", new_model, "adapter_feature_size", adapter_feature_size)
     set_attribute("new_model", new_model, "original", model) # remember the orignal one
     ###################### set dataset ##################
-    if adaption_source_domain_training_dataset is not None:
+    if transfer_strategy in  [TransferStrategy.OnlyDomainAdaptionStrategy,
+                              TransferStrategy.FinetuneAndDomainAdaptionStrategy,
+                              TransferStrategy.DistillationAndDomainAdaptionStrategy]:
         logging.info("Make composed dataset")
         training_dataloader.__dict__["dataset"] = ComposedDataset(training_dataloader.dataset,adaption_source_domain_training_dataset)
-
     return TransferrableModel(new_model,adapter,distiller,transfer_strategy,enable_target_training_label)
 
 def transferrable(loss,distiller_feature_size,distiller_feature_layer_name,

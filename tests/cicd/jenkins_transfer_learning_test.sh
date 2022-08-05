@@ -13,3 +13,8 @@ ls
 # run main.py
 cd /home/vmagent/app/AIDK/TransferLearningKit/src
 python main.py
+
+# run unittest
+cd /home/vmagent/app/AIDK/TransferLearningKit/test
+pytest -v test_transferrable_model.py
+python run_testting.py

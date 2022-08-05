@@ -26,5 +26,5 @@ class BasicDistiller(nn.Module):
         return self.pretrained_model(x)
 
     def loss(self,teacher_logits,student_logits):
-        return nn.MSELoss(teacher_logits,student_logits)
+        return nn.MSELoss()(teacher_logits,student_logits)
 

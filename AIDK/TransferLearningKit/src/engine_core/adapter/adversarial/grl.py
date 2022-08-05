@@ -48,9 +48,9 @@ class GradientReverseLayer(nn.Module):
 
     def forward(self, input: torch.Tensor) -> torch.Tensor:
         """"""
-        coeff = 2.0*self.coeff_high /(1.0 + np.exp(-self.coeff_alpha * self.iter_num / self.max_iter))- self.coeff_high
+        self.coeff = 2.0*self.coeff_high /(1.0 + np.exp(-self.coeff_alpha * self.iter_num / self.max_iter))- self.coeff_high
 
         if self.enable_step: # increase iter_num
             self.iter_num += 1
-        return GradientReverseOp.apply(input, coeff)
+        return GradientReverseOp.apply(input, self.coeff)
 
