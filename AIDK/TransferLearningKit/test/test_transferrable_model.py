@@ -20,6 +20,7 @@ from dataset.office31 import Office31
 from dataset.composed_dataset import ComposedDataset
 from training.metrics import accuracy
 from utils import tensor_near_equal
+import torch.fx
 
 class TestExtractDistillerAdapterFeatures:
     ''' test extract_distiller_adapter_features
@@ -28,6 +29,10 @@ class TestExtractDistillerAdapterFeatures:
     def setup(self):
         self.model = torchvision.models.resnet18(pretrained=False)
         self.input = torch.randn([16, 3, 224, 224])
+        node_names = [node.name for node in torch.fx.symbolic_trace(self.model).graph.nodes]
+        self.adapter_layer_name = node_names[-3] # [... ,avgpool, flatten, fc, output]
+        print("adapter_layer_name:%s"%self.adapter_layer_name)
+
     def test_all_component_is_none(self):
         ''' test all component is none
 
@@ -52,7 +57,7 @@ class TestExtractDistillerAdapterFeatures:
 
         :return:
         '''
-        modified_model = extract_distiller_adapter_features(self.model, "", "flatten")
+        modified_model = extract_distiller_adapter_features(self.model, "", self.adapter_layer_name)
         assert type(modified_model(self.input)) == tuple
         assert modified_model(self.input)[1][0] is None
         assert type(modified_model(self.input)[1][1]) is torch.Tensor
@@ -62,7 +67,7 @@ class TestExtractDistillerAdapterFeatures:
 
         :return:
         '''
-        modified_model = extract_distiller_adapter_features(self.model, "x", "flatten")
+        modified_model = extract_distiller_adapter_features(self.model, "x", self.adapter_layer_name)
         assert type(modified_model(self.input)) == tuple
         assert tensor_near_equal(self.input, modified_model(self.input)[1][0])  # distiller input = x
         assert type(modified_model(self.input)[1][1]) is torch.Tensor
@@ -72,9 +77,9 @@ class TestExtractDistillerAdapterFeatures:
 
         :return:
         '''
-        for layer_name in ['invalid_name','ABC','Flatten','flatteN']:
+        for layer_name in ['invalid_name','ABC',self.adapter_layer_name.upper()]:
             with pytest.raises(RuntimeError) as e:
-                extract_distiller_adapter_features(self.model, layer_name, "flatten")
+                extract_distiller_adapter_features(self.model, "x", layer_name)
             assert e.value.args[0].startswith("Can not find layer name")
 
 def test_set_attribute():
@@ -103,13 +108,16 @@ class TestMakeTransferrable:
 
         :return:
         '''
+        model = torchvision.models.resnet18(pretrained=True)
+        adapter_layer_name = [node.name for node in torch.fx.symbolic_trace(model).graph.nodes][-3]  # [... ,avgpool, flatten, fc, output]
+        print("adapter_layer_name for resnet18:%s" % adapter_layer_name)
         return {
-            'model': torchvision.models.resnet18(pretrained=True),
+            'model': model,
             'loss': torch.nn.CrossEntropyLoss(),
             'distiller_feature_size': (3, 224, 224),
             'distiller_feature_layer_name': 'x',
             'adapter_feature_size': 1000,
-            'adapter_feature_layer_name': 'flatten',
+            'adapter_feature_layer_name': adapter_layer_name,
             'distiller': BasicDistiller(torchvision.models.resnet18(pretrained=True), True),
             'adapter': DANNAdapter(512, 8, 0.0, 5.0, 1.0, 100),
             'training_dataloader': torch.utils.data.DataLoader(
@@ -235,13 +243,17 @@ class TestTransferrableModel:
 
         :return:
         '''
+        model = torchvision.models.resnet18(pretrained=True)
+        adapter_layer_name = [node.name for node in torch.fx.symbolic_trace(model).graph.nodes][-3]  # [... ,avgpool, flatten, fc, output]
+        print("adapter_layer_name for resnet18:%s" % adapter_layer_name)
+
         return {
             'model': torchvision.models.resnet18(pretrained=True),
             'loss': torch.nn.CrossEntropyLoss(),
             'distiller_feature_size': (3, 224, 224),
             'distiller_feature_layer_name': 'x',
             'adapter_feature_size': 1000,
-            'adapter_feature_layer_name': 'flatten',
+            'adapter_feature_layer_name': adapter_layer_name,
             'distiller': BasicDistiller(torchvision.models.resnet18(pretrained=True), True),
             'adapter': DANNAdapter(512, 8, 0.0, 5.0, 1.0, 100),
             'training_dataloader': torch.utils.data.DataLoader(
