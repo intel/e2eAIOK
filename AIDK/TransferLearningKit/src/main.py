@@ -1,6 +1,5 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import os
 import torch
 from torch.utils.data import Dataset
 from torch.utils.data import random_split
@@ -10,17 +9,16 @@ from dataset.image_list import ImageList
 
 from engine_core.backbone.factory import createBackbone
 from engine_core.adapter.factory import createAdapter
-from engine_core.transferrable_model import make_transferrable,TransferStrategy,TransferrableModel
+from engine_core.transferrable_model import make_transferrable_with_domain_adaption,set_attribute
 from training.train import Trainer
 import torch.optim as optim
-from training.utils import EarlyStopping
+from training.utils import EarlyStopping,initWeights
 from training.metrics import accuracy
 import logging
 from torchvision import transforms
+from functools import partial
 import torch.nn as nn
 if __name__ == '__main__':
-    os.makedirs(os.path.dirname("../log/"), exist_ok=True)
-    os.makedirs(os.path.dirname("../model"),exist_ok=True)
     logging.basicConfig(filename="../log/%s.txt"%int(time.time()), level=logging.INFO,
                         format='%(asctime)s %(levelname)s [%(filename)s %(funcName)s %(lineno)d]: %(message)s',
                         datefmt='%m/%d/%Y %I:%M:%S %p',
@@ -30,7 +28,7 @@ if __name__ == '__main__':
     batch_size = 128
     num_workers = 1
 
-    learning_rate = 0.01
+    learning_rate = 0.002
     weight_decay = 0.0005
     momentum = 0.9
 
@@ -75,6 +73,9 @@ if __name__ == '__main__':
     early_stopping = EarlyStopping(tolerance_epoch=3, delta=0.0001, is_max=True)
     model = createBackbone('LeNet',num_classes=num_classes)
     loss = nn.CrossEntropyLoss()
+    set_attribute("model", model, "loss", loss)
+    set_attribute("model", model, "init_weight", partial(initWeights,model))
+
     epoch_steps = len(train_dataset)//batch_size
     logging.info("epoch_steps:%s"%epoch_steps)
     # adapter = None # createAdapter('DANN',input_size=model.adapter_size,hidden_size=500,dropout=0.0,
@@ -85,25 +86,19 @@ if __name__ == '__main__':
     logging.info('early_stopping :%s' % early_stopping)
     logging.info('backbone:%s' % model)
 
-    distiller_feature_size = None
-    distiller_feature_layer_name = 'x'
-    distiller = None
-
     adapter_feature_size = 500
     adapter_feature_layer_name = 'fc_layers_2'
     adapter = createAdapter('CDAN', input_size=adapter_feature_size * num_classes, hidden_size=adapter_feature_size,
                             dropout=0.0, grl_coeff_alpha=5.0, grl_coeff_high=1.0, max_iter=epoch_steps,
                             backbone_output_size=num_classes, enable_random_layer=0, enable_entropy_weight=0)
 
-    model = make_transferrable(model,loss,distiller_feature_size,distiller_feature_layer_name,
-                               adapter_feature_size, adapter_feature_layer_name,
-                               distiller,adapter,train_loader,ImageList("../datasets/USPS_vs_MNIST/USPS",
+    model = make_transferrable_with_domain_adaption(model,loss,initWeights,
+                               adapter, adapter_feature_size, adapter_feature_layer_name,
+                               train_loader,ImageList("../datasets/USPS_vs_MNIST/USPS",
                                     open("../datasets/USPS_vs_MNIST/USPS/usps_train.txt").readlines(),
                                      transform,'L'),
-                               TransferStrategy.OnlyDomainAdaptionStrategy,
                                enable_target_training_label=False)
     logging.info('adapter:%s' % adapter)
-    logging.info('distiller:%s' % distiller)
     logging.info('transferrable model:%s' % model)
     optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()),
                           lr=learning_rate, weight_decay=weight_decay, momentum=momentum)

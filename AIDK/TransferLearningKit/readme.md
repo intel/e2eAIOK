@@ -2,45 +2,107 @@
 
 ## 1. Usage
 
-The transfer learning kit is easily integrated following the follow steps without any modification on original model:
+The transfer learning kit is easily integrated following the follow steps without any modification on original model, for example:
+```commandline
+model = ... # orignal model
+model = make_transferrable_with_finetune(model,loss,init_weight,finetunner)
+```
+The new generated model act the same role as original model, and both can replace each other.
 
-1. We need to wrap the original model with a distiller and an adapter by `make_transferrable()`:
-    ```
-    model = ... # orignal model
-    model = make_transferrable(model,loss,
-                       distiller_feature_size,distiller_feature_layer_name,
-                       adapter_feature_size,adapter_feature_layer_name,
-                       distiller,adapter,
-                       training_dataloader,adaption_source_domain_training_dataset,
-                       transfer_strategy,enable_target_training_label)
-    # model act as the original one
-    ```
-    - param model: the backbone model. If model does not have loss method, then use loss argument.
-    - param loss : loss function for model,signature: loss(output_logit, label). If model has loss attribute, then loss could be none.
-    - param distiller_feature_size: input feature size of distiller. If no distillation, then could be none.
-    - param distiller_feature_layer_name: specify the layer output, which is from model, as input feature of distiller. If no distillation, then could be none.
-    - param adapter_feature_size: input feature size of adapter. If no adaption, then could be none.
-    - param adapter_feature_layer_name: specify the layer output, which is from model, as input feature of adapter. If no adaption, then could be none.
-    - param distiller: a distiller. If no distillation, then could be none.
-    - param adapter: an adapter. If no adaption, then could be none.
-    - param training_dataloader: training dataloader.
-    - param adaption_source_domain_training_dataset: source domain training dataset for adaption. If no adaption, then could be none.
-    - param transfer_strategy: transfer strategy.
-    - param enable_target_training_label: During training, whether use target training label or not.
-    - return: a TransferrableModel
-   
-    And the strategy could be:
-    ```
-    OnlyFinetuneStrategy               : pretraining-finetuning, and the pretrained model is the same as the target model
-    OnlyDistillationStrategy           : distillation
-    OnlyDomainAdaptionStrategy         : domain adaption
-    FinetuneAndDomainAdaptionStrategy  : pretraining-finetuning and domain adaption
-    DistillationAndAdaptionStrategy    : distillation and domain adaption
-    ```
+There are many APIs for many transfer learning strategies:
+
+1. `make_transferrable_with_finetune`：transfer knowledge from a pretrained model to the same type model with pretraining-finetuning strategy.
+   ```
+   make_transferrable_with_finetune(model,loss,init_weight,finetunner)
+   ```
+   - model: the backbone model. If model does not have loss method, then use loss argument.
+   - loss: loss function for model,signature: loss(output_logit, label). If model has loss attribute, then loss could be none.
+   - init_weight: init_weight function for model to weight initialization, signature: init_weight(model). If model has init_weight attribute, then init_weight could be none.
+   - finetunner: a finetunner. `finetunner.finetune_network(target_network)` is used to finetune a target_network. The available Finetunner could be found in `engine_core/finetunner`.
+
+2. `make_transferrable_with_knowledge_distillation`: transfer knowledge from a pretrained teacher model to a student model with distillation strategy.
+   ```
+   make_transferrable_with_knowledge_distillation(model,loss,init_weight,distiller,distiller_feature_size,
+                       distiller_feature_layer_name,enable_target_training_label)
+   ```
+   - model: the backbone model. If model does not have loss method, then use loss argument.
+   - loss: loss function for model,signature: loss(output_logit, label). If model has loss attribute, then loss could be none.
+   - init_weight: init_weight function for model, signature: init_weight(model). If model has init_weight attribute, then init_weight could be none.
+   - distiller: a distiller. It is a DNN for distillation. The available Distiller could be found in `engine/distiller`.
+   - distiller_feature_size: input feature size of distiller.
+   - distiller_feature_layer_name: specify the layer output, which is from model, as input feature of distiller.
+   - enable_target_training_label: During training, whether use target training label or not.
+
+3. `make_transferrable_with_domain_adaption`: transfer knowledge from similar domain data (called source domain data) to target domain data with domain adaption strategy.
+   ```
+   make_transferrable_with_domain_adaption(model,loss,init_weight,adapter,
+                                            adapter_feature_size, adapter_feature_layer_name,
+                                            training_dataloader, adaption_source_domain_training_dataset,
+                                            enable_target_training_label)
+   ```  
+   - model: the backbone model. If model does not have loss method, then use loss argument.
+   - loss: loss function for model,signature: loss(output_logit, label). If model has loss attribute, then loss could be none.
+   - init_weight: init_weight function for model, signature: init_weight(model). If model has init_weight attribute, then init_weight could be none.
+   - adapter: an adapter. It is a DNN for domain adapter. The available Distiller could be found in `engine/adapter`
+   - adapter_feature_size: input feature size of adapter.
+   - adapter_feature_layer_name: specify the layer output, which is from model, as input feature of adapter.
+   - training_dataloader: training dataloader.
+   - adaption_source_domain_training_dataset: source domain training dataset for adaption. 
+   - enable_target_training_label:  During training, whether use target training label or not.
     
-    The new generated model act the same role as original model, and both can replace each other.
+4. `make_transferrable_with_finetune_and_domain_adaption`: the combination of finetune and domain adaption.
+   ```
+   make_transferrable_with_finetune_and_domain_adaption(model,loss,init_weight,finetunner,adapter,
+                                            adapter_feature_size, adapter_feature_layer_name,
+                                            training_dataloader, adaption_source_domain_training_dataset,
+                                            enable_target_training_label
+   ```
 
-2. If we need to logging the training loss or training metrics, we suggest to distinguish the new model and the original model, because maybe we want to log more details about transfer learning:
+5. `make_transferrable_with_knowledge_distillation_and_domain_adaption`: the combination of distillation and domain adaption.
+   ```
+   make_transferrable_with_knowledge_distillation_and_domain_adaption(model,loss,init_weight,distiller,adapter,
+                                            distiller_feature_size,distiller_feature_layer_name,
+                                            adapter_feature_size, adapter_feature_layer_name,
+                                            training_dataloader, adaption_source_domain_training_dataset,
+                                            enable_target_training_label)
+   ```
+
+We provide decorator to decorate Model class to be transferrable, for exampe:
+```
+@transferrable_with_finetune(loss,init_weight,finetunner)
+class ABCModel(torch.nn.Module):
+   def __init__(self):
+      # Don't use 'super(ABCModel, cls).__new__(cls)', 
+      # because it raises TypeError: super() argument 1 must be type, not function
+      super().__init__()
+      self.m = torchvision.models.resnet18(pretrained=True)
+   def forward(self,x):
+      return self.m(x)
+
+model = ABCModel() # model will be transferrable
+```
+There are many decorators corresponding to many transfer learning strategies:
+```
+transferrable_with_finetune(loss,init_weight,finetunner)
+transferrable_with_knowledge_distillation(loss,init_weight,distiller,
+                                                   distiller_feature_size,distiller_feature_layer_name,
+                                                   enable_target_training_label)
+transferrable_with_domain_adaption(loss,init_weight,adapter,
+                                            adapter_feature_size, adapter_feature_layer_name,
+                                            training_dataloader, adaption_source_domain_training_dataset,
+                                            enable_target_training_label)
+transferrable_with_finetune_and_domain_adaption(loss,init_weight,finetunner,adapter,
+                                            adapter_feature_size, adapter_feature_layer_name,
+                                            training_dataloader, adaption_source_domain_training_dataset,
+                                            enable_target_training_label)
+transferrable_with_knowledge_distillation_and_domain_adaption(loss,init_weight,distiller,adapter,
+                                            distiller_feature_size,distiller_feature_layer_name,
+                                            adapter_feature_size, adapter_feature_layer_name,
+                                            training_dataloader, adaption_source_domain_training_dataset,
+                                            enable_target_training_label)
+```
+
+**Notes**: If we need to logging the training loss or training metrics, we suggest to distinguish the new model and the original model, because maybe we want to log more details about transfer learning:
   ```
   for (cur_step,(data, label)) in enumerate(train_dataloader):
      ...
@@ -59,6 +121,7 @@ src/
            composed_dataset.py ------------------------------- compose multi domain datasets
            image_list.py ------------------------------------- dataset for MNIST
            office31.py --------------------------------------- dataset for office31
+           utils.py ------------------------------------------ dataset helper function
    engine_core/ ---------------------------------------------- transfer learning engine
               adapter/ --------------------------------------- domain adapters
                      adversarial/ ---------------------------- adversarial domain adapters
@@ -70,23 +133,26 @@ src/
               backbone/ -------------------------------------- backbone networks
                       factory.py ----------------------------- backbone factory
                       lenet.py ------------------------------- built-in lenet network
-                      resnet.py ------------------------------ built-in resnet network
               distiller/ ------------------------------------- knowledge distillers
                       basic_distiller.py --------------------- basic knowledge distiller
+              finetunner/ ------------------------------------ finetunners
+                        basic_distiller.py ------------------- basic distiller
               transfeerable_model.py ------------------------- the core interface to make a model transferrable
    training/ ------------------------------------------------- training helper
               metrics.py ------------------------------------- evaluation metrics
               train.py --------------------------------------- Trainer and Evaluator for training and evaluating
               utils.py --------------------------------------- helper function for training
-   main.py --------------------------------------------------- the main file                         
+   main.py --------------------------------------------------- the main file  
+test/ -------------------------------------------------------- pytest unit test                      
 ```
 
 ## 3. Project Components
 
 1. **Backbone Factory** : creates a backbone net according to predefined backbone or user-provided backbone to make basic prediction 
-2. **Domain Adaptor** : creates a domain adaption net (called “adaptor”) to transfer knowledge from source domain to target domain 
-3. **Knowledge Distiller** : creates a knowledge distillation net (called “distiller”) to transfer knowledge from pretrained model to target model 
-4. **Transferrable Model** : creates a customized and transferrable model which is a wrapper of backbone, according to the backbone, adaptor and distiller 
+2. **Task Finetunner**: creates a pretrained finetuning schema (called “finetunner”) to transfer knowledge from pretrained model to target model
+3. **Domain Adaptor** : creates a domain adaption net (called “adaptor”) to transfer knowledge from source domain to target domain 
+4. **Knowledge Distiller** : creates a knowledge distillation net (called “distiller”) to transfer knowledge from pretrained model to target model 
+5. **Transferrable Model** : creates a customized and transferrable model which is a wrapper of backbone, according to the backbone, adaptor and distiller 
 
 <img src="./doc/imgs/components.png" width="700px" />
 

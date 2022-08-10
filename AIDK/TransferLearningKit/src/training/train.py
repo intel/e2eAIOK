@@ -4,7 +4,6 @@
 # @Time   : 7/28/2022 8:39 AM
 
 import logging
-from .utils import initWeights
 import torch
 import datetime
 import torch.nn
@@ -143,7 +142,7 @@ class Trainer:
                 early_stop_metric,",".join(validate_metric_fn_map.keys())
             ))
 
-        self._model.apply(initWeights)
+        self._model.init_weight()
 
     def __str__(self):
         _str = "Trainer: model:%s\n"%self._model
