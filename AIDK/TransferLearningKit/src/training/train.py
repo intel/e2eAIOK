@@ -80,7 +80,7 @@ def evaluateEpoch(model, metric_fn_map, dataloader,tensorboard_writer,cur_epoch,
     :param cur_epoch : current epoch
     :param epoch_steps: steps per step
     :param test_flag : whether is test or validation
-    :return: (loss_value, metric_value_maps)
+    :return: metric_value_maps
     '''
     datasetName = 'Test' if test_flag else 'Validation'
 
@@ -190,7 +190,6 @@ class Evaluator:
     def __init__(self,metric_fn_map,tensorboard_writer):
         ''' Init method
 
-        :param loss_fn: loss function for the model
         :param metric_fn_map: metric function map, which map metric name to metric function
         :param tensorboard_writer: tensorboard writer
         '''
@@ -202,7 +201,7 @@ class Evaluator:
 
         :param model: the evaluated model
         :param dataloader: the dataloader of test dataset
-        :return: (loss_value, metric_value_maps)
+        :return: metric_value_maps
         '''
         return evaluateEpoch(model, self._metric_fn_map, dataloader,self._tensorboard_writer,
                              cur_epoch=0,epoch_steps=0,test_flag=True)

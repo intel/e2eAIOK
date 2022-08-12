@@ -17,7 +17,7 @@ class BasicFinetunner:
     # target: node target, i.e. layer1.0.conv1
     # hierarchy: an integer to indicate layer hierarchy, input hierarchy is 0, and output hierarchy is the biggest
 
-    def __init__(self,pretrained_network,top_finetuned_layer,is_frozen=True, output_based_hierarchy = False):
+    def __init__(self,pretrained_network,top_finetuned_layer,is_frozen=True):
         ''' init method
 
         :param pretrained_network: the pretrained_network
@@ -27,12 +27,9 @@ class BasicFinetunner:
                                               or hierarchy number  (-1 means output.hierarchy)
                                     If it is None or "" or 0, then all layers will be finetuned.
         :param is_frozen: whether frozen the finetunned bottom layers
-        :param output_based_hierarchy: output based hierarchy or input based hierarchy
         '''
         self._pretrained_network = pretrained_network
-        self._top_finetuned_layer = top_finetuned_layer
         self.is_frozen = is_frozen
-        self._output_based_hierarchy = output_based_hierarchy
         self._buid_node_graph()
         self.finetuned_state_keys = self._get_finetuned_state_keys(top_finetuned_layer)
         self.pretrained_state_dict = {k: v for (k, v)
@@ -78,7 +75,7 @@ class BasicFinetunner:
 
         queue = [node_name]
         result = set()
-        if node_name not in self.node_successors:
+        if node_name not in self.node_precursors:
             return result
 
         while queue:
@@ -102,10 +99,7 @@ class BasicFinetunner:
 
         :return:
         '''
-        if self._output_based_hierarchy: # from end to start , or from start to end
-            queue = [(self._output_node.name, 0)]  # from output
-        else:
-            queue = [(self._input_node.name, 0)]  # from input
+        queue = [(self._input_node.name, 0)]  # from input
         already_names = set()
         while queue:
             (name, hierarchy) = queue.pop()  # remove last
@@ -114,21 +108,12 @@ class BasicFinetunner:
             self._node_map[name] = new_node
             already_names.add(name)
             #################### next one #########################
-            next_names = self.node_precursors[name] if self._output_based_hierarchy else self.node_successors[name]     # use precursor or successor for next item
-            delta_hierarchy = -1 if self._output_based_hierarchy else +1
+            next_names = self.node_successors[name]     # successor for next item
             for next_name in sorted(next_names): # sorted to make deterministic
                 if next_name in already_names:  # every layer has one hierarchy
                     logging.info("[%s] has already exist, use the exist one")
                 else:
-                    queue.insert(0, (next_name, hierarchy + delta_hierarchy))
-        ############################ adjust ###########################
-        if self._output_based_hierarchy:
-            input_hierarchy = self._node_map[self._input_node.name].hierarchy
-            adjust_value = 0 - input_hierarchy  # make input to be hierarchy 0
-            for name in self._node_map:
-                old_node = self._node_map[name]
-                self._node_map[name] = self._set_node_hierarchy(old_node,old_node.hierarchy + adjust_value)
-                logging.info("layer hierarchy: name = [%s],  hierarchy = %s" % (old_node.target, old_node.hierarchy + adjust_value))
+                    queue.insert(0, (next_name, hierarchy + 1))
 
     def _buid_node_graph(self):
         ''' construct node graph
@@ -201,7 +186,7 @@ class BasicFinetunner:
                     finetunned_module_names= [self._node_map[item].target for item in self._get_precursor_of_node(target_node.name)] + [target_node.target]
             elif type(top_finetuned_layer) is int:
                 if top_finetuned_layer < 0:
-                    top_finetuned_layer = top_finetuned_layer + self._node_map[self._output_node.name].hierarchy
+                    top_finetuned_layer = top_finetuned_layer + (1 + self._node_map[self._output_node.name].hierarchy)
                 finetunned_module_names = [node.target for (name,node) in self._node_map.items() if node.hierarchy <= top_finetuned_layer]
             else:
                 raise RuntimeError("top_finetuned_layer type must be string or int, but got: %s"%type(top_finetuned_layer))

@@ -54,33 +54,13 @@ class TestBasicFinetunner:
         assert [item for item in sorted(precursor_map['conv1'])] == ['x']
         assert [item for item in sorted(precursor_map['bn1'])] == ['conv1']
         assert [item for item in sorted(precursor_map['output'])] == ['fc']
-    def test_assign_hierarchy_with_output_based(self):
-        ''' test _assign_hierarchy with output based
+
+    def test_assign_hierarchy(self):
+        ''' test _assign_hierarchy
 
         :return:
         '''
-        finetunner = BasicFinetunner(self.pretrained_model,-1,True,True)
-        node_map = finetunner._node_map
-        for (k,v) in node_map.items():
-            print(k,v.hierarchy)
-        assert node_map['x'].hierarchy == 0
-        assert node_map['conv1'].hierarchy == 1
-        assert node_map['bn1'].hierarchy == 2
-        assert node_map['relu'].hierarchy == 3
-        assert node_map['maxpool'].hierarchy == 4
-        assert node_map['layer1_0_conv1'].hierarchy == 0
-        assert node_map['layer1_0_bn1'].hierarchy == 1
-        assert node_map['layer1_0_relu'].hierarchy == 2
-        assert node_map['layer1_0_conv2'].hierarchy == 3
-        assert node_map['layer1_0_bn2'].hierarchy == 4
-        assert node_map['avgpool'].hierarchy == 27
-
-    def test_assign_hierarchy_with_input_based(self):
-        ''' test _assign_hierarchy with input based
-
-        :return:
-        '''
-        finetunner = BasicFinetunner(self.pretrained_model, -1,True,False)
+        finetunner = BasicFinetunner(self.pretrained_model, -1,True)
         node_map = finetunner._node_map
         assert node_map['x'].hierarchy == 0
         assert node_map['conv1'].hierarchy == 1
@@ -100,8 +80,7 @@ class TestBasicFinetunner:
         '''
         self.test_get_successors()
         self.test_get_precursors()
-        self.test_assign_hierarchy_with_output_based()
-        self.test_assign_hierarchy_with_input_based()
+        self.test_assign_hierarchy()
     def test_is_same_structure(self):
         ''' test _is_same_structure
 
@@ -186,7 +165,7 @@ class TestBasicFinetunner:
         for is_frozen in [False, True]:
             for top_finetuned_layer in ["conv1","bn1","avgpool","fc",0,1,2,-1,-2]:
                 target_network = torchvision.models.resnet18(pretrained=False)
-                finetunner = BasicFinetunner(torchvision.models.resnet18(pretrained=True),top_finetuned_layer,is_frozen,False)
+                finetunner = BasicFinetunner(torchvision.models.resnet18(pretrained=True),top_finetuned_layer,is_frozen)
                 ############# save old dict ##########
                 old_state_dict = deepcopy(target_network.state_dict())
                 ############ finetune ################

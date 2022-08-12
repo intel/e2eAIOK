@@ -67,7 +67,7 @@ There are many APIs for many transfer learning strategies:
                                             enable_target_training_label)
    ```
 
-We provide decorator to decorate Model class to be transferrable, for exampe:
+We provide decorator to decorate Model class to be transferrable, for example:
 ```
 @transferrable_with_finetune(loss,init_weight,finetunner)
 class ABCModel(torch.nn.Module):

@@ -122,7 +122,7 @@ class TestMakeTransferrable:
             'distiller_feature_layer_name': 'x',
             'adapter_feature_size': 1000,
             'adapter_feature_layer_name': adapter_layer_name,
-            'finetunner':BasicFinetunner(torchvision.models.resnet18(pretrained=True),-1,True,False),
+            'finetunner':BasicFinetunner(torchvision.models.resnet18(pretrained=True),-1,True),
             'distiller': BasicDistiller(torchvision.models.resnet18(pretrained=True), True),
             'adapter': DANNAdapter(512, 8, 0.0, 5.0, 1.0, 100),
             'training_dataloader': torch.utils.data.DataLoader(
@@ -409,7 +409,7 @@ class TestTransferrableModel:
             'distiller_feature_layer_name': 'x',
             'adapter_feature_size': 1000,
             'adapter_feature_layer_name': adapter_layer_name,
-            'finetunner': BasicFinetunner(torchvision.models.resnet18(pretrained=True), -1, True, False),
+            'finetunner': BasicFinetunner(torchvision.models.resnet18(pretrained=True), -1, True),
             'distiller': BasicDistiller(torchvision.models.resnet18(pretrained=True), True),
             'adapter': DANNAdapter(512, 8, 0.0, 5.0, 1.0, 100),
             'training_dataloader': torch.utils.data.DataLoader(
@@ -435,7 +435,7 @@ class TestTransferrableModel:
         '''
         model = torchvision.models.resnet18(pretrained=False)
         model.__dict__["original"] = torchvision.models.resnet18(pretrained=False)
-        finetunner = BasicFinetunner( torchvision.models.resnet18(pretrained=True),-1,True,False)
+        finetunner = BasicFinetunner( torchvision.models.resnet18(pretrained=True),-1,True)
         adapter = DANNAdapter(512, 8, 0.0, 5.0, 1.0, 100)
         distiller = BasicDistiller(torchvision.models.resnet18(pretrained=True), True)
 
@@ -454,7 +454,7 @@ class TestTransferrableModel:
         :return:
         '''
         model = torchvision.models.resnet18(pretrained=False)
-        finetunner = BasicFinetunner(torchvision.models.resnet18(pretrained=True),-1,True,False)
+        finetunner = BasicFinetunner(torchvision.models.resnet18(pretrained=True),-1,True)
         adapter = DANNAdapter(512, 8, 0.0, 5.0, 1.0, 100)
         distiller = BasicDistiller(torchvision.models.resnet18(pretrained=True), True)
         with pytest.raises(RuntimeError) as e:
