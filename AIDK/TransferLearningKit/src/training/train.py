@@ -9,8 +9,20 @@ import datetime
 import torch.nn
 from engine_core.transferrable_model import TransferrableModel
 from dataset.composed_dataset import ComposedDataset
+from torch.nn.parallel import DistributedDataParallel
 
-def add_tensorboard_metric(tensorboard_writer,dataset_name,metric_values,cur_epoch=0,cur_step=0,epoch_steps=0):
+def unwrap_DDP(model):
+    ''' unwarp a DDP model
+
+    :param model: a model
+    :return: the unwrapped model
+    '''
+    if type(model) is DistributedDataParallel:
+        return model.module
+    else:
+        return model
+
+def add_tensorboard_metric(tensorboard_writer,dataset_name,metric_values,cur_epoch=0,cur_step=0,epoch_steps=0,rank=-1):
     ''' add metric to tensorboard
 
     :param tensorboard_writer: a tensorboard writer
@@ -19,6 +31,7 @@ def add_tensorboard_metric(tensorboard_writer,dataset_name,metric_values,cur_epo
     :param cur_epoch: current epoch
     :param cur_step: current step
     :param epoch_steps : step num of one epoch
+    :param rank: rank for distributed training (-1 for non-distributed training)
     :return:
     '''
     if dataset_name not in ['Train','Validation','Test']:
@@ -30,13 +43,15 @@ def add_tensorboard_metric(tensorboard_writer,dataset_name,metric_values,cur_epo
 
     metric_str = ";\t".join("{} = {:.4f}".format(metric_name, metric_value) for (metric_name, metric_value) in metric_values.items())
     if dataset_name == 'Train':
-        out_str = '[{}] epoch({}) step ({}/{}) {}: {}'.format(dt,cur_epoch,cur_step,epoch_steps,dataset_name,metric_str)
+        out_str = '[{}] {} epoch({}) step ({}/{}) {}: {}'.format(dt, "rank(%s)"%rank if rank >=0 else "",
+                                                                 cur_epoch,cur_step,epoch_steps,dataset_name,metric_str)
     else:
-        out_str = '[{}] epoch({}) {}: {}'.format(dt, cur_epoch,dataset_name, metric_str)
+        out_str = '[{}] {} epoch({}) {}: {}'.format(dt,"rank(%s)"%rank if rank >=0 else "",
+                                                    cur_epoch,dataset_name, metric_str)
     print(out_str)
     logging.info(out_str)
-def trainEpoch(model, metric_fn_map, optimizer, train_dataloader, epoch_steps,
-               tensorboard_writer,cur_epoch,logging_interval):
+def trainEpoch(model, metric_fn_map, optimizer, train_dataloader,
+               tensorboard_writer,cur_epoch,epoch_steps,logging_interval,rank):
     ''' train one epoch
 
     :param model: the training model
@@ -47,6 +62,7 @@ def trainEpoch(model, metric_fn_map, optimizer, train_dataloader, epoch_steps,
     :param tensorboard_writer: tensorboard writer
     :param cur_epoch: current epoch
     :param logging_interval: logging interval durring training
+    :param rank: rank for distributed training (-1 for non-distributed training)
     :return:
     '''
     model.train()  # set training flag
@@ -55,22 +71,24 @@ def trainEpoch(model, metric_fn_map, optimizer, train_dataloader, epoch_steps,
         # data, label = data.cuda(), label.cuda()
         optimizer.zero_grad()
         output = model(data)
-        loss_value = model.loss(output, label)
+        loss_value = unwrap_DDP(model).loss(output, label)
         loss_value.backward()
 
         if cur_step % logging_interval == 0:
-            if isinstance(model,TransferrableModel):
-                metric_values = model.get_training_metrics(output,label,loss_value,metric_fn_map)
+            unwrapped_model = unwrap_DDP(model)
+            if isinstance(unwrapped_model,TransferrableModel): # for DDP
+                metric_values = unwrapped_model.get_training_metrics(output, label, loss_value, metric_fn_map)
             else:
                 metric_values = {"loss": loss_value}
                 for (metric_name, metric_fn) in sorted(metric_fn_map.items()):
                     metric_value = metric_fn(output, label)
                     metric_values[metric_name] = metric_value
-            add_tensorboard_metric(tensorboard_writer, 'Train', metric_values, cur_epoch,cur_step,epoch_steps)
+            add_tensorboard_metric(tensorboard_writer, 'Train', metric_values, cur_epoch,cur_step,epoch_steps,rank)
 
         optimizer.step()
 
-def evaluateEpoch(model, metric_fn_map, dataloader,tensorboard_writer,cur_epoch,epoch_steps,test_flag):
+def evaluateEpoch(model, metric_fn_map, dataloader,tensorboard_writer,
+                  cur_epoch,epoch_steps,test_flag,rank):
     ''' evaluate epoch
 
     :param model: the evaluated model
@@ -80,6 +98,7 @@ def evaluateEpoch(model, metric_fn_map, dataloader,tensorboard_writer,cur_epoch,
     :param cur_epoch : current epoch
     :param epoch_steps: steps per step
     :param test_flag : whether is test or validation
+    :param rank: rank for distributed training (-1 for non-distributed training)
     :return: metric_value_maps
     '''
     datasetName = 'Test' if test_flag else 'Validation'
@@ -107,16 +126,19 @@ def evaluateEpoch(model, metric_fn_map, dataloader,tensorboard_writer,cur_epoch,
         metric_values['loss'] = loss_value
         for metric_name in sorted(metric_values.keys()):
             metric_values[metric_name] /= sample_num
-        add_tensorboard_metric(tensorboard_writer,datasetName,metric_values,cur_epoch,cur_step=0,epoch_steps=epoch_steps)
+        add_tensorboard_metric(tensorboard_writer,datasetName,metric_values,cur_epoch,cur_step=0,
+                               epoch_steps=epoch_steps,rank=rank)
 
         return metric_values
+
+
 
 class Trainer:
     ''' Trainer
 
     '''
     def __init__(self, model, optimizer, early_stopping, validate_metric_fn_map,early_stop_metric,training_epochs,
-                 tensorboard_writer,logging_interval):
+                 tensorboard_writer,logging_interval,rank=-1):
         ''' Init method
 
         :param model: the trained model
@@ -127,6 +149,7 @@ class Trainer:
         :param training_epochs: max training epochs
         :param tensorboard_writer: tensorboard writer
         :param logging_interval: training logging interval
+        :param rank: rank for distributed training (-1 for non-distributed training)
         '''
         self._model = model
         self._optimizer = optimizer
@@ -136,13 +159,13 @@ class Trainer:
         self._training_epochs = training_epochs
         self._tensorboard_writer = tensorboard_writer
         self._logging_interval = logging_interval
+        self._rank = rank
 
         if early_stop_metric not in validate_metric_fn_map:
             raise RuntimeError("early stop metric [%s] not in validate_metric_fn_map keys [%s]"%(
                 early_stop_metric,",".join(validate_metric_fn_map.keys())
             ))
-
-        self._model.init_weight()
+        unwrap_DDP(self._model).init_weight()
 
     def __str__(self):
         _str = "Trainer: model:%s\n"%self._model
@@ -153,6 +176,7 @@ class Trainer:
         _str += "\t_training_epochs:%s\n" % self._training_epochs
         _str += "\ttensorboard_writer:%s\n" % self._tensorboard_writer
         _str += "\tlogging_interval:%s\n" % self._logging_interval
+        _str += "\trank:%s\n" % self._rank
         return _str
 
     def train(self, train_dataloader,epoch_steps,valid_dataloader,model_path):
@@ -167,10 +191,10 @@ class Trainer:
 
         for epoch in range(1, self._training_epochs + 1):
             trainEpoch(self._model, self._validate_metric_fn_map, self._optimizer, train_dataloader,
-                       epoch_steps, self._tensorboard_writer,epoch,self._logging_interval)
-            metrics_map = evaluateEpoch(self._model, self._validate_metric_fn_map, valid_dataloader,
+                       self._tensorboard_writer,epoch,epoch_steps,self._logging_interval,self._rank)
+            metrics_map = evaluateEpoch(unwrap_DDP(self._model), self._validate_metric_fn_map, valid_dataloader,
                                         self._tensorboard_writer,cur_epoch=epoch,
-                                        epoch_steps=epoch_steps,test_flag=False)
+                                        epoch_steps=epoch_steps,test_flag=False,rank=self._rank)
             self._early_stopping(metrics_map[self._early_stop_metric], self._model.state_dict())
             self._tensorboard_writer.flush()
             if self._early_stopping.early_stop:
@@ -181,7 +205,7 @@ class Trainer:
         if self._early_stopping.optimal_model is not None:
             self._model.load_state_dict(self._early_stopping.optimal_model)
 
-        torch.save(self._model.state_dict(), model_path)
+        torch.save(unwrap_DDP(self._model).state_dict(), model_path)
 
 class Evaluator:
     ''' The Evaluator
@@ -204,7 +228,7 @@ class Evaluator:
         :return: metric_value_maps
         '''
         return evaluateEpoch(model, self._metric_fn_map, dataloader,self._tensorboard_writer,
-                             cur_epoch=0,epoch_steps=0,test_flag=True)
+                             cur_epoch=0,epoch_steps=0,test_flag=True,rank=-1)
     def __str__(self):
         _str = "Trainer: metric_fn_map:%s\n" % self._metric_fn_map
         _str += "\ttensorboard_writer:%s\n" % self._tensorboard_writer

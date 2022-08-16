@@ -1,19 +1,13 @@
 #!/bin/bash
 
-# set vars
-# MODEL_NAME="TLK"
-# DATA_PATH="/home/vmagent/app/AIDK/TransferLearningKit/datasets"
-
 # init conda env
 eval "$('/opt/intel/oneapi/intelpython/latest/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
 # activate conda
 conda activate pytorch-1.10.0
-echo `pwd`
-ls
 # run main.py
 cd /home/vmagent/app/AIDK/TransferLearningKit/src
-python main.py
-
+python main.py -s1 -r0 -t1
+python main.py -s1 -r0 -t0
 # run unittest
 cd /home/vmagent/app/AIDK/TransferLearningKit/test
 pytest -v test_transferrable_model.py # pytest for single test file
