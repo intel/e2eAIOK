@@ -8,6 +8,7 @@ from scores.compute_de_score import do_compute_nas_score
 from cv.utils.cnn import cnn_is_legal, cnn_populate_random_func
 from cv.utils.vit import vit_is_legal, vit_populate_random_func
 from nlp.utils import LatencyPredictor, bert_is_legal, bert_populate_random_func, get_subconfig
+from asr.utils.asr_nas import asr_is_legal, asr_populate_random_func
 
 class RandomSearchEngine(BaseSearchEngine):
     
@@ -26,6 +27,8 @@ class RandomSearchEngine(BaseSearchEngine):
             return vit_populate_random_func(self.search_space)
         elif self.params.domain == "bert":
             return bert_populate_random_func(self.search_space)
+        elif self.params.domain == "asr":
+            return asr_populate_random_func(self.search_space)
 
     '''
     Keep top candidates of population_num
@@ -46,6 +49,10 @@ class RandomSearchEngine(BaseSearchEngine):
             return vit_is_legal(cand, self.vis_dict, self.params, self.super_net)
         elif self.params.domain == "bert":
             return bert_is_legal(cand, self.vis_dict)
+        elif self.params.domain == "asr":
+            is_legal, net = asr_is_legal(cand, self.vis_dict, self.params, self.super_net)
+            self.super_net = net
+            return is_legal
 
     '''
     Compute nas score for sample structure
@@ -58,6 +65,8 @@ class RandomSearchEngine(BaseSearchEngine):
             model = self.super_net
         elif self.params.domain == "bert":
             subconfig = get_subconfig(cand)
+            model = self.super_net
+        elif self.params.domain == "asr":
             model = self.super_net
         return do_compute_nas_score(model_type=self.params.model_type, model=model,
                                                             resolution=self.params.img_size,

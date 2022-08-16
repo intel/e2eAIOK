@@ -46,6 +46,14 @@ pipeline {
                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch110 /bin/bash -c ". /home/vmagent/app/hydro.ai/tests/cicd/jenkins_denas_bert.sh"' 
             }
         }
+        stage('Run DeNas ASR') {
+            agent {
+                label 'sr612'
+            }
+            steps {
+               sh 'docker run --rm --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch110 /bin/bash -c ". /home/vmagent/app/hydro.ai/tests/cicd/jenkins_denas_asr.sh"' 
+            }
+        }
     }
     post {
         always {

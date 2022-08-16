@@ -12,6 +12,9 @@ from module.embedding_super import PatchembedSuper
 from cv.supernet_transformer import TransformerEncoderLayer
 from cv.benchmark_network_latency import get_model_latency
 from nlp.supernert_bert import SuperBertEncoder
+from module.asr.encoder import TransformerEncoder
+from module.asr.attention import MultiheadAttention
+from module.asr.linear import Linear
 
 from torchsummary import summary
 
@@ -56,9 +59,19 @@ def get_linear_layer_metric_array(model_type, net, metric):
         elif model_type == "bert":
             if isinstance(layer, LinearSuper):
                 metric_array.append(metric(layer))
+        elif model_type == "asr":
+            if isinstance(layer, TransformerEncoder):
+                for sub_layer in layer.layers:
+                    metric_array.append(metric(sub_layer.pos_ffn.fc1))
+                    metric_array.append(metric(sub_layer.pos_ffn.fc2))
     return metric_array
 
 def get_attn_layer_metric_array(model_type, net, metric):
+    def func(weight):
+        if weight.grad is not None:
+            return torch.norm(weight) * torch.norm(weight.grad)
+        else:
+            return torch.zeros_like(weight)
     score = 0 
     metric_array = []
     for layer in net.modules():
@@ -72,6 +85,11 @@ def get_attn_layer_metric_array(model_type, net, metric):
                     metric_array.append(metric(sub_layer.attention.self.query))
                     metric_array.append(metric(sub_layer.attention.self.key))
                     metric_array.append(metric(sub_layer.attention.self.value))
+        elif model_type == 'asr':
+            if isinstance(layer, TransformerEncoder):
+                for sub_layer in layer.layers:
+                    metric_array.append(func(sub_layer.self_att.att.in_proj_weight))
+                    metric_array.append(metric(sub_layer.self_att.att.out_proj))
     return metric_array
 
 
@@ -86,6 +104,8 @@ def compute_diversity_score(model_type, net, *inputs):
     elif model_type == "bert":
         input_ids, input_masks, input_segments, subconfig = inputs
         output, pooled_output = net.forward(input_ids, subconfig, input_masks, input_segments)
+    elif model_type == "asr":
+        output, _ = net.encode(inputs[0])
     torch.sum(output).backward()
 
     # select the gradients that we want to use for search/prune
@@ -131,6 +151,8 @@ def compute_sliency_score(model_type, net, *inputs):
     elif model_type == "bert":
         input_ids, input_masks, input_segments, subconfig = inputs
         output, pooled_output = net.forward(input_ids, subconfig, input_masks, input_segments)
+    elif model_type == "asr":
+        output, _ = net.encode(inputs[0])
 
     torch.sum(output).backward()
 
@@ -168,7 +190,9 @@ def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, 
         input_masks = torch.tensor([input_masks]*batch_size, dtype=torch.long)
         input_segments = torch.tensor([input_segments]*batch_size, dtype=torch.long)
         disversity_score_list = compute_diversity_score(model_type, model, input_ids, input_masks, input_segments, subconfig)
-
+    elif model_type == "asr":
+        input = torch.randn(size=[batch_size, 400, 20, 64])
+        disversity_score_list = compute_diversity_score(model_type, model, input)
     disversity_score = 0
     for grad_abs in disversity_score_list:
         if len(grad_abs.shape) == 0:
@@ -180,6 +204,8 @@ def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, 
         grads_abs_list = compute_sliency_score(model_type, model, input)
     elif model_type == "bert":
         grads_abs_list = compute_sliency_score(model_type, model, input_ids, input_masks, input_segments, subconfig)
+    elif model_type == "asr":
+        grads_abs_list = compute_sliency_score(model_type, model, input)
    
     saliency_score = 0
     for grad_abs in grads_abs_list:
