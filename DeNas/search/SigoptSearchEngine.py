@@ -1,13 +1,16 @@
+import time
 import sigopt
 
 from search.BaseSearchEngine import BaseSearchEngine
 from scores.compute_de_score import do_compute_nas_score
 from cv.utils.vit import vit_is_legal
 from nlp.utils import bert_is_legal, get_subconfig
+from AIDK.common.utils import timeout_input
 
 class SigoptSearchEngine(BaseSearchEngine):
     def __init__(self, params=None, super_net=None, search_space=None):
         super().__init__(params,super_net,search_space)
+        self.conn = None
         self.vis_dict = {}
         self.best_struct = ()
 
@@ -35,13 +38,56 @@ class SigoptSearchEngine(BaseSearchEngine):
                                                             batch_size=self.params.batch_size,
                                                             mixup_gamma=1e-2, subconfig=subconfig)
 
+    def _get_sigopt_suggestion(self, experiment):
+        num_tried = 0
+        while True:
+            try:
+                return self.conn.experiments(experiment.id).suggestions().create()
+            except Exception as e:
+                num_tried += 1
+                self.logger.error("""Met exception when connecting to sigopt,
+                    will do retry in 5 secs, err msg is: {}""".format(e))
+                if num_tried >= 30:
+                    n = timeout_input(
+                        """Retried connection for 30 times, do you still
+                        want to continue?(n for exit)""",
+                        default='y',
+                        timeout=10)
+                    if n != 'y':
+                        return None
+                    num_tried = 0
+                time.sleep(5)
+
+    def _set_sigopt_observation(self, experiment, suggestion_id, nas_score):
+        num_tried = 0
+        while True:
+            try:
+                return self.conn.experiments(experiment.id).observations().create(
+                    suggestion=suggestion_id,
+                    value=nas_score,
+                )
+            except Exception as e:
+                num_tried += 1
+                self.logger.error("""Met exception when connecting to sigopt,
+                    will do retry in 5 secs, err msg is: {}""".format(e))
+                if num_tried >= 30:
+                    n = timeout_input(
+                        """Retried connection for 30 times, do you still
+                        want to continue?(n for exit)""",
+                        default='y',
+                        timeout=10)
+                    if n != 'y':
+                        return None
+                    num_tried = 0
+                time.sleep(5)
+
     '''
     Unified API for SigoptSearchEngine
     '''
     def search(self):
-        conn = sigopt.Connection()
+        self.conn = sigopt.Connection()
         if self.params.domain == "bert":
-            experiment = conn.experiments().create(
+            experiment = self.conn.experiments().create(
                 name= 'bert denas',
                 project='denas',
                 type="offline",
@@ -49,13 +95,13 @@ class SigoptSearchEngine(BaseSearchEngine):
                 metrics=[dict(name='DeScore', objective='maximize')],
                 parameters=[
                     dict(name="LAYER_NUM", type="int", bounds=dict(min=self.params.cfg["SEARCH_SPACE"]['LAYER_NUM']['bounds']['min'], max=self.params.cfg["SEARCH_SPACE"]['LAYER_NUM']['bounds']['max'])),
-                    dict(name="HEAD_NUM", type="int", bounds=dict(min=self.params.cfg["SEARCH_SPACE"]['HEAD_NUM']['bounds']['min'], max=self.params.cfg["SEARCH_SPACE"]['HEAD_NUM']['bounds']['max'])),
-                    dict(name="HIDDEN_SIZE", type="int", bounds=dict(min=self.params.cfg["SEARCH_SPACE"]['HIDDEN_SIZE']['bounds']['min']/self.params.cfg["SEARCH_SPACE"]['HIDDEN_SIZE']['bounds']['step'], max=self.params.cfg["SEARCH_SPACE"]['HIDDEN_SIZE']['bounds']['max']/self.params.cfg["SEARCH_SPACE"]['HIDDEN_SIZE']['bounds']['step'])),
-                    dict(name="INTERMEDIATE_SIZE", type="int", bounds=dict(min=self.params.cfg["SEARCH_SPACE"]['INTERMEDIATE_SIZE']['bounds']['min']/self.params.cfg["SEARCH_SPACE"]['INTERMEDIATE_SIZE']['bounds']['step'], max=self.params.cfg["SEARCH_SPACE"]['INTERMEDIATE_SIZE']['bounds']['max']/self.params.cfg["SEARCH_SPACE"]['INTERMEDIATE_SIZE']['bounds']['step'])),
+                    dict(name="HEAD_NUM", type="int", bounds=dict(min=self.params.cfg["SEARCH_SPACE"]['HEAD_NUM']['bounds']['min'], max=self.params.cfg["SEARCH_SPACE"]['HEAD_NUM']['bounds']['max']-1)),
+                    dict(name="HIDDEN_SIZE", type="int", bounds=dict(min=self.params.cfg["SEARCH_SPACE"]['HIDDEN_SIZE']['bounds']['min']/self.params.cfg["SEARCH_SPACE"]['HIDDEN_SIZE']['bounds']['step'], max=self.params.cfg["SEARCH_SPACE"]['HIDDEN_SIZE']['bounds']['max']/self.params.cfg["SEARCH_SPACE"]['HIDDEN_SIZE']['bounds']['step']-1)),
+                    dict(name="INTERMEDIATE_SIZE", type="int", bounds=dict(min=self.params.cfg["SEARCH_SPACE"]['INTERMEDIATE_SIZE']['bounds']['min']/self.params.cfg["SEARCH_SPACE"]['INTERMEDIATE_SIZE']['bounds']['step'], max=self.params.cfg["SEARCH_SPACE"]['INTERMEDIATE_SIZE']['bounds']['max']/self.params.cfg["SEARCH_SPACE"]['INTERMEDIATE_SIZE']['bounds']['step']-1)),
                 ],
             )
-            for _ in range(experiment.observation_budget):
-                suggestion = conn.experiments(experiment.id).suggestions().create()
+            for epoch in range(experiment.observation_budget):
+                suggestion = self._get_sigopt_suggestion(experiment)
                 cand = (
                     suggestion.assignments['LAYER_NUM'], 
                     suggestion.assignments['HEAD_NUM'], 
@@ -66,15 +112,12 @@ class SigoptSearchEngine(BaseSearchEngine):
                 if not self.cand_islegal(cand):
                     continue
                 nas_score = self.cand_evaluate(cand).item()
-                self.logger.info('nas_score = {} cand = {}'.format(nas_score, cand))
-                conn.experiments(experiment.id).observations().create(
-                    suggestion=suggestion.id,
-                    value=nas_score,
-                )
-            best_assignments = conn.experiments(experiment.id).best_assignments().fetch().data[0].assignments
+                self.logger.info('epoch = {} nas_score = {} cand = {}'.format(epoch, nas_score, cand))
+                self._set_sigopt_observation(experiment, suggestion.id, nas_score)
+            best_assignments = self.conn.experiments(experiment.id).best_assignments().fetch().data[0].assignments
             self.best_struct = (best_assignments['LAYER_NUM'],best_assignments['HEAD_NUM'],64*best_assignments['HEAD_NUM'],best_assignments['HIDDEN_SIZE']*self.params.cfg["SEARCH_SPACE"]['HIDDEN_SIZE']['bounds']['step'],best_assignments['INTERMEDIATE_SIZE']*self.params.cfg["SEARCH_SPACE"]['INTERMEDIATE_SIZE']['bounds']['step'])
         elif self.params.domain == "vit":
-            experiment = conn.experiments().create(
+            experiment = self.conn.experiments().create(
                 name= 'vit denas',
                 project='denas',
                 type="offline",
@@ -117,8 +160,8 @@ class SigoptSearchEngine(BaseSearchEngine):
                     dict(name="EMBED_DIM", type="int", grid=[*self.search_space['embed_dim']]),
                 ],
             )
-            for _ in range(experiment.observation_budget):
-                suggestion = conn.experiments(experiment.id).suggestions().create()
+            for epoch in range(experiment.observation_budget):
+                suggestion = self._get_sigopt_suggestion(experiment)
                 cand_tuple = list()
                 depth = int(suggestion.assignments['DEPTH'])
                 cand_tuple.append(depth)
@@ -133,12 +176,9 @@ class SigoptSearchEngine(BaseSearchEngine):
                 if not self.cand_islegal(cand):
                     continue
                 nas_score = self.cand_evaluate(cand).item()
-                self.logger.info('nas_score = {} cand = {}'.format(nas_score, cand))
-                conn.experiments(experiment.id).observations().create(
-                    suggestion=suggestion.id,
-                    value=nas_score,
-                )
-            best_assignments = conn.experiments(experiment.id).best_assignments().fetch().data[0].assignments  
+                self.logger.info('epoch = {} nas_score = {} cand = {}'.format(epoch, nas_score, cand))
+                self._set_sigopt_observation(experiment, suggestion.id, nas_score)
+            best_assignments = self.conn.experiments(experiment.id).best_assignments().fetch().data[0].assignments  
             depth = int(best_assignments['DEPTH'])
             cand_tuple.append(depth)
             for i in range(depth):
