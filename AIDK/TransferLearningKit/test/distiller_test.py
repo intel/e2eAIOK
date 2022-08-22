@@ -54,5 +54,5 @@ class TestBasicDistiller:
         logits1 = torch.ones([bath_size,num_classes])
         logits2 = torch.zeros([bath_size, num_classes])
         logits3 = torch.randn([bath_size,num_classes])
-        assert torch.abs(distiller.loss(logits3,logits3)).item() <= 1e-9
+        assert torch.abs(distiller.loss(logits3, logits3)).item() <= 1e-9
         assert torch.abs(distiller.loss(logits1, logits2) - 1.0).item() <= 1e-9

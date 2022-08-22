@@ -7,6 +7,8 @@ import torch.nn as nn
 import torch
 import logging
 import datetime
+import os
+import numpy as np
 
 def initWeights(layer):
     ''' Initialize layer parameters
@@ -52,20 +54,14 @@ class EarlyStopping():
 
         self._counter = 0
         self.early_stop = False
-        self.optimal_model = None
-        self.optimal_metric = None
 
-    def __call__(self, validation_metric,model_state_dict):
-        if self.optimal_metric is not None:
-            if ((self._is_max and validation_metric < self.optimal_metric - self._delta)
-                 or ((not self._is_max) and validation_metric > self.optimal_metric + self._delta)):
-                self._counter += 1
-            else:
-                logging.info("Reset earlystop counter")
-                self._counter = 0
+    def __call__(self, validation_metric, optimal_metric):
+        if ((self._is_max and validation_metric < optimal_metric - self._delta)
+                or ((not self._is_max) and validation_metric > optimal_metric + self._delta)):
+            self._counter += 1
         else:
-            self.optimal_model = model_state_dict
-            self.optimal_metric = validation_metric
+            logging.info("Reset earlystop counter")
+            self._counter = 0
         if self._counter >= self._tolerance_epoch:
             self.early_stop = True
 
@@ -75,3 +71,12 @@ class EarlyStopping():
         _str += '\tis_max:%s\n' % self._is_max
         return _str
 
+def adjust_learning_rate(epoch, optimizer, cfg):
+    steps = np.sum(epoch > np.asarray(cfg.SOLVER.LR_DECAY_STAGES))
+    if steps > 0:
+        new_lr = cfg.SOLVER.LR * (cfg.SOLVER.LR_DECAY_RATE**steps)
+        for param_group in optimizer.param_groups:
+            param_group["lr"] = new_lr
+        print(f"At epoch {epoch}, learning rate change to {new_lr}")
+        return new_lr
+    return cfg.SOLVER.LR

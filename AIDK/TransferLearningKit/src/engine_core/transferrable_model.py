@@ -60,7 +60,8 @@ class TransferrableModel(nn.Module):
     ''' A wrapper to make model transferrable
 
     '''
-    def __init__(self,backbone,finetunner,adapter,distiller,transfer_strategy,enable_target_training_label):
+    def __init__(self,backbone,finetunner,adapter,distiller,transfer_strategy,enable_target_training_label,
+                backbone_loss_weight=1.0, distiller_loss_weight=0.0, adapter_loss_weight=0.0):
         ''' Init method
 
         :param backbone: the backbone model to be wrapped
@@ -81,10 +82,14 @@ class TransferrableModel(nn.Module):
         self.distiller = distiller
         self.transfer_strategy = transfer_strategy
         self.enable_target_training_label = enable_target_training_label
+        self.backbone_loss_weight = backbone_loss_weight
+        self.distiller_loss_weight = distiller_loss_weight
+        self.adapter_loss_weight = adapter_loss_weight
 
         if self.transfer_strategy == TransferStrategy.OnlyFinetuneStrategy:
             if not self.enable_target_training_label:
                 raise RuntimeError("Must enable target training label when only finetune.")
+
 
     def __getattribute__(self, item):
         ''' Change the action for training and evaluation. When training, use self. When evaluation, use self._backbone.
@@ -111,8 +116,8 @@ class TransferrableModel(nn.Module):
         _str = 'TransferrableModel:transfer_strategy = %s, enable_target_training_label = %s\n'%(
             self.transfer_strategy, self.enable_target_training_label)
         _str += "\tbackbone:%s\n"%self.backbone
-        _str += "\tbackbone:%s\n" % self.adapter
-        _str += "\tbackbone:%s\n" % self.distiller
+        _str += "\tadapter:%s\n" % self.adapter
+        _str += "\tdistiller:%s\n" % self.distiller
         return _str
 
     def _finetune_forward(self,x):
@@ -142,10 +147,10 @@ class TransferrableModel(nn.Module):
         '''
         backbone_output,others = self.backbone(x)
         distiller_input = others[0]
-        distiller_output = self.distiller(distiller_input)
+        distiller_output,distiller_others = self.distiller(distiller_input)
         return TransferrableModelOutput(backbone_output, distiller_output,None)
 
-    def _distillation_loss(self,student_output,teacher_output,student_label):
+    def _distillation_loss(self,student_output,teacher_output,student_label,epoch=20):
         ''' loss for OnlyDistillationStrategy
 
         :param student_output: student output
@@ -157,8 +162,12 @@ class TransferrableModel(nn.Module):
             student_loss = self.backbone.loss(student_output, student_label)
         else:
             student_loss = 0.0
-        distiller_loss = self.distiller.loss(teacher_output, student_output)
-        total_loss = student_loss + distiller_loss
+        
+        distiller_loss = self.distiller.loss(teacher_output, student_output, target=student_label,epoch=epoch)
+
+        total_loss = self.backbone_loss_weight * student_loss + \
+                     self.distiller_loss_weight * distiller_loss
+
         return TransferrableModelLoss(total_loss,student_loss,distiller_loss,None)
 
     def _adaption_forward(self,x_tgt,x_src):
@@ -205,7 +214,8 @@ class TransferrableModel(nn.Module):
             adapter_loss = self.adapter.loss(adapter_output_tgt, adapter_label_tgt, backbone_output=backbone_output_tgt) + \
                            self.adapter.loss(adapter_output_src, adapter_label_src, backbone_output=backbone_output_src)
 
-        total_loss = backbone_loss + adapter_loss
+        total_loss = self.backbone_loss_weight * backbone_loss + \
+                     self.adapter_loss_weight * adapter_loss
 
         return TransferrableModelLoss(total_loss,backbone_loss,None,adapter_loss)
 
@@ -217,11 +227,11 @@ class TransferrableModel(nn.Module):
         :return:  (TransferrableModelOutput for x_tgt, TransferrableModelOutput for x_src)
         '''
         backbone_output_src,others_src= self.backbone(x_src)
-        distiller_output_src = self.distiller(others_src[0])
+        distiller_output_src,distiller_output_src_others = self.distiller(others_src[0])
         adapter_output_src = self.adapter(others_src[1])
 
         backbone_output_tgt,others_tgt = self.backbone(x_tgt)
-        distiller_output_tgt = self.distiller(others_tgt[0])
+        distiller_output_tgt,distiller_output_tgt_others = self.distiller(others_tgt[0])
         adapter_output_tgt = self.adapter(others_tgt[1])
 
         return TransferrableModelOutput(backbone_output_tgt,distiller_output_tgt,adapter_output_tgt), \
@@ -230,7 +240,7 @@ class TransferrableModel(nn.Module):
     def _distillation_and_adaption_loss(self,backbone_output_tgt, backbone_output_src,
                        teacher_output_tgt, teacher_output_src,
                        adapter_output_tgt, adapter_output_src,
-                       backbone_label_tgt,backbone_label_src):
+                       backbone_label_tgt,backbone_label_src,epoch=20):
         ''' loss for DistillationAndAdaptionStrategy
 
         :param backbone_output_tgt: student backbone main output of target domain
@@ -254,11 +264,15 @@ class TransferrableModel(nn.Module):
         adapter_label_tgt = AdversarialAdapter.make_label(adapter_output_tgt.size(0), is_source=False).view(-1, 1)
         adapter_label_src = AdversarialAdapter.make_label(adapter_output_src.size(0), is_source=True).view(-1, 1)
 
-        distiller_loss = self.distiller.loss(teacher_output_tgt, backbone_output_tgt) + \
-                         self.distiller.loss(teacher_output_src, backbone_output_src)
+        distiller_loss = self.distiller.loss(teacher_output_tgt, backbone_output_tgt,target=backbone_label_tgt,epoch=epoch) + \
+                         self.distiller.loss(teacher_output_src, backbone_output_src,target=backbone_label_src,epoch=epoch)
+
         adapter_loss = self.adapter.loss(adapter_output_tgt, adapter_label_tgt) + \
                        self.adapter.loss(adapter_output_src, adapter_label_src)
-        total_loss = backbone_loss + distiller_loss +adapter_loss
+        
+        total_loss = self.backbone_loss_weight * backbone_loss + \
+                     self.distiller_loss_weight * distiller_loss + \
+                     self.adapter_loss_weight * adapter_loss
 
         return TransferrableModelLoss(total_loss,backbone_loss,distiller_loss,adapter_loss)
 
@@ -289,7 +303,7 @@ class TransferrableModel(nn.Module):
         else:
             raise RuntimeError("Unknown transfer_strategy [%s] " % self.transfer_strategy)
 
-    def loss(self,output,label):
+    def loss(self,output,label,epoch=20):
         ''' loss function
 
         :param output: output of forward()
@@ -299,7 +313,8 @@ class TransferrableModel(nn.Module):
         if self.transfer_strategy == TransferStrategy.OnlyFinetuneStrategy:
             return self._finetune_loss(output.backbone_output,label if isinstance(label, torch.Tensor) else label[0])
         elif self.transfer_strategy == TransferStrategy.OnlyDistillationStrategy:
-            return self._distillation_loss(output.backbone_output,output.distiller_output,label if isinstance(label, torch.Tensor) else label[0])
+            label = label if isinstance(label, torch.Tensor) else label[0]
+            return self._distillation_loss(output.backbone_output,output.distiller_output,label,epoch)
         elif self.transfer_strategy == TransferStrategy.OnlyDomainAdaptionStrategy or \
             self.transfer_strategy == TransferStrategy.FinetuneAndDomainAdaptionStrategy:
             return self._adaption_loss(output[0].backbone_output,output[1].backbone_output,
@@ -310,7 +325,7 @@ class TransferrableModel(nn.Module):
                                         output[0].backbone_output, output[1].backbone_output,
                                         output[1].distiller_output, output[1].distiller_output,
                                         output[0].adapter_output,output[1].adapter_output,
-                                        label[0], label[1])
+                                        label[0], label[1],epoch)
         else:
             raise RuntimeError("Unknown transfer_strategy [%s] " % self.transfer_strategy)
 
@@ -350,19 +365,28 @@ class TransferrableModel(nn.Module):
                 metric_values[metric_name] = metric_value
 
         return metric_values
-    def init_weight(self):
+    def init_weight(self, finetuner=None, pretrain=None, teacher_pretrain=None):
         ''' Initialize model weight
 
         :return:
         '''
-        if self.transfer_strategy in [TransferStrategy.OnlyFinetuneStrategy,
-                                      TransferStrategy.FinetuneAndDomainAdaptionStrategy]:
-            self.finetunner.finetune_network(self.backbone)
+        if finetuner is not None:
+            finetuner.finetune_network(self.backbone)
+        elif pretrain == "pretrain":
+            pass
+        elif pretrain != "NONE" and pretrain is not None: 
+            print(111111, pretrain)
+            self.backbone.load_state_dict(torch.load(pretrain,map_location=torch.device('cpu')))
         else:
-            self.backbone.init_weight()
+            self.backbone.apply(initWeights)
 
-        # if self.distiller is not None:
-        #     self.distiller.apply(initWeights)
+        if self.distiller is not None:
+            if teacher_pretrain == "pretrain":
+                pass
+            elif teacher_pretrain != "NONE" and pretrain is not None: 
+                self.distiller.pretrained_model.load_state_dict(torch.load(teacher_pretrain,map_location=torch.device('cpu')))
+            else:
+                raise RuntimeError("Need teacher pretrain model for distiller")
 
         if self.adapter is not None:
             self.adapter.apply(initWeights)
@@ -380,7 +404,7 @@ def extract_distiller_adapter_features(model,intermediate_layer_name_for_distill
     '''
     gm: torch.fx.GraphModule = torch.fx.symbolic_trace(model)
     print("GraphModule")
-    gm.graph.print_tabular()
+    # gm.graph.print_tabular()
 
     def find_node(graph,node_name):
         ''' find node from GraphModule by node_name
@@ -435,7 +459,8 @@ def _make_transferrable(model, loss, init_weight,
                         distiller_feature_size, distiller_feature_layer_name,
                         adapter_feature_size, adapter_feature_layer_name,
                         training_dataloader, adaption_source_domain_training_dataset,
-                        transfer_strategy, enable_target_training_label):
+                        transfer_strategy, enable_target_training_label,
+                        backbone_loss_weight=1.0, distiller_loss_weight=0.0, adapter_loss_weight=0.0):
     ''' make a model transferrable
 
     :param model: the backbone model. If model does not have loss method, then use loss argument.
@@ -460,8 +485,8 @@ def _make_transferrable(model, loss, init_weight,
             raise RuntimeError("Need loss for model")
     if transfer_strategy in [TransferStrategy.OnlyDistillationStrategy,
                              TransferStrategy.DistillationAndDomainAdaptionStrategy]:
-        if not distiller_feature_size:
-            raise RuntimeError("Need distiller_feature_size for Distillation")
+        # if not distiller_feature_size:
+        #     raise RuntimeError("Need distiller_feature_size for Distillation")
         if not distiller_feature_layer_name:
             raise RuntimeError("Need distiller_feature_layer_name for Distillation")
         if distiller is None:
@@ -482,7 +507,6 @@ def _make_transferrable(model, loss, init_weight,
     if transfer_strategy == TransferStrategy.OnlyFinetuneStrategy:
         if not enable_target_training_label:
             raise RuntimeError("Need enable_target_training_label for OnlyFinetune")
-
     if training_dataloader is not None and type(training_dataloader.dataset) is ComposedDataset:
         raise RuntimeError("training_dataloader should not be ComposedDataset")
     #################### modify output #######################
@@ -504,13 +528,14 @@ def _make_transferrable(model, loss, init_weight,
                               TransferStrategy.DistillationAndDomainAdaptionStrategy]:
         logging.info("Make composed dataset")
         training_dataloader.__dict__["dataset"] = ComposedDataset(training_dataloader.dataset,adaption_source_domain_training_dataset)
-    return TransferrableModel(new_model,finetunner,adapter,distiller,transfer_strategy,enable_target_training_label)
+    return TransferrableModel(new_model,finetunner,adapter,distiller,transfer_strategy,enable_target_training_label,backbone_loss_weight,distiller_loss_weight,adapter_loss_weight)
 
 def _transferrable(loss, init_weight, finetunner, distiller, adapter,
                    distiller_feature_size, distiller_feature_layer_name,
                    adapter_feature_size, adapter_feature_layer_name,
                    training_dataloader, adaption_source_domain_training_dataset,
-                   transfer_strategy, enable_target_training_label):
+                   transfer_strategy, enable_target_training_label,
+                   backbone_loss_weight=1.0, distiller_loss_weight=0.0, adapter_loss_weight=0.0):
     ''' a decorator to make instances of class transferrable
 
     :param loss: loss function for model,signature: loss(output_logit, label). If model has loss attribute, then loss could be none.
@@ -536,7 +561,8 @@ def _transferrable(loss, init_weight, finetunner, distiller, adapter,
                                        distiller_feature_size, distiller_feature_layer_name,
                                        adapter_feature_size, adapter_feature_layer_name,
                                        training_dataloader, adaption_source_domain_training_dataset,
-                                       transfer_strategy, enable_target_training_label)
+                                       transfer_strategy, enable_target_training_label,
+                                       backbone_loss_weight,distiller_loss_weight,adapter_loss_weight)
         return _wrapper
     return wrapper
 
@@ -574,7 +600,7 @@ def transferrable_with_finetune(loss,init_weight,finetunner):
                           enable_target_training_label=True)
 def make_transferrable_with_knowledge_distillation(model,loss,init_weight,distiller,
                                                    distiller_feature_size,distiller_feature_layer_name,
-                                                   enable_target_training_label):
+                                                   enable_target_training_label,backbone_loss_weight,distiller_loss_weight):
     '''  make transferrable with knowledge distillation strategy
 
     :param model: the backbone model. If model does not have loss method, then use loss argument.
@@ -593,10 +619,11 @@ def make_transferrable_with_knowledge_distillation(model,loss,init_weight,distil
                                adapter_feature_size=None, adapter_feature_layer_name=None,
                                training_dataloader=None, adaption_source_domain_training_dataset=None,
                                transfer_strategy=TransferStrategy.OnlyDistillationStrategy,
-                               enable_target_training_label=enable_target_training_label)
+                               enable_target_training_label=enable_target_training_label,
+                               backbone_loss_weight=backbone_loss_weight,distiller_loss_weight=distiller_loss_weight)
 def transferrable_with_knowledge_distillation(loss,init_weight,distiller,
                                                    distiller_feature_size,distiller_feature_layer_name,
-                                                   enable_target_training_label):
+                                                   enable_target_training_label,backbone_loss_weight,distiller_loss_weight):
     ''' a decorator to make instances of class transferrable with distillation strategy
 
     :param loss : loss function for model,signature: loss(output_logit, label). If model has loss attribute, then loss could be none.
@@ -614,11 +641,12 @@ def transferrable_with_knowledge_distillation(loss,init_weight,distiller,
                           adapter_feature_size=None, adapter_feature_layer_name=None,
                           training_dataloader=None, adaption_source_domain_training_dataset=None,
                           transfer_strategy=TransferStrategy.OnlyDistillationStrategy,
-                          enable_target_training_label=enable_target_training_label)
+                          enable_target_training_label=enable_target_training_label,
+                          backbone_loss_weight=backbone_loss_weight,distiller_loss_weight=distiller_loss_weight)
 def make_transferrable_with_domain_adaption(model,loss,init_weight,adapter,
                                             adapter_feature_size, adapter_feature_layer_name,
                                             training_dataloader, adaption_source_domain_training_dataset,
-                                            enable_target_training_label):
+                                            enable_target_training_label,backbone_loss_weight,adapter_loss_weight):
     ''' make transferrable with domain adaption strategy
 
     :param model: the backbone model. If model does not have loss method, then use loss argument.
@@ -640,11 +668,12 @@ def make_transferrable_with_domain_adaption(model,loss,init_weight,adapter,
                                training_dataloader=training_dataloader,
                                adaption_source_domain_training_dataset=adaption_source_domain_training_dataset,
                                transfer_strategy=TransferStrategy.OnlyDomainAdaptionStrategy,
-                               enable_target_training_label=enable_target_training_label)
+                               enable_target_training_label=enable_target_training_label,
+                               backbone_loss_weight=backbone_loss_weight,adapter_loss_weight=adapter_loss_weight)
 def transferrable_with_domain_adaption(loss,init_weight,adapter,
                                             adapter_feature_size, adapter_feature_layer_name,
                                             training_dataloader, adaption_source_domain_training_dataset,
-                                            enable_target_training_label):
+                                            enable_target_training_label,backbone_loss_weight,adapter_loss_weight):
     ''' a decorator to make instances of class transferrable with adaption strategy
 
     :param loss : loss function for model,signature: loss(output_logit, label). If model has loss attribute, then loss could be none.
@@ -665,11 +694,12 @@ def transferrable_with_domain_adaption(loss,init_weight,adapter,
                           training_dataloader=training_dataloader,
                           adaption_source_domain_training_dataset=adaption_source_domain_training_dataset,
                           transfer_strategy=TransferStrategy.OnlyDomainAdaptionStrategy,
-                          enable_target_training_label=enable_target_training_label)
+                          enable_target_training_label=enable_target_training_label,
+                          backbone_loss_weight=backbone_loss_weight,adapter_loss_weight=adapter_loss_weight)
 def make_transferrable_with_finetune_and_domain_adaption(model,loss,init_weight,finetunner,adapter,
                                             adapter_feature_size, adapter_feature_layer_name,
                                             training_dataloader, adaption_source_domain_training_dataset,
-                                            enable_target_training_label):
+                                            enable_target_training_label,backbone_loss_weight,adapter_loss_weight):
     ''' make transferrable with finetune and adaption strategy
 
     :param model: the backbone model. If model does not have loss method, then use loss argument.
@@ -692,11 +722,12 @@ def make_transferrable_with_finetune_and_domain_adaption(model,loss,init_weight,
                                training_dataloader=training_dataloader,
                                adaption_source_domain_training_dataset=adaption_source_domain_training_dataset,
                                transfer_strategy=TransferStrategy.FinetuneAndDomainAdaptionStrategy,
-                               enable_target_training_label=enable_target_training_label)
+                               enable_target_training_label=enable_target_training_label,
+                               backbone_loss_weight=backbone_loss_weight,adapter_loss_weight=adapter_loss_weight)
 def transferrable_with_finetune_and_domain_adaption(loss,init_weight,finetunner,adapter,
                                             adapter_feature_size, adapter_feature_layer_name,
                                             training_dataloader, adaption_source_domain_training_dataset,
-                                            enable_target_training_label):
+                                            enable_target_training_label,backbone_loss_weight,adapter_loss_weight):
     ''' a decorator to make instances of class transferrable with finetune and adaption strategy
 
     :param loss : loss function for model,signature: loss(output_logit, label). If model has loss attribute, then loss could be none.
@@ -718,12 +749,14 @@ def transferrable_with_finetune_and_domain_adaption(loss,init_weight,finetunner,
                           training_dataloader=training_dataloader,
                           adaption_source_domain_training_dataset=adaption_source_domain_training_dataset,
                           transfer_strategy=TransferStrategy.OnlyDomainAdaptionStrategy,
-                          enable_target_training_label=enable_target_training_label)
+                          enable_target_training_label=enable_target_training_label,
+                          backbone_loss_weight=backbone_loss_weight,adapter_loss_weight=adapter_loss_weight)
 def make_transferrable_with_knowledge_distillation_and_domain_adaption(model,loss,init_weight,distiller,adapter,
                                             distiller_feature_size,distiller_feature_layer_name,
                                             adapter_feature_size, adapter_feature_layer_name,
                                             training_dataloader, adaption_source_domain_training_dataset,
-                                            enable_target_training_label):
+                                            enable_target_training_label,
+                                            backbone_loss_weight,distiller_loss_weight,adapter_loss_weight):
     ''' make transferrable with distillation and adaption strategy
 
     :param model: the backbone model. If model does not have loss method, then use loss argument.
@@ -749,12 +782,15 @@ def make_transferrable_with_knowledge_distillation_and_domain_adaption(model,los
                                training_dataloader=training_dataloader,
                                adaption_source_domain_training_dataset=adaption_source_domain_training_dataset,
                                transfer_strategy=TransferStrategy.DistillationAndDomainAdaptionStrategy,
-                               enable_target_training_label=enable_target_training_label)
+                               enable_target_training_label=enable_target_training_label,
+                               backbone_loss_weight=backbone_loss_weight,distiller_loss_weight=distiller_loss_weight,
+                               adapter_loss_weight=adapter_loss_weight)
 def transferrable_with_knowledge_distillation_and_domain_adaption(loss,init_weight,distiller,adapter,
                                             distiller_feature_size,distiller_feature_layer_name,
                                             adapter_feature_size, adapter_feature_layer_name,
                                             training_dataloader, adaption_source_domain_training_dataset,
-                                            enable_target_training_label):
+                                            enable_target_training_label,
+                                            backbone_loss_weight,distiller_loss_weight,adapter_loss_weight):
     ''' a decorator to make instances of class transferrable with distillation and adaption strategy
 
     :param loss : loss function for model,signature: loss(output_logit, label). If model has loss attribute, then loss could be none.
@@ -779,4 +815,6 @@ def transferrable_with_knowledge_distillation_and_domain_adaption(loss,init_weig
                           training_dataloader=training_dataloader,
                           adaption_source_domain_training_dataset=adaption_source_domain_training_dataset,
                           transfer_strategy=TransferStrategy.DistillationAndDomainAdaptionStrategy,
-                          enable_target_training_label=enable_target_training_label)
+                          enable_target_training_label=enable_target_training_label,
+                          backbone_loss_weight=backbone_loss_weight,distiller_loss_weight=distiller_loss_weight,
+                          adapter_loss_weight=adapter_loss_weight)
