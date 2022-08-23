@@ -1,0 +1,65 @@
+pipeline {
+    agent none
+    stages {
+        stage('Prepare') {
+            steps {
+                script {
+                    def labels = ['sr608', 'sr613']
+                    def builders = [: ]
+                    for (x in labels) {
+                        def label = x
+                        builders[label] = {
+                            node(label) {
+                                cleanWs()
+                                checkout scm
+                                sh 'cd Dockerfile-ubuntu18.04 && cp /root/.ssh/id_rsa ./ && docker build -t aidk-tensorflow . -f DockerfileTensorflow && docker build -t aidk-pytorch . -f DockerfilePytorch && cd .. && yes | docker image prune'
+                            }
+                        }
+                    }
+                    parallel builders
+                }
+            }
+        }
+        stage('Run docker worker') {
+            agent { 
+                label 'sr608'
+            }
+            steps {
+                sh 'cd modelzoo/WnD/TensorFlow2 && bash patch_wnd.sh && cd ../../..'
+                sh 'cd modelzoo/dlrm && bash patch_dlrm.sh && cd ../..'
+                sh 'docker run -t -d --name worker-aidk-tensorflow --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-tensorflow /bin/bash && docker exec -d worker-aidk-tensorflow /bin/bash service ssh start'
+                sh 'docker run -t -d --name worker-aidk-pytorch --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch /bin/bash && docker exec -d worker-aidk-pytorch /bin/bash service ssh start'
+            }
+        }
+        stage('Run distributed wnd') {
+            agent { 
+                label 'sr613'
+            }
+            steps {
+                sh 'cd modelzoo/WnD/TensorFlow2 && bash patch_wnd.sh && cd ../../..'
+                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_wnd_test_dist.sh"'
+                sh 'rm -f hydroai.db'
+                sh 'rm -rf result'
+            }
+        }
+        stage('Run distributed dlrm') {
+            agent { 
+                label 'sr613'
+            }
+            steps {
+                sh 'cd modelzoo/dlrm && bash patch_dlrm.sh && cd ../..'
+                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_dlrm_test_dist.sh"'
+                sh 'rm -f hydroai.db'
+                sh 'rm -rf result'
+            }
+        }
+        stage('Stop docker worker') {
+            agent { 
+                label 'sr608'
+            }
+            steps {
+                sh 'docker ps -q --filter "name=worker-aidk-*" | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q)'
+            }
+        }
+    }
+}
