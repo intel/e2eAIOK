@@ -4,10 +4,8 @@ import logging
 import torch
 from torch import nn
 import torch.nn.functional as F
-import sys
-sys.path.append("..")
 
-from module.layernorm_super import LayerNormSuper as SuperBertLayerNorm
+from module.nlp.layernorm_super import LayerNormSuper as SuperBertLayerNorm
 
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',

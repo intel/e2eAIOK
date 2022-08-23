@@ -2,9 +2,13 @@ import torch
 from torch import nn
 from torch.nn import Parameter
 import torch.nn.functional as F
+
+from module.attention_base import AttentionBase
 from .Linear_super import LinearSuper
 from .qkv_super import qkv_super
 from .utils import trunc_normal_
+
+
 def softmax(x, dim, onnx_trace=False):
     if onnx_trace:
         return F.softmax(x.float(), dim=dim)
@@ -64,7 +68,7 @@ class RelativePosition2D_super(nn.Module):
 
         return embeddings
 
-class AttentionSuper(nn.Module):
+class AttentionSuper(AttentionBase):
     def __init__(self, super_embed_dim, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop=0., proj_drop=0., normalization = False, relative_position = False,
                  num_patches = None, max_relative_position=14, scale=False, change_qkv = False):
         super().__init__()

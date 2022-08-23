@@ -1,9 +1,11 @@
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
-class LinearSuper(nn.Linear):
+from module.Linear_base import LinearBase
+
+
+class LinearSuper(LinearBase):
     def __init__(self, super_in_dim, super_out_dim, bias=True, uniform_=None, non_linear='linear', scale=False):
         super().__init__(super_in_dim, super_out_dim, bias=bias)
 

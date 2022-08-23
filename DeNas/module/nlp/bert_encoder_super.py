@@ -5,14 +5,12 @@ import copy
 
 import torch
 from torch import nn
-import sys
-sys.path.append("..")
 
-from module.Linear_super import LinearSuper as SuperLinear
-from module.layernorm_super import LayerNormSuper as SuperBertLayerNorm
-
+from module.nlp.Linear_super import LinearSuper as SuperLinear
+from module.nlp.layernorm_super import LayerNormSuper as SuperBertLayerNorm
 from module.nlp.bert_attention_super import SuperBertAttention
 from module.nlp.bert_intermediate_super import SuperBertIntermediate
+
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',

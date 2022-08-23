@@ -74,7 +74,6 @@ class TransformerASRSuper(nn.Module):
                 input_size=input_size,
                 n_neurons=d_model,
                 bias=True,
-                combine_dims=False,
             ),
             torch.nn.Dropout(dropout),
         ])

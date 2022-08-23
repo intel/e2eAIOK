@@ -2,7 +2,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class LayerNormSuper(torch.nn.LayerNorm):
+from module.layernorm_base import LayerNormBase
+
+
+class LayerNormSuper(LayerNormBase):
     def __init__(self, super_embed_dim):
         super().__init__(super_embed_dim)
 

@@ -26,8 +26,8 @@ def asr_is_legal(cand, vis_dict, params, super_net):
     sampled_config['encoder_heads'] = num_heads
     sampled_config['d_model'] = d_model
     super_net = gen_transformer(**sampled_config)
-    n_parameters = super_net.calc_sampled_param_num()
-    info['params'] =  n_parameters / 10.**6
+    total_params = sum(p.numel() for p in super_net.parameters() if p.requires_grad)
+    info['params'] =  total_params / 10.**6
     if info['params'] > params.max_param_limits or info['params'] < params.min_param_limits:
         return False, info['params'] < params.min_param_limits
     info['visited'] = True

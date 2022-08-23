@@ -6,6 +6,7 @@ import torch.nn.functional as F
 import math
 
 from module.asr.linear import Linear
+from module.attention_base import AttentionBase
 
 
 logger = logging.getLogger(__name__)
@@ -329,27 +330,9 @@ class RelPosMHAXL(nn.Module):
         return out
 
 
-class MultiheadAttention(nn.Module):
-    """ The class is a wrapper of MultiHead Attention for torch.nn.MultiHeadAttention.
-
-    Reference: https://pytorch.org/docs/stable/nn.html
-
-    Arguments
-    ----------
-    num_heads : int
-        parallel attention heads.
-    dropout : float
-        a Dropout layer on attn_output_weights (default: 0.0).
-    bias : bool
-        add bias as module parameter (default: True).
-    add_bias_kv : bool
-        add bias to the key and value sequences at dim=0.
-    add_zero_attn : bool
-        add a new batch of zeros to the key and value sequences at dim=1.
-    kdim : int
-        total number of features in key (default: None).
-    vdim : int
-        total number of features in value (default: None).
+class MultiheadAttention(AttentionBase):
+    """ 
+    The class is a wrapper of MultiHead Attention for torch.nn.MultiHeadAttention.
     """
 
     def __init__(
@@ -386,48 +369,6 @@ class MultiheadAttention(nn.Module):
         return_attn_weights: Optional[torch.Tensor] = True,
         pos_embs: Optional[torch.Tensor] = None,
     ):
-        """
-        Arguments
-        ----------
-        query : torch.Tensor
-            (B, L, E) where L is the target sequence length,
-            B is the batch size, E is the embedding dimension.
-        key : torch.Tensor
-            (B, S, E) where S is the source sequence length,
-            B is the batch size, E is the embedding dimension.
-        value : torch.Tensor
-            (B, S, E) where S is the source sequence length,
-            B is the batch size, E is the embedding dimension.
-        key_padding_mask : torch.Tensor, optional
-            (B, S) where B is the batch size, S is the source sequence
-            length. If a ByteTensor is provided, the non-zero positions will
-            be ignored while the position with the zero positions will be
-            unchanged. If a BoolTensor is provided, the positions with the
-            value of True will be ignored while the position with the value
-            of False will be unchanged.
-        attn_mask : torch.Tensor, optional
-            2D mask (L, S) where L is the target sequence length, S is
-            the source sequence length.
-            3D mask (N*num_heads, L, S) where N is the batch
-            size, L is the target sequence length, S is the source sequence
-            length. attn_mask ensure that position i is allowed to attend the
-            unmasked positions. If a ByteTensor is provided, the non-zero
-            positions are not allowed to attend while the zero positions will
-            be unchanged. If a BoolTensor is provided, positions with True is
-            not allowed to attend while False values will be unchanged. If a
-            FloatTensor is provided, it will be added to the attention weight.
-        pos_embs: torch.Tensor, optional
-            Positional embeddings added to the attention map of shape (L, S, E) or (L, S, 1).
-
-        Outputs
-        -------
-        attn_output : torch.Tensor
-            (B, L, E) where L is the target sequence length, B is the
-            batch size, E is the embedding dimension.
-        attn_output_weights : torch.Tensor
-            (B, L, S) where B is the batch size, L is the target
-            sequence length, S is the source sequence length.
-        """
         # give tensors of shape (time, batch, fea)
         query = query.permute(1, 0, 2)
         key = key.permute(1, 0, 2)
@@ -458,17 +399,6 @@ class MultiheadAttention(nn.Module):
         else:
             output = output.permute(1, 0, 2)
             return output
-
-    def calc_sampled_param_num(self):
-        numel = 0
-        # numel += self.att.k_proj_weight.numel()
-        # numel += self.att.q_proj_weight.numel()
-        # numel += self.att.v_proj_weight.numel()
-        numel += self.att.in_proj_weight.numel()
-        # numel += self.att.bias_k.numel()
-        # numel += self.att.bias_v.numel()
-        numel += self.att.in_proj_bias.numel()
-        return numel
 
 class PositionalwiseFeedForward(nn.Module):
     """The class implements the positional-wise feed forward module in

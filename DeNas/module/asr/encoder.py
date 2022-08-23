@@ -80,15 +80,6 @@ class TransformerEncoderLayer(nn.Module):
             output = self.norm2(output)
 
         return output, self_attn
-    
-    def calc_sampled_param_num(self):
-        numel = 0
-        numel += self.self_att.calc_sampled_param_num()
-        numel += self.pos_ffn.calc_sampled_param_num()
-        numel += self.norm1.calc_sampled_param_num()
-        numel += self.norm2.calc_sampled_param_num()
-        return numel
-
 
 class TransformerEncoder(nn.Module):
     def __init__(
@@ -141,10 +132,3 @@ class TransformerEncoder(nn.Module):
         output = self.norm(output)
 
         return output, attention_lst
-
-    def calc_sampled_param_num(self):
-        numel = 0
-        for layer in self.layers:
-            numel += layer.calc_sampled_param_num()
-        numel += self.norm.calc_sampled_param_num()
-        return numel

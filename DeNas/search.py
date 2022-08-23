@@ -23,6 +23,7 @@ def parse_args(args):
     return edict(settings)
 
 def main(params):
+    # set random seed for reproducibility
     torch.manual_seed(params.seed)
     np.random.seed(params.seed)
     random.seed(params.seed)
@@ -30,7 +31,6 @@ def main(params):
         from cv.third_party.ZenNet import DeSearchSpaceXXBL as search_space
         from cv.third_party.ZenNet import DeMainNet as super_net
     elif params.domain == 'vit':
-        # set ViT seed for reproducibility
         with open(params.supernet_cfg) as f:
             cfg = edict(yaml.safe_load(f))
         super_net = Vision_TransformerSuper(img_size=params.img_size,

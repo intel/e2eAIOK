@@ -2,10 +2,8 @@ import time
 import sigopt
 
 from search.BaseSearchEngine import BaseSearchEngine
-from scores.compute_de_score import do_compute_nas_score
-from cv.utils.vit import vit_is_legal
-from nlp.utils import bert_is_legal, get_subconfig
 from AIDK.common.utils import timeout_input
+
 
 class SigoptSearchEngine(BaseSearchEngine):
     def __init__(self, params=None, super_net=None, search_space=None):
@@ -13,30 +11,6 @@ class SigoptSearchEngine(BaseSearchEngine):
         self.conn = None
         self.vis_dict = {}
         self.best_struct = ()
-
-    '''
-    Judge sample structure legal or not
-    '''
-    def cand_islegal(self, cand):
-        if self.params.domain == "vit":
-            return vit_is_legal(cand, self.vis_dict, self.params, self.super_net)
-        elif self.params.domain == "bert":
-            return bert_is_legal(cand, self.vis_dict)
-
-    '''
-    Compute nas score for sample structure
-    '''
-    def cand_evaluate(self, cand):
-        subconfig = None
-        if self.params.domain == "vit":
-            model = self.super_net
-        elif self.params.domain == "bert":
-            subconfig = get_subconfig(cand)
-            model = self.super_net
-        return do_compute_nas_score(model_type=self.params.model_type, model=model,
-                                                            resolution=self.params.img_size,
-                                                            batch_size=self.params.batch_size,
-                                                            mixup_gamma=1e-2, subconfig=subconfig)
 
     def _get_sigopt_suggestion(self, experiment):
         num_tried = 0

@@ -5,10 +5,11 @@ from torch import nn
 import numpy as np
 import gc
 import torch
-from module.Linear_super import LinearSuper
-from module.layernorm_super import LayerNormSuper
-from module.multihead_super import AttentionSuper
-from module.embedding_super import PatchembedSuper
+# TODO: separate domain specific ops
+from module.cv.Linear_super import LinearSuper
+from module.cv.layernorm_super import LayerNormSuper
+from module.cv.multihead_super import AttentionSuper
+from module.cv.embedding_super import PatchembedSuper
 from cv.supernet_transformer import TransformerEncoderLayer
 from cv.benchmark_network_latency import get_model_latency
 from nlp.supernert_bert import SuperBertEncoder

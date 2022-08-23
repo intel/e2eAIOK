@@ -11,8 +11,8 @@ import torch
 from torch import nn
 
 sys.path.append("..")
-from module.Linear_super import LinearSuper as SuperLinear
-from module.layernorm_super import LayerNormSuper as SuperBertLayerNorm
+from module.nlp.Linear_super import LinearSuper as SuperLinear
+from module.nlp.layernorm_super import LayerNormSuper as SuperBertLayerNorm
 from module.nlp.bert_embedding_super import SuperBertEmbeddings
 from module.nlp.bert_encoder_super import SuperBertEncoder
 from module.nlp.bert_pooler_super import SuperBertPooler

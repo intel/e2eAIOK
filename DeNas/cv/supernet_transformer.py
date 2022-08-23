@@ -1,20 +1,18 @@
 import math
-
 import os, sys
 sys.path.append(os.path.dirname(".."))
-
-
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from module.Linear_super import LinearSuper
-from module.layernorm_super import LayerNormSuper
-from module.multihead_super import AttentionSuper
-from module.embedding_super import PatchembedSuper
-from module.utils import trunc_normal_
-from module.utils import DropPath
+from module.cv.Linear_super import LinearSuper
+from module.cv.layernorm_super import LayerNormSuper
+from module.cv.multihead_super import AttentionSuper
+from module.cv.embedding_super import PatchembedSuper
+from module.cv.utils import trunc_normal_
+from module.cv.utils import DropPath
 import numpy as np
+
 
 def gelu(x: torch.Tensor) -> torch.Tensor:
     if hasattr(torch.nn.functional, 'gelu'):

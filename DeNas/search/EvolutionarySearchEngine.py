@@ -1,9 +1,10 @@
 import numpy as np
+
 from search.BaseSearchEngine import BaseSearchEngine
-from scores.compute_de_score import do_compute_nas_score
-from cv.utils.vit import vit_is_legal, vit_populate_random_func, vit_mutation_random_func, vit_crossover_random_func
-from nlp.utils import LatencyPredictor, bert_populate_random_func, bert_is_legal, bert_mutation_random_func, bert_crossover_random_func, get_subconfig
-from asr.utils.asr_nas import asr_is_legal, asr_populate_random_func, asr_mutation_random_func, asr_crossover_random_func
+from cv.utils.vit import vit_mutation_random_func, vit_crossover_random_func
+from nlp.utils import bert_mutation_random_func, bert_crossover_random_func
+from asr.utils.asr_nas import asr_mutation_random_func, asr_crossover_random_func
+
 
 class EvolutionarySearchEngine(BaseSearchEngine):
 
@@ -24,17 +25,6 @@ class EvolutionarySearchEngine(BaseSearchEngine):
                     self.vis_dict[cand] = {}
             for cand in cands:
                 yield cand
-
-    '''
-    EA populate function for random structure
-    '''
-    def populate_random_func(self):
-        if self.params.domain == "vit":
-            return vit_populate_random_func(self.search_space)
-        elif self.params.domain == "bert":
-            return bert_populate_random_func(self.search_space)
-        elif self.params.domain == "asr":
-            return asr_populate_random_func(self.search_space)
 
     '''
     EA mutation function for random structure
@@ -71,7 +61,7 @@ class EvolutionarySearchEngine(BaseSearchEngine):
                 continue
             self.cand_evaluate(cand)
             self.candidates.append(cand)
-            self.logger.info('random {}/{} structure {} nas_score {}'.format(len(self.candidates), self.params.population_num, cand, self.vis_dict[cand]['acc']))
+            self.logger.info('random {}/{} structure {} nas_score {}'.format(len(self.candidates), self.params.population_num, cand, self.vis_dict[cand]['score']))
         self.logger.info('random_num = {}'.format(len(self.candidates)))
 
     '''
@@ -90,7 +80,7 @@ class EvolutionarySearchEngine(BaseSearchEngine):
                 continue
             self.cand_evaluate(cand)
             res.append(cand)
-            self.logger.info('mutation {}/{} structure {} nas_score {}'.format(len(res), self.params.mutation_num, cand, self.vis_dict[cand]['acc']))
+            self.logger.info('mutation {}/{} structure {} nas_score {}'.format(len(res), self.params.mutation_num, cand, self.vis_dict[cand]['score']))
         self.logger.info('mutation_num = {}'.format(len(res)))
         return res
 
@@ -110,7 +100,7 @@ class EvolutionarySearchEngine(BaseSearchEngine):
                 continue
             self.cand_evaluate(cand)
             res.append(cand)
-            self.logger.info('crossover {}/{} structure {} nas_score {}'.format(len(res), self.params.crossover_num, cand, self.vis_dict[cand]['acc']))
+            self.logger.info('crossover {}/{} structure {} nas_score {}'.format(len(res), self.params.crossover_num, cand, self.vis_dict[cand]['score']))
         self.logger.info('crossover_num = {}'.format(len(res)))
         return res
 
@@ -120,72 +110,8 @@ class EvolutionarySearchEngine(BaseSearchEngine):
     def update_population_pool(self):
         t = self.top_candidates
         t += self.candidates
-        t.sort(key=lambda x: self.vis_dict[x]['acc'], reverse=True)
+        t.sort(key=lambda x: self.vis_dict[x]['score'], reverse=True)
         self.top_candidates = t[:self.params.select_num]
-
-    '''
-    Judge sample structure legal or not
-    '''
-    def cand_islegal(self, cand):
-        if self.params.domain == "vit":
-            return vit_is_legal(cand, self.vis_dict, self.params, self.super_net)
-        elif self.params.domain == "bert":
-            return bert_is_legal(cand, self.vis_dict)
-        elif self.params.domain == "asr":
-            is_legal, net = asr_is_legal(cand, self.vis_dict, self.params, self.super_net)
-            self.super_net = net
-            return is_legal
-
-    '''
-    Compute nas score for sample structure
-    '''
-    def cand_evaluate(self, cand):
-        subconfig = None
-        if self.params.domain == "vit":
-            model = self.super_net
-        elif self.params.domain == "bert":
-            subconfig = get_subconfig(cand)
-            model = self.super_net
-        elif self.params.domain == "asr":
-            model = self.super_net
-        nas_score = do_compute_nas_score(model_type = self.params.model_type, model=model, 
-                                                        resolution=self.params.img_size,
-                                                        batch_size=self.params.batch_size,
-                                                        mixup_gamma=1e-2,
-                                                        subconfig=subconfig)
-        self.vis_dict[cand]['acc'] = nas_score
-    
-    '''
-    Hardware-aware implementation
-    '''
-    def cand_islegal_latency(self, cand):
-        if "budget_latency_max" in self.params or "budget_latency_min" in self.params:
-            latency = self.get_latency(cand)
-            if "budget_latency_max" in self.params and self.params.budget_latency_max < latency:
-                return False
-            if "budget_latency_min" in self.params and self.params.budget_latency_min > latency:
-                return False
-        return True
-
-    '''
-    Compute latency for sample structure
-    '''
-    def get_latency(self, cand):
-        if 'latency' in self.vis_dict[cand]:
-            return self.vis_dict[cand]['latency']
-        latency = np.inf
-        if self.params.domain == "bert":
-            sampled_config = {}
-            sampled_config['sample_layer_num'] = cand[0]
-            sampled_config['sample_num_attention_heads'] = [cand[1]]*cand[0]
-            sampled_config['sample_qkv_sizes'] = [cand[2]]*cand[0]
-            sampled_config['sample_hidden_size'] = cand[3]
-            sampled_config['sample_intermediate_sizes'] = [cand[4]]*cand[0]
-            predictor = LatencyPredictor(feature_norm=self.params.feature_norm, lat_norm=self.params.lat_norm, feature_dim=self.params.feature_dim, hidden_dim=self.params.hidden_dim, ckpt_path=self.params.ckpt_path)
-            predictor.load_ckpt()
-            latency = predictor.predict_lat(sampled_config)
-        self.vis_dict[cand]['latency'] = latency
-        return self.vis_dict[cand]['latency']
 
     '''
     Unified API for EvolutionarySearchEngine
