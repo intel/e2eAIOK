@@ -1,4 +1,4 @@
-import os, sys, time
+import os, sys, time, math
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import torch
 from torch import nn
@@ -12,7 +12,8 @@ from module.cv.multihead_super import AttentionSuper
 from module.cv.embedding_super import PatchembedSuper
 from cv.supernet_transformer import TransformerEncoderLayer
 from cv.benchmark_network_latency import get_model_latency
-from nlp.supernert_bert import SuperBertEncoder
+from nlp.supernet_bert import SuperBertEncoder
+from nlp.utils import get_bert_latency
 from module.asr.encoder import TransformerEncoder
 from module.asr.attention import MultiheadAttention
 from module.asr.linear import Linear
@@ -58,8 +59,10 @@ def get_linear_layer_metric_array(model_type, net, metric):
                 metric_array.append(metric(layer.fc1))
                 metric_array.append(metric(layer.fc2))
         elif model_type == "bert":
-            if isinstance(layer, LinearSuper):
-                metric_array.append(metric(layer))
+            if isinstance(layer, SuperBertEncoder):
+                for sub_layer in layer.layers:
+                    metric_array.append(metric(sub_layer.intermediate.dense))
+                    metric_array.append(metric(sub_layer.output.dense))
         elif model_type == "asr":
             if isinstance(layer, TransformerEncoder):
                 for sub_layer in layer.layers:
@@ -86,6 +89,7 @@ def get_attn_layer_metric_array(model_type, net, metric):
                     metric_array.append(metric(sub_layer.attention.self.query))
                     metric_array.append(metric(sub_layer.attention.self.key))
                     metric_array.append(metric(sub_layer.attention.self.value))
+                    metric_array.append(metric(sub_layer.output.dense))
         elif model_type == 'asr':
             if isinstance(layer, TransformerEncoder):
                 for sub_layer in layer.layers:
@@ -184,10 +188,10 @@ def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, 
         disversity_score_list = compute_diversity_score(model_type, model, input)
     elif model_type == "bert":
         max_seq_length = resolution
-        input_ids = [9333] * max_seq_length
+        input_ids = [[9333-id] * max_seq_length for id in range(batch_size)]
         input_masks = max_seq_length * [1]
         input_segments = max_seq_length * [0]
-        input_ids = torch.tensor([input_ids]*batch_size, dtype=torch.long)
+        input_ids = torch.tensor(input_ids, dtype=torch.long)
         input_masks = torch.tensor([input_masks]*batch_size, dtype=torch.long)
         input_segments = torch.tensor([input_segments]*batch_size, dtype=torch.long)
         disversity_score_list = compute_diversity_score(model_type, model, input_ids, input_masks, input_segments, subconfig)
@@ -222,7 +226,11 @@ def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, 
                                                         in_channels=3, gpu=None, repeat_times=3,
                                                         fp16=False)
         nas_score = (disversity_score + saliency_score)/(1 + latency*10000)
+    elif model_type == "bert":
+        latency = get_bert_latency(model=model, subconfig=subconfig, batch_size=batch_size, max_seq_length=resolution, gpu=None, infer_cnt=10.)
+        #nas_score = (disversity_score + saliency_score)/(1 + latency*100)
+        nas_score = (disversity_score/100000 + saliency_score)/(1+latency/100)
+        print("diversity_score:{}\tsaliency_score:{}\tlatency:{}".format(disversity_score, saliency_score,latency))
     else:
         nas_score = disversity_score + saliency_score
-
     return nas_score

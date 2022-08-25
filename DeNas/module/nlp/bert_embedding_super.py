@@ -59,10 +59,10 @@ class SuperBertEmbeddings(nn.Module):
         t_emb_numel = self.token_type_embeddings.calc_sampled_param_num()
         ln_numel = self.LayerNorm.calc_sampled_param_num()
 
-        logger.info('w_emb: {}\n'.format(w_emb_numel))
-        logger.info('p_emb: {}\n'.format(p_emb_numel))
-        logger.info('t_emb: {}\n'.format(t_emb_numel))
-        logger.info('ln_emb: {}\n'.format(ln_numel))
+        #logger.info('w_emb: {}\n'.format(w_emb_numel))
+        #logger.info('p_emb: {}\n'.format(p_emb_numel))
+        #logger.info('t_emb: {}\n'.format(t_emb_numel))
+        #logger.info('ln_emb: {}\n'.format(ln_numel))
 
         return w_emb_numel + p_emb_numel + t_emb_numel + ln_numel
 

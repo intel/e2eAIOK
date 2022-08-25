@@ -52,9 +52,9 @@ class SuperBertSelfAttention(nn.Module):
         key_numel = self.key.calc_sampled_param_num()
         value_numel = self.value.calc_sampled_param_num()
 
-        logger.info('query_numel: {}\n'.format(query_numel))
-        logger.info('key_numel: {}\n'.format(key_numel))
-        logger.info('value_numel: {}\n'.format(value_numel))
+        #logger.info('query_numel: {}\n'.format(query_numel))
+        #logger.info('key_numel: {}\n'.format(key_numel))
+        #logger.info('value_numel: {}\n'.format(value_numel))
 
         return query_numel + key_numel + value_numel
 
@@ -112,8 +112,8 @@ class SuperBertSelfOutput(nn.Module):
         dense_numel = self.dense.calc_sampled_param_num()
         ln_numel = self.LayerNorm.calc_sampled_param_num()
 
-        logger.info('dense_numel: {}\n'.format(dense_numel))
-        logger.info('ln_numel: {}\n'.format(ln_numel))
+        #logger.info('dense_numel: {}\n'.format(dense_numel))
+        #logger.info('ln_numel: {}\n'.format(ln_numel))
 
         return dense_numel + ln_numel
 
@@ -139,8 +139,8 @@ class SuperBertAttention(nn.Module):
         self_numel = self.self.calc_sampled_param_num()
         output_numel = self.output.calc_sampled_param_num()
 
-        logger.info('self_numel: {}\n'.format(self_numel))
-        logger.info('output_numel: {}\n'.format(output_numel))
+        #logger.info('self_numel: {}\n'.format(self_numel))
+        #logger.info('output_numel: {}\n'.format(output_numel))
 
         return self_numel + output_numel
 

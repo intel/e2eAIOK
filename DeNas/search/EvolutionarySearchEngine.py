@@ -61,7 +61,7 @@ class EvolutionarySearchEngine(BaseSearchEngine):
                 continue
             self.cand_evaluate(cand)
             self.candidates.append(cand)
-            self.logger.info('random {}/{} structure {} nas_score {}'.format(len(self.candidates), self.params.population_num, cand, self.vis_dict[cand]['score']))
+            self.logger.info('random {}/{} structure {} nas_score {} params {}'.format(len(self.candidates), self.params.population_num, cand, self.vis_dict[cand]['score'], self.vis_dict[cand]['params']))
         self.logger.info('random_num = {}'.format(len(self.candidates)))
 
     '''
@@ -80,7 +80,7 @@ class EvolutionarySearchEngine(BaseSearchEngine):
                 continue
             self.cand_evaluate(cand)
             res.append(cand)
-            self.logger.info('mutation {}/{} structure {} nas_score {}'.format(len(res), self.params.mutation_num, cand, self.vis_dict[cand]['score']))
+            self.logger.info('mutation {}/{} structure {} nas_score {} params {}'.format(len(res), self.params.mutation_num, cand, self.vis_dict[cand]['score'], self.vis_dict[cand]['params']))
         self.logger.info('mutation_num = {}'.format(len(res)))
         return res
 
@@ -100,7 +100,7 @@ class EvolutionarySearchEngine(BaseSearchEngine):
                 continue
             self.cand_evaluate(cand)
             res.append(cand)
-            self.logger.info('crossover {}/{} structure {} nas_score {}'.format(len(res), self.params.crossover_num, cand, self.vis_dict[cand]['score']))
+            self.logger.info('crossover {}/{} structure {} nas_score {} params {}'.format(len(res), self.params.crossover_num, cand, self.vis_dict[cand]['score'], self.vis_dict[cand]['params']))
         self.logger.info('crossover_num = {}'.format(len(res)))
         return res
 
@@ -132,4 +132,6 @@ class EvolutionarySearchEngine(BaseSearchEngine):
     Unified API to get best searched structure
     '''
     def get_best_structures(self):
-        return self.top_candidates[0]
+        best_structure = self.top_candidates[0]
+        self.logger.info('best structure {} nas_score {} params {}'.format(best_structure, self.vis_dict[best_structure]['score'], self.vis_dict[best_structure]['params']))
+        return best_structure

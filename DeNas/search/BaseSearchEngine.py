@@ -39,7 +39,7 @@ class BaseSearchEngine(ABC):
         elif self.params.domain == "vit":
             return vit_is_legal(cand, self.vis_dict, self.params, self.super_net)
         elif self.params.domain == "bert":
-            return bert_is_legal(cand, self.vis_dict)
+            return bert_is_legal(cand, self.vis_dict, self.params, self.super_net)
         elif self.params.domain == "asr":
             is_legal, net = asr_is_legal(cand, self.vis_dict, self.params, self.super_net)
             self.super_net = net

@@ -7,7 +7,7 @@ import numpy as np
 
 from easydict import EasyDict as edict
 from cv.supernet_transformer import Vision_TransformerSuper
-from nlp.supernert_bert import SuperBertModel, BertConfig
+from nlp.supernet_bert import SuperBertModel, BertConfig
 from nlp.utils import generate_search_space
 from asr.supernet_asr import TransformerASRSuper
 from search.SearchEngineFactory import SearchEngineFactory
@@ -51,7 +51,7 @@ def main(params):
             cfg = edict(yaml.safe_load(f))
             params.cfg = cfg
         config = BertConfig.from_json_file(params.pretrained_bert_config)
-        super_net = SuperBertModel.from_scratch(params.pretrained_bert, config)
+        super_net = SuperBertModel.from_pretrained(params.pretrained_bert, config)
         search_space = generate_search_space(cfg["SEARCH_SPACE"])
     elif params.domain == 'asr':
         with open(params.supernet_cfg) as f:

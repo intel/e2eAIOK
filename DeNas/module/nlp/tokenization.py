@@ -23,7 +23,6 @@ import os
 import unicodedata
 from io import open
 
-from .file_utils import cached_path
 
 logger = logging.getLogger(__name__)
 
@@ -173,21 +172,14 @@ class BertTokenizer(object):
             vocab_file = os.path.join(vocab_file, VOCAB_NAME)
         # redirect to the cache, if necessary
         try:
-            resolved_vocab_file = cached_path(vocab_file, cache_dir=cache_dir)
+            resolved_vocab_file = vocab_file
         except EnvironmentError:
             logger.error(
-                "Model name '{}' was not found in model name list ({}). "
-                "We assumed '{}' was a path or url but couldn't find any file "
-                "associated to this path or url.".format(
-                    pretrained_model_name_or_path,
-                    ', '.join(PRETRAINED_VOCAB_ARCHIVE_MAP.keys()),
-                    vocab_file))
+                "Model name was not found in model name list. "
+                "We assumed 'model_name' was a path or url but couldn't find any file "
+                "associated to this path or url.")
             return None
-        if resolved_vocab_file == vocab_file:
-            logger.info("loading vocabulary file {}".format(vocab_file))
-        else:
-            logger.info("loading vocabulary file {} from cache at {}".format(
-                vocab_file, resolved_vocab_file))
+        logger.info("loading vocabulary file")
         if pretrained_model_name_or_path in PRETRAINED_VOCAB_POSITIONAL_EMBEDDINGS_SIZE_MAP:
             # if we're using a pretrained model, ensure the tokenizer wont index sequences longer
             # than the number of positional embeddings

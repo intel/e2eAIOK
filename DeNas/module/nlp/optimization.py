@@ -266,8 +266,8 @@ class BertAdam(Optimizer):
                     # warning for exceeding t_total (only active with warmup_linear
                     if group['schedule'] == "warmup_linear" and progress > 1. and not warned_for_t_total:
                         logger.warning(
-                            "Training beyond specified 't_total' steps with schedule '{}'. Learning rate set to {}. "
-                            "Please set 't_total' of {} correctly.".format(group['schedule'], lr_scheduled, self.__class__.__name__))
+                            "Training beyond specified 't_total' steps with schedule. Learning rate set. "
+                            "Please set 't_total' correctly.")
                         warned_for_t_total = True
                     # end warning
                 else:

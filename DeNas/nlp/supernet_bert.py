@@ -8,7 +8,8 @@ import copy
 import tarfile
 
 import torch
-from torch import nn
+from torch import embedding, nn
+from torch.nn import CrossEntropyLoss
 
 sys.path.append("..")
 from module.nlp.Linear_super import LinearSuper as SuperLinear
@@ -16,7 +17,7 @@ from module.nlp.layernorm_super import LayerNormSuper as SuperBertLayerNorm
 from module.nlp.bert_embedding_super import SuperBertEmbeddings
 from module.nlp.bert_encoder_super import SuperBertEncoder
 from module.nlp.bert_pooler_super import SuperBertPooler
-from nlp.third_party.transformer.file_utils import *
+from nlp.utils import *
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',
@@ -185,20 +186,18 @@ class BertPreTrainedModel(nn.Module):
             archive_file = pretrained_model_name_or_path
         # redirect to the cache, if necessary
         try:
-            resolved_archive_file = cached_path(archive_file, cache_dir=cache_dir)
+            resolved_archive_file = archive_file
+            cache_dir=cache_dir
         except EnvironmentError:
             logger.error(
-                "Model name '{}' was not found in model name list ({}). "
-                "We assumed '{}' was a path or url but couldn't find any file "
-                "associated to this path or url.".format(
-                    pretrained_model_name_or_path,
-                    ', '.join(PRETRAINED_MODEL_ARCHIVE_MAP.keys()),
-                    archive_file))
+                "Model name was not found in model name list. "
+                "We assumed 'model_name' was a path or url but couldn't find any file "
+                "associated to this path or url.")
             return None
         if resolved_archive_file == archive_file:
-            logger.info("loading archive file {}".format(archive_file))
+            print("loading archive file {}".format(archive_file))
         else:
-            logger.info("loading archive file {} from cache at {}".format(
+            print("loading archive file {} from cache at {}".format(
                 archive_file, resolved_archive_file))
         tempdir = None
         if os.path.isdir(resolved_archive_file) or from_tf:
@@ -206,7 +205,7 @@ class BertPreTrainedModel(nn.Module):
         else:
             # Extract archive to temp dir
             tempdir = tempfile.mkdtemp()
-            logger.info("extracting archive file {} to temp dir {}".format(
+            print("extracting archive file {} to temp dir {}".format(
                 resolved_archive_file, tempdir))
             with tarfile.open(resolved_archive_file, 'r:gz') as archive:
                 archive.extractall(tempdir)
@@ -248,6 +247,18 @@ class BertPreTrainedModel(nn.Module):
 
             if 'bert' not in key:
                 new_key = 'bert.' + key
+            if new_key:
+                if 'embedding' in key and 'LayerNorm' not in key:
+                    tmp = new_key.split('.')
+                    new_key = '.'.join(tmp[:-1]) + '.embedding.' + tmp[-1]
+                if 'layer' in key:
+                    new_key = new_key.replace('layer', 'layers')
+            else:
+                if 'embedding' in key and 'LayerNorm' not in key:
+                    tmp = key.split('.')
+                    new_key = '.'.join(tmp[:-1]) + '.embedding.' + tmp[-1]
+                if 'layer' in key:
+                    new_key = key.replace('layer', 'layers')
 
             if new_key:
                 old_keys.append(key)
@@ -276,12 +287,21 @@ class BertPreTrainedModel(nn.Module):
         start_prefix = ''
         if not hasattr(model, 'bert') and any(s.startswith('bert.') for s in state_dict.keys()):
             start_prefix = 'bert.'
+        #print("!!!!!model parameters!!!!!")
+        #for param_tensor in model.state_dict():
+        #    print(param_tensor, "\t", model.state_dict()[param_tensor].size())
+        #print("!!!!!saved parameters!!!!!")
+        #for param_tensor in state_dict:
+        #    print(param_tensor, "\t", state_dict[param_tensor].size()) 
+        #sys.exit()
+        
         load(model, prefix=start_prefix)
+        #missing_keys, unexpected_keys = model.load_state_dict(state_dict)
         if len(missing_keys) > 0:
-            logger.info("Weights of {} not initialized from pretrained model: {}".format(
+            print("Weights of {} not initialized from pretrained model: {}".format(
                 model.__class__.__name__, missing_keys))
         if len(unexpected_keys) > 0:
-            logger.info("Weights from pretrained model not used in {}: {}".format(
+            print("Weights from pretrained model not used in {}: {}".format(
                 model.__class__.__name__, unexpected_keys))
         if len(error_msgs) > 0:
             raise RuntimeError('Error(s) in loading state_dict for {}:\n\t{}'.format(
@@ -319,12 +339,12 @@ class SuperBertModel(BertPreTrainedModel):
         encoder_numel = self.encoder.calc_sampled_param_num()
         pooler_numel = self.pooler.calc_sampled_param_num()
 
-        logger.info('===========================')
-        logger.info('emb_numel: {}\n'.format(emb_numel))
-        logger.info('encoder_numel: {}\n'.format(encoder_numel))
-        logger.info('pooler_numel: {}\n'.format(pooler_numel))
-        logger.info('all parameters: {}\n'.format(emb_numel + encoder_numel + pooler_numel))
-        logger.info('===========================')
+        #logger.info('===========================')
+        #logger.info('emb_numel: {}\n'.format(emb_numel))
+        #logger.info('encoder_numel: {}\n'.format(encoder_numel))
+        #logger.info('pooler_numel: {}\n'.format(pooler_numel))
+        #logger.info('all parameters: {}\n'.format(emb_numel + encoder_numel + pooler_numel))
+        #logger.info('===========================')
         return emb_numel + encoder_numel + pooler_numel
 
     def forward(self, input_ids, subbert_config,
@@ -388,3 +408,75 @@ class SuperTinyBertForPreTraining(BertPreTrainedModel):
     def forward(self, input_ids, subbert_config, token_type_ids=None, attention_mask=None, kd=True):
         last_rep, last_att = self.bert(input_ids, subbert_config, token_type_ids, attention_mask, kd=kd)
         return last_rep, last_att
+
+
+class SuperBertForQuestionAnswering(BertPreTrainedModel):
+    def __init__(self, config):
+        super(SuperBertForQuestionAnswering, self).__init__(config)
+        self.bert = SuperBertModel(config)
+        self.qa_outputs = SuperLinear(config.hidden_size, 2)
+        self.apply(self.init_bert_weights)
+
+    def set_sample_config(self, subbert_config):
+        self.bert.set_sample_config(subbert_config)
+        self.qa_outputs.set_sample_config(subbert_config['sample_hidden_size'], 2)
+
+    def calc_sampled_param_num(self):
+        return self.bert.calc_sampled_param_num()
+
+    def save_pretrained(self, save_directory):
+
+        assert os.path.isdir(save_directory), "Saving path should be a directory where " \
+                                              "the model and configuration can be saved"
+
+        # Only save the model it-self if we are using distributed training
+        model_to_save = self.module if hasattr(self, 'module') else self
+
+        # Save configuration file
+        model_to_save.config.save_pretrained(save_directory)
+
+        # If we save using the predefined names, we can load using `from_pretrained`
+        output_model_file = os.path.join(save_directory, WEIGHTS_NAME)
+        torch.save(model_to_save.state_dict(), output_model_file)
+        logger.info("Model weights saved in {}".format(output_model_file))
+
+    def forward(self, input_ids, subbert_config, attention_mask=None, token_type_ids=None,
+                start_positions=None, end_positions=None, kd_infer=False):
+
+        if not kd_infer:
+            encoded_layers, pooled_output = self.bert(input_ids, subbert_config,
+                                                      attention_mask=attention_mask,
+                                                      token_type_ids=token_type_ids,
+                                                      kd=False, kd_infer=False)
+            #last_sequence_output = encoded_layers[-1]
+            last_sequence_output = encoded_layers
+        else:
+            last_sequence_output, pooled_output = self.bert(input_ids, subbert_config, attention_mask=attention_mask,
+                                                            token_type_ids=token_type_ids, kd=True, kd_infer=True)
+        logits = self.qa_outputs(last_sequence_output)
+        start_logits, end_logits = logits.split(1, dim=-1)
+        start_logits = start_logits.squeeze(-1)
+        end_logits = end_logits.squeeze(-1)
+
+        logits = (start_logits, end_logits)
+        if start_positions is not None and end_positions is not None:
+            # If we are on multi-GPU, split add a dimension
+            if len(start_positions.size()) > 1:
+                start_positions = start_positions.squeeze(-1)
+            if len(end_positions.size()) > 1:
+                end_positions = end_positions.squeeze(-1)
+            # sometimes the start/end positions are outside our model inputs, we ignore these terms
+            #print("!!!!!",start_logits.size(),"!!!!!")
+            #print("!!!!!",start_positions,"!!!!!")
+            #sys.exit()
+            ignored_index = start_logits.size(1)
+            start_positions.clamp_(0, ignored_index)
+            end_positions.clamp_(0, ignored_index)
+
+            loss_fct = CrossEntropyLoss(ignore_index=ignored_index)
+            start_loss = loss_fct(start_logits, start_positions)
+            end_loss = loss_fct(end_logits, end_positions)
+            total_loss = (start_loss + end_loss) / 2
+            return total_loss
+
+        return logits

@@ -1,18 +1,24 @@
+import ast
+import time
 import random
 import numpy as np
 import json
+import tempfile
+import shutil
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+CONFIG_NAME = "bert_config.json"
+WEIGHTS_NAME = "pytorch_model.bin"
 
 def generate_search_space(search_space_config):
         # build arch space
         search_space = {}
         search_space['layer_num'] = range(int(search_space_config['LAYER_NUM']['bounds']['min']), int(search_space_config['LAYER_NUM']['bounds']['max'])+1)
-        search_space['head_num'] = range(int(search_space_config['HEAD_NUM']['bounds']['min']), int(search_space_config['HEAD_NUM']['bounds']['max']), int(search_space_config['HEAD_NUM']['bounds']['step']))
-        search_space['hidden_size'] = range(int(search_space_config['HIDDEN_SIZE']['bounds']['min']), int(search_space_config['HIDDEN_SIZE']['bounds']['max']), int(search_space_config['HIDDEN_SIZE']['bounds']['step']))
-        search_space['ffn_size'] = range(int(search_space_config['INTERMEDIATE_SIZE']['bounds']['min']), int(search_space_config['INTERMEDIATE_SIZE']['bounds']['max']), int(search_space_config['INTERMEDIATE_SIZE']['bounds']['step']))
+        search_space['head_num'] = range(int(search_space_config['HEAD_NUM']['bounds']['min']), int(search_space_config['HEAD_NUM']['bounds']['max']) + int(search_space_config['HEAD_NUM']['bounds']['step']), int(search_space_config['HEAD_NUM']['bounds']['step']))
+        search_space['hidden_size'] = range(int(search_space_config['HIDDEN_SIZE']['bounds']['min']), int(search_space_config['HIDDEN_SIZE']['bounds']['max']) + int(search_space_config['HIDDEN_SIZE']['bounds']['step']), int(search_space_config['HIDDEN_SIZE']['bounds']['step']))
+        search_space['ffn_size'] = range(int(search_space_config['INTERMEDIATE_SIZE']['bounds']['min']), int(search_space_config['INTERMEDIATE_SIZE']['bounds']['max']) + int(search_space_config['INTERMEDIATE_SIZE']['bounds']['step']), int(search_space_config['INTERMEDIATE_SIZE']['bounds']['step']))
         return search_space
 
 def get_subconfig(cand):
@@ -42,11 +48,19 @@ def bert_populate_random_func(search_space):
 
     return tuple(cand_tuple)
 
-def bert_is_legal(cand, vis_dict):
+def bert_is_legal(cand, vis_dict, params, super_net):
     if cand not in vis_dict:
         vis_dict[cand] = {}
     info = vis_dict[cand]
     if 'visited' in info:
+        return False
+    subconfig = get_subconfig(cand)
+    super_net.set_sample_config(subconfig)
+    n_parameters = super_net.calc_sampled_param_num()
+    info['params'] = n_parameters / 10.**6
+    if info['params'] > params.max_param_limits:
+        return False
+    if info['params'] < params.min_param_limits:
         return False
     info['visited'] = True
     return True
@@ -99,6 +113,35 @@ def bert_crossover_random_func(top_candidates):
         else:
             cand.append(random.choice(it))
     return tuple(cand)
+
+def get_bert_latency(model, subconfig, batch_size, max_seq_length, gpu, infer_cnt):
+    if gpu is None:
+        device = 'cpu'
+    else:
+        device = 'cuda'
+    input_ids = [9333] * max_seq_length
+    input_masks = max_seq_length * [1]
+    input_segments = max_seq_length * [0]
+    input_ids = torch.tensor([input_ids]*batch_size, dtype=torch.long).to(device)
+    input_masks = torch.tensor([input_masks]*batch_size, dtype=torch.long).to(device)
+    input_segments = torch.tensor([input_segments]*batch_size, dtype=torch.long).to(device)
+
+    aver_time = 0.
+    model.eval()
+
+    for i in range(int(infer_cnt)):
+        start = time.time()
+        with torch.no_grad():
+            model.forward(input_ids, subconfig, input_masks, input_segments)
+
+        end = time.time()
+        sep = 1000 * (end - start)
+
+        if i == 0:
+            continue
+        else:
+            aver_time += sep / (infer_cnt - 1)
+    return aver_time
 
 class Net(nn.Module):
     def __init__(self, feature_dim, hidden_dim, hidden_layer_num):
@@ -239,9 +282,9 @@ class LatencyPredictor(object):
 
                 try:
                     subbert_config, inf_time = line.split('\t')
-                    subbert_config = json.loads(json.dumps(eval(subbert_config)))
+                    subbert_config = json.loads(json.dumps(ast.literal_eval(subbert_config)))
                 except:
-                    print('Got error! when parsing {}!'.format(line))
+                    print('Got error!')
 
                 def config_2_feature(config):
                     features = []

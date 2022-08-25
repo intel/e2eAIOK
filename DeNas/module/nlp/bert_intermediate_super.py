@@ -43,7 +43,7 @@ class SuperBertIntermediate(nn.Module):
     def calc_sampled_param_num(self):
         dense_numel = self.dense.calc_sampled_param_num()
 
-        logger.info('dense_numel: {}\n'.format(dense_numel))
+        #logger.info('dense_numel: {}\n'.format(dense_numel))
         return dense_numel
 
     def forward(self, hidden_states, sample_embed_dim=-1, intermediate_size=-1):

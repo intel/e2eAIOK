@@ -32,8 +32,8 @@ class SuperBertOutput(nn.Module):
         dense_numel = self.dense.calc_sampled_param_num()
         ln_numel = self.LayerNorm.calc_sampled_param_num()
 
-        logger.info('dense_numel: {}\n'.format(dense_numel))
-        logger.info('ln_numel: {}\n'.format(ln_numel))
+        #logger.info('dense_numel: {}\n'.format(dense_numel))
+        #logger.info('ln_numel: {}\n'.format(ln_numel))
         return dense_numel + ln_numel
 
     def forward(self, hidden_states, input_tensor, intermediate_size=-1, sample_embed_dim=-1):
@@ -61,9 +61,9 @@ class SuperBertLayer(nn.Module):
         intermediate_numel = self.intermediate.calc_sampled_param_num()
         output_numel = self.output.calc_sampled_param_num()
 
-        logger.info('attention_numel: {}\n'.format(attention_numel))
-        logger.info('intermediate_numel: {}\n'.format(intermediate_numel))
-        logger.info('output_numel: {}\n'.format(output_numel))
+        #logger.info('attention_numel: {}\n'.format(attention_numel))
+        #logger.info('intermediate_numel: {}\n'.format(intermediate_numel))
+        #logger.info('output_numel: {}\n'.format(output_numel))
 
         return attention_numel + intermediate_numel + output_numel
 
@@ -107,7 +107,7 @@ class SuperBertEncoder(nn.Module):
         for layer in self.layers[:self.sample_layer_num]:
             layers_numel += layer.calc_sampled_param_num()
 
-        logger.info('layer_numel: {}'.format(layers_numel))
+        #logger.info('layer_numel: {}'.format(layers_numel))
 
         return layers_numel
 

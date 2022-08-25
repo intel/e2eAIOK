@@ -24,7 +24,7 @@ class SuperBertPooler(nn.Module):
 
     def calc_sampled_param_num(self):
         dense_numel = self.dense.calc_sampled_param_num()
-        logger.info('dense_numel: {}'.format(dense_numel))
+        #logger.info('dense_numel: {}'.format(dense_numel))
 
         return dense_numel
 
