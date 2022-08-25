@@ -12,9 +12,12 @@ class LayerNorm(LayerNormBase):
     def __init__(
         self,
         input_size=None,
+        input_shape=None,
         eps=1e-05,
         elementwise_affine=True,
     ):
+        if input_shape is not None:
+            input_size = input_shape[2:]
         super().__init__(input_size, eps, elementwise_affine)
 
     def forward(self, x):
