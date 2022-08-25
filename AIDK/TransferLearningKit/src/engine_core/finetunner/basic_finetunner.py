@@ -30,11 +30,18 @@ class BasicFinetunner:
         '''
         self._pretrained_network = pretrained_network
         self.is_frozen = is_frozen
+        self._top_finetuned_layer = top_finetuned_layer
         self._buid_node_graph()
         self.finetuned_state_keys = self._get_finetuned_state_keys(top_finetuned_layer)
         self.pretrained_state_dict = {k: v for (k, v)
                                       in self._pretrained_network.state_dict().items()
                                       if k in self.finetuned_state_keys}
+    def __str__(self):
+        _str = "BasicFinetunner:\n\t"
+        _str += "pretrained_network:%s\n\t"%self._pretrained_network
+        _str += "top_finetuned_layer:%s\n\t" % self._top_finetuned_layer
+        _str += "is_frozen:%s\n\t" % self.is_frozen
+        return  _str
 
     def _set_node_hierarchy(self,node,hierarchy):
         ''' set node hierarchy
@@ -211,8 +218,8 @@ class BasicFinetunner:
             raise RuntimeError("Target network is not the same structure with pretrained model."
                           "\n\tTarget network weights:%s."
                           "\n\tPretrained network weights:%s"%(
-                ", ".join([item[0] for item in target_network.name_parameters]),
-                ", ".join([item[0] for item in self._pretrained_network.name_parameters])))
+                ", ".join([item[0] for item in target_network.named_parameters()]),
+                ", ".join([item[0] for item in self._pretrained_network.named_parameters()])))
             return
         ############################## finetune #######################
         target_network.load_state_dict(self.pretrained_state_dict, strict=False)

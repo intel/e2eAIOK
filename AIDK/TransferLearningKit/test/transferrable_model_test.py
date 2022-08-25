@@ -121,7 +121,6 @@ class TestMakeTransferrable:
         return {
             'model': model,
             'loss': torch.nn.CrossEntropyLoss(),
-            'init_weight': initWeights,
             'distiller_feature_size': (3, 224, 224),
             'distiller_feature_layer_name': 'x',
             'adapter_feature_size': 1000,
@@ -285,7 +284,6 @@ class TestMakeTransferrable:
         '''
         kwargs = self._create_kwargs()
         new_model = make_transferrable_with_finetune(model=kwargs['model'],loss=kwargs['loss'],
-                                                     init_weight=kwargs['init_weight'],
                                                      finetunner=kwargs['finetunner'])
 
         assert type(new_model) == TransferrableModel
@@ -305,7 +303,7 @@ class TestMakeTransferrable:
         '''
         kwargs = self._create_kwargs()
         new_model = make_transferrable_with_knowledge_distillation(
-            model=kwargs['model'], loss=kwargs['loss'], init_weight=kwargs['init_weight'],
+            model=kwargs['model'], loss=kwargs['loss'],
             distiller=kwargs['distiller'],distiller_feature_size=kwargs['distiller_feature_size'],
             distiller_feature_layer_name=kwargs['distiller_feature_layer_name'],
             enable_target_training_label=kwargs['enable_target_training_label'],
@@ -329,7 +327,7 @@ class TestMakeTransferrable:
         '''
         kwargs = self._create_kwargs()
         new_model = make_transferrable_with_domain_adaption(
-            model=kwargs['model'], loss=kwargs['loss'], init_weight=kwargs['init_weight'],
+            model=kwargs['model'], loss=kwargs['loss'],
             adapter=kwargs['adapter'],adapter_feature_size=kwargs['adapter_feature_size'],
             adapter_feature_layer_name=kwargs['adapter_feature_layer_name'],
             training_dataloader=kwargs['training_dataloader'],
@@ -355,7 +353,7 @@ class TestMakeTransferrable:
         '''
         kwargs = self._create_kwargs()
         new_model = make_transferrable_with_finetune_and_domain_adaption(
-            model=kwargs['model'], loss=kwargs['loss'], init_weight=kwargs['init_weight'],
+            model=kwargs['model'], loss=kwargs['loss'],
             finetunner=kwargs['finetunner'],adapter=kwargs['adapter'],
             adapter_feature_size=kwargs['adapter_feature_size'],
             adapter_feature_layer_name=kwargs['adapter_feature_layer_name'],
@@ -382,7 +380,7 @@ class TestMakeTransferrable:
         '''
         kwargs = self._create_kwargs()
         new_model = make_transferrable_with_knowledge_distillation_and_domain_adaption(
-            model=kwargs['model'], loss=kwargs['loss'], init_weight=kwargs['init_weight'],
+            model=kwargs['model'], loss=kwargs['loss'],
             distiller=kwargs['distiller'],adapter=kwargs['adapter'],
             distiller_feature_size=kwargs['distiller_feature_size'],
             distiller_feature_layer_name=kwargs['distiller_feature_layer_name'],
@@ -424,7 +422,6 @@ class TestTransferrableModel:
         return {
             'model': model,
             'loss': torch.nn.CrossEntropyLoss(),
-            'init_weight': initWeights,
             'distiller_feature_size': (3, 224, 224),
             'distiller_feature_layer_name': 'x',
             'adapter_feature_size': 1000,
@@ -1001,8 +998,7 @@ class TestTransferrableModel:
                              kwargs['finetunner']._pretrained_network.named_parameters()}
             kwargs['transfer_strategy'] = strategy
             model = _make_transferrable(**kwargs)
-            finetuner = kwargs["finetunner"] if strategy in [TransferStrategy.OnlyFinetuneStrategy,TransferStrategy.FinetuneAndDomainAdaptionStrategy] else None
-            model.init_weight(finetuner,None, "pretrain")
+            model.init_weight()
             for (name,weight) in model.backbone.named_parameters():
                 if strategy in [TransferStrategy.OnlyFinetuneStrategy,
                                 TransferStrategy.FinetuneAndDomainAdaptionStrategy]:

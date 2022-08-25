@@ -17,36 +17,31 @@ def createBackbone(backbone_name,**kwargs):
     :param kwargs: kwargs to create backbone
     :return: a backbone model
     '''
-    if backbone_name.lower() == 'lenet':
+    backbone_name = backbone_name.lower()
+
+    if backbone_name == 'lenet':
         model = LeNet(kwargs['num_classes'])#.cuda()
-        return model
-    elif backbone_name.lower() == 'resnet18':
+    elif backbone_name == 'resnet18':
         model = resnet18(num_classes=kwargs['num_classes'])
-        return model
-    elif backbone_name.lower() == 'resnet50':
+    elif backbone_name == 'resnet50':
         model = resnet50(num_classes=kwargs['num_classes'])
-        return model
-    elif backbone_name.lower() == 'resnet18_imagenet':
+    elif backbone_name == 'resnet18_imagenet':
         if "pretrain" in kwargs and kwargs["pretrain"]=="pretrain":
             model = resnet18_imagenet(pretrained=True)
         else:
             model = resnet18_imagenet(pretrained=False)
-        return model
-    elif backbone_name.lower() == 'resnet50_imagenet':
+    elif backbone_name == 'resnet50_imagenet':
         if "pretrain" in kwargs and kwargs["pretrain"]=="pretrain":
             model = resnet50_imagenet(pretrained=True)
         else:
             model = resnet50_imagenet(pretrained=False)
-        return model
-    elif backbone_name.lower() == 'resnet18_v2':
+    elif backbone_name == 'resnet18_v2':
         model = resnet18_v2(num_classes=kwargs['num_classes'])
-        return model
-    elif backbone_name.lower() == 'resnet34_v2':
+    elif backbone_name == 'resnet34_v2':
         model = resnet34_v2(num_classes=kwargs['num_classes'])
-        return model
-    elif backbone_name.lower() == 'resnet50_v2':
+    elif backbone_name == 'resnet50_v2':
         model = resnet50_v2(num_classes=kwargs['num_classes'])
-        return model
     else:
         logging.error("[%s] is not supported"%backbone_name)
         raise NotImplementedError("[%s] is not supported"%backbone_name)
+    return model

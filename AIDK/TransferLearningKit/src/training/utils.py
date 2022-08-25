@@ -54,14 +54,22 @@ class EarlyStopping():
 
         self._counter = 0
         self.early_stop = False
+        self.optimal_model = None
+        self.optimal_metric = None
 
-    def __call__(self, validation_metric, optimal_metric):
-        if ((self._is_max and validation_metric < optimal_metric - self._delta)
-                or ((not self._is_max) and validation_metric > optimal_metric + self._delta)):
-            self._counter += 1
+    def __call__(self, validation_metric,model_state_dict):
+        if self.optimal_metric is not None:
+            if (self._is_max and (validation_metric < self.optimal_metric - self._delta)) or\
+                ((not self._is_max) and (validation_metric > self.optimal_metric + self._delta)): # less optimal
+                self._counter += 1
+            else: # more optimal
+                logging.info("Reset earlystop counter")
+                self._counter = 0
+                self.optimal_metric = validation_metric
         else:
-            logging.info("Reset earlystop counter")
-            self._counter = 0
+            self.optimal_model = model_state_dict
+            self.optimal_metric = validation_metric
+
         if self._counter >= self._tolerance_epoch:
             self.early_stop = True
 
@@ -80,3 +88,16 @@ def adjust_learning_rate(epoch, optimizer, cfg):
         print(f"At epoch {epoch}, learning rate change to {new_lr}")
         return new_lr
     return cfg.SOLVER.LR
+
+class Timer:
+    ''' Timer to stat elapsed time
+
+    '''
+    def __enter__(self):
+        self.start = datetime.datetime.now()
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.end = datetime.datetime.now()
+        total_seconds = (self.end - self.start).total_seconds()
+        _str = "Total seconds:%s" % (total_seconds)
+        print(_str)
+        logging.info(_str)

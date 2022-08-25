@@ -398,4 +398,3 @@ class TestGradientReverseLayer:
             assert abs(self.grl.coeff) <= 1e-9
             torch.sum(output).backward()
             assert tensor_near_equal(input.grad,torch.zeros_like(input.grad))   # grad is always 0.0
-
