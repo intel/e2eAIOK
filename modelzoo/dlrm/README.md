@@ -42,5 +42,5 @@
    ```bash
    (1) Install the dlrm conda env as above;
 
-   (2) Install the distiller follow the [link](https://teams.microsoft.com/l/file/52DEC602-9C2D-44CA-BC06-41D4850204B3?tenantId=46c98d88-e344-4ed4-8496-4ed7712e255d&fileType=docx&objectUrl=https%3A%2F%2Fintel.sharepoint.com%2Fsites%2FIAGS-SSP-SMPS-DPO-AnalyticsStorage%2FShared%20Documents%2FGeneral%2FNew%20Projects%2F2021_07%20Model%20Compression%2FDistiller%20Guide.docx&baseUrl=https%3A%2F%2Fintel.sharepoint.com%2Fsites%2FIAGS-SSP-SMPS-DPO-AnalyticsStorage&serviceName=teams&threadId=19:2fcb2b3c8b824e7ca5216b10d5624574@thread.skype&groupId=69adf55a-c293-4328-b4e3-bf0e344435e4);
+   (2) Install the distiller
    ```
