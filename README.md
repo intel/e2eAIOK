@@ -1,6 +1,6 @@
 # [Intel® End-to-End AI Optimization Kit](https://laughing-waddle-b1e4ead5.pages.github.io/html/)
 
-Intel® End-to-End AI Optimization Kit (code name AIDK) is a set of kits for E2E AI democratization on CPU. It is a pipeline framework that streamlines AI democratization technologies in each stage of E2E AI pipeline, including data processing, feature engineering, training, hyper-parameter tunning, and inference. Intel® End-to-End AI Optimization Kit delivers high performance, lightweight models efficiently on commodity hardware. 
+Intel® End-to-End AI Optimization Kit (code name e2eAIOK) is a set of kits for E2E AI democratization on CPU. It is a pipeline framework that streamlines AI democratization technologies in each stage of E2E AI pipeline, including data processing, feature engineering, training, hyper-parameter tunning, and inference. Intel® End-to-End AI Optimization Kit delivers high performance, lightweight models efficiently on commodity hardware. 
 
 # Introduction
 
@@ -18,7 +18,7 @@ One approach to resolve those challenges is AI democratization, which trying to 
 
 # Intel® End-to-End AI Optimization Kit 
 
-Intel® End-to-End AI Optimization Kit (code name AIDK), is a project to democratize E2E AI on CPU. The strategy is to bring E2E AI to existing CPU installation base with good-enough performance and zero additional cost, it drives the AI portaion on CPU and drive CPU/GPU balance in E2E AI. The core componements of Intel® End-to-End AI Optimization Kit are: model advisor and network constructor. Model advisor provides build-in intelligence to generate parameterized models, while network constructor leverages train-free NAS to generate domain-specific models. As a start, Intel® End-to-End AI Optimization Kit democratized recommender systems on distributed CPU clusters through different optimization in each machine learning life cycle phases. 
+Intel® End-to-End AI Optimization Kit (code name e2eAIOK), is a project to democratize E2E AI on CPU. The strategy is to bring E2E AI to existing CPU installation base with good-enough performance and zero additional cost, it drives the AI portaion on CPU and drive CPU/GPU balance in E2E AI. The core componements of Intel® End-to-End AI Optimization Kit are: model advisor and network constructor. Model advisor provides build-in intelligence to generate parameterized models, while network constructor leverages train-free NAS to generate domain-specific models. As a start, Intel® End-to-End AI Optimization Kit democratized recommender systems on distributed CPU clusters through different optimization in each machine learning life cycle phases. 
 
 # Architecture 
 

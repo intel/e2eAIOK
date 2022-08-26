@@ -2,7 +2,7 @@
 This ls DLRM for ipex v0.2. You can use docker `xuechendi/oneapi-aikit:legacy_hydro.ai` to evaluate DLRM performance.
 
 # Launch training with SDA
-`python run_hydroai.py --data_path "/home/vmagent/app/dataset/criteo" --model_name dlrm --conf conf/hydroai_defaults_dlrm_example.conf`
+`python run_e2eaiok.py --data_path "/home/vmagent/app/dataset/criteo" --model_name dlrm --conf conf/e2eaiok_defaults_dlrm_example.conf`
 
 # For DLRM
 1. Use run_spark.sh to run spark ETL job, the data was saved on hdfs folder of /dlrm/input

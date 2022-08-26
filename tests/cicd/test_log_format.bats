@@ -8,7 +8,7 @@ setup() {
     PATH="$DIR/src:$PATH"
 }
 
-@test "Check AIDK CI/CD Log Format" {
-    run aidk_log_format.sh
+@test "Check e2eAIOK CI/CD Log Format" {
+    run e2eaiok_log_format.sh
     assert_output --partial 'Log pattern passed!'
 }

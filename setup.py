@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="AIDK",
+    name="e2eAIOK",
     version="0.0.1",
     author="INTEL AIA BDF",
     author_email="chendi.xue@intel.com",
