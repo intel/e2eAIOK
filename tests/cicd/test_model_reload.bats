@@ -8,7 +8,7 @@ setup() {
     PATH="$DIR/src:$PATH"
 }
 
-@test 'Check AIDK CI/CD Model Reload' {
-    run aidk_model_reload.sh
+@test 'Check e2eAIOK CI/CD Model Reload' {
+    run e2eaiok_model_reload.sh
     assert_success
 }

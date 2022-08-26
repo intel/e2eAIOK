@@ -12,7 +12,7 @@ Coding Style
    cd SDA
    yapf -i -r ./
 
-   cd hydroai
+   cd e2eaiok
    yapf -i -r ./
 
 
@@ -23,5 +23,5 @@ Coding Style
    cd SDA
    ./dev/lint-python
 
-   cd hydroai
+   cd e2eaiok
    ./dev/lint-python
