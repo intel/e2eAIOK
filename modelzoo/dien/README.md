@@ -27,7 +27,7 @@ cd ${path_to_e2eaiok}/Dockerfile-ubuntu18.04/
 docker build -t e2eaiok-tensorflow-spark . -f DockerfileTensorflow-spark
 ```
 
-## Download Dataset
+## Download Dataset (if you would like direct train with processed data, skip this step)
 ```
 cd ${path_to_e2eaiok}/modelzoo/dien/feature_engineering/
 ./download_dataset ${path_to_e2eaiok_dataset}
@@ -35,7 +35,12 @@ ls ${path_to_e2eaiok_dataset}/amazon_reviews
 j2c_test  output  raw_data
 ```
 
-### activate docker and conda
+## Download Processed Data for training(optional)
+```
+copy vsr602://mnt/nvme2/chendi/BlueWhale/dataset/amazon_reviews to ${path_to_e2eaiok_dataset}/amazon_reviews
+```
+
+## Activate docker and conda
 ```
 cd ${path_to_e2eaiok}
 docker run --shm-size=10g -it --privileged --network host --device=/dev/dri -v ${path_to_e2eaiok_dataset}:/home/vmagent/app/dataset -v `pwd`/:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-tensorflow-spark /bin/bash
@@ -44,15 +49,18 @@ cd /home/vmagent/app/e2eaiok/
 python setup.py install
 ```
 
-### Data Process
+## Data Process (if you would like direct train with processed data, skip this step)
 ```
-# Now you are running inside docker, /home/vmagent/app/ 
-python /home/vmagent/app/recdp/examples/python_tests/dien/preprocessing_for_training.py
-python /home/vmagent/app/recdp/examples/python_tests/dien/preprocessing_for_downloaded_test.py
-python /home/vmagent/app/recdp/examples/python_tests/dien/preprocessing_for_inference.py
+# Now you are running inside docker, /home/vmagent/app/
+source /etc/profile.d/spark-env.sh
+pip install pyrecdp
+sh /home/vmagent/app/e2eaiok/modelzoo/dien/feature_engineering/start_spark_service.sh 
+python /home/vmagent/app/e2eaiok/modelzoo/dien/feature_engineering/preprocessing.py --train
+python /home/vmagent/app/e2eaiok/modelzoo/dien/feature_engineering/preprocessing.py --test
+python /home/vmagent/app/e2eaiok/modelzoo/dien/feature_engineering/preprocessing.py --inference
 ```
 
-### Training
+## Training
 ```
 # test our best parameter
 python -u run_e2eaiok.py --data_path /home/vmagent/app/dataset/amazon_reviews --model_name dien --no_sigopt
@@ -61,14 +69,14 @@ python -u run_e2eaiok.py --data_path /home/vmagent/app/dataset/amazon_reviews --
 SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN python run_e2eaiok.py --data_path /home/vmagent/app/dataset/amazon_reviews --model_name dien
 ```
 
-### Inference
+## Inference
 ```
 cp –r dnn_best_model dnn_best_model_trained
 # modify infer.sh to change NUM_INSTANCES and may uncomment distributed inference 
 ./infer.sh
 ```
 
-### Result Process
+## Result Process
 ```
 # For train result
 grep -r 'time breakdown’ .
