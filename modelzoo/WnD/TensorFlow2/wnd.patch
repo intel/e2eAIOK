@@ -963,14 +963,6 @@ index 94c6339..05c7904 100644
 -* In this model the TF32 precision can in some cases be as fast as the FP16 precision on Ampere GPUs. This is because TF32 also uses Tensor Cores and doesn't need any additional logic such as maintaining FP32 master weights and casts. However, please note that W&D is, by modern recommender standards, a very small model. Larger models should still see significant benefits of using FP16 math.
 +`bash scripts/inference.sh`
 \ No newline at end of file
-diff --git a/modelzoo/WnD/TensorFlow2/checkpoints2/event_files0/events.out.tfevents.1661505803.sr113.10685.2167.v2 b/modelzoo/WnD/TensorFlow2/checkpoints2/event_files0/events.out.tfevents.1661505803.sr113.10685.2167.v2
-new file mode 100644
-index 0000000..b9b216f
-Binary files /dev/null and b/modelzoo/WnD/TensorFlow2/checkpoints2/event_files0/events.out.tfevents.1661505803.sr113.10685.2167.v2 differ
-diff --git a/modelzoo/WnD/TensorFlow2/checkpoints2/event_files1/events.out.tfevents.1661505803.sr113.10687.2167.v2 b/modelzoo/WnD/TensorFlow2/checkpoints2/event_files1/events.out.tfevents.1661505803.sr113.10687.2167.v2
-new file mode 100644
-index 0000000..b9b216f
-Binary files /dev/null and b/modelzoo/WnD/TensorFlow2/checkpoints2/event_files1/events.out.tfevents.1661505803.sr113.10687.2167.v2 differ
 diff --git a/modelzoo/WnD/TensorFlow2/data/outbrain/criteo_meta.yaml b/modelzoo/WnD/TensorFlow2/data/outbrain/criteo_meta.yaml
 new file mode 100644
 index 0000000..d05b232
@@ -21893,10 +21885,10 @@ index 0000000..d2babca
 \ No newline at end of file
 diff --git a/modelzoo/WnD/TensorFlow2/scripts/train.sh b/modelzoo/WnD/TensorFlow2/scripts/train.sh
 new file mode 100644
-index 0000000..2eccba4
+index 0000000..2653f36
 --- /dev/null
 +++ b/modelzoo/WnD/TensorFlow2/scripts/train.sh
-@@ -0,0 +1,32 @@
+@@ -0,0 +1,33 @@
 +source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force
 +conda activate tensorflow
 +
@@ -21924,10 +21916,11 @@ index 0000000..2eccba4
 +  --global_batch_size 524288 \
 +  --eval_batch_size 524288 \
 +  --num_epochs 20 \
-+  --deep_learning_rate 0.00048 \
-+  --linear_learning_rate 0.8 \
-+  --deep_hidden_units 1024 512 256 \
++  --deep_learning_rate 0.011150920451008404 \
++  --linear_learning_rate 1 \
++  --deep_hidden_units 128 128 64 \
 +  --metric MAP \
++  --deep_warmup_epochs 3 --deep_dropout 0.21076275738334013 \
 +  --metric_threshold 0.6553
 diff --git a/modelzoo/WnD/TensorFlow2/scripts/train_criteo.sh b/modelzoo/WnD/TensorFlow2/scripts/train_criteo.sh
 new file mode 100644
