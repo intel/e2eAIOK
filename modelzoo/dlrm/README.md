@@ -3,7 +3,6 @@
 # Launch training with SDA
 `python run_e2eaiok.py --data_path "/home/vmagent/app/dataset/criteo" --model_name dlrm --conf conf/e2eaiok_defaults_dlrm_example.conf`
 
-
 # For Spark data processing
    ```bash
    Use run_spark.sh to run spark ETL job, the data was saved on hdfs folder of /dlrm/input
