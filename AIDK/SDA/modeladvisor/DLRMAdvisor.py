@@ -105,7 +105,7 @@ class DLRMAdvisor(BaseModelAdvisor):
         else:
             self.dist_launch(args)
         self.training_time = time.time() - start_time
-        file1 = open("/home/vmagent/app/hydro.ai/modelzoo/dlrm/dlrm/best_auc.txt",'r')
+        file1 = open("./best_auc.txt",'r')
         lines = file1.readlines()
         file1.close()
         self.mean_accuracy = float(lines[-1])
