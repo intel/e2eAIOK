@@ -123,8 +123,8 @@ index e973f6a..c8c55bd 100755
 +#if [ -d results ]; then
 +#    mv results results_$(date +%Y%m%d%H%M%S)
 +#fi
-+#mkdir results
-+#ssh -p 12345 dr8s19 mkdir -p /home/xxx/dien/results
++/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python script/train.py --mode=test --advanced --slice_id=0 --batch_size=128 --num-inter-threads=4 --num-intra-threads=32 --train_path /home/vmagent/app/dataset/amazon_reviews/train/local_train_splitByUser --test_path /home/vmagent/app/dataset/amazon_reviews/valid/local_test_splitByUser --meta_path /home/vmagent/app/dataset/amazon_reviews/meta.yaml
++exit
  
 -batchs='256 512 1024'
 +# batchs='256 512 1024'
@@ -2218,7 +2218,7 @@ index 2cd436a..ab03c02 100644
 +    #         intra_op_parallelism_threads=1, inter_op_parallelism_threads=1)) as sess:
 +    sess_config = tf.compat.v1.ConfigProto(gpu_options=gpu_options)
 +    with tf.compat.v1.Session(config=sess_config) as sess:
-+        test_file = f"{test_file}_{SLICEID}"
++        test_file = f"{test_file}"
 +        test_data = DataIterator(
 +            test_file, uid_voc, mid_voc, cat_voc, batch_size, maxlen)
 +        n_uid, n_mid, n_cat = test_data.get_n()
