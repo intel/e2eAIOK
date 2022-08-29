@@ -1,6 +1,6 @@
 # [Intel® End-to-End AI Optimization Kit](https://laughing-waddle-b1e4ead5.pages.github.io/html/)
 
-Intel® End-to-End AI Optimization Kit (code name e2eAIOK) is a set of kits for E2E AI democratization on CPU. It is a pipeline framework that streamlines AI democratization technologies in each stage of E2E AI pipeline, including data processing, feature engineering, training, hyper-parameter tunning, and inference. Intel® End-to-End AI Optimization Kit delivers high performance, lightweight models efficiently on commodity hardware. 
+Intel® End-to-End AI Optimization Kit (code name AIDK) is a set of kits for E2E AI democratization on CPU. It is a pipeline framework that streamlines AI democratization technologies in each stage of E2E AI pipeline, including data processing, feature engineering, training, hyper-parameter tunning, and inference. Intel® End-to-End AI Optimization Kit delivers high performance, lightweight models efficiently on commodity hardware. 
 
 # Introduction
 
@@ -10,15 +10,15 @@ Modern end to end machine learning or deep learning system usually includes a li
 
 One approach to resolve those challenges is AI democratization, which trying to make AI accessabile & affordable to every organization and every data scientist. There are a lot of things to be democratized, including: 
 1. Data accessibility & quality, where you make the data access easier and simpler; building a data platform to democratize the data management - simplify data ingestion, data explore, processing and visulaization. 
-2. Storage and compute platforms, instead of running the AI on hi-cost GPU, run it on democratized commodity hardware with auto-scaling. 
-3. Algorithms - Democratize the use, development and sharing of ML & DL algorithms; reduce the engry barrier with automatic model searching, AutoML
-4. Model development - select the most suitalbe models for users, democratize the end to end model development 
-5. Market place - simply how you access, use, exchange and monetization of data, algorithm, models, and outcomes 
+2. Storage and compute platforms, instead of running the AI on hi-cost GPU, run it on commodity hardware with auto-scaling. 
+3. Algorithms - Democratize the use, development and sharing of ML & DL algorithms; reduce the entry barrier with automatic neural architecture search and AutoML. 
+4. Model development - select the most suitalbe models for users, democratize the end to end model development. 
+5. Market place - simply how you access, use, exchange and monetization of data, algorithm, models, and outcomes. 
 
 
 # Intel® End-to-End AI Optimization Kit 
 
-Intel® End-to-End AI Optimization Kit (code name e2eAIOK), is a project to democratize E2E AI on CPU. The strategy is to bring E2E AI to existing CPU installation base with good-enough performance and zero additional cost, it drives the AI portaion on CPU and drive CPU/GPU balance in E2E AI. The core componements of Intel® End-to-End AI Optimization Kit are: model advisor and network constructor. Model advisor provides build-in intelligence to generate parameterized models, while network constructor leverages train-free NAS to generate domain-specific models. As a start, Intel® End-to-End AI Optimization Kit democratized recommender systems on distributed CPU clusters through different optimization in each machine learning life cycle phases. 
+Intel® End-to-End AI Optimization Kit, is a set of toolkits to democratize E2E AI on commdity hardware. The strategy is to bring E2E AI to existing commdity hardware, i.e., CPU installation base with good-enough performance at zero additional cost, it drives the CPU/GPU balance in E2E AI, unifies the pipelien on one infrastructure and eliminated uncessary data movement across different clusters. The core componements of Intel® End-to-End AI Optimization Kit are: model advisor and  network constructor. Model advisor provides build-in intelligence to generate parameterized models, while network constructor leverages domain-specific train-free NAS to generate domain-specific models. 
 
 # Architecture 
 
