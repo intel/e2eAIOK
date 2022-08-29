@@ -1,4 +1,4 @@
-# Intel Optimized DIEN
+# Intel Optimized DLRM
 ## Original source disclose
 Source repo: https://github.com/facebookresearch/dlrm
 
