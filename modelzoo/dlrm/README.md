@@ -10,7 +10,6 @@
    Then concat the generated small binary files under the folder of train, test, validation to train_data.bin, test_data.bin and val_data.bin 
    And scp these three bin files under the same folder such as /mnt/DP_disk6/binary_dataset
    ```
-
 # How to reproduce our optimized DLRM training performance
 
 ## Prepare
