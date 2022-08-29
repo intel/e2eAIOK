@@ -53,3 +53,8 @@ bash run_and_time_launch.sh
 ```
 bash inference.sh
 ```
+
+## All In One
+```
+bash run_all_in_one.sh
+```
