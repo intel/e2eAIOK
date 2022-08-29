@@ -38,15 +38,15 @@ def parse_args(args):
                         help='training label names, can be reply, retweet, retweet_with_comment or like')
     parser.add_argument('--train_data_path',
                         type=str,
-                        default="/home/vmagent/app/dataset/xinyao/TwitterRecSys2021-intel-opt/TwitterRecSys2021Dataset/stage1/train/train",
+                        default="/datapath/stage1/train/train",
                         help='path to training data')
     parser.add_argument('--valid_data_path',
                         type=str,
-                        default="/home/vmagent/app/dataset/xinyao/TwitterRecSys2021-intel-opt/TwitterRecSys2021Dataset/stage1/valid/valid",
+                        default="/datapath/stage1/valid/valid",
                         help='path to validation data')
     parser.add_argument('--model_save_path',
                         type=str,
-                        default="/home/vmagent/app/dataset/xinyao/TwitterRecSys2021-intel-opt/models",
+                        default="/datapath/models",
                         help='path for model and result saving')
     parser.add_argument('--max_depth',
                         type=int,

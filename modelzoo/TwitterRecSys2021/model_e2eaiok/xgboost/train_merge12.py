@@ -9,19 +9,19 @@ def parse_args(args):
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_path',
                         type=str,
-                        default="/home/vmagent/app/dataset/xinyao/TwitterRecSys2021-intel-opt/TwitterRecSys2021Dataset")
+                        default="")
     parser.add_argument('--reply_pred_path',
                         type=str,
-                        default="/home/vmagent/app/hydro.ai/result/twitter_recsys/20211217_055149/2f9dd8a6fe67fe190b0c1e015c6f60d5/xgboost_pred_stage1_reply.csv")
+                        default="")
     parser.add_argument('--retweet_pred_path',
                         type=str,
-                        default="/home/vmagent/app/hydro.ai/result/twitter_recsys/20211217_055240/d71e647911eadd50fed5693c8e02b436/xgboost_pred_stage1_retweet.csv")
+                        default="")
     parser.add_argument('--retweet_with_comment_pred_path',
                         type=str,
-                        default="/home/vmagent/app/hydro.ai/result/twitter_recsys/20211217_055303/d5aee6594f7c76ec0dc0b3e5ca1aaaa8/xgboost_pred_stage1_retweet_with_comment.csv")
+                        default="")
     parser.add_argument('--like_pred_path',
                         type=str,
-                        default="/home/vmagent/app/hydro.ai/result/twitter_recsys/20211217_055325/0eb3fe9e620acc16459bad6c08c7a7e1/xgboost_pred_stage1_like.csv")
+                        default="")
     return parser.parse_args(args)
 
 if __name__ == "__main__":

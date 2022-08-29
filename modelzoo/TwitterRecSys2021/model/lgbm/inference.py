@@ -8,7 +8,7 @@ pd.set_option('display.max_columns', 500)
 pd.set_option('display.max_rows', 500)
 very_start = time.time()
 
-path = "/mnt/sdb/xinyao/2optimize/nvidia2021/3mergeall/recsys2021-intel-opt"
+path = "/path/to/processed/data"
 data_path = f"{path}/data"
 model_save_path = f"{path}/models"  ## model saving path
 pred_save_path = f"{path}/result"   ## prediction result saving path
