@@ -2,7 +2,7 @@
 
 # Launch training with SDA
    ```bash
-   python run_hydroai.py --data_path "/home/vmagent/app/dataset/criteo" --model_name dlrm --conf conf/hydroai_defaults_dlrm_example.conf
+   python run_e2eaiok.py --data_path "/home/vmagent/app/dataset/criteo" --model_name dlrm --conf conf/e2eaiok_defaults_dlrm_example.conf
    ```
 
 # For Spark data processing
