@@ -20,37 +20,11 @@ Google's [Wide & Deep Learning for Recommender Systems](https://arxiv.org/abs/16
 
 ## Environment setup
 
-* Spark data preprocess: install [Spark](https://spark.apache.org)
-
-* Tensorflow
-
-  ```
-  pip install intel-tensorflow
-  ```
-
-* oneCCL (optional)
-
-  Follow [oneCCL](https://github.com/oneapi-src/oneCCL) installation guide
-
-* OpenMPI (optional)
-
-  Note that oneCCL contains Intel mpi, so if you installed oneCCL, the installation for OpenMPI is not needed.
-
-  Follow [OpenMPI](https://www.open-mpi.org/faq/?category=building) installation guide to build OpenMPI
-
-* Horovod
-
-  ```
-  HOROVOD_WITH_TENSORFLOW=1 pip install --no-cache-dir horovod[intel-tensorflow]
-  ```
-
-* Tensorflow transform
-
-  ```
-  pip install --no-cache-dir tensorflow-transform==0.24.1 tensorflow-metadata==0.14.0 pydot dill
-  ```
-
-* or pull the docker image `xuechendi/oneapi-aikit:hydro.ai`
+```
+cd Dockerfile-ubuntu18.04/
+docker build -t e2eaiok-tensorflow . -f DockerfileTensorflow
+docker run -it --privileged --network host --device=/dev/dri -v $data_path:/home/vmagent/app/dataset/outbrain -v $e2eaiok_path:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ e2eaiok-tensorflow /bin/bash
+```
 
 ## Dataset
 

@@ -21889,7 +21889,7 @@ index 0000000..2653f36
 --- /dev/null
 +++ b/modelzoo/WnD/TensorFlow2/scripts/train.sh
 @@ -0,0 +1,33 @@
-+source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force
++source /opt/intel/oneapi/intelpython/latest/etc/profile.d/conda.sh
 +conda activate tensorflow
 +
 +set -x
@@ -21907,7 +21907,7 @@ index 0000000..2653f36
 +# time mpirun -genv OMP_NUM_THREADS=16 -map-by socket -n 8 -ppn 2 -hosts sr113,sr610,sr612,sr613 -print-rank-map \
 +# -genv I_MPI_PIN_DOMAIN=socket -genv OMP_PROC_BIND=true -genv KMP_BLOCKTIME=1 -genv KMP_AFFINITY=granularity=fine,compact,1,0 \
 +# -iface eth3 \
-+time horovodrun -np 2 -H sr113:2 --mpi-args="-genv OMP_NUM_THREADS=16 -genv CCL_WORKER_COUNT=2 -map-by socket" \
++time horovodrun -np 2 -H sr113:2 \
 +python -u main.py \
 +  --train_data_pattern '/home/vmagent/app/dataset/outbrain/train/part*' \
 +  --eval_data_pattern '/home/vmagent/app/dataset/outbrain/valid/part*' \
