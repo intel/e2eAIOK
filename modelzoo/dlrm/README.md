@@ -1,4 +1,4 @@
-# Intel Optimized DLRM
+# Intel® End-to-End AI Optimization Kit for DLRM
 ## Original source disclose
 Source repo: https://github.com/facebookresearch/dlrm
 
