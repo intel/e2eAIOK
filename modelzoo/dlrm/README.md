@@ -40,7 +40,6 @@ Download the raw data files day_0.gz, ...,day_23.gz from https://labs.criteo.com
 
 ```
 
-
 ## RecDP Data Process
 ```
 WIP to add
