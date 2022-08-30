@@ -5,8 +5,8 @@ MODEL_NAME="dlrm"
 DATA_PATH="/home/vmagent/app/dataset/criteo"
 CONF_FILE="/home/vmagent/app/e2eaiok/tests/cicd/conf/e2eaiok_defaults_dlrm_example.conf"
 
-# enable oneAPI
-source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force
+# init conda
+eval "$('/opt/intel/oneapi/intelpython/latest/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
 
 # create ci log dir
 hashstr_id=$(date +%Y-%m-%d)_$(echo $RANDOM | md5sum | head -c 8)

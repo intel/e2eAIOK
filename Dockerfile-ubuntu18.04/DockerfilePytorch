@@ -1,4 +1,4 @@
-FROM intel/oneapi-aikit:2021.4-devel-ubuntu18.04
+FROM ubuntu:18.04
 
 WORKDIR /root/
 RUN apt-get update -y && apt-get upgrade -y && apt-get install -y build-essential cmake wget git libunwind-dev
