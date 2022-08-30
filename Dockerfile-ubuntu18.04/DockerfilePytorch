@@ -1,7 +1,8 @@
 FROM intel/oneapi-aikit:2021.4-devel-ubuntu18.04
 
 WORKDIR /root/
-RUN apt-get update -y && apt-get install -y git libunwind-dev
+RUN apt-get update -y && apt-get upgrade -y && apt-get install -y build-essential cmake wget git libunwind-dev
+RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-py37_4.12.0-Linux-x86_64.sh -O ~/miniconda.sh && /bin/bash ~/miniconda.sh -b -p /opt/intel/oneapi/intelpython/latest
 ENV PATH /opt/intel/oneapi/intelpython/latest/condabin:$PATH
 RUN yes | conda create -n pytorch_mlperf python=3.7
 
@@ -21,7 +22,7 @@ RUN git clone https://github.com/pytorch/pytorch.git && cd pytorch && git checko
 RUN git clone https://github.com/intel/intel-extension-for-pytorch.git && cd intel-extension-for-pytorch && git checkout tags/v0.2 -b v0.2 && git submodule sync && git submodule update --init --recursive
 # apply ipex patch to pytorch and install
 RUN cd intel-extension-for-pytorch && cp torch_patches/0001-enable-Intel-Extension-for-CPU-enable-CCL-backend.patch ../pytorch/ && cd ../pytorch && patch -p1 < 0001-enable-Intel-Extension-for-CPU-enable-CCL-backend.patch
-RUN cp -r /opt/intel/oneapi/intelpython/python3.7/envs/pytorch_mlperf/lib/* /opt/intel/oneapi/intelpython/python3.7/envs/pytorch_mlperf/x86_64-conda-linux-gnu/sysroot/usr/lib64/
+RUN cp -r /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/* /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/x86_64-conda-linux-gnu/sysroot/usr/lib64/
 RUN cd pytorch && python setup.py install
 RUN cd intel-extension-for-pytorch && python setup.py install
 # git clone oneCCL and install
@@ -42,7 +43,7 @@ SHELL ["/bin/bash", "-c"]
 RUN apt-get update -y && apt-get install -y openssh-server
 RUN sed -i 's/#Port 22/Port 12346/g' /etc/ssh/sshd_config
 RUN sed -i 's/#   Port 22/    Port 12346/g' /etc/ssh/ssh_config
-# spark
+# install spark
 RUN wget -qO- https://archive.apache.org/dist/spark/spark-3.2.1/spark-3.2.1-bin-hadoop3.2.tgz | tar xvz -C /home/
 ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64
 ENV SPARK_HOME /home/spark-3.2.1-bin-hadoop3.2
