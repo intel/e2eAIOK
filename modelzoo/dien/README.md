@@ -1,4 +1,4 @@
-# Intel Optimized DIEN
+# Intel® End-to-End AI Optimization Kit - optimized DIEN Workflow
 ## Original source disclose
 Source repo: https://github.com/alibaba/ai-matrix
 
@@ -13,7 +13,7 @@ export path_to_e2eaiok=`pwd`/e2eAIOK
 mkdir -p ${path_to_e2eaiok_dataset}
 ```
 
-## Install End to end AIOK Kit for DIEN
+## Install Intel® End-to-End AI Optimization Kit for DIEN
 ```
 git clone https://github.com/intel/e2eAIOK.git
 git submodule update --init --recursive
