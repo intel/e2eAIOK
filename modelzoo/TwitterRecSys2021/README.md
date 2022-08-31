@@ -19,11 +19,10 @@ You can choose to use AIOK docker or prepare the environment by yourself.
 ### User AIOK Docker
 ```
 cd ${path_to_e2eaiok}/Dockerfile-ubuntu18.04/
-docker build -t e2eaiok-pytorch-spark . -f DockerfilePytorch-spark
+docker build -t e2eaiok-pytorch-spark . -f DockerfilePytorch
 cd ${path_to_e2eaiok}
 docker run --shm-size=10g -it --privileged --network host -v ${path_to_e2eaiok_dataset}:/home/vmagent/app/dataset -v `pwd`/:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch-spark /bin/bash
 source /etc/profile.d/spark-env.sh
-pip install pyrecdp
 Install hadoop and update the setting
 ```
 
