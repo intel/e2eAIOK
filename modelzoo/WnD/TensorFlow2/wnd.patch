@@ -93,19 +93,17 @@ index 9e09856..0000000
 -
 -COPY . .
 diff --git a/modelzoo/WnD/TensorFlow2/README.md b/modelzoo/WnD/TensorFlow2/README.md
-index 94c6339..05c7904 100644
+index 94c6339..6ff9eb1 100644
 --- a/modelzoo/WnD/TensorFlow2/README.md
 +++ b/modelzoo/WnD/TensorFlow2/README.md
-@@ -1,833 +1,57 @@
+@@ -1,833 +1,55 @@
 -# Wide & Deep Recommender Model Training For TensorFlow 2
 +# Intel Optimized Wide and Deep
  
 -This repository provides a script and recipe to train the Wide and Deep Recommender model to achieve state-of-the-art accuracy.
 -The content of the repository is tested and maintained by NVIDIA.
-+Source repo: https://github.com/NVIDIA/DeepLearningExamples/tree/master/TensorFlow/Recommendation/WideAndDeep
- 
-+## Model
- 
+-
+-
 -- [Model overview](#model-overview)
 -  * [Model architecture](#model-architecture)
 -  * [Applications and dataset](#applications-and-dataset)
@@ -151,82 +149,55 @@ index 94c6339..05c7904 100644
 -- [Release notes](#release-notes)
 -  * [Changelog](#changelog)
 -  * [Known issues](#known-issues)
-+Google's [Wide & Deep Learning for Recommender Systems](https://arxiv.org/abs/1606.07792)
- 
-+## Environment setup
- 
-+* Spark data preprocess: install [Spark](https://spark.apache.org)
- 
+-
+-
+-
 -## Model overview
-+* Tensorflow
- 
+-
 -Recommendation systems drive engagement on many of the most popular online platforms. As the volume of data available to power these systems grows exponentially, Data Scientists are increasingly turning from more traditional machine learning methods to highly expressive deep learning models to improve the quality of their recommendations.
-+  ```
-+  pip install intel-tensorflow
-+  ```
- 
+-
 -Google's [Wide & Deep Learning for Recommender Systems](https://arxiv.org/abs/1606.07792) has emerged as a popular model for Click Through Rate (CTR) prediction tasks thanks to its power of generalization (deep part) and memorization (wide part).
 -The differences between this Wide & Deep Recommender Model and the model from the paper is the size of the deep part of the model. Originally, in Google's paper, the fully connected part was three layers of 1024, 512, and 256 neurons. Our model consists of 5 layers each of 1024 neurons.
-+* oneCCL (optional)
- 
+-
 -This model is trained with mixed precision using Tensor Cores on NVIDIA Volta and NVIDIA Ampere GPU architectures. Therefore, researchers can get results 4.5 times faster than training without Tensor Cores, while experiencing the benefits of mixed precision training. This model is tested against each NGC monthly container release to ensure consistent accuracy and performance over time.
-+  Follow [oneCCL](https://github.com/oneapi-src/oneCCL) installation guide
- 
+-
 -### Model architecture
-+* OpenMPI (optional)
- 
+-
 -Wide & Deep refers to a class of networks that use the output of two parts working in parallel - wide model and deep model - to make a binary prediction of CTR. The wide model is a linear model of features together with their transforms. The deep model is a series of 5 hidden MLP layers of 1024 neurons. The model can handle both numerical continuous features as well as categorical features represented as dense embeddings. The architecture of the model is presented in Figure 1.
-+  Note that oneCCL contains Intel mpi, so if you installed oneCCL, the installation for OpenMPI is not needed.
- 
+-
 -<p align="center">
 -  <img width="100%" src="./img/model.svg">
 -  <br>
 -Figure 1. The architecture of the Wide & Deep model.</a>
 -</p>
-+  Follow [OpenMPI](https://www.open-mpi.org/faq/?category=building) installation guide to build OpenMPI
- 
-+* Horovod
- 
-+  ```
-+  HOROVOD_WITH_TENSORFLOW=1 pip install --no-cache-dir horovod[intel-tensorflow]
-+  ```
- 
-+* Tensorflow transform
- 
-+  ```
-+  pip install --no-cache-dir tensorflow-transform==0.24.1 tensorflow-metadata==0.14.0 pydot dill
-+  ```
- 
+-
+-
+-
+-
+-
 -### Applications and dataset
-+## Dataset
- 
+-
 -As a reference dataset, we used a subset of [the features engineered](https://github.com/gabrielspmoreira/kaggle_outbrain_click_prediction_google_cloud_ml_engine) by the 19th place finisher in the [Kaggle Outbrain Click Prediction Challenge](https://www.kaggle.com/c/outbrain-click-prediction/). This competition challenged competitors to predict the likelihood with which a particular ad on a website's display would be clicked on. Competitors were given information about the user, display, document, and ad in order to train their models. More information can be found [here](https://www.kaggle.com/c/outbrain-click-prediction/data).
-+The original dataset can be downloaded at https://www.kaggle.com/c/outbrain-click-prediction/data
- 
+-
 -### Default configuration
-+## Quick start guide
- 
+-
 -The Outbrain Dataset is preprocessed in order to get features input to the model. To give context to the acceleration numbers described below, some important properties of our features and model are as follows.
-+### Data preprocessing
- 
+-
 -Features:
 -- Request Level:
 -    * 5 scalar numeric features `dtype=float32`
 -    * 8 categorical features (all INT32 `dtype`)
 -    * 8 trainable embeddings of (dimension, cardinality of categorical variable): (128,300000), (16,4), (128,100000), (64 ,4000), (64,1000), (64,2500), (64,300), (64,2000)
 -    * 8  trainable embeddings for wide part of size 1 (serving as an embedding from the categorical to scalar space for input to the wide portion of the model)
-+`bash scripts/spark_preproc.sh`
- 
+-
 -- Item Level:
 -    * 8 scalar numeric features `dtype=float32`
 -    * 5 categorical features (all INT32 `dtype`)
 -    * 5 trainable embeddings of dimensions (cardinality of categorical variable): 128 (250000), 64 (2500), 64 (4000), 64 (1000),64 (5000)
 -    * 5 trainable embeddings for wide part of size 1 (working as trainable one-hot embeddings)
-+### Training
- 
+-
 -Features describe both the user (Request Level features) and Item (Item Level Features).
-+`bash scripts/train.sh`
- 
+-
 -- Model:
 -    * Input dimension is 26 (13 categorical and 13 numerical features)
 -    * Total embedding dimension is 976
@@ -234,8 +205,7 @@ index 94c6339..05c7904 100644
 -    * Total number of model parameter is ~90M
 -    * Output dimension is 1 (`y` is the probability of click given Request-level and Item-level features)
 -    * Loss function: Binary Crossentropy
-+### Inference
- 
+-
 -For more information about feature preprocessing, go to [Dataset preprocessing](#dataset-preprocessing).
 -
 -### Model accuracy metric
@@ -332,10 +302,13 @@ index 94c6339..05c7904 100644
 -```
 -
 -2. Go to `WideAndDeep` TensorFlow2 directory within the `DeepLearningExamples` repository:
--```
++## Pre-work
++sync submodule code
+ ```
 -cd DeepLearningExamples/TensorFlow2/Recommendation/WideAndDeep
--```
--
++git submodule update --init --recursive
+ ```
+ 
 -3. Download the Outbrain dataset.
 -
 -The Outbrain dataset can be downloaded from Kaggle (requires Kaggle account). Unzip the downloaded archive (for example, to `/raid/outbrain/orig`) and set the `HOST_OUTBRAIN_PATH` variable to the parent directory:
@@ -484,10 +457,13 @@ index 94c6339..05c7904 100644
 -
 -### Command-line options
 -To see the full list of available options and their descriptions, use the `-h` or `--help` command-line option:
--```
++apply patch
+ ```
 -python main.py -h
--```
--
++cd modelzoo/WnD/TensorFlow2
++bash patch_wnd.patch
+ ```
+ 
 -### Getting the data
 -
 -The Outbrain dataset can be downloaded from [Kaggle](https://www.kaggle.com/c/outbrain-click-prediction/data) (requires Kaggle account).
@@ -580,16 +556,20 @@ index 94c6339..05c7904 100644
 -### Evaluation process
 -
 -The evaluation can be started by running the `main.py --evaluation` script. Evaluation is done for TFRecords dataset stored in `--eval_data_pattern`. Other evaluation related configs are also present in the `trainer/utils/arguments.py` and can be seen using the command `python main.py -h`.
--
++Source repo: https://github.com/NVIDIA/DeepLearningExamples/tree/master/TensorFlow/Recommendation/WideAndDeep
+ 
 -During evaluation (`--evaluation flag`):
 -* Model is restored from checkpoint in `--model_dir` if `--use_checkpoint` is set
 -* Evaluation log is displayed in console and stored in  `--log_filename`
 -* Every 100 batches evaluation metrics are logged - loss, binary accuracy, AUC ROC, MAP@12 value
--
++## Model
+ 
 -After the whole evaluation, the total evaluation metrics are logged,  loss, binary accuracy, AUC ROC, MAP@12 value.
--
++Google's [Wide & Deep Learning for Recommender Systems](https://arxiv.org/abs/1606.07792)
+ 
 -## Performance
--
++## Environment setup
+ 
 -### Benchmarking
 -
 -The following section shows how to run benchmarks measuring the model performance in training mode.
@@ -620,24 +600,40 @@ index 94c6339..05c7904 100644
 -```
 -
 -For GPU NVTabular preprocessing:
--```
+ ```
 -cd /wd && bash scripts/preproc_benchmark.sh -m nvtabular
--```
--
--
++cd Dockerfile-ubuntu18.04/
++docker build -t e2eaiok-tensorflow . -f DockerfileTensorflow
++docker run -it --privileged --network host --device=/dev/dri -v $data_path:/home/vmagent/app/dataset/outbrain -v $e2eaiok_path:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ e2eaiok-tensorflow /bin/bash
+ ```
+ 
++## Dataset
+ 
 -#### Training and evaluation performance benchmark
--
++The original dataset can be downloaded at https://www.kaggle.com/c/outbrain-click-prediction/data
+ 
 -Benchmark script is prepared to measure performance of the model during training (default configuration) and evaluation (`--evaluation`). Benchmark runs training or evaluation for `--benchmark_steps` batches, however measurement of performance starts after `--benchmark_warmup_steps`. Benchmark can be run for single and 8 GPUs and with a combination of XLA (`--xla`), AMP (`--amp`), batch sizes (`--global_batch_size` , `--eval_batch_size`) and affinity (`--affinity`).
--
++## Quick start guide
+ 
 -In order to run benchmark follow these steps:
 -Run training container (`${HOST_OUTBRAIN_PATH}` is the path with Outbrain dataset):
 -```
 -nvidia-docker run --rm -it --ipc=host --privileged -v ${HOST_OUTBRAIN_PATH}:/outbrain wd2-train bash
--```
--
++### Data preprocessing
+ ```
++# start spark service
++# need to setup ssh service first
++cd /home/vmagent/app/e2eaiok/modelzoo/WnD/TensorFlow2/data_processing/
++cp spark-defaults.conf /home/spark-3.2.1-bin-hadoop3.2/conf/
++mkdir -p /home/vmagent/app/e2eaiok/modelzoo/dlrm/data_processing/spark_local_dir
++mkdir -p /home/mnt/applicationHistory
++sh ./start_spark_service.sh
+ 
 -Run the benchmark script:
 -For 1 GPU:
--```
++# data preprocess with spark
++bash scripts/spark_preproc.sh
+ ```
 -python main.py --benchmark
 -```
 -
@@ -951,18 +947,20 @@ index 94c6339..05c7904 100644
 -|8|131072|YES|7205370|16923294|2.35|
 -|8|131072|NO|7030438|15081861|2.15|
 - </details>
--
+ 
 -## Release notes
--
++### Training
+ 
 -### Changelog
--
++`bash scripts/train.sh`
+ 
 -February 2021
 -Initial release
--
++### Inference
+ 
 -### Known issues
 -* In this model the TF32 precision can in some cases be as fast as the FP16 precision on Ampere GPUs. This is because TF32 also uses Tensor Cores and doesn't need any additional logic such as maintaining FP32 master weights and casts. However, please note that W&D is, by modern recommender standards, a very small model. Larger models should still see significant benefits of using FP16 math.
 +`bash scripts/inference.sh`
-\ No newline at end of file
 diff --git a/modelzoo/WnD/TensorFlow2/data/outbrain/criteo_meta.yaml b/modelzoo/WnD/TensorFlow2/data/outbrain/criteo_meta.yaml
 new file mode 100644
 index 0000000..d05b232
@@ -3277,10 +3275,10 @@ index 0000000..692aaef
 \ No newline at end of file
 diff --git a/modelzoo/WnD/TensorFlow2/data/outbrain/spark/preproc.py b/modelzoo/WnD/TensorFlow2/data/outbrain/spark/preproc.py
 new file mode 100644
-index 0000000..7dd7b58
+index 0000000..478d744
 --- /dev/null
 +++ b/modelzoo/WnD/TensorFlow2/data/outbrain/spark/preproc.py
-@@ -0,0 +1,823 @@
+@@ -0,0 +1,841 @@
 +from pyspark.context import SparkContext, SparkConf
 +from pyspark.sql.functions import col, udf
 +from pyspark.sql.session import SparkSession
@@ -3307,15 +3305,33 @@ index 0000000..7dd7b58
 +import os
 +import threading
 +
-+os.environ["PYSPARK_PYTHON"] = "/root/sw/miniconda3/envs/spark/bin/python"
 +
-+OUTPUT_BUCKET_FOLDER = "/tmp/spark/preprocessed/rewrite/"
-+DATA_BUCKET_FOLDER = "/outbrain/orig/"
-+SPARK_TEMP_FOLDER = "/tmp/spark/spark-temp/"
++parser = argparse.ArgumentParser()
++
++parser.add_argument(
++    '--spark_master',
++    help='number of train partitions',
++    type=str,
++    default='local[*]')
++parser.add_argument(
++    '--dataset_path',
++    help='input dataset path',
++    type=str,
++    default='file:///outbrain/orig/')
++parser.add_argument(
++    '--output_path',
++    help='output dataset path',
++    type=str,
++    default='file:///outbrain/tfrecords/')
++args = parser.parse_args()
++
++OUTPUT_BUCKET_FOLDER = "file:///tmp/spark/preprocessed/rewrite/"
++DATA_BUCKET_FOLDER = args.dataset_path
++SPARK_TEMP_FOLDER = "file:///tmp/spark/spark-temp/"
 +TENSORFLOW_HADOOP = "data/outbrain/spark/data/tensorflow-hadoop-1.5.0.jar"
 +
-+
-+conf = SparkConf().setMaster('spark://sr112:7077').set('spark.executor.memory', '40g').set('spark.driver.memory', '50g').set('spark.executor.cores', '8')
++# set spark config according to test environment
++conf = SparkConf().setMaster(args.spark_master).set('spark.executor.memory', '40g').set('spark.driver.memory', '50g').set('spark.executor.cores', '8')
 +conf.set("spark.jars", TENSORFLOW_HADOOP)
 +conf.set("spark.sql.files.maxPartitionBytes", 805306368)
 +conf.set("spark.memory.offHeap.enabled", True)
@@ -3883,7 +3899,7 @@ index 0000000..7dd7b58
 +pd.set_option('display.max_columns', 1000)
 +evaluation = True
 +evaluation_verbose = False
-+LOCAL_DATA_TFRECORDS_DIR = "/outbrain/tfrecords-test/rewrite"
++LOCAL_DATA_TFRECORDS_DIR = args.output_path
 +
 +TEST_SET_MODE = False
 +
@@ -3920,7 +3936,7 @@ index 0000000..7dd7b58
 +    metadata_io.write_metadata(metadata, output_dir)
 +
 +# write out tfrecords meta
-+make_spec(LOCAL_DATA_TFRECORDS_DIR + '/transformed_metadata', batch_size=batch_size)
++make_spec(LOCAL_DATA_TFRECORDS_DIR + '/meta', batch_size=batch_size)
 +
 +
 +def log2_1p(x):
@@ -4066,7 +4082,7 @@ index 0000000..7dd7b58
 +    return examples
 +
 +train_output_string = '/train'
-+eval_output_string = '/eval'
++eval_output_string = '/valid'
 +
 +TEST_SET_MODE = False
 +train_features = train_feature_norm.coalesce(num_train_partitions).rdd.mapPartitions(_transform_to_slices)
@@ -21797,10 +21813,13 @@ index 0000000..775175d
 +    main()
 diff --git a/modelzoo/WnD/TensorFlow2/scripts/inference.sh b/modelzoo/WnD/TensorFlow2/scripts/inference.sh
 new file mode 100644
-index 0000000..c8ef434
+index 0000000..8431f95
 --- /dev/null
 +++ b/modelzoo/WnD/TensorFlow2/scripts/inference.sh
-@@ -0,0 +1,33 @@
+@@ -0,0 +1,38 @@
++source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force
++conda activate tensorflow
++
 +set -x
 +set -e
 +# export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${JAVA_HOME}/jre/lib/amd64/server
@@ -21816,14 +21835,16 @@ index 0000000..c8ef434
 + export I_MPI_PIN_DOMAIN=socket
 + export I_MPI_PIN_PROCESSOR_EXCLUDE_LIST="16,17,34,35,52,53,70,71"
 +# export HOROVOD_CCL_CACHE=1
++export OMP_NUM_THREADS=16
 +
 +
-+time mpirun -genv OMP_NUM_THREADS=16 -map-by socket -n 2 -ppn 2 -hosts sr112 -print-rank-map \
-+-genv I_MPI_PIN_DOMAIN=socket -genv OMP_PROC_BIND=true -genv KMP_BLOCKTIME=1 -genv KMP_AFFINITY=granularity=fine,compact,1,0 \
-+/root/sw/miniconda3/envs/wd2/bin/python -u main.py \
-+  --train_data_pattern '/mnt/sdd/outbrain2/tfrecords/train/part*' \
-+  --eval_data_pattern '/mnt/sdd/outbrain2/tfrecords/eval/part*' \
-+  --model_dir /mnt/nvm6/wd/checkpoints2-infer-test \
++# time mpirun -genv OMP_NUM_THREADS=16 -map-by socket -n 2 -ppn 2 -hosts host -print-rank-map \
++# -genv I_MPI_PIN_DOMAIN=socket -genv OMP_PROC_BIND=true -genv KMP_BLOCKTIME=1 -genv KMP_AFFINITY=granularity=fine,compact,1,0 \
++time horovodrun -np 2 -H sr113:2 \
++/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python -u main.py \
++  --train_data_pattern '/home/vmagent/app/dataset/outbrain/train/part*' \
++  --eval_data_pattern '/home/vmagent/app/dataset/outbrain/train/part*' \
++  --model_dir ./checkpoints --results_dir ./ \
 +  --dataset_meta_file data/outbrain/outbrain_meta.yaml \
 +  --deep_learning_rate 0.00048 \
 +  --linear_learning_rate 0.8 \
@@ -21867,48 +21888,53 @@ index 6c5d8c6..3492ba7 100755
  echo -e "\n[BENCHMARK] Benchmark finished:\n"
 diff --git a/modelzoo/WnD/TensorFlow2/scripts/spark_preproc.sh b/modelzoo/WnD/TensorFlow2/scripts/spark_preproc.sh
 new file mode 100644
-index 0000000..d2babca
+index 0000000..2781aae
 --- /dev/null
 +++ b/modelzoo/WnD/TensorFlow2/scripts/spark_preproc.sh
-@@ -0,0 +1,11 @@
+@@ -0,0 +1,15 @@
 +#!/bin/bash
 +
-+export PYTHONPATH=$SPARK_HOME/python:$SPARK_HOME/python/lib/py4j-0.10.7-src.zip
++source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force
++conda activate tensorflow
++
++#export PYTHONPATH=$SPARK_HOME/python:$SPARK_HOME/python/lib/py4j-0.10.7-src.zip
 +export SPARK_OPTS="--driver-java-options=-Xms1024M --driver-java-options=-Xmx4096M --driver-java-options=-Dlog4j.logLevel=info"
-+export PYSPARK_PYTHON=/root/sw/miniconda3/envs/spark/bin/python
-+export PYSPARK_DRIVER_PYTHON=/root/sw/miniconda3/envs/spark/bin/python
++export PYSPARK_PYTHON=/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python
++export PYSPARK_DRIVER_PYTHON=/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python
 +
 +
 +tfrecords=${2:-40}
++host=sr113
 +
-+time /root/sw/miniconda3/envs/spark/bin/python -m data.outbrain.spark.preproc --num_train_partitions "${tfrecords}" --num_valid_partitions "${tfrecords}"
++time /opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python -m data.outbrain.spark.preproc --spark_master "spark://${host}:7077" --dataset_path "file:///home/vmagent/app/dataset/outbrain/orig/" --output_path "file:////home/vmagent/app/dataset/outbrain/"
 \ No newline at end of file
 diff --git a/modelzoo/WnD/TensorFlow2/scripts/train.sh b/modelzoo/WnD/TensorFlow2/scripts/train.sh
 new file mode 100644
-index 0000000..2653f36
+index 0000000..ed6e0ff
 --- /dev/null
 +++ b/modelzoo/WnD/TensorFlow2/scripts/train.sh
-@@ -0,0 +1,33 @@
-+source /opt/intel/oneapi/intelpython/latest/etc/profile.d/conda.sh
+@@ -0,0 +1,34 @@
++source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force
 +conda activate tensorflow
 +
 +set -x
 +set -e
++
 +# export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${JAVA_HOME}/jre/lib/amd64/server
 +# CLASSPATH=$(${HADOOP_HOME}/bin/hadoop classpath --glob)
 +
-+ export CCL_WORKER_COUNT=2
-+ export CCL_WORKER_AFFINITY="16,17,34,35"
-+ export HOROVOD_THREAD_AFFINITY="53,71"
-+ export I_MPI_PIN_DOMAIN=socket
-+ export I_MPI_PIN_PROCESSOR_EXCLUDE_LIST="16,17,34,35,52,53,70,71"
++# export CCL_WORKER_COUNT=2
++# export CCL_WORKER_AFFINITY="16,17,34,35"
++# export HOROVOD_THREAD_AFFINITY="53,71"
++# export I_MPI_PIN_DOMAIN=socket
++# export I_MPI_PIN_PROCESSOR_EXCLUDE_LIST="16,17,34,35,52,53,70,71"
++export OMP_NUM_THREADS=16
 +
-+
-+# time mpirun -genv OMP_NUM_THREADS=16 -map-by socket -n 8 -ppn 2 -hosts sr113,sr610,sr612,sr613 -print-rank-map \
-+# -genv I_MPI_PIN_DOMAIN=socket -genv OMP_PROC_BIND=true -genv KMP_BLOCKTIME=1 -genv KMP_AFFINITY=granularity=fine,compact,1,0 \
-+# -iface eth3 \
++#time mpirun -genv OMP_NUM_THREADS=16 -map-by socket -n 2 -ppn 2 -hosts sr113 -print-rank-map \
++#-genv I_MPI_PIN_DOMAIN=socket -genv OMP_PROC_BIND=true -genv KMP_BLOCKTIME=1 -genv KMP_AFFINITY=granularity=fine,compact,1,0 \
++#-iface eth3 \
 +time horovodrun -np 2 -H sr113:2 \
-+python -u main.py \
++/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python -u main.py \
 +  --train_data_pattern '/home/vmagent/app/dataset/outbrain/train/part*' \
 +  --eval_data_pattern '/home/vmagent/app/dataset/outbrain/valid/part*' \
 +  --model_dir ./checkpoints2 \
@@ -21924,10 +21950,13 @@ index 0000000..2653f36
 +  --metric_threshold 0.6553
 diff --git a/modelzoo/WnD/TensorFlow2/scripts/train_criteo.sh b/modelzoo/WnD/TensorFlow2/scripts/train_criteo.sh
 new file mode 100644
-index 0000000..c077e9a
+index 0000000..65afd8d
 --- /dev/null
 +++ b/modelzoo/WnD/TensorFlow2/scripts/train_criteo.sh
-@@ -0,0 +1,29 @@
+@@ -0,0 +1,32 @@
++source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force
++conda activate tensorflow
++
 +set -x
 +set -e
 +# export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${JAVA_HOME}/jre/lib/amd64/server
@@ -21940,13 +21969,13 @@ index 0000000..c077e9a
 + export I_MPI_PIN_PROCESSOR_EXCLUDE_LIST="16,17,34,35,52,53,70,71"
 +
 +
-+time mpirun -genv OMP_NUM_THREADS=16 -map-by socket -n 2 -ppn 2 -hosts sr112 -print-rank-map \
-+-genv I_MPI_PIN_DOMAIN=socket -genv OMP_PROC_BIND=true -genv KMP_BLOCKTIME=1 -genv KMP_AFFINITY=granularity=fine,compact,1,0 \
-+-iface eth3 \
-+/root/sw/miniconda3/envs/wd2/bin/python -u main.py \
-+  --train_data_pattern '/mnt/nvm6/criteo/train_data.bin' \
-+  --eval_data_pattern '/mnt/nvm6/criteo/test_data.bin' \
-+  --model_dir /mnt/nvm6/wd/checkpoints2 \
++# time mpirun -genv OMP_NUM_THREADS=16 -map-by socket -n 2 -ppn 2 -hosts host -print-rank-map \
++# -genv I_MPI_PIN_DOMAIN=socket -genv OMP_PROC_BIND=true -genv KMP_BLOCKTIME=1 -genv KMP_AFFINITY=granularity=fine,compact,1,0 \
++time horovodrun -np 2 -H sr113:2 \
++/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python -u main.py \
++  --train_data_pattern '/home/vmagent/app/dataset/outbrain/train/part*' \
++  --eval_data_pattern '/home/vmagent/app/dataset/outbrain/train/part*' \
++  --model_dir ./checkpoints \
 +  --dataset_meta_file data/outbrain/criteo_meta.yaml \
 +  --global_batch_size 524288 \
 +  --eval_batch_size 524288 \
@@ -21959,10 +21988,13 @@ index 0000000..c077e9a
 +  --deep_warmup_epochs 1
 diff --git a/modelzoo/WnD/TensorFlow2/scripts/train_nofc.sh b/modelzoo/WnD/TensorFlow2/scripts/train_nofc.sh
 new file mode 100644
-index 0000000..d43851b
+index 0000000..2f5e762
 --- /dev/null
 +++ b/modelzoo/WnD/TensorFlow2/scripts/train_nofc.sh
-@@ -0,0 +1,28 @@
+@@ -0,0 +1,31 @@
++source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force
++conda activate tensorflow
++
 +set -x
 +set -e
 +# export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${JAVA_HOME}/jre/lib/amd64/server
@@ -21975,13 +22007,13 @@ index 0000000..d43851b
 + export I_MPI_PIN_PROCESSOR_EXCLUDE_LIST="16,17,34,35,52,53,70,71"
 +
 +
-+time mpirun -genv OMP_NUM_THREADS=16 -map-by socket -n 8 -ppn 2 -hosts sr113,sr610,sr612,sr613 -print-rank-map \
-+-genv I_MPI_PIN_DOMAIN=socket -genv OMP_PROC_BIND=true -genv KMP_BLOCKTIME=1 -genv KMP_AFFINITY=granularity=fine,compact,1,0 \
-+-iface eth3 \
-+/root/sw/miniconda3/envs/wd2/bin/python -u main_nofc.py \
-+  --train_data_pattern '/mnt/sdd/outbrain2/tfrecords/train/part*' \
-+  --eval_data_pattern '/mnt/sdd/outbrain2/tfrecords/eval/part*' \
-+  --model_dir /mnt/nvm6/wd/checkpoints2-servingsda \
++# time mpirun -genv OMP_NUM_THREADS=16 -map-by socket -n 2 -ppn 2 -hosts host -print-rank-map \
++# -genv I_MPI_PIN_DOMAIN=socket -genv OMP_PROC_BIND=true -genv KMP_BLOCKTIME=1 -genv KMP_AFFINITY=granularity=fine,compact,1,0 \
++time horovodrun -np 2 -H sr113:2 \
++/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python -u main.py \
++  --train_data_pattern '/home/vmagent/app/dataset/outbrain/train/part*' \
++  --eval_data_pattern '/home/vmagent/app/dataset/outbrain/train/part*' \
++  --model_dir ./checkpoints \
 +  --dataset_meta_file data/outbrain/outbrain_meta.yaml \
 +  --global_batch_size 524288 \
 +  --eval_batch_size 524288 \
@@ -21993,10 +22025,13 @@ index 0000000..d43851b
 +  --metric_threshold 0.6553
 diff --git a/modelzoo/WnD/TensorFlow2/scripts/train_sigopt.sh b/modelzoo/WnD/TensorFlow2/scripts/train_sigopt.sh
 new file mode 100644
-index 0000000..73ee85e
+index 0000000..4bdc9e9
 --- /dev/null
 +++ b/modelzoo/WnD/TensorFlow2/scripts/train_sigopt.sh
-@@ -0,0 +1,28 @@
+@@ -0,0 +1,31 @@
++source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force
++conda activate tensorflow
++
 +set -x
 +set -e
 +# export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${JAVA_HOME}/jre/lib/amd64/server
@@ -22009,13 +22044,13 @@ index 0000000..73ee85e
 + export I_MPI_PIN_PROCESSOR_EXCLUDE_LIST="16,17,34,35,52,53,70,71"
 +
 +
-+time mpirun -genv OMP_NUM_THREADS=16 -map-by socket -n 8 -ppn 2 -hosts sr113,sr610,sr612,sr613 -print-rank-map \
-+-genv I_MPI_PIN_DOMAIN=socket -genv OMP_PROC_BIND=true -genv KMP_BLOCKTIME=1 -genv KMP_AFFINITY=granularity=fine,compact,1,0 \
-+-iface eth3 \
-+/root/sw/miniconda3/envs/wd2/bin/python -u main_sigopt.py \
-+  --train_data_pattern '/mnt/sdd/outbrain2/tfrecords/train/part*' \
-+  --eval_data_pattern '/mnt/sdd/outbrain2/tfrecords/eval/part*' \
-+  --model_dir /mnt/nvm6/wd/checkpoints2 \
++# time mpirun -genv OMP_NUM_THREADS=16 -map-by socket -n 2 -ppn 2 -hosts host -print-rank-map \
++# -genv I_MPI_PIN_DOMAIN=socket -genv OMP_PROC_BIND=true -genv KMP_BLOCKTIME=1 -genv KMP_AFFINITY=granularity=fine,compact,1,0 \
++time horovodrun -np 2 -H sr113:2 \
++/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python -u main.py \
++  --train_data_pattern '/home/vmagent/app/dataset/outbrain/train/part*' \
++  --eval_data_pattern '/home/vmagent/app/dataset/outbrain/train/part*' \
++  --model_dir ./checkpoints \
 +  --dataset_meta_file data/outbrain/outbrain_meta.yaml \
 +  --global_batch_size 524288 \
 +  --eval_batch_size 524288 \
@@ -22906,7 +22941,7 @@ index 24ab301..8f2d775 100644
 -
      return parser.parse_args()
 diff --git a/modelzoo/WnD/TensorFlow2/trainer/utils/setup.py b/modelzoo/WnD/TensorFlow2/trainer/utils/setup.py
-index 260bafc..cc042d6 100644
+index 260bafc..e889cc1 100644
 --- a/modelzoo/WnD/TensorFlow2/trainer/utils/setup.py
 +++ b/modelzoo/WnD/TensorFlow2/trainer/utils/setup.py
 @@ -1,5 +1,5 @@
@@ -22916,7 +22951,7 @@ index 260bafc..cc042d6 100644
  # Licensed under the Apache License, Version 2.0 (the "License");
  # you may not use this file except in compliance with the License.
  # You may obtain a copy of the License at
-@@ -15,29 +15,14 @@
+@@ -15,120 +15,53 @@
  import json
  import logging
  import os
@@ -22947,9 +22982,10 @@ index 260bafc..cc042d6 100644
 -def init_gpu(args, logger):
 +def init(args, logger):
      hvd.init()
++    print(f"rank: {hvd.rank()}")
  
      init_logger(
-@@ -45,90 +30,37 @@ def init_gpu(args, logger):
+         full=hvd.rank() == 0,
          args=args,
          logger=logger
      )

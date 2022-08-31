@@ -1,6 +1,6 @@
 # Intel Optimized Wide and Deep
 
-## pre-work
+## Pre-work
 sync submodule code
 ```
 git submodule update --init --recursive
@@ -33,8 +33,18 @@ The original dataset can be downloaded at https://www.kaggle.com/c/outbrain-clic
 ## Quick start guide
 
 ### Data preprocessing
+```
+# start spark service
+# need to setup ssh service first
+cd /home/vmagent/app/e2eaiok/modelzoo/WnD/TensorFlow2/data_processing/
+cp spark-defaults.conf /home/spark-3.2.1-bin-hadoop3.2/conf/
+mkdir -p /home/vmagent/app/e2eaiok/modelzoo/dlrm/data_processing/spark_local_dir
+mkdir -p /home/mnt/applicationHistory
+sh ./start_spark_service.sh
 
-`bash scripts/spark_preproc.sh`
+# data preprocess with spark
+bash scripts/spark_preproc.sh
+```
 
 ### Training
 
