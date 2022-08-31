@@ -67,12 +67,14 @@ python setup.py install
 ### Data Process
 ```
 # Now you are running inside docker, /home/vmagent/app/
-source /etc/profile.d/spark-env.sh
 pip install pyrecdp
-sh /home/vmagent/app/e2eaiok/modelzoo/dien/feature_engineering/start_spark_service.sh 
-python /home/vmagent/app/e2eaiok/modelzoo/dien/feature_engineering/preprocessing.py --train
-python /home/vmagent/app/e2eaiok/modelzoo/dien/feature_engineering/preprocessing.py --test
-python /home/vmagent/app/e2eaiok/modelzoo/dien/feature_engineering/preprocessing.py --inference
+cd /home/vmagent/app/e2eaiok/modelzoo/dien/feature_engineering/
+cp spark-defaults.conf /home/spark-3.2.1-bin-hadoop3.2/conf/
+mkdir -p /home/vmagent/app/e2eaiok/modelzoo/dien/feature_engineering/spark_local_dir
+mkdir -p /home/mnt/applicationHistory
+sh start_spark_service.sh 
+python preprocessing.py --train
+python preprocessing.py --test
 ```
 
 ### Training
