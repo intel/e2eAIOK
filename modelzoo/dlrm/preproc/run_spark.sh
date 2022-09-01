@@ -90,7 +90,7 @@ spark-submit --master $MASTER \
     --test_input_folder $temp_test \
     --validation_input_folder $temp_validation \
     --output_folder $OUTPUT_PATH/ \
-    --model_size_file /mnt/DP_disk7/model_size.json \
+    --model_size_file ./model_size.json \
    	--days 0-23 \
     --train_days 0-22 \
     --remain_days 23-23 \

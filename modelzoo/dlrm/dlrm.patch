@@ -1487,7 +1487,7 @@ index 0bda2ac..12d8d9f 100644
          else:
              sys.exit(
 diff --git a/dlrm_data_pytorch.py b/dlrm_data_pytorch.py
-index 852c577..15dac1d 100644
+index 852c577..2f188a2 100644
 --- a/dlrm_data_pytorch.py
 +++ b/dlrm_data_pytorch.py
 @@ -20,7 +20,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
@@ -1585,15 +1585,15 @@ index 852c577..15dac1d 100644
 -        ]
 -    )
 -
--
++def make_criteo_data_and_loaders(args):
+ 
 -def collate_wrapper_criteo_length(list_of_tuples):
 -    # where each tuple is (X_int, X_cat, y)
 -    transposed_data = list(zip(*list_of_tuples))
 -    X_int = torch.log(torch.tensor(transposed_data[0], dtype=torch.float) + 1)
 -    X_cat = torch.tensor(transposed_data[1], dtype=torch.long)
 -    T = torch.tensor(transposed_data[2], dtype=torch.float32).view(-1, 1)
-+def make_criteo_data_and_loaders(args):
- 
+-
 -    batchSize = X_cat.shape[0]
 -    featureCnt = X_cat.shape[1]
 -
@@ -1695,7 +1695,84 @@ index 852c577..15dac1d 100644
          train_loader = torch.utils.data.DataLoader(
              train_data,
              batch_size=args.mini_batch_size,
-@@ -590,11 +542,6 @@ class RandomDataset(Dataset):
+@@ -572,6 +524,76 @@ def make_criteo_data_and_loaders(args, offset_to_length_converter=False):
+     return train_data, train_loader, test_data, test_loader
+ 
+ 
++def make_criteo_data_and_loaders_test(args):
++
++    if args.mlperf_logging and args.memory_map and args.data_set == "terabyte":
++        if args.mlperf_bin_loader:
++            test_file = args.eval_data_path
++            counts_file = args.day_feature_count
++            test_data = data_loader_terabyte.CriteoBinDataset(
++                data_file=test_file,
++                counts_file=counts_file,
++                batch_size=args.test_mini_batch_size,
++                max_ind_range=args.max_ind_range
++            )
++
++            mlperf_logger.log_event(key=mlperf_logger.constants.EVAL_SAMPLES,
++                                    value=test_data.num_samples)
++
++            test_loader = DataLoaderX(
++                test_data,
++                batch_size=None,
++                batch_sampler=None,
++                shuffle=False,
++                num_workers=0,
++                collate_fn=None,
++                pin_memory=False,
++                drop_last=False,
++            )
++        else:
++            data_filename = args.raw_data_file.split("/")[-1]
++            test_data = CriteoDataset(
++                args.data_set,
++                args.max_ind_range,
++                args.data_sub_sample_rate,
++                args.data_randomize,
++                "test",
++                args.raw_data_file,
++                args.processed_data_file,
++                args.memory_map
++            )
++            test_loader = data_loader_terabyte.DataLoader(
++                data_directory=data_directory,
++                data_filename=data_filename,
++                days=[23],
++                batch_size=args.test_mini_batch_size,
++                max_ind_range=args.max_ind_range,
++                split="test"
++            )
++    else:
++
++        test_data = CriteoDataset(
++            args.data_set,
++            args.max_ind_range,
++            args.data_sub_sample_rate,
++            args.data_randomize,
++            "test",
++            args.raw_data_file,
++            args.processed_data_file,
++            args.memory_map
++        )
++        test_loader = torch.utils.data.DataLoader(
++            test_data,
++            batch_size=args.test_mini_batch_size,
++            shuffle=False,
++            num_workers=args.test_num_workers,
++            collate_fn=collate_wrapper_criteo,
++            pin_memory=False,
++            drop_last=False,  # True
++        )
++
++    return test_data, test_loader
++
+ # uniform ditribution (input data)
+ class RandomDataset(Dataset):
+ 
+@@ -590,11 +612,6 @@ class RandomDataset(Dataset):
              trace_file="",
              enable_padding=False,
              reset_seed_on_access=False,
@@ -1707,7 +1784,7 @@ index 852c577..15dac1d 100644
              rand_seed=0
      ):
          # compute batch size
-@@ -619,11 +566,6 @@ class RandomDataset(Dataset):
+@@ -619,11 +636,6 @@ class RandomDataset(Dataset):
          self.enable_padding = enable_padding
          self.reset_seed_on_access = reset_seed_on_access
          self.rand_seed = rand_seed
@@ -1719,7 +1796,7 @@ index 852c577..15dac1d 100644
  
      def reset_numpy_seed(self, numpy_rand_seed):
          np.random.seed(numpy_rand_seed)
-@@ -648,17 +590,12 @@ class RandomDataset(Dataset):
+@@ -648,17 +660,12 @@ class RandomDataset(Dataset):
  
          # generate a batch of dense and sparse features
          if self.data_generation == "random":
@@ -1739,7 +1816,7 @@ index 852c577..15dac1d 100644
              )
          elif self.data_generation == "synthetic":
              (X, lS_o, lS_i) = generate_synthetic_input_batch(
-@@ -686,7 +623,7 @@ class RandomDataset(Dataset):
+@@ -686,7 +693,7 @@ class RandomDataset(Dataset):
          return self.num_batches
  
  
@@ -1748,7 +1825,7 @@ index 852c577..15dac1d 100644
      # where each tuple is (X, lS_o, lS_i, T)
      (X, lS_o, lS_i, T) = list_of_tuples[0]
      return (X,
-@@ -695,18 +632,7 @@ def collate_wrapper_random_offset(list_of_tuples):
+@@ -695,18 +702,7 @@ def collate_wrapper_random_offset(list_of_tuples):
              T)
  
  
@@ -1768,7 +1845,7 @@ index 852c577..15dac1d 100644
  
      train_data = RandomDataset(
          m_den,
-@@ -722,40 +648,8 @@ def make_random_data_and_loader(args, ln_emb, m_den,
+@@ -722,40 +718,8 @@ def make_random_data_and_loader(args, ln_emb, m_den,
          args.data_trace_file,
          args.data_trace_enable_padding,
          reset_seed_on_access=True,
@@ -1809,7 +1886,7 @@ index 852c577..15dac1d 100644
      train_loader = torch.utils.data.DataLoader(
          train_data,
          batch_size=1,
-@@ -765,17 +659,7 @@ def make_random_data_and_loader(args, ln_emb, m_den,
+@@ -765,17 +729,7 @@ def make_random_data_and_loader(args, ln_emb, m_den,
          pin_memory=False,
          drop_last=False,  # True
      )
@@ -1828,7 +1905,7 @@ index 852c577..15dac1d 100644
  
  
  def generate_random_data(
-@@ -791,7 +675,6 @@ def generate_random_data(
+@@ -791,7 +745,6 @@ def generate_random_data(
      data_generation="random",
      trace_file="",
      enable_padding=False,
@@ -1836,7 +1913,7 @@ index 852c577..15dac1d 100644
  ):
      nbatches = int(np.ceil((data_size * 1.0) / mini_batch_size))
      if num_batches != 0:
-@@ -815,8 +698,7 @@ def generate_random_data(
+@@ -815,8 +768,7 @@ def generate_random_data(
                  ln_emb,
                  n,
                  num_indices_per_lookup,
@@ -1846,7 +1923,7 @@ index 852c577..15dac1d 100644
              )
          elif data_generation == "synthetic":
              (Xt, lS_emb_offsets, lS_emb_indices) = generate_synthetic_input_batch(
-@@ -862,7 +744,6 @@ def generate_uniform_input_batch(
+@@ -862,7 +814,6 @@ def generate_uniform_input_batch(
      n,
      num_indices_per_lookup,
      num_indices_per_lookup_fixed,
@@ -1854,7 +1931,7 @@ index 852c577..15dac1d 100644
  ):
      # dense feature
      Xt = torch.tensor(ra.rand(n, m_den).astype(np.float32))
-@@ -890,71 +771,6 @@ def generate_uniform_input_batch(
+@@ -890,71 +841,6 @@ def generate_uniform_input_batch(
              r = ra.random(sparse_group_size)
              sparse_group = np.unique(np.round(r * (size - 1)).astype(np.int64))
              # reset sparse_group_size in case some index duplicates were removed
@@ -1926,7 +2003,7 @@ index 852c577..15dac1d 100644
              sparse_group_size = np.int64(sparse_group.size)
              # store lengths and indices
              lS_batch_offsets += [offset]
-@@ -1069,22 +885,21 @@ def trace_generate_lru(
+@@ -1069,22 +955,21 @@ def trace_generate_lru(
      max_sd = list_sd[-1]
      l = len(line_accesses)
      i = 0
@@ -1952,7 +2029,7 @@ index 852c577..15dac1d 100644
              line_accesses.append(line_ref)
          # save generated memory reference
          ztrace.append(mem_ref)
-@@ -1120,9 +935,9 @@ def trace_profile(trace, enable_padding=False):
+@@ -1120,9 +1005,9 @@ def trace_profile(trace, enable_padding=False):
      # number of elements in the array (assuming 1D)
      # n = trace.size
  
@@ -1965,7 +2042,7 @@ index 852c577..15dac1d 100644
      for x in trace:
          r = np.uint64(x / cache_line_size)
          l = len(rstack)
-@@ -1134,17 +949,17 @@ def trace_profile(trace, enable_padding=False):
+@@ -1134,17 +1019,17 @@ def trace_profile(trace, enable_padding=False):
              #          consecutive accesses (e.g. r, r) as 0 rather than 1.
              sd = l - i  # - 1
              # push r to the end of stack_distances
@@ -1989,7 +2066,7 @@ index 852c577..15dac1d 100644
  
      if enable_padding:
          # WARNING: notice that as the ratio between the number of samples (l)
-@@ -1176,7 +991,7 @@ def read_trace_from_file(file_path):
+@@ -1176,7 +1061,7 @@ def read_trace_from_file(file_path):
                  trace = list(map(lambda x: np.uint64(x), line.split(", ")))
              return trace
      except Exception:
@@ -1998,7 +2075,7 @@ index 852c577..15dac1d 100644
  
  
  def write_trace_to_file(file_path, trace):
-@@ -1186,7 +1001,7 @@ def write_trace_to_file(file_path, trace):
+@@ -1186,7 +1071,7 @@ def write_trace_to_file(file_path, trace):
                  np.array(trace).astype(np.uint64).tofile(f)
          else:
              with open(file_path, "w+") as f:
@@ -2007,7 +2084,7 @@ index 852c577..15dac1d 100644
                  f.write(s[1 : len(s) - 1])
      except Exception:
          print("ERROR: no output trace file has been provided")
-@@ -1197,7 +1012,7 @@ def read_dist_from_file(file_path):
+@@ -1197,7 +1082,7 @@ def read_dist_from_file(file_path):
          with open(file_path, "r") as f:
              lines = f.read().splitlines()
      except Exception:
@@ -2016,7 +2093,7 @@ index 852c577..15dac1d 100644
      # read unique accesses
      unique_accesses = [int(el) for el in lines[0].split(", ")]
      # read cumulative distribution (elements are passed as two separate lists)
-@@ -1211,19 +1026,20 @@ def write_dist_to_file(file_path, unique_accesses, list_sd, cumm_sd):
+@@ -1211,19 +1096,20 @@ def write_dist_to_file(file_path, unique_accesses, list_sd, cumm_sd):
      try:
          with open(file_path, "w") as f:
              # unique_acesses
@@ -2039,7 +2116,7 @@ index 852c577..15dac1d 100644
      import operator
      import argparse
  
-@@ -1269,7 +1085,7 @@ if __name__ == "__main__":
+@@ -1269,7 +1155,7 @@ if __name__ == "__main__":
      dist_sd = list(
          map(lambda tuple_x_k: tuple_x_k[1] / float(l), dc)
      )  # k = tuple_x_k[1]
@@ -2048,7 +2125,7 @@ index 852c577..15dac1d 100644
      for i, (_, k) in enumerate(dc):
          if i == 0:
              cumm_sd.append(k / float(l))
-@@ -1280,7 +1096,7 @@ if __name__ == "__main__":
+@@ -1280,7 +1166,7 @@ if __name__ == "__main__":
      ### write stack_distance and line_accesses to a file ###
      write_dist_to_file(args.dist_file, line_accesses, list_sd, cumm_sd)
  
@@ -2749,7 +2826,7 @@ index 8e3ed74..47b27d6 100644
          # Gather and ReducedSum ONNX operators, following the PyTorch approach.
          c2f = caffe2.python.onnx.frontend.Caffe2Frontend()
 diff --git a/dlrm_s_pytorch.py b/dlrm_s_pytorch.py
-index ec3394b..149ace0 100644
+index ec3394b..db5f5c7 100644
 --- a/dlrm_s_pytorch.py
 +++ b/dlrm_s_pytorch.py
 @@ -51,107 +51,64 @@
@@ -4223,7 +4300,7 @@ index ec3394b..149ace0 100644
              skip_upto_epoch = ld_k  # epochs
              skip_upto_batch = ld_j  # batches
          else:
-@@ -1418,460 +1177,395 @@ def run():
+@@ -1418,460 +1177,386 @@ def run():
              )
          )
          print(
@@ -4871,7 +4948,7 @@ index ec3394b..149ace0 100644
 +                    # .format(time_wrap(use_gpu) - accum_test_time_begin))
 +                    # if ext_dist.dist.get_rank()==0:
 +
-+                    file1 = open("/home/vmagent/app/hydro.ai/modelzoo/dlrm/dlrm/best_auc.txt",'w')
++                    file1 = open("./best_auc.txt",'w')
 +                    file1.writelines(str(best_auc_test))
 +                    file1.close()
 +
@@ -4990,11 +5067,8 @@ index ec3394b..149ace0 100644
 +                    test_end = time.time()
 +                    print(F"Test time:{test_end - test_start}")
 +                    ext_dist.barrier()
-+                    
-+                    # if (j>1) and (j+1)%13600 ==0:
-+                    #     print(F"Fineshed 13600 steps training")
-+                    #     break
-+
++                
++                
 +            mlperf_logger.barrier()
 +            mlperf_logger.log_end(key=mlperf_logger.constants.EPOCH_STOP,
 +                                  metadata={mlperf_logger.constants.EPOCH_NUM: k + 1})
@@ -5016,15 +5090,9 @@ index ec3394b..149ace0 100644
 +                "nbatches": nbatches,
 +                "nbatches_test": nbatches_test,
 +                "iter": j + 1,
-+                "state_dict": dlrm.state_dict(),
-+                "train_acc": gA,
-+                "train_loss": gL,
-+                "test_acc": gA_test,
-+                "test_loss": gL_test,
-+                "total_loss": total_loss,
-+                "total_accu": total_accu
++                "state_dict": dlrm.state_dict()
 +            },
-+            os.path.join(args.save_model, "dlrm_s_pytorch_" + str(dlrm.rank) + "_best.pkl"),
++            os.path.join(args.save_model, "dlrm_s_pytorch_" + str(dlrm.rank) + "_.pkl"),
          )
 -        # recover the model back
 -        dlrm_pytorch_onnx = onnx.load("dlrm_s_pytorch.onnx")
@@ -6726,10 +6794,10 @@ index 0000000..6e177ec
 +        onnx.checker.check_model(dlrm_pytorch_onnx)
 diff --git a/dlrm_s_pytorch_inference.py b/dlrm_s_pytorch_inference.py
 new file mode 100644
-index 0000000..6029b80
+index 0000000..575dabd
 --- /dev/null
 +++ b/dlrm_s_pytorch_inference.py
-@@ -0,0 +1,1125 @@
+@@ -0,0 +1,1107 @@
 +# Copyright (c) Facebook, Inc. and its affiliates.
 +#
 +# This source code is licensed under the MIT license found in the
@@ -7436,6 +7504,8 @@ index 0000000..6029b80
 +    # lamb
 +    parser.add_argument("--optimizer", type=int, default=0, help='optimizer:[0:sgd, 1:lamb/sgd, 2:adagrad, 3:sparseadam]')
 +    parser.add_argument("--lamblr", type=float, default=0.01, help='lr for lamb')
++    parser.add_argument("--eval-data-path", type=str, default="./data/valid.bin")
++    parser.add_argument("--day-feature-count", type=str, default="./data/day_fea_count.npz")
 +    args = parser.parse_args()
 +
 +    ext_dist.init_distributed(backend=args.dist_backend)
@@ -7712,24 +7782,8 @@ index 0000000..6029b80
 +
 +    # Load model is specified
 +    if not (args.load_model == ""):
-+        print("Loading saved model {}".format(args.load_model))
-+        if use_gpu:
-+            if dlrm.ndevices > 1:
-+                # NOTE: when targeting inference on multiple GPUs,
-+                # load the model as is on CPU or GPU, with the move
-+                # to multiple GPUs to be done in parallel_forward
-+                ld_model = torch.load(args.load_model)
-+            else:
-+                # NOTE: when targeting inference on single GPU,
-+                # note that the call to .to(device) has already happened
-+                ld_model = torch.load(
-+                    args.load_model,
-+                    map_location=torch.device('cuda')
-+                    # map_location=lambda storage, loc: storage.cuda(0)
-+                )
-+        else:
-+            # when targeting inference on CPU
-+            ld_model = torch.load(os.path.join(args.load_model, "dlrm_s_pytorch_" + str(dlrm.rank) + "_best.pkl"), map_location=torch.device('cpu'))
++        print("Loading trained model {}".format(args.load_model))
++        ld_model = torch.load(os.path.join(args.load_model, "dlrm_s_pytorch_" + str(dlrm.rank) + "_.pkl"), map_location=torch.device('cpu'))
 +        dlrm.load_state_dict(ld_model["state_dict"])
 +
 +    if args.use_ipex:
@@ -7849,11 +7903,7 @@ index 0000000..6029b80
 +            )
 +        )
 +    test_end = time.time()
-+    print(F"Test time:{test_end - test_start}")
-+    print(F"Total results length:{len(scores)}")
-+#     results = {'pred':scores.tolist(),'targets':targets.tolist()}
-+#     with open("results.json", "w") as f:
-+#         json.dump(results, f, sort_keys=True, indent=4)
++    print(F"Inference completed, time:{test_end - test_start}")
 +    ext_dist.barrier()
 diff --git a/extend_distributed.py b/extend_distributed.py
 index 1f2c8a5..8eaa16e 100644
@@ -10107,20 +10157,6 @@ index 83ab042..0000000
 -tqdm
 -torchrec-nightly
 -torchx-nightly
-diff --git a/run_and_time_launch.sh b/run_and_time_launch.sh
-new file mode 100755
-index 0000000..d6d2f95
---- /dev/null
-+++ b/run_and_time_launch.sh
-@@ -0,0 +1,8 @@
-+source ~/.local/env/setvars.sh
-+
-+seed_num=$(date +%s)
-+#export CCL_ATL_SHM=0
-+export KMP_BLOCKTIME=1
-+export KMP_AFFINITY="granularity=fine,compact,1,0"
-+
-+python  -u  ./launch.py --distributed --nproc_per_node=2 --nnodes=4 --hostfile ./hosts --master_addr="xxxxx" dlrm_s_pytorch.py  --max-ind-range=40000000  --data-generation=dataset --data-set=terabyte --raw-data-file=$DATA_PATH/day --processed-data-file=$DATA_PATH/terabyte_processed.npz --loss-function=bce --round-targets=True --num-workers=0 --test-num-workers=0 --use-ipex  --test-mini-batch-size=65536 --dist-backend=ccl  --mini-batch-size=262144 --print-freq=16 --print-time --optimizer=1 --bf16 --test-freq=800 --sparse-dense-boundary=403346  --memory-map --mlperf-logging --mlperf-auc-threshold=0.8025 --mlperf-bin-loader --mlperf-bin-shuffle --numpy-rand-seed=12345 $dlrm_extra_option 2>&1 | tee run_terabyte_${seed_num}.log
 diff --git a/run_compress.sh b/run_compress.sh
 new file mode 100755
 index 0000000..3766f37
