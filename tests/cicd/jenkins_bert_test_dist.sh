@@ -15,9 +15,10 @@ mkdir -p $tmp_dir
 
 # config passwordless ssh
 service ssh start
-ssh-keyscan -p 12345 -H 10.1.2.208 >> /root/.ssh/known_hosts
-ssh-keyscan -p 12345 -H 10.1.2.213 >> /root/.ssh/known_hosts
+ssh-keyscan -p 12344 -H 10.1.2.208 >> /root/.ssh/known_hosts
+ssh-keyscan -p 12344 -H 10.1.2.213 >> /root/.ssh/known_hosts
 
+cd /home/vmagent/app/hydro.ai/modelzoo/bert && printf '10.1.2.213:enp134s0f1\n10.1.2.208:enp134s0f1\n' > hosts
 set -e
 # lauch AIDK wnd
 cd /home/vmagent/app/hydro.ai

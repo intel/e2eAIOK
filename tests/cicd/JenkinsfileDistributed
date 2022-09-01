@@ -43,35 +43,35 @@ pipeline {
             steps {
                 sh '> /root/.ssh/known_hosts'
                 sh 'pwd && cd modelzoo/resnet  && bash patch_resnet.sh && cd ../..'
-                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_resnet_test_dist.sh"'
+                sh 'docker run --rm --name test-workload-dist-resnet --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_resnet_test_dist.sh"'
             }
         }
         stage('Run distributed bert') {
             steps {
                 sh '> /root/.ssh/known_hosts'
                 sh 'pwd && cd modelzoo/bert && bash patch_bert.sh && cd ../..'
-                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_bert_test_dist.sh"'
+                sh 'docker run --rm --name test-workload-dist-bert --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_bert_test_dist.sh"'
             }
         }
         stage('Run distributed rnnt') {
             steps {
                 sh '> /root/.ssh/known_hosts'
                 sh 'pwd && cd modelzoo/rnnt/pytorch && bash patch_rnnt.sh && cd ../../..'
-                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch110 /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_rnnt_test_dist.sh"'
+                sh 'docker run --rm --name test-workload-dist-rnnt --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch110 /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_rnnt_test_dist.sh"'
             }
         }
         stage('Run distributed wnd') {
             steps {
                 sh '> /root/.ssh/known_hosts'
                 sh 'cd modelzoo/WnD/TensorFlow2 && bash patch_wnd.sh && cd ../../..'
-                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_wnd_test_dist.sh"'
+                sh 'docker run --rm --name test-workload-dist-wnd --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_wnd_test_dist.sh"'
             }
         }
         stage('Run distributed dlrm') {
             steps {
                 sh '> /root/.ssh/known_hosts'
                 sh 'cd modelzoo/dlrm && bash patch_dlrm.sh && cd ../..'
-                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_dlrm_test_dist.sh"'
+                sh 'docker run --rm --name test-workload-dist-dlrm --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_dlrm_test_dist.sh"'
             }
         }
         stage('Stop docker worker') {
@@ -87,7 +87,7 @@ pipeline {
         always {
             echo 'One way or another, I have finished'
             deleteDir()
-            sh 'if [[ $(docker ps -q | wc -l) -ne 0 ]]; then docker ps -q | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi'
+            sh 'if [[ $(docker ps -q --filter "name=test-workload-dist-*" | wc -l) -ne 0 ]]; then docker ps -q --filter "name=test-workload-dist-*" | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi'
         }
         success {
             echo 'I succeeded!'

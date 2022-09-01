@@ -17,8 +17,8 @@ mkdir -p $tmp_dir
 
 # config passwordless ssh
 service ssh start
-ssh-keyscan -p 12344 -H sr608 >> /root/.ssh/known_hosts
-ssh-keyscan -p 12344 -H sr613 >> /root/.ssh/known_hosts
+ssh-keyscan -p 12344 -H 10.1.2.208 >> /root/.ssh/known_hosts
+ssh-keyscan -p 12344 -H 10.1.2.213 >> /root/.ssh/known_hosts
 
 set -e
 # lauch AIDK wnd
