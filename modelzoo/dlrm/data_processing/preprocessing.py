@@ -20,7 +20,6 @@ int_fields = [StructField('_c%d' % i, IntegerType()) for i in INT_COLS]
 str_fields = [StructField('_c%d' % i, StringType()) for i in CAT_COLS]
 schema = StructType(label_fields + int_fields + str_fields)
 
-to_be_categorified = [23, 35, 14, 33]
 
 def categorifyAllFeatures(df, proc, output_name="categorified", gen_dict=False, enable_freqlimit=False):
     dict_dfs = []
@@ -84,6 +83,9 @@ def main():
     train_files = ["day_%d" % i for i in range(0, 23)]
     file_names = [f"{path_prefix}{csv_folder}{filename}" for filename in train_files]
     df = spark.read.schema(schema).option('sep', '\t').csv(file_names)
+    # convert to parquet
+    df = proc.transform(df, name="dlrm_parquet")
+    return
     df = categorifyAllFeatures(df, proc, output_name="dlrm_categorified", gen_dict=True, enable_freqlimit=False)
     #df = categorifyAllFeatures(df, proc, output_name="dlrm_categorified", gen_dict=False, enable_freqlimit=False)
     t2 = timer()
