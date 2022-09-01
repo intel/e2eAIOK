@@ -27,7 +27,7 @@ pipeline {
                 label 'sr612'
             }
             steps {
-                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch110 /bin/bash -c ". /home/vmagent/app/hydro.ai/tests/cicd/jenkins_denas_cnn.sh"'
+                sh 'docker run --rm --name test-denas-cnn --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch110 /bin/bash -c ". /home/vmagent/app/hydro.ai/tests/cicd/jenkins_denas_cnn.sh"'
             }
         }
         stage('Run DeNas ViT') {
@@ -35,7 +35,7 @@ pipeline {
                 label 'sr612'
             }
             steps {
-                sh 'docker run --rm --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch110 /bin/bash -c ". /home/vmagent/app/hydro.ai/tests/cicd/jenkins_denas_vit.sh"'
+                sh 'docker run --rm --name test-denas-vit --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch110 /bin/bash -c ". /home/vmagent/app/hydro.ai/tests/cicd/jenkins_denas_vit.sh"'
             }
         }
         stage('Run DeNas Bert') {
@@ -43,7 +43,7 @@ pipeline {
                 label 'sr612'
             }
             steps {
-               sh 'docker run --rm --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch110 /bin/bash -c ". /home/vmagent/app/hydro.ai/tests/cicd/jenkins_denas_bert.sh"' 
+               sh 'docker run --rm --name test-denas-bert --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch110 /bin/bash -c ". /home/vmagent/app/hydro.ai/tests/cicd/jenkins_denas_bert.sh"' 
             }
         }
         stage('Run DeNas ASR') {
@@ -51,7 +51,7 @@ pipeline {
                 label 'sr612'
             }
             steps {
-               sh 'docker run --rm --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch110 /bin/bash -c ". /home/vmagent/app/hydro.ai/tests/cicd/jenkins_denas_asr.sh"' 
+               sh 'docker run --rm --name test-denas-asr --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch110 /bin/bash -c ". /home/vmagent/app/hydro.ai/tests/cicd/jenkins_denas_asr.sh"' 
             }
         }
     }
@@ -59,7 +59,7 @@ pipeline {
         always {
             echo 'One way or another, I have finished'
             deleteDir()
-            sh 'if [[ $(docker ps -q | wc -l) -ne 0 ]]; then docker ps -q | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi'
+            sh 'if [[ $(docker ps -q --filter "name=test-denas-*" | wc -l) -ne 0 ]]; then docker ps -q --filter "name=test-denas-*" | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi'
         }
         success {
             echo 'I succeeded!'

@@ -259,7 +259,7 @@ index f089e5e..0dc31c8 100644
      python -m mlperf_logging.compliance_checker --config 0.7.0/closed_minigo.yaml --ruleset 0.7.0 result.txt
  ```
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/flags/19/selfplay.flags b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/flags/19/selfplay.flags
-index 9d49f1f..8465df3 100644
+index 9d49f1f..a69a642 100644
 --- a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/flags/19/selfplay.flags
 +++ b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/flags/19/selfplay.flags
 @@ -3,9 +3,9 @@
@@ -270,7 +270,7 @@ index 9d49f1f..8465df3 100644
 ---fastplay_frequency=0.75
 ---fastplay_readouts=80
 +--num_readouts=600
-+--fastplay_frequency=0.8
++--fastplay_frequency=0.82
 +--fastplay_readouts=60
  --value_init_penalty=0.2
  --holdout_pct=0.0
