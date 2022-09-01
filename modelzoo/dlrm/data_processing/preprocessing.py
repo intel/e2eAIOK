@@ -37,7 +37,9 @@ def categorifyAllFeatures(df, proc, output_name="categorified", gen_dict=False, 
     else:
         # or we can simply load from pre-gened
         dict_dfs = [{'col_name': name, 'dict': proc.spark.read.parquet(
-            "%s/%s/%s/%s" % (proc.path_prefix, proc.current_path, proc.dicts_path, name))} for name in to_categorify_cols]    
+            "%s/%s/%s/%s" % (proc.path_prefix, proc.current_path, proc.dicts_path, name))} for name in to_categorify_cols]
+
+    print([i['dict'].count() for i in dict_dfs])
 
     if enable_freqlimit:
         dict_dfs = [{'col_name': dict_df['col_name'], 'dict': dict_df['dict'].filter('count >= 15')} for dict_df in dict_dfs]
@@ -59,7 +61,7 @@ def main():
     print(host_name)
     path_prefix = "file://"
     current_path = "/home/vmagent/app/dataset/criteo/output/"
-    csv_folder = "/home/vmagent/app/dataset/criteo/raw_data/"
+    csv_folder = "/home/vmagent/app/raw_data/"
 
     scala_udf_jars = "/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/python3.7/site-packages/ScalaProcessUtils/built/31/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
 
@@ -77,19 +79,32 @@ def main():
         .config("spark.executor.extraClassPath", f"{scala_udf_jars}")\
         .getOrCreate()
     spark.sparkContext.setLogLevel("ERROR")
-
-    files = ["day_%d" % i for i in range(1, 24)]
-    #files = ["day_1"]
-    file_names = [os.path.join(path_prefix, csv_folder, filename) for filename in files]
-
     proc = DataProcessor(spark, path_prefix, current_path=current_path, shuffle_disk_capacity="550GB", spark_mode='standalone')
-    df = spark.read.schema(schema).option('sep', '\t').csv(file_names)
-    #df = spark.read.parquet("/dlrm/categorified_stage2")
-    df = categorifyAllFeatures(df, proc, output_name="dlrm_categorified", gen_dict=True, enable_freqlimit=True)
-    #df = categorifyAllFeatures(df, proc, output_name="dlrm_categorified", gen_dict=False, enable_freqlimit=True)
-    t2 = timer()
 
-    print(f"Total process time is {(t2 - t1)} secs")
+    train_files = ["day_%d" % i for i in range(0, 23)]
+    file_names = [f"{path_prefix}{csv_folder}{filename}" for filename in train_files]
+    df = spark.read.schema(schema).option('sep', '\t').csv(file_names)
+    df = categorifyAllFeatures(df, proc, output_name="dlrm_categorified", gen_dict=True, enable_freqlimit=False)
+    #df = categorifyAllFeatures(df, proc, output_name="dlrm_categorified", gen_dict=False, enable_freqlimit=False)
+    t2 = timer()
+    print(f"Train data process time is {(t2 - t1)} secs")
+
+    # for valid + test data
+    import subprocess
+    process = subprocess.Popen(["sh", "raw_test_split.sh", csv_folder])
+    process.wait()
+    test_files = ["test/day_23"]
+    test_file_names = [f"{path_prefix}{csv_folder}{filename}" for filename in test_files]
+    test_df = spark.read.schema(schema).option('sep', '\t').csv(test_file_names)
+    test_df = categorifyAllFeatures(test_df, proc, output_name="dlrm_categorified_test", gen_dict=False, enable_freqlimit=False)
+
+    valid_files = ["validation/day_23"]
+    valid_file_names = [f"{path_prefix}{csv_folder}{filename}" for filename in valid_files]
+    valid_df = spark.read.schema(schema).option('sep', '\t').csv(valid_file_names)
+    valid_df = categorifyAllFeatures(valid_df, proc, output_name="dlrm_categorified_valid", gen_dict=False, enable_freqlimit=False)
+    t3 = timer()
+
+    print(f"Total process time is {(t3 - t1)} secs")
 
 
 if __name__ == "__main__":

@@ -11,13 +11,13 @@ day_1  day_11  day_13  day_15  day_17  day_19  day_20  day_22  day_3   day_5  da
 
 ## Enter docker
 ```
-docker run --shm-size=10g -it --privileged --network host --device=/dev/dri -v ${path_to_e2eaiok_dataset}:/home/vmagent/app/dataset -v `pwd`/:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ xuechendi/oneapi-aikit:hydro.ai /bin/bash
+docker run --shm-size=10g -it --privileged --network host --device=/dev/dri -v ${path_to_e2eaiok_dataset}:/home/vmagent/app/dataset -v `pwd`/:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch /bin/bash
 ```
 
 ## Run DLRM data process
 ```
 conda activate pytorch_mlperf
-pip install pyrecdp
+pip install pyrecdp pyarrow
 
 # spark service
 cd /home/vmagent/app/e2eaiok/modelzoo/dlrm/data_processing/
@@ -30,6 +30,10 @@ sh ./start_spark_service.sh
 # dlrm data processing requires huge space, make sure there are at least 1.2T for /home/vmagent/app/e2eaiok/modelzoo/dlrm/data_processing/
 rm -rf /home/vmagent/app/dataset/criteo/output/tmp/
 python preprocessing.py
+python splitconversion.py
+ls /home/vmagent/app/dataset/criteo/output/
+dicts  dlrm_categorified  dlrm_categorified_test  dlrm_categorified_valid  train_data.bin valid_data.bin test_data.bin day_fea_count.npz
+
 
 # convert
 # to be added
