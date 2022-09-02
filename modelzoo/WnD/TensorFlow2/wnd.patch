@@ -93,13 +93,13 @@ index 9e09856..0000000
 -
 -COPY . .
 diff --git a/modelzoo/WnD/TensorFlow2/README.md b/modelzoo/WnD/TensorFlow2/README.md
-deleted file mode 100644
-index 94c6339..0000000
+index 94c6339..6ff9eb1 100644
 --- a/modelzoo/WnD/TensorFlow2/README.md
-+++ /dev/null
-@@ -1,833 +0,0 @@
++++ b/modelzoo/WnD/TensorFlow2/README.md
+@@ -1,833 +1,55 @@
 -# Wide & Deep Recommender Model Training For TensorFlow 2
--
++# Intel Optimized Wide and Deep
+ 
 -This repository provides a script and recipe to train the Wide and Deep Recommender model to achieve state-of-the-art accuracy.
 -The content of the repository is tested and maintained by NVIDIA.
 -
@@ -302,10 +302,13 @@ index 94c6339..0000000
 -```
 -
 -2. Go to `WideAndDeep` TensorFlow2 directory within the `DeepLearningExamples` repository:
--```
++## Pre-work
++sync submodule code
+ ```
 -cd DeepLearningExamples/TensorFlow2/Recommendation/WideAndDeep
--```
--
++git submodule update --init --recursive
+ ```
+ 
 -3. Download the Outbrain dataset.
 -
 -The Outbrain dataset can be downloaded from Kaggle (requires Kaggle account). Unzip the downloaded archive (for example, to `/raid/outbrain/orig`) and set the `HOST_OUTBRAIN_PATH` variable to the parent directory:
@@ -454,10 +457,13 @@ index 94c6339..0000000
 -
 -### Command-line options
 -To see the full list of available options and their descriptions, use the `-h` or `--help` command-line option:
--```
++apply patch
+ ```
 -python main.py -h
--```
--
++cd modelzoo/WnD/TensorFlow2
++bash patch_wnd.patch
+ ```
+ 
 -### Getting the data
 -
 -The Outbrain dataset can be downloaded from [Kaggle](https://www.kaggle.com/c/outbrain-click-prediction/data) (requires Kaggle account).
@@ -550,16 +556,20 @@ index 94c6339..0000000
 -### Evaluation process
 -
 -The evaluation can be started by running the `main.py --evaluation` script. Evaluation is done for TFRecords dataset stored in `--eval_data_pattern`. Other evaluation related configs are also present in the `trainer/utils/arguments.py` and can be seen using the command `python main.py -h`.
--
++Source repo: https://github.com/NVIDIA/DeepLearningExamples/tree/master/TensorFlow/Recommendation/WideAndDeep
+ 
 -During evaluation (`--evaluation flag`):
 -* Model is restored from checkpoint in `--model_dir` if `--use_checkpoint` is set
 -* Evaluation log is displayed in console and stored in  `--log_filename`
 -* Every 100 batches evaluation metrics are logged - loss, binary accuracy, AUC ROC, MAP@12 value
--
++## Model
+ 
 -After the whole evaluation, the total evaluation metrics are logged,  loss, binary accuracy, AUC ROC, MAP@12 value.
--
++Google's [Wide & Deep Learning for Recommender Systems](https://arxiv.org/abs/1606.07792)
+ 
 -## Performance
--
++## Environment setup
+ 
 -### Benchmarking
 -
 -The following section shows how to run benchmarks measuring the model performance in training mode.
@@ -590,24 +600,40 @@ index 94c6339..0000000
 -```
 -
 -For GPU NVTabular preprocessing:
--```
+ ```
 -cd /wd && bash scripts/preproc_benchmark.sh -m nvtabular
--```
--
--
++cd Dockerfile-ubuntu18.04/
++docker build -t e2eaiok-tensorflow . -f DockerfileTensorflow
++docker run -it --privileged --network host --device=/dev/dri -v $data_path:/home/vmagent/app/dataset/outbrain -v $e2eaiok_path:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ e2eaiok-tensorflow /bin/bash
+ ```
+ 
++## Dataset
+ 
 -#### Training and evaluation performance benchmark
--
++The original dataset can be downloaded at https://www.kaggle.com/c/outbrain-click-prediction/data
+ 
 -Benchmark script is prepared to measure performance of the model during training (default configuration) and evaluation (`--evaluation`). Benchmark runs training or evaluation for `--benchmark_steps` batches, however measurement of performance starts after `--benchmark_warmup_steps`. Benchmark can be run for single and 8 GPUs and with a combination of XLA (`--xla`), AMP (`--amp`), batch sizes (`--global_batch_size` , `--eval_batch_size`) and affinity (`--affinity`).
--
++## Quick start guide
+ 
 -In order to run benchmark follow these steps:
 -Run training container (`${HOST_OUTBRAIN_PATH}` is the path with Outbrain dataset):
 -```
 -nvidia-docker run --rm -it --ipc=host --privileged -v ${HOST_OUTBRAIN_PATH}:/outbrain wd2-train bash
--```
--
++### Data preprocessing
+ ```
++# start spark service
++# need to setup ssh service first
++cd /home/vmagent/app/e2eaiok/modelzoo/WnD/TensorFlow2/data_processing/
++cp spark-defaults.conf /home/spark-3.2.1-bin-hadoop3.2/conf/
++mkdir -p /home/vmagent/app/e2eaiok/modelzoo/dlrm/data_processing/spark_local_dir
++mkdir -p /home/mnt/applicationHistory
++sh ./start_spark_service.sh
+ 
 -Run the benchmark script:
 -For 1 GPU:
--```
++# data preprocess with spark
++bash scripts/spark_preproc.sh
+ ```
 -python main.py --benchmark
 -```
 -
@@ -921,16 +947,20 @@ index 94c6339..0000000
 -|8|131072|YES|7205370|16923294|2.35|
 -|8|131072|NO|7030438|15081861|2.15|
 - </details>
--
+ 
 -## Release notes
--
++### Training
+ 
 -### Changelog
--
++`bash scripts/train.sh`
+ 
 -February 2021
 -Initial release
--
++### Inference
+ 
 -### Known issues
 -* In this model the TF32 precision can in some cases be as fast as the FP16 precision on Ampere GPUs. This is because TF32 also uses Tensor Cores and doesn't need any additional logic such as maintaining FP32 master weights and casts. However, please note that W&D is, by modern recommender standards, a very small model. Larger models should still see significant benefits of using FP16 math.
++`bash scripts/inference.sh`
 diff --git a/modelzoo/WnD/TensorFlow2/data/outbrain/criteo_meta.yaml b/modelzoo/WnD/TensorFlow2/data/outbrain/criteo_meta.yaml
 new file mode 100644
 index 0000000..d05b232
@@ -21781,7 +21811,7 @@ index 0000000..775175d
 +    main()
 diff --git a/modelzoo/WnD/TensorFlow2/scripts/inference.sh b/modelzoo/WnD/TensorFlow2/scripts/inference.sh
 new file mode 100644
-index 0000000..8431f95
+index 0000000..3226ffa
 --- /dev/null
 +++ b/modelzoo/WnD/TensorFlow2/scripts/inference.sh
 @@ -0,0 +1,38 @@
@@ -21822,8 +21852,7 @@ index 0000000..8431f95
 +  --benchmark \
 +  --benchmark_warmup_steps 50 \
 +  --benchmark_steps 100 \
-+  --metric MAP
-\ No newline at end of file
++  --metric MAP --deep_hidden_units 128 128 64
 diff --git a/modelzoo/WnD/TensorFlow2/scripts/memscript.sh b/modelzoo/WnD/TensorFlow2/scripts/memscript.sh
 index 8517b2e..f5441f8 100755
 --- a/modelzoo/WnD/TensorFlow2/scripts/memscript.sh
