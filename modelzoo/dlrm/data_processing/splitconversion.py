@@ -9,10 +9,10 @@ import argparse
 import subprocess
 
 # Define Schema
-LABEL_COL = 0
+LABEL_COL = f"_c0"
 INT_COLS = [f"_c{i}" for i in list(range(1, 14))]
 CAT_COLS = [f"_c{i}" for i in list(range(14, 40))]
-sorted_column_name = [f"_c{i}" for i in list(range(1, 40))]
+sorted_column_name = [f"_c{i}" for i in list(range(0, 40))]
 
 def list_dir(path):
     return [f"{file_name}" for file_name in os.listdir(path) if file_name.endswith('parquet')]
@@ -36,31 +36,37 @@ def process_convert(output_name, part_i, num_part, src_files, max_ind_range):
     print(f"{output_name} processing {part_i + 1}/{num_part}")
     t1 = timer()
     pdf = pd.read_parquet(src_files)
+    num_records = pdf.shape[0]
     pdf = pdf[sorted_column_name]
-    pdf[INT_COLS] = pdf[INT_COLS].fillna(0).astype(np.float32)
-    pdf[CAT_COLS] = pdf[CAT_COLS] % max_ind_range
+    pdf[LABEL_COL] = pdf[LABEL_COL].fillna(0).astype(np.int32)
+    pdf[INT_COLS] = pdf[INT_COLS].fillna(0).astype(np.int32)
+    pdf[CAT_COLS] = pdf[CAT_COLS].fillna(0).astype(np.int32)
     for i, c_name in enumerate(CAT_COLS):
         c_max = pdf[c_name].max()
         if c_max > feat_dims[i]:
             feat_dims[i] = c_max
     #print(pdf)
     pdf= pdf.to_records(index=False)
+    #print(pdf)
     pdf= pdf.tobytes()
     t3 = timer()
     print(f"{output_name} completed {part_i + 1}/{num_part}, took " + "%.3f secs" % (t3 - t1))
-    return feat_dims, pdf
+    return feat_dims, pdf, num_records
 
 
 def partial_post_process(partitioned_file, output_name, max_ind_range):
     feat_dim_final = [0] * len(CAT_COLS)
+    total_len = 0
     with open(output_name, "wb") as f:
         num_part = len(partitioned_file)
         for part_i, src_files in enumerate(partitioned_file):
-            feat_dim, pdf = process_convert(output_name, part_i, num_part, src_files, max_ind_range)
+            feat_dim, pdf, num_records = process_convert(output_name, part_i, num_part, src_files, max_ind_range)
             f.write(pdf)
+            total_len += num_records
             for idx, v in enumerate(feat_dim):
                 if feat_dim_final[idx] < v:
                     feat_dim_final[idx] = v
+    print(f"{output_name} num_records is {total_len}")
     np.savez(open(f"{output_name}_feat.npz", "wb"), counts=np.array(feat_dim_final))
 
 
@@ -94,26 +100,29 @@ def post_process(input_name, output_name, num_parallel = 1, expected_num_part = 
 
     # 3.2 merge partial output
     print(f"Start Final Merge for {output_name}")
-    feat_dim_final = [0] * len(CAT_COLS)
-    with open(output_name, "wb") as wfd:
-        for part_i in range(idx):
-            t1 = timer()
-            with open(f"{output_name}_{part_i}", 'rb') as fd:
-                shutil.copyfileobj(fd, wfd)
-            os.remove(f"{output_name}_{part_i}")
-            t2 = timer()
-            print(f"Done copy {output_name}_{part_i}/{idx} file, took " + "%.3f secs" % (t2 - t1))
-            with open(f"{output_name}_{part_i}_feat.npz", 'rb') as pnpz:
-                feat_dim = np.load(pnpz)['counts']
-            for i, v in enumerate(feat_dim):
-                if feat_dim_final[i] < v:
-                    feat_dim_final[i] = v
-            os.remove(f"{output_name}_{part_i}_feat.npz")
-    if create_dict != "":
-        np.savez(open(create_dict, "wb"), counts=np.array(feat_dim_final))
+    if num_parallel == 1:
+        shutil.move(f"{output_name}_{0}", output_name)
+    else:
+        feat_dim_final = [0] * len(CAT_COLS)
+        with open(output_name, "wb") as wfd:
+            for part_i in range(idx):
+                t1 = timer()
+                with open(f"{output_name}_{part_i}", 'rb') as fd:
+                    shutil.copyfileobj(fd, wfd)
+                os.remove(f"{output_name}_{part_i}")
+                t2 = timer()
+                print(f"Done copy {output_name}_{part_i}/{idx} file, took " + "%.3f secs" % (t2 - t1))
+                with open(f"{output_name}_{part_i}_feat.npz", 'rb') as pnpz:
+                    feat_dim = np.load(pnpz)['counts']
+                for i, v in enumerate(feat_dim):
+                    if feat_dim_final[i] < v:
+                        feat_dim_final[i] = v
+                os.remove(f"{output_name}_{part_i}_feat.npz")
+        feat_dim_final = [i + 1 for i in feat_dim_final]
+
     t_end = timer()
     print(f"Completed for {output_name}, took " +  "%.3f secs" % (t_end - t0))
-    print(feat_dim_final)
+    #print(feat_dim_final)
 
 
 def main(settings):
@@ -122,12 +131,23 @@ def main(settings):
         p_files = [[f"{settings.dir}/{j}" for j in i] for i in eval(settings.partitioned_file)]
         partial_post_process(p_files, settings.output_name, settings.max_ind_range)
     else:
+        print("Start to generate day_fea_count.npz")
+        feat_dim_final = []
+        for name in CAT_COLS:
+            print(f"Get dimension of {name}")
+            c = pd.read_parquet(f"{current_path}/dicts/{name}")
+            feat_dim_final.append(c.shape[0])
+
+        print(feat_dim_final)
+        np.savez(open(f"{current_path}/day_fea_count.npz", "wb"), counts=np.array(feat_dim_final))
+
+        print("Start to convert train/valid/test")
         train_input = "dlrm_categorified"
         test_input = "dlrm_categorified_test"
         valid_input = "dlrm_categorified_valid"
-        post_process(f"{current_path}{train_input}", f"{current_path}/train_data.bin", expected_num_part = 100, num_parallel = settings.multi_process, create_dict = f"{current_path}/day_fea_count.npz")
-        post_process(f"{current_path}{test_input}", f"{current_path}/test_data.bin", expected_num_part = 10, num_parallel = settings.multi_process)
-        post_process(f"{current_path}{valid_input}", f"{current_path}/valid_data.bin", expected_num_part = 10, num_parallel = settings.multi_process)
+        post_process(f"{current_path}{train_input}", f"{current_path}/train_data.bin", expected_num_part = 100, num_parallel = settings.multi_process)
+        post_process(f"{current_path}{test_input}", f"{current_path}/test_data.bin", expected_num_part = 1, num_parallel = settings.multi_process)
+        post_process(f"{current_path}{valid_input}", f"{current_path}/valid_data.bin", expected_num_part = 1, num_parallel = settings.multi_process)
 
 
 def parse_args(args):
@@ -141,4 +161,4 @@ def parse_args(args):
     
 if __name__ == "__main__":
     input_args = parse_args(sys.argv[1:])
-    main(input_args)    
+    main(input_args)

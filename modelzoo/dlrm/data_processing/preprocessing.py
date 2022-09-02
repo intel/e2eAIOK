@@ -21,13 +21,17 @@ str_fields = [StructField('_c%d' % i, StringType()) for i in CAT_COLS]
 schema = StructType(label_fields + int_fields + str_fields)
 
 
-def categorifyAllFeatures(df, proc, output_name="categorified", gen_dict=False, enable_freqlimit=False):
+def categorifyAllFeatures(df, proc, output_name="categorified", gen_dict=False, only_gen_dict = False, enable_freqlimit=False):
     dict_dfs = []
     to_categorify_cols = ['_c%d' % i for i in CAT_COLS]
-    #to_categorify_cols = ['_c%d' % i for i in to_be_categorified]
+    max_ind_range = 40000000
+    op_mod = FeatureModification(to_categorify_cols, udfImpl=udf(lambda x: int(x, 16) % max_ind_range if x else 0))
+    proc.reset_ops([op_mod])
+    df = proc.apply(df)
     if gen_dict:
         # only call below function when target dicts were not pre-prepared        
-        op_gen_dict = GenerateDictionary(to_categorify_cols, isParquet=False)
+        #op_gen_dict = GenerateDictionary(to_categorify_cols, isParquet=False)
+        op_gen_dict = GenerateDictionary(to_categorify_cols)
         proc.reset_ops([op_gen_dict])
         t1 = timer()
         dict_dfs = proc.generate_dicts(df)
@@ -39,6 +43,8 @@ def categorifyAllFeatures(df, proc, output_name="categorified", gen_dict=False, 
             "%s/%s/%s/%s" % (proc.path_prefix, proc.current_path, proc.dicts_path, name))} for name in to_categorify_cols]
 
     print([i['dict'].count() for i in dict_dfs])
+    if only_gen_dict:
+        return
 
     if enable_freqlimit:
         dict_dfs = [{'col_name': dict_df['col_name'], 'dict': dict_df['dict'].filter('count >= 15')} for dict_df in dict_dfs]
@@ -60,7 +66,7 @@ def main():
     print(host_name)
     path_prefix = "file://"
     current_path = "/home/vmagent/app/dataset/criteo/output/"
-    csv_folder = "/home/vmagent/app/raw_data/"
+    csv_folder = "/home/raw_data/"
 
     scala_udf_jars = "/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/python3.7/site-packages/ScalaProcessUtils/built/31/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
 
@@ -71,7 +77,7 @@ def main():
         .config("spark.driver.memory", "20G")\
         .config("spark.driver.memoryOverhead", "10G")\
         .config("spark.executor.instances", "4")\
-        .config("spark.executor.cores", "32")\
+        .config("spark.executor.cores", "16")\
         .config("spark.executor.memory", "100G")\
         .config("spark.executor.memoryOverhead", "20G")\
         .config("spark.driver.extraClassPath", f"{scala_udf_jars}")\
@@ -80,14 +86,24 @@ def main():
     spark.sparkContext.setLogLevel("ERROR")
     proc = DataProcessor(spark, path_prefix, current_path=current_path, shuffle_disk_capacity="550GB", spark_mode='standalone')
 
+    # prepare, since data is too large, convert to parquet
     train_files = ["day_%d" % i for i in range(0, 23)]
     file_names = [f"{path_prefix}{csv_folder}{filename}" for filename in train_files]
-    df = spark.read.schema(schema).option('sep', '\t').csv(file_names)
-    # convert to parquet
-    df = proc.transform(df, name="dlrm_parquet")
-    return
-    df = categorifyAllFeatures(df, proc, output_name="dlrm_categorified", gen_dict=True, enable_freqlimit=False)
-    #df = categorifyAllFeatures(df, proc, output_name="dlrm_categorified", gen_dict=False, enable_freqlimit=False)
+    train_df = spark.read.schema(schema).option('sep', '\t').csv(file_names)
+    train_df = proc.transform(train_df, name="dlrm_parquet_train")
+
+    day_23 = ["day_23"]
+    file_names = [f"{path_prefix}{csv_folder}{filename}" for filename in day_23]
+    day23_df = spark.read.schema(schema).option('sep', '\t').csv(file_names)
+    day23_df = proc.transform(day23_df, name="dlrm_parquet_23")
+
+    # generate dict
+    df = train_df.union(day23_df)
+    df = categorifyAllFeatures(df, proc, output_name="dlrm_categorified", gen_dict=True, only_gen_dict=True, enable_freqlimit=False)
+ 
+    # categorify
+    df = train_df
+    df = categorifyAllFeatures(df, proc, output_name="dlrm_categorified", gen_dict=False, enable_freqlimit=False)
     t2 = timer()
     print(f"Train data process time is {(t2 - t1)} secs")
 
@@ -98,11 +114,13 @@ def main():
     test_files = ["test/day_23"]
     test_file_names = [f"{path_prefix}{csv_folder}{filename}" for filename in test_files]
     test_df = spark.read.schema(schema).option('sep', '\t').csv(test_file_names)
+    test_df = proc.transform(test_df, name="dlrm_parquet_test")
     test_df = categorifyAllFeatures(test_df, proc, output_name="dlrm_categorified_test", gen_dict=False, enable_freqlimit=False)
 
     valid_files = ["validation/day_23"]
     valid_file_names = [f"{path_prefix}{csv_folder}{filename}" for filename in valid_files]
     valid_df = spark.read.schema(schema).option('sep', '\t').csv(valid_file_names)
+    valid_df = proc.transform(valid_df, name="dlrm_parquet_valid")
     valid_df = categorifyAllFeatures(valid_df, proc, output_name="dlrm_categorified_valid", gen_dict=False, enable_freqlimit=False)
     t3 = timer()
 
