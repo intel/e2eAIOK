@@ -27,7 +27,6 @@ pipeline {
                 label 'sr608'
             }
             steps {
-                sh 'cd modelzoo/minigo && bash patch_minigo.sh && cd ../.. && bash tests/cicd/jenkins_minigo_test_prepare.sh'
                 sh 'cd modelzoo/bert && bash patch_bert.sh && cd ../..'
                 sh 'cd modelzoo/rnnt/pytorch && bash patch_rnnt.sh && cd ../../..'
                 sh 'cd modelzoo/resnet  && bash patch_resnet.sh && cd ../..'
@@ -37,13 +36,6 @@ pipeline {
                 sh 'docker run -t -d --name worker-aidk-tensorflow --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-tensorflow /bin/bash && docker exec -d worker-aidk-tensorflow /bin/bash service ssh start'
                 sh 'docker run -t -d --name worker-aidk-pytorch --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch /bin/bash && docker exec -d worker-aidk-pytorch /bin/bash service ssh start'
                 sh 'docker run -t -d --name worker-aidk-pytorch110 --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch110 /bin/bash && docker exec -d worker-aidk-pytorch110 /bin/bash service ssh start'
-            }
-        }
-        stage('Run distributed resnet') {
-            steps {
-                sh '> /root/.ssh/known_hosts'
-                sh 'pwd && cd modelzoo/resnet  && bash patch_resnet.sh && cd ../..'
-                sh 'docker run --rm --name test-workload-dist-resnet --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_resnet_test_dist.sh"'
             }
         }
         stage('Run distributed bert') {
@@ -60,6 +52,13 @@ pipeline {
                 sh 'docker run --rm --name test-workload-dist-rnnt --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch110 /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_rnnt_test_dist.sh"'
             }
         }
+        stage('Run distributed resnet') {
+            steps {
+                sh '> /root/.ssh/known_hosts'
+                sh 'pwd && cd modelzoo/resnet  && bash patch_resnet.sh && cd ../..'
+                sh 'docker run --rm --name test-workload-dist-resnet --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_resnet_test_dist.sh"'
+            }
+        }
         stage('Run distributed wnd') {
             steps {
                 sh '> /root/.ssh/known_hosts'
@@ -72,6 +71,21 @@ pipeline {
                 sh '> /root/.ssh/known_hosts'
                 sh 'cd modelzoo/dlrm && bash patch_dlrm.sh && cd ../..'
                 sh 'docker run --rm --name test-workload-dist-dlrm --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_dlrm_test_dist.sh"'
+            }
+        }
+        stage('Prepare minigo') {
+            steps {
+                sh 'cd modelzoo/minigo && bash patch_minigo.sh && cd ../.. '
+                sh '/bin/bash tests/cicd/jenkins_minigo_test_prepare.sh'
+            }
+        }
+        stage('Run distributed minigo') {
+            agent { 
+                label 'sr608'
+            }
+            steps {
+                sh 'cd modelzoo/minigo && bash patch_minigo.sh && cd ../.. '
+                sh 'SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT /bin/bash tests/cicd/jenkins_minigo_test_dist.sh'
             }
         }
         stage('Stop docker worker') {
