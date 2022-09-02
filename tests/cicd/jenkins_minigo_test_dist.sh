@@ -16,9 +16,6 @@ hashstr_id=$(date +%Y-%m-%d)_$(echo $RANDOM | md5sum | head -c 8)
 tmp_dir="/root/cicd_logs/aidk_cicd_"$MODEL_NAME"_"$hashstr_id
 mkdir -p $tmp_dir
 
-ssh-keyscan -H sr608 >> /root/.ssh/known_hosts
-ssh-keyscan -H sr613 >> /root/.ssh/known_hosts
-
 set -e
 # lauch AIDK minigo
 cd modelzoo/minigo
