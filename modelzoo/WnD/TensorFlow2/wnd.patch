@@ -2389,10 +2389,10 @@ index 0000000..3e332e8
 +dataset_format: TFRecords
 diff --git a/modelzoo/WnD/TensorFlow2/data/outbrain/spark/preproc-recdp.py b/modelzoo/WnD/TensorFlow2/data/outbrain/spark/preproc-recdp.py
 new file mode 100644
-index 0000000..692aaef
+index 0000000..fcd3d17
 --- /dev/null
 +++ b/modelzoo/WnD/TensorFlow2/data/outbrain/spark/preproc-recdp.py
-@@ -0,0 +1,879 @@
+@@ -0,0 +1,896 @@
 +from data.outbrain.pyrecdp.data_processor import *
 +from data.outbrain.pyrecdp.utils import *
 +
@@ -2421,15 +2421,32 @@ index 0000000..692aaef
 +
 +import os
 +
-+os.environ["PYSPARK_PYTHON"] = "/root/sw/miniconda3/envs/spark/bin/python"
++parser = argparse.ArgumentParser()
 +
-+OUTPUT_BUCKET_FOLDER = "/tmp/spark/preprocessed/recdp/"
-+DATA_BUCKET_FOLDER = "/outbrain/orig/"
-+SPARK_TEMP_FOLDER = "/tmp/spark/spark-temp/"
++parser.add_argument(
++    '--spark_master',
++    help='number of train partitions',
++    type=str,
++    default='local[*]')
++parser.add_argument(
++    '--dataset_path',
++    help='input dataset path',
++    type=str,
++    default='file:///outbrain/orig/')
++parser.add_argument(
++    '--output_path',
++    help='output dataset path',
++    type=str,
++    default='file:///outbrain/tfrecords/')
++args = parser.parse_args()
++
++OUTPUT_BUCKET_FOLDER = "file:///tmp/spark/preprocessed/rewrite/"
++DATA_BUCKET_FOLDER = args.dataset_path
++SPARK_TEMP_FOLDER = "file:///tmp/spark/spark-temp/"
 +TENSORFLOW_HADOOP = "data/outbrain/spark/data/tensorflow-hadoop-1.5.0.jar"
 +
 +
-+conf = SparkConf().setMaster('spark://sr112:7077').set('spark.executor.memory', '40g').set('spark.driver.memory', '200g').set('spark.executor.cores', '10')
++conf = SparkConf().setMaster(args.spark_master).set('spark.executor.memory', '40g').set('spark.driver.memory', '200g').set('spark.executor.cores', '10')
 +conf.set("spark.jars", TENSORFLOW_HADOOP)
 +conf.set("spark.sql.files.maxPartitionBytes", 805306368)
 +
@@ -4120,7 +4137,7 @@ index 0000000..1d32781
 +
 +spark.stop()
 diff --git a/modelzoo/WnD/TensorFlow2/data/outbrain/spark/preproc1.py b/modelzoo/WnD/TensorFlow2/data/outbrain/spark/preproc1.py
-index a3091d5..858d31d 100644
+index a3091d5..7026291 100644
 --- a/modelzoo/WnD/TensorFlow2/data/outbrain/spark/preproc1.py
 +++ b/modelzoo/WnD/TensorFlow2/data/outbrain/spark/preproc1.py
 @@ -2,7 +2,7 @@
@@ -4132,18 +4149,48 @@ index a3091d5..858d31d 100644
  # Licensed under the Apache License, Version 2.0 (the "License");
  # you may not use this file except in compliance with the License.
  # You may obtain a copy of the License at
-@@ -24,8 +24,7 @@ OUTPUT_BUCKET_FOLDER = "/tmp/spark/preprocessed/"
- DATA_BUCKET_FOLDER = "/outbrain/orig/"
- SPARK_TEMP_FOLDER = "/tmp/spark/spark-temp/"
- 
+@@ -19,13 +19,32 @@ from pyspark.context import SparkContext, SparkConf
+ from pyspark.sql.functions import col
+ from pyspark.sql.session import SparkSession
+ from pyspark.sql.types import IntegerType, StringType, StructType, StructField
+-
+-OUTPUT_BUCKET_FOLDER = "/tmp/spark/preprocessed/"
+-DATA_BUCKET_FOLDER = "/outbrain/orig/"
+-SPARK_TEMP_FOLDER = "/tmp/spark/spark-temp/"
+-
 -conf = SparkConf().setMaster('local[*]').set('spark.executor.memory', '40g').set('spark.driver.memory', '200g').set(
 -    "spark.local.dir", SPARK_TEMP_FOLDER)
-+conf = SparkConf().setMaster('spark://sr112:7077').set('spark.executor.memory', '200g').set('spark.driver.memory', '200g')
++import argparse
++
++parser = argparse.ArgumentParser()
++
++parser.add_argument(
++    '--spark_master',
++    help='number of train partitions',
++    type=str,
++    default='local[*]')
++parser.add_argument(
++    '--dataset_path',
++    help='input dataset path',
++    type=str,
++    default='file:///outbrain/orig/')
++parser.add_argument(
++    '--output_path',
++    help='output dataset path',
++    type=str,
++    default='file:///outbrain/tfrecords/')
++args = parser.parse_args()
++
++OUTPUT_BUCKET_FOLDER = "file:///tmp/spark/preprocessed/rewrite/"
++DATA_BUCKET_FOLDER = args.dataset_path
++SPARK_TEMP_FOLDER = "file:///tmp/spark/spark-temp/"
++
++conf = SparkConf().setMaster(args.spark_master).set('spark.executor.memory', '200g').set('spark.driver.memory', '200g')
  
  sc = SparkContext(conf=conf)
  spark = SparkSession(sc)
 diff --git a/modelzoo/WnD/TensorFlow2/data/outbrain/spark/preproc2.py b/modelzoo/WnD/TensorFlow2/data/outbrain/spark/preproc2.py
-index 559b34d..54f9566 100644
+index 559b34d..e94b9e9 100644
 --- a/modelzoo/WnD/TensorFlow2/data/outbrain/spark/preproc2.py
 +++ b/modelzoo/WnD/TensorFlow2/data/outbrain/spark/preproc2.py
 @@ -2,7 +2,7 @@
@@ -4155,18 +4202,58 @@ index 559b34d..54f9566 100644
  # Licensed under the Apache License, Version 2.0 (the "License");
  # you may not use this file except in compliance with the License.
  # You may obtain a copy of the License at
-@@ -33,8 +33,7 @@ OUTPUT_BUCKET_FOLDER = "/tmp/spark/preprocessed/"
- DATA_BUCKET_FOLDER = "/outbrain/orig/"
- SPARK_TEMP_FOLDER = "/tmp/spark/spark-temp/"
- 
+@@ -28,13 +28,33 @@ from pyspark.context import SparkContext, SparkConf
+ from pyspark.ml.linalg import SparseVector, VectorUDT
+ from pyspark.sql.session import SparkSession
+ from pyspark.sql.types import IntegerType, StringType, StructType, StructField, TimestampType, FloatType, ArrayType
+-
+-OUTPUT_BUCKET_FOLDER = "/tmp/spark/preprocessed/"
+-DATA_BUCKET_FOLDER = "/outbrain/orig/"
+-SPARK_TEMP_FOLDER = "/tmp/spark/spark-temp/"
+-
 -conf = SparkConf().setMaster('local[*]').set('spark.executor.memory', '40g').set('spark.driver.memory', '200g').set(
 -    "spark.local.dir", SPARK_TEMP_FOLDER)
-+conf = SparkConf().setMaster('spark://sr112:7077').set('spark.executor.memory', '200g').set('spark.driver.memory', '200g')
++import argparse
++
++
++parser = argparse.ArgumentParser()
++
++parser.add_argument(
++    '--spark_master',
++    help='number of train partitions',
++    type=str,
++    default='local[*]')
++parser.add_argument(
++    '--dataset_path',
++    help='input dataset path',
++    type=str,
++    default='file:///outbrain/orig/')
++parser.add_argument(
++    '--output_path',
++    help='output dataset path',
++    type=str,
++    default='file:///outbrain/tfrecords/')
++args = parser.parse_args()
++
++OUTPUT_BUCKET_FOLDER = "file:///tmp/spark/preprocessed/rewrite/"
++DATA_BUCKET_FOLDER = args.dataset_path
++SPARK_TEMP_FOLDER = "file:///tmp/spark/spark-temp/"
++
++conf = SparkConf().setMaster(args.spark_master).set('spark.executor.memory', '200g').set('spark.driver.memory', '200g')
  
  sc = SparkContext(conf=conf)
  spark = SparkSession(sc)
+@@ -1014,7 +1034,7 @@ feature_vector_labels_integral = bool_feature_names \
+ print(feature_vector_labels_integral)
+ feature_vector_labels_integral_dict = dict([(key, idx) for idx, key in enumerate(feature_vector_labels_integral)])
+ 
+-with open(OUTPUT_BUCKET_FOLDER + 'feature_vector_labels_integral.txt', 'w') as output:
++with open('/tmp/spark/preprocessed/' + 'feature_vector_labels_integral.txt', 'w') as output:
+     output.writelines('\n'.join(feature_vector_labels_integral))
+ 
+ 
 diff --git a/modelzoo/WnD/TensorFlow2/data/outbrain/spark/preproc3.py b/modelzoo/WnD/TensorFlow2/data/outbrain/spark/preproc3.py
-index f6ef4d6..e8938b1 100644
+index f6ef4d6..7a95667 100644
 --- a/modelzoo/WnD/TensorFlow2/data/outbrain/spark/preproc3.py
 +++ b/modelzoo/WnD/TensorFlow2/data/outbrain/spark/preproc3.py
 @@ -2,7 +2,7 @@
@@ -4187,24 +4274,77 @@ index f6ef4d6..e8938b1 100644
  from data.outbrain.spark.utils.feature_description import LABEL_COLUMN, DISPLAY_ID_COLUMN, CATEGORICAL_COLUMNS, \
      DOC_CATEGORICAL_MULTIVALUED_COLUMNS, BOOL_COLUMNS, INT_COLUMNS, FLOAT_COLUMNS, \
      FLOAT_COLUMNS_LOG_BIN_TRANSFORM, FLOAT_COLUMNS_SIMPLE_BIN_TRANSFORM, FLOAT_COLUMNS_NO_TRANSFORM
-@@ -42,14 +42,13 @@ evaluation_verbose = False
- OUTPUT_BUCKET_FOLDER = "/tmp/spark/preprocessed/"
- DATA_BUCKET_FOLDER = "/data/orig/"
- SPARK_TEMP_FOLDER = "/tmp/spark/spark-temp/"
+@@ -39,37 +39,52 @@ from data.outbrain.spark.utils.feature_description import LABEL_COLUMN, DISPLAY_
+ pd.set_option('display.max_columns', 1000)
+ evaluation = True
+ evaluation_verbose = False
+-OUTPUT_BUCKET_FOLDER = "/tmp/spark/preprocessed/"
+-DATA_BUCKET_FOLDER = "/data/orig/"
+-SPARK_TEMP_FOLDER = "/tmp/spark/spark-temp/"
 -LOCAL_DATA_TFRECORDS_DIR = "/outbrain/tfrecords"
-+LOCAL_DATA_TFRECORDS_DIR = "/outbrain/tfrecords-test"
- 
- TEST_SET_MODE = False
- 
- TENSORFLOW_HADOOP = "data/outbrain/spark/data/tensorflow-hadoop-1.5.0.jar"
- 
+-
+-TEST_SET_MODE = False
+-
+-TENSORFLOW_HADOOP = "data/outbrain/spark/data/tensorflow-hadoop-1.5.0.jar"
+-
 -conf = SparkConf().setMaster('local[*]').set('spark.executor.memory', '40g').set('spark.driver.memory', '200g').set(
 -    "spark.local.dir", SPARK_TEMP_FOLDER)
-+conf = SparkConf().setMaster('spark://sr112:7077').set('spark.executor.memory', '200g').set('spark.driver.memory', '200g')
- conf.set("spark.jars", TENSORFLOW_HADOOP)
- conf.set("spark.sql.files.maxPartitionBytes", 805306368)
+-conf.set("spark.jars", TENSORFLOW_HADOOP)
+-conf.set("spark.sql.files.maxPartitionBytes", 805306368)
+-
+-sc = SparkContext(conf=conf)
+-spark = SparkSession(sc)
  
-@@ -288,6 +287,7 @@ def compute_min_max_logs(df):
+ parser = argparse.ArgumentParser()
+ 
++parser.add_argument(
++    '--spark_master',
++    help='number of train partitions',
++    type=str,
++    default='local[*]')
++parser.add_argument(
++    '--dataset_path',
++    help='input dataset path',
++    type=str,
++    default='file:///outbrain/orig/')
++parser.add_argument(
++    '--output_path',
++    help='output dataset path',
++    type=str,
++    default='file:///outbrain/tfrecords/')
+ parser.add_argument(
+     '--num_train_partitions',
+     help='number of train partitions',
+     type=int,
+     default=40)
+-
+ parser.add_argument(
+     '--num_valid_partitions',
+     help='number of validation partitions',
+     type=int,
+     default=40)
+ args = parser.parse_args()
++
++OUTPUT_BUCKET_FOLDER = "file:///tmp/spark/preprocessed/rewrite/"
++DATA_BUCKET_FOLDER = args.dataset_path
++SPARK_TEMP_FOLDER = "file:///tmp/spark/spark-temp/"
++LOCAL_DATA_TFRECORDS_DIR = args.output_path
++
++TEST_SET_MODE = False
++
++TENSORFLOW_HADOOP = "data/outbrain/spark/data/tensorflow-hadoop-1.5.0.jar"
++
++conf = SparkConf().setMaster(args.spark_master).set('spark.executor.memory', '200g').set('spark.driver.memory', '200g')
++conf.set("spark.jars", TENSORFLOW_HADOOP)
++conf.set("spark.sql.files.maxPartitionBytes", 805306368)
++
++sc = SparkContext(conf=conf)
++spark = SparkSession(sc)
++
+ num_train_partitions = args.num_train_partitions
+ num_valid_partitions = args.num_valid_partitions
+ batch_size = PREBATCH_SIZE
+@@ -288,6 +303,7 @@ def compute_min_max_logs(df):
          float_expr.append(F.min(name))
          float_expr.append(F.max(name))
      floatDf = all_df.agg(*float_expr).collect()
@@ -4212,330 +4352,6 @@ index f6ef4d6..e8938b1 100644
      for name in FLOAT_COLUMNS_LOG_BIN_TRANSFORM:
          minAgg = floatDf[0]["min(" + name + ")"]
          maxAgg = floatDf[0]["max(" + name + ")"]
-@@ -311,164 +311,164 @@ eval_output_string = '/eval'
- path = LOCAL_DATA_TFRECORDS_DIR
- 
- 
--def create_tf_example_spark(df, min_logs, max_logs):
--    result = {}
--    result[LABEL_COLUMN] = tf.train.Feature(int64_list=tf.train.Int64List(value=df[LABEL_COLUMN].to_list()))
--    result[DISPLAY_ID_COLUMN] = tf.train.Feature(int64_list=tf.train.Int64List(value=df[DISPLAY_ID_COLUMN].to_list()))
--    for name in FLOAT_COLUMNS:
--        value = df[name].to_list()
--        result[name] = tf.train.Feature(float_list=tf.train.FloatList(value=value))
--    for name in FLOAT_COLUMNS_SIMPLE_BIN_TRANSFORM:
--        value = df[name].multiply(10).astype('int64').to_list()
--        result[name + '_binned'] = tf.train.Feature(int64_list=tf.train.Int64List(value=value))
--    for name in FLOAT_COLUMNS_LOG_BIN_TRANSFORM:
--        value_prelim = df[name].multiply(1000).apply(np.log1p).multiply(1. / np.log(2.0))
--        value = value_prelim.astype('int64').to_list()
--        result[name + '_binned'] = tf.train.Feature(int64_list=tf.train.Int64List(value=value))
--        nn = name + '_log_01scaled'
--        value = value_prelim.add(-min_logs[nn]).multiply(1. / (max_logs[nn] - min_logs[nn])).to_list()
--        result[nn] = tf.train.Feature(float_list=tf.train.FloatList(value=value))
--    for name in INT_COLUMNS:
--        value_prelim = df[name].apply(np.log1p).multiply(1. / np.log(2.0))
--        value = value_prelim.astype('int64').to_list()
--        result[name + '_log_int'] = tf.train.Feature(int64_list=tf.train.Int64List(value=value))
--        nn = name + '_log_01scaled'
--        value = value_prelim.add(-min_logs[nn]).multiply(1. / (max_logs[nn] - min_logs[nn])).to_list()
--        result[nn] = tf.train.Feature(float_list=tf.train.FloatList(value=value))
--    for name in BOOL_COLUMNS + CATEGORICAL_COLUMNS:
--        value = df[name].fillna(0).astype('int64').to_list()
--        result[name] = tf.train.Feature(int64_list=tf.train.Int64List(value=value))
--    for multi_category in DOC_CATEGORICAL_MULTIVALUED_COLUMNS:
--        values = []
--        for category in DOC_CATEGORICAL_MULTIVALUED_COLUMNS[multi_category]:
--            values = values + [df[category].to_numpy()]
--        # need to transpose the series so they will be parsed correctly by the FixedLenFeature
--        # we can pass in a single series here; they'll be reshaped to [batch_size, num_values]
--        # when parsed from the TFRecord
--        value = np.stack(values, axis=1).flatten().tolist()
--        result[multi_category] = tf.train.Feature(int64_list=tf.train.Int64List(value=value))
--    tf_example = tf.train.Example(features=tf.train.Features(feature=result))
--    return tf_example
--
--
--def hash_bucket(num_buckets):
--    return lambda x: x % num_buckets
--
--
--def _transform_to_tfrecords(rdds):
--    csv = pd.DataFrame(list(rdds), columns=CSV_ORDERED_COLUMNS)
--    num_rows = len(csv.index)
--    examples = []
--    for start_ind in range(0, num_rows, batch_size if batch_size is not None else 1):  # for each batch
--        if start_ind + batch_size - 1 > num_rows:  # if we'd run out of rows
--            csv_slice = csv.iloc[start_ind:]
--            # drop the remainder
--            print("last Example has: ", len(csv_slice))
--            examples.append((create_tf_example_spark(csv_slice, min_logs, max_logs), len(csv_slice)))
--            return examples
--        else:
--            csv_slice = csv.iloc[start_ind:start_ind + (batch_size if batch_size is not None else 1)]
--        examples.append((create_tf_example_spark(csv_slice, min_logs, max_logs), batch_size))
--    return examples
--
--
--max_partition_num = 30
--
--
--def _transform_to_slices(rdds):
--    taskcontext = TaskContext.get()
--    partitionid = taskcontext.partitionId()
--    csv = pd.DataFrame(list(rdds), columns=CSV_ORDERED_COLUMNS)
--    for name, size in HASH_BUCKET_SIZES.items():
--        if name in csv.columns.values:
--            csv[name] = csv[name].apply(hash_bucket(size))
--    num_rows = len(csv.index)
--    print("working with partition: ", partitionid, max_partition_num, num_rows)
--    examples = []
--    for start_ind in range(0, num_rows, batch_size if batch_size is not None else 1):  # for each batch
--        if start_ind + batch_size - 1 > num_rows:  # if we'd run out of rows
--            csv_slice = csv.iloc[start_ind:]
--            print("last Example has: ", len(csv_slice), partitionid)
--            examples.append((csv_slice, len(csv_slice)))
--            return examples
--        else:
--            csv_slice = csv.iloc[start_ind:start_ind + (batch_size if batch_size is not None else 1)]
--        examples.append((csv_slice, len(csv_slice)))
--    return examples
--
--
--def _transform_to_tfrecords_from_slices(rdds):
--    examples = []
--    for slice in rdds:
--        if len(slice[0]) != batch_size:
--            print("slice size is not correct, dropping: ", len(slice[0]))
--        else:
--            examples.append(
--                (bytearray((create_tf_example_spark(slice[0], min_logs, max_logs)).SerializeToString()), None))
--    return examples
--
--
--def _transform_to_tfrecords_from_reslice(rdds):
--    examples = []
--    all_dataframes = pd.DataFrame([])
--    for slice in rdds:
--        all_dataframes = all_dataframes.append(slice[0])
--    num_rows = len(all_dataframes.index)
--    examples = []
--    for start_ind in range(0, num_rows, batch_size if batch_size is not None else 1):  # for each batch
--        if start_ind + batch_size - 1 > num_rows:  # if we'd run out of rows
--            csv_slice = all_dataframes.iloc[start_ind:]
--            if TEST_SET_MODE:
--                remain_len = batch_size - len(csv_slice)
--                (m, n) = divmod(remain_len, len(csv_slice))
--                print("remainder: ", len(csv_slice), remain_len, m, n)
--                if m:
--                    for i in range(m):
--                        csv_slice = csv_slice.append(csv_slice)
--                csv_slice = csv_slice.append(csv_slice.iloc[:n])
--                print("after fill remainder: ", len(csv_slice))
--                examples.append(
--                    (bytearray((create_tf_example_spark(csv_slice, min_logs, max_logs)).SerializeToString()), None))
--                return examples
--            # drop the remainder
--            print("dropping remainder: ", len(csv_slice))
--            return examples
--        else:
--            csv_slice = all_dataframes.iloc[start_ind:start_ind + (batch_size if batch_size is not None else 1)]
--            examples.append(
--                (bytearray((create_tf_example_spark(csv_slice, min_logs, max_logs)).SerializeToString()), None))
--    return examples
--
--
--TEST_SET_MODE = False
--train_features = train_feature_vectors_integral_csv_rdd_df.coalesce(30).rdd.mapPartitions(_transform_to_slices)
--cached_train_features = train_features.cache()
--train_full = cached_train_features.filter(lambda x: x[1] == batch_size)
--# split out slies where we don't have a full batch so that we can reslice them so we only drop mininal rows
--train_not_full = cached_train_features.filter(lambda x: x[1] < batch_size)
--train_examples_full = train_full.mapPartitions(_transform_to_tfrecords_from_slices)
--train_left = train_not_full.coalesce(1).mapPartitions(_transform_to_tfrecords_from_reslice)
--all_train = train_examples_full.union(train_left)
--
--TEST_SET_MODE = True
--valid_features = test_validation_feature_vectors_integral_csv_rdd_df.repartition(num_valid_partitions,
--                                                                                 'display_id').rdd.mapPartitions(
--    _transform_to_slices)
--cached_valid_features = valid_features.cache()
--valid_full = cached_valid_features.filter(lambda x: x[1] == batch_size)
--valid_not_full = cached_valid_features.filter(lambda x: x[1] < batch_size)
--valid_examples_full = valid_full.mapPartitions(_transform_to_tfrecords_from_slices)
--valid_left = valid_not_full.coalesce(1).mapPartitions(_transform_to_tfrecords_from_reslice)
--all_valid = valid_examples_full.union(valid_left)
--
--all_train.saveAsNewAPIHadoopFile(LOCAL_DATA_TFRECORDS_DIR + train_output_string,
--                                 "org.tensorflow.hadoop.io.TFRecordFileOutputFormat",
--                                 keyClass="org.apache.hadoop.io.BytesWritable",
--                                 valueClass="org.apache.hadoop.io.NullWritable")
--
--all_valid.saveAsNewAPIHadoopFile(LOCAL_DATA_TFRECORDS_DIR + eval_output_string,
--                                 "org.tensorflow.hadoop.io.TFRecordFileOutputFormat",
--                                 keyClass="org.apache.hadoop.io.BytesWritable",
--                                 valueClass="org.apache.hadoop.io.NullWritable")
-+# def create_tf_example_spark(df, min_logs, max_logs):
-+#     result = {}
-+#     result[LABEL_COLUMN] = tf.train.Feature(int64_list=tf.train.Int64List(value=df[LABEL_COLUMN].to_list()))
-+#     result[DISPLAY_ID_COLUMN] = tf.train.Feature(int64_list=tf.train.Int64List(value=df[DISPLAY_ID_COLUMN].to_list()))
-+#     for name in FLOAT_COLUMNS:
-+#         value = df[name].to_list()
-+#         result[name] = tf.train.Feature(float_list=tf.train.FloatList(value=value))
-+#     for name in FLOAT_COLUMNS_SIMPLE_BIN_TRANSFORM:
-+#         value = df[name].multiply(10).astype('int64').to_list()
-+#         result[name + '_binned'] = tf.train.Feature(int64_list=tf.train.Int64List(value=value))
-+#     for name in FLOAT_COLUMNS_LOG_BIN_TRANSFORM:
-+#         value_prelim = df[name].multiply(1000).apply(np.log1p).multiply(1. / np.log(2.0))
-+#         value = value_prelim.astype('int64').to_list()
-+#         result[name + '_binned'] = tf.train.Feature(int64_list=tf.train.Int64List(value=value))
-+#         nn = name + '_log_01scaled'
-+#         value = value_prelim.add(-min_logs[nn]).multiply(1. / (max_logs[nn] - min_logs[nn])).to_list()
-+#         result[nn] = tf.train.Feature(float_list=tf.train.FloatList(value=value))
-+#     for name in INT_COLUMNS:
-+#         value_prelim = df[name].apply(np.log1p).multiply(1. / np.log(2.0))
-+#         value = value_prelim.astype('int64').to_list()
-+#         result[name + '_log_int'] = tf.train.Feature(int64_list=tf.train.Int64List(value=value))
-+#         nn = name + '_log_01scaled'
-+#         value = value_prelim.add(-min_logs[nn]).multiply(1. / (max_logs[nn] - min_logs[nn])).to_list()
-+#         result[nn] = tf.train.Feature(float_list=tf.train.FloatList(value=value))
-+#     for name in BOOL_COLUMNS + CATEGORICAL_COLUMNS:
-+#         value = df[name].fillna(0).astype('int64').to_list()
-+#         result[name] = tf.train.Feature(int64_list=tf.train.Int64List(value=value))
-+#     for multi_category in DOC_CATEGORICAL_MULTIVALUED_COLUMNS:
-+#         values = []
-+#         for category in DOC_CATEGORICAL_MULTIVALUED_COLUMNS[multi_category]:
-+#             values = values + [df[category].to_numpy()]
-+#         # need to transpose the series so they will be parsed correctly by the FixedLenFeature
-+#         # we can pass in a single series here; they'll be reshaped to [batch_size, num_values]
-+#         # when parsed from the TFRecord
-+#         value = np.stack(values, axis=1).flatten().tolist()
-+#         result[multi_category] = tf.train.Feature(int64_list=tf.train.Int64List(value=value))
-+#     tf_example = tf.train.Example(features=tf.train.Features(feature=result))
-+#     return tf_example
-+
-+
-+# def hash_bucket(num_buckets):
-+#     return lambda x: x % num_buckets
-+
-+
-+# def _transform_to_tfrecords(rdds):
-+#     csv = pd.DataFrame(list(rdds), columns=CSV_ORDERED_COLUMNS)
-+#     num_rows = len(csv.index)
-+#     examples = []
-+#     for start_ind in range(0, num_rows, batch_size if batch_size is not None else 1):  # for each batch
-+#         if start_ind + batch_size - 1 > num_rows:  # if we'd run out of rows
-+#             csv_slice = csv.iloc[start_ind:]
-+#             # drop the remainder
-+#             print("last Example has: ", len(csv_slice))
-+#             examples.append((create_tf_example_spark(csv_slice, min_logs, max_logs), len(csv_slice)))
-+#             return examples
-+#         else:
-+#             csv_slice = csv.iloc[start_ind:start_ind + (batch_size if batch_size is not None else 1)]
-+#         examples.append((create_tf_example_spark(csv_slice, min_logs, max_logs), batch_size))
-+#     return examples
-+
-+
-+# max_partition_num = 30
-+
-+
-+# def _transform_to_slices(rdds):
-+#     taskcontext = TaskContext.get()
-+#     partitionid = taskcontext.partitionId()
-+#     csv = pd.DataFrame(list(rdds), columns=CSV_ORDERED_COLUMNS)
-+#     for name, size in HASH_BUCKET_SIZES.items():
-+#         if name in csv.columns.values:
-+#             csv[name] = csv[name].apply(hash_bucket(size))
-+#     num_rows = len(csv.index)
-+#     print("working with partition: ", partitionid, max_partition_num, num_rows)
-+#     examples = []
-+#     for start_ind in range(0, num_rows, batch_size if batch_size is not None else 1):  # for each batch
-+#         if start_ind + batch_size - 1 > num_rows:  # if we'd run out of rows
-+#             csv_slice = csv.iloc[start_ind:]
-+#             print("last Example has: ", len(csv_slice), partitionid)
-+#             examples.append((csv_slice, len(csv_slice)))
-+#             return examples
-+#         else:
-+#             csv_slice = csv.iloc[start_ind:start_ind + (batch_size if batch_size is not None else 1)]
-+#         examples.append((csv_slice, len(csv_slice)))
-+#     return examples
-+
-+
-+# def _transform_to_tfrecords_from_slices(rdds):
-+#     examples = []
-+#     for slice in rdds:
-+#         if len(slice[0]) != batch_size:
-+#             print("slice size is not correct, dropping: ", len(slice[0]))
-+#         else:
-+#             examples.append(
-+#                 (bytearray((create_tf_example_spark(slice[0], min_logs, max_logs)).SerializeToString()), None))
-+#     return examples
-+
-+
-+# def _transform_to_tfrecords_from_reslice(rdds):
-+#     examples = []
-+#     all_dataframes = pd.DataFrame([])
-+#     for slice in rdds:
-+#         all_dataframes = all_dataframes.append(slice[0])
-+#     num_rows = len(all_dataframes.index)
-+#     examples = []
-+#     for start_ind in range(0, num_rows, batch_size if batch_size is not None else 1):  # for each batch
-+#         if start_ind + batch_size - 1 > num_rows:  # if we'd run out of rows
-+#             csv_slice = all_dataframes.iloc[start_ind:]
-+#             if TEST_SET_MODE:
-+#                 remain_len = batch_size - len(csv_slice)
-+#                 (m, n) = divmod(remain_len, len(csv_slice))
-+#                 print("remainder: ", len(csv_slice), remain_len, m, n)
-+#                 if m:
-+#                     for i in range(m):
-+#                         csv_slice = csv_slice.append(csv_slice)
-+#                 csv_slice = csv_slice.append(csv_slice.iloc[:n])
-+#                 print("after fill remainder: ", len(csv_slice))
-+#                 examples.append(
-+#                     (bytearray((create_tf_example_spark(csv_slice, min_logs, max_logs)).SerializeToString()), None))
-+#                 return examples
-+#             # drop the remainder
-+#             print("dropping remainder: ", len(csv_slice))
-+#             return examples
-+#         else:
-+#             csv_slice = all_dataframes.iloc[start_ind:start_ind + (batch_size if batch_size is not None else 1)]
-+#             examples.append(
-+#                 (bytearray((create_tf_example_spark(csv_slice, min_logs, max_logs)).SerializeToString()), None))
-+#     return examples
-+
-+
-+# TEST_SET_MODE = False
-+# train_features = train_feature_vectors_integral_csv_rdd_df.coalesce(30).rdd.mapPartitions(_transform_to_slices)
-+# cached_train_features = train_features.cache()
-+# train_full = cached_train_features.filter(lambda x: x[1] == batch_size)
-+# # split out slies where we don't have a full batch so that we can reslice them so we only drop mininal rows
-+# train_not_full = cached_train_features.filter(lambda x: x[1] < batch_size)
-+# train_examples_full = train_full.mapPartitions(_transform_to_tfrecords_from_slices)
-+# train_left = train_not_full.coalesce(1).mapPartitions(_transform_to_tfrecords_from_reslice)
-+# all_train = train_examples_full.union(train_left)
-+
-+# TEST_SET_MODE = True
-+# valid_features = test_validation_feature_vectors_integral_csv_rdd_df.repartition(num_valid_partitions,
-+#                                                                                  'display_id').rdd.mapPartitions(
-+#     _transform_to_slices)
-+# cached_valid_features = valid_features.cache()
-+# valid_full = cached_valid_features.filter(lambda x: x[1] == batch_size)
-+# valid_not_full = cached_valid_features.filter(lambda x: x[1] < batch_size)
-+# valid_examples_full = valid_full.mapPartitions(_transform_to_tfrecords_from_slices)
-+# valid_left = valid_not_full.coalesce(1).mapPartitions(_transform_to_tfrecords_from_reslice)
-+# all_valid = valid_examples_full.union(valid_left)
-+
-+# all_train.saveAsNewAPIHadoopFile(LOCAL_DATA_TFRECORDS_DIR + train_output_string,
-+#                                  "org.tensorflow.hadoop.io.TFRecordFileOutputFormat",
-+#                                  keyClass="org.apache.hadoop.io.BytesWritable",
-+#                                  valueClass="org.apache.hadoop.io.NullWritable")
-+
-+# all_valid.saveAsNewAPIHadoopFile(LOCAL_DATA_TFRECORDS_DIR + eval_output_string,
-+#                                  "org.tensorflow.hadoop.io.TFRecordFileOutputFormat",
-+#                                  keyClass="org.apache.hadoop.io.BytesWritable",
-+#                                  valueClass="org.apache.hadoop.io.NullWritable")
- 
- spark.stop()
 diff --git a/modelzoo/WnD/TensorFlow2/data/outbrain/spark/utils/feature_description.py b/modelzoo/WnD/TensorFlow2/data/outbrain/spark/utils/feature_description.py
 index c63bc40..8b23fa3 100644
 --- a/modelzoo/WnD/TensorFlow2/data/outbrain/spark/utils/feature_description.py
@@ -21811,7 +21627,7 @@ index 0000000..775175d
 +    main()
 diff --git a/modelzoo/WnD/TensorFlow2/scripts/inference.sh b/modelzoo/WnD/TensorFlow2/scripts/inference.sh
 new file mode 100644
-index 0000000..3226ffa
+index 0000000..696dc6c
 --- /dev/null
 +++ b/modelzoo/WnD/TensorFlow2/scripts/inference.sh
 @@ -0,0 +1,38 @@
@@ -21836,9 +21652,9 @@ index 0000000..3226ffa
 +export OMP_NUM_THREADS=16
 +
 +
-+# time mpirun -genv OMP_NUM_THREADS=16 -map-by socket -n 2 -ppn 2 -hosts host -print-rank-map \
++# time mpirun -genv OMP_NUM_THREADS=16 -map-by socket -n 2 -ppn 2 -hosts `hostname` -print-rank-map \
 +# -genv I_MPI_PIN_DOMAIN=socket -genv OMP_PROC_BIND=true -genv KMP_BLOCKTIME=1 -genv KMP_AFFINITY=granularity=fine,compact,1,0 \
-+time horovodrun -np 2 -H sr113:2 \
++time horovodrun -np 2 -H `hostname`:2 \
 +/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python -u main.py \
 +  --train_data_pattern '/home/vmagent/app/dataset/outbrain/train/part*' \
 +  --eval_data_pattern '/home/vmagent/app/dataset/outbrain/train/part*' \
@@ -21868,6 +21684,62 @@ index 8517b2e..f5441f8 100755
  	if [ $minFreeMem -gt $mF ]
  	then
  		minFreeMem=$mF
+diff --git a/modelzoo/WnD/TensorFlow2/scripts/preproc.sh b/modelzoo/WnD/TensorFlow2/scripts/preproc.sh
+index 9dc47aa..aaa447d 100755
+--- a/modelzoo/WnD/TensorFlow2/scripts/preproc.sh
++++ b/modelzoo/WnD/TensorFlow2/scripts/preproc.sh
+@@ -14,30 +14,36 @@
+ # See the License for the specific language governing permissions and
+ # limitations under the License.
+ 
++source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force
++conda activate tensorflow
++export SPARK_OPTS="--driver-java-options=-Xms1024M --driver-java-options=-Xmx4096M --driver-java-options=-Dlog4j.logLevel=info"
++export PYSPARK_PYTHON=/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python
++export PYSPARK_DRIVER_PYTHON=/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python
++
+ set -e
+ 
+ function usage() {
+   echo "Usage: bash scripts/preproc.sh nvtabular/spark [tfrecords]"
+ }
+ 
+-if [ ! -d "scripts" ] || [ ! "$(ls -A 'scripts')" ]; then
+-  echo "You are probably calling this script from wrong directory"
+-  usage
+-  exit 1
+-fi
++# if [ ! -d "scripts" ] || [ ! "$(ls -A 'scripts')" ]; then
++#   echo "You are probably calling this script from wrong directory"
++#   usage
++#   exit 1
++# fi
+ 
+-if [ $# -ne 1 ] && [ $# -ne 2 ]; then
+-  usage
+-  exit 1
+-fi
++# if [ $# -ne 1 ] && [ $# -ne 2 ]; then
++#   usage
++#   exit 1
++# fi
+ 
+-tfrecords=${2:-40}
++# tfrecords=${2:-40}
+ 
+-if ! [ "$tfrecords" -ge 0 ] 2>/dev/null; then
+-  echo "Expected tfrecords (${tfrecords}) to be positive integer"
+-  usage
+-  exit 1
+-fi
++# if ! [ "$tfrecords" -ge 0 ] 2>/dev/null; then
++#   echo "Expected tfrecords (${tfrecords}) to be positive integer"
++#   usage
++#   exit 1
++# fi
+ 
+ case "$1" in
+   nvtabular)
 diff --git a/modelzoo/WnD/TensorFlow2/scripts/preproc_benchmark.sh b/modelzoo/WnD/TensorFlow2/scripts/preproc_benchmark.sh
 index 6c5d8c6..3492ba7 100755
 --- a/modelzoo/WnD/TensorFlow2/scripts/preproc_benchmark.sh
@@ -21885,7 +21757,7 @@ index 6c5d8c6..3492ba7 100755
  echo -e "\n[BENCHMARK] Benchmark finished:\n"
 diff --git a/modelzoo/WnD/TensorFlow2/scripts/spark_preproc.sh b/modelzoo/WnD/TensorFlow2/scripts/spark_preproc.sh
 new file mode 100644
-index 0000000..2781aae
+index 0000000..009d183
 --- /dev/null
 +++ b/modelzoo/WnD/TensorFlow2/scripts/spark_preproc.sh
 @@ -0,0 +1,15 @@
@@ -21901,13 +21773,13 @@ index 0000000..2781aae
 +
 +
 +tfrecords=${2:-40}
-+host=sr113
++host=`hostname`
 +
 +time /opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python -m data.outbrain.spark.preproc --spark_master "spark://${host}:7077" --dataset_path "file:///home/vmagent/app/dataset/outbrain/orig/" --output_path "file:////home/vmagent/app/dataset/outbrain/"
 \ No newline at end of file
 diff --git a/modelzoo/WnD/TensorFlow2/scripts/train.sh b/modelzoo/WnD/TensorFlow2/scripts/train.sh
 new file mode 100644
-index 0000000..b5629a5
+index 0000000..2e6fcca
 --- /dev/null
 +++ b/modelzoo/WnD/TensorFlow2/scripts/train.sh
 @@ -0,0 +1,34 @@
@@ -21927,13 +21799,13 @@ index 0000000..b5629a5
 +# export I_MPI_PIN_PROCESSOR_EXCLUDE_LIST="16,17,34,35,52,53,70,71"
 +export OMP_NUM_THREADS=16
 +
-+#time mpirun -genv OMP_NUM_THREADS=16 -map-by socket -n 2 -ppn 2 -hosts sr113 -print-rank-map \
++#time mpirun -genv OMP_NUM_THREADS=16 -map-by socket -n 2 -ppn 2 -hosts `hostname` -print-rank-map \
 +#-genv I_MPI_PIN_DOMAIN=socket -genv OMP_PROC_BIND=true -genv KMP_BLOCKTIME=1 -genv KMP_AFFINITY=granularity=fine,compact,1,0 \
 +#-iface eth3 \
-+time horovodrun -np 2 -H sr113:2 \
++time horovodrun -np 2 -H `hostname`:2 \
 +/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python -u main.py \
-+  --train_data_pattern '/home/vmagent/app/dataset/outbrain/train/part*' \
-+  --eval_data_pattern '/home/vmagent/app/dataset/outbrain/valid/part*' \
++  --train_data_pattern '/home/vmagent/app/dataset/outbrain/tfrecords-test/train/part*' \
++  --eval_data_pattern '/home/vmagent/app/dataset/outbrain/tfrecords-test/valid/part*' \
 +  --model_dir ./checkpoints2 --results_dir ./ \
 +  --dataset_meta_file data/outbrain/outbrain_meta.yaml \
 +  --global_batch_size 524288 \
@@ -21947,7 +21819,7 @@ index 0000000..b5629a5
 +  --metric_threshold 0.6553
 diff --git a/modelzoo/WnD/TensorFlow2/scripts/train_criteo.sh b/modelzoo/WnD/TensorFlow2/scripts/train_criteo.sh
 new file mode 100644
-index 0000000..65afd8d
+index 0000000..0e05902
 --- /dev/null
 +++ b/modelzoo/WnD/TensorFlow2/scripts/train_criteo.sh
 @@ -0,0 +1,32 @@
@@ -21966,9 +21838,9 @@ index 0000000..65afd8d
 + export I_MPI_PIN_PROCESSOR_EXCLUDE_LIST="16,17,34,35,52,53,70,71"
 +
 +
-+# time mpirun -genv OMP_NUM_THREADS=16 -map-by socket -n 2 -ppn 2 -hosts host -print-rank-map \
++# time mpirun -genv OMP_NUM_THREADS=16 -map-by socket -n 2 -ppn 2 -hosts `hostname` -print-rank-map \
 +# -genv I_MPI_PIN_DOMAIN=socket -genv OMP_PROC_BIND=true -genv KMP_BLOCKTIME=1 -genv KMP_AFFINITY=granularity=fine,compact,1,0 \
-+time horovodrun -np 2 -H sr113:2 \
++time horovodrun -np 2 -H `hostname`:2 \
 +/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python -u main.py \
 +  --train_data_pattern '/home/vmagent/app/dataset/outbrain/train/part*' \
 +  --eval_data_pattern '/home/vmagent/app/dataset/outbrain/train/part*' \
@@ -21985,7 +21857,7 @@ index 0000000..65afd8d
 +  --deep_warmup_epochs 1
 diff --git a/modelzoo/WnD/TensorFlow2/scripts/train_nofc.sh b/modelzoo/WnD/TensorFlow2/scripts/train_nofc.sh
 new file mode 100644
-index 0000000..2f5e762
+index 0000000..4cecf76
 --- /dev/null
 +++ b/modelzoo/WnD/TensorFlow2/scripts/train_nofc.sh
 @@ -0,0 +1,31 @@
@@ -22004,9 +21876,9 @@ index 0000000..2f5e762
 + export I_MPI_PIN_PROCESSOR_EXCLUDE_LIST="16,17,34,35,52,53,70,71"
 +
 +
-+# time mpirun -genv OMP_NUM_THREADS=16 -map-by socket -n 2 -ppn 2 -hosts host -print-rank-map \
++# time mpirun -genv OMP_NUM_THREADS=16 -map-by socket -n 2 -ppn 2 -hosts `hostname` -print-rank-map \
 +# -genv I_MPI_PIN_DOMAIN=socket -genv OMP_PROC_BIND=true -genv KMP_BLOCKTIME=1 -genv KMP_AFFINITY=granularity=fine,compact,1,0 \
-+time horovodrun -np 2 -H sr113:2 \
++time horovodrun -np 2 -H `hostname`:2 \
 +/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python -u main.py \
 +  --train_data_pattern '/home/vmagent/app/dataset/outbrain/train/part*' \
 +  --eval_data_pattern '/home/vmagent/app/dataset/outbrain/train/part*' \
@@ -22022,7 +21894,7 @@ index 0000000..2f5e762
 +  --metric_threshold 0.6553
 diff --git a/modelzoo/WnD/TensorFlow2/scripts/train_sigopt.sh b/modelzoo/WnD/TensorFlow2/scripts/train_sigopt.sh
 new file mode 100644
-index 0000000..4bdc9e9
+index 0000000..b47fc2f
 --- /dev/null
 +++ b/modelzoo/WnD/TensorFlow2/scripts/train_sigopt.sh
 @@ -0,0 +1,31 @@
@@ -22041,9 +21913,9 @@ index 0000000..4bdc9e9
 + export I_MPI_PIN_PROCESSOR_EXCLUDE_LIST="16,17,34,35,52,53,70,71"
 +
 +
-+# time mpirun -genv OMP_NUM_THREADS=16 -map-by socket -n 2 -ppn 2 -hosts host -print-rank-map \
++# time mpirun -genv OMP_NUM_THREADS=16 -map-by socket -n 2 -ppn 2 -hosts `hostname` -print-rank-map \
 +# -genv I_MPI_PIN_DOMAIN=socket -genv OMP_PROC_BIND=true -genv KMP_BLOCKTIME=1 -genv KMP_AFFINITY=granularity=fine,compact,1,0 \
-+time horovodrun -np 2 -H sr113:2 \
++time horovodrun -np 2 -H `hostname`:2 \
 +/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python -u main.py \
 +  --train_data_pattern '/home/vmagent/app/dataset/outbrain/train/part*' \
 +  --eval_data_pattern '/home/vmagent/app/dataset/outbrain/train/part*' \
