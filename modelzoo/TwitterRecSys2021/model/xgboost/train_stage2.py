@@ -24,7 +24,7 @@ def compute_rce_fast(pred, gt):
     strawman_cross_entropy = -(yt*np.log(yt) + (1 - yt)*np.log(1 - yt))
     return (1.0 - cross_entropy/strawman_cross_entropy)*100.0
 
-path = "/mnt/sdb/xinyao/2optimize/nvidia2021/3mergeall/recsys2021-intel-opt"
+path = "/path/to/processed/data"
 data_path = f"{path}/data"  ## train and valid data path
 model_save_path = f"{path}/models"  ## model saving path
 

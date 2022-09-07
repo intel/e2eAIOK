@@ -1003,7 +1003,7 @@ def setup_standalone(path_prefix,current_path,dicts_folder):
     scala_udf_jars = recdp_path + "/ScalaProcessUtils/target/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
 
     t0 = timer()
-    spark = SparkSession.builder.master(f'spark://vsr119:7077')\
+    spark = SparkSession.builder.master(f'spark://hostname:7077')\
         .appName("Recsys2021_data_process")\
         .config("spark.driver.memory", '30g')\
         .config("spark.local.dir", "/home/vmagent/app/dataset/spark")\
@@ -1150,7 +1150,7 @@ def valid_stage2():
 
 def inference_decoder():
     ############# set up
-    path_prefix = "hdfs://vsr119:9000/"
+    path_prefix = "hdfs://hostname:9000/"
     current_path = "/recsys2021/datapre_stage1/"
     original_folder = "/recsys2021/oridata/test/"
     dicts_folder = "recsys_dicts/"

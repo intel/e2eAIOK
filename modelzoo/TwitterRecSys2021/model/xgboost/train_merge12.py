@@ -3,7 +3,7 @@ import numpy as np
 import time
 very_start = time.time()
 
-path = "/mnt/sdb/xinyao/2optimize/nvidia2021/3mergeall/recsys2021-intel-opt"
+path = "/path/to/processed/data"
 
 if __name__ == "__main__":
     df1 = pd.read_parquet(f"{path}/data/stage2_train")
