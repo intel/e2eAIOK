@@ -23,7 +23,7 @@ Google's [Wide & Deep Learning for Recommender Systems](https://arxiv.org/abs/16
 ```
 cd Dockerfile-ubuntu18.04/
 docker build -t e2eaiok-tensorflow . -f DockerfileTensorflow
-docker run -it --privileged --network host --device=/dev/dri -v $data_path:/home/vmagent/app/dataset/outbrain -v $e2eaiok_path:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ e2eaiok-tensorflow /bin/bash
+docker run -it --privileged --network host --device=/dev/dri -v $data_path:/home/vmagent/app/dataset/outbrain -v $e2eaiok_path:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-tensorflow /bin/bash
 ```
 
 ## Dataset
@@ -37,7 +37,7 @@ The original dataset can be downloaded at https://www.kaggle.com/c/outbrain-clic
 # start spark service
 # need to setup ssh service first
 cd /home/vmagent/app/e2eaiok/modelzoo/WnD/TensorFlow2/data_processing/
-cp spark-defaults.conf /home/spark-3.2.1-bin-hadoop3.2/conf/
+cp spark-defaults.conf /home/spark-3.0.2-bin-hadoop2.7/conf/
 mkdir -p /home/vmagent/app/e2eaiok/modelzoo/dlrm/data_processing/spark_local_dir
 mkdir -p /home/mnt/applicationHistory
 sh ./start_spark_service.sh

@@ -1106,7 +1106,7 @@ index 0000000..d05b232
 +    indice: 0
 +dataset_format: binary
 diff --git a/modelzoo/WnD/TensorFlow2/data/outbrain/dataloader.py b/modelzoo/WnD/TensorFlow2/data/outbrain/dataloader.py
-index c592d50..df85c8b 100644
+index c592d50..f62550c 100644
 --- a/modelzoo/WnD/TensorFlow2/data/outbrain/dataloader.py
 +++ b/modelzoo/WnD/TensorFlow2/data/outbrain/dataloader.py
 @@ -1,139 +1,141 @@
@@ -1334,7 +1334,7 @@ index c592d50..df85c8b 100644
 -    dataset = dataset.shard(num_gpus, id)
 +        dataset = dataset.batch(
 +            batch_size=records_batch_size,
-+            drop_remainder=False
++            drop_remainder=True
 +        )
  
 -    dataset = dataset.repeat(
@@ -3292,7 +3292,7 @@ index 0000000..fcd3d17
 \ No newline at end of file
 diff --git a/modelzoo/WnD/TensorFlow2/data/outbrain/spark/preproc.py b/modelzoo/WnD/TensorFlow2/data/outbrain/spark/preproc.py
 new file mode 100644
-index 0000000..1d32781
+index 0000000..0baac6a
 --- /dev/null
 +++ b/modelzoo/WnD/TensorFlow2/data/outbrain/spark/preproc.py
 @@ -0,0 +1,840 @@
@@ -3919,10 +3919,10 @@ index 0000000..1d32781
 +
 +TEST_SET_MODE = False
 +
-+num_train_partitions = 80
++num_train_partitions = 30
 +num_valid_partitions = 40
-+# batch_size = PREBATCH_SIZE
-+batch_size = 2048
++batch_size = PREBATCH_SIZE
++# batch_size = 2048
 +
 +
 +
@@ -3952,7 +3952,7 @@ index 0000000..1d32781
 +    metadata_io.write_metadata(metadata, output_dir)
 +
 +# write out tfrecords meta
-+make_spec(LOCAL_DATA_TFRECORDS_DIR + '/meta/transformed_metadata', batch_size=batch_size)
++make_spec(LOCAL_DATA_TFRECORDS_DIR.replace("file://", "") + '/meta/transformed_metadata', batch_size=batch_size)
 +
 +
 +def log2_1p(x):
@@ -21627,7 +21627,7 @@ index 0000000..775175d
 +    main()
 diff --git a/modelzoo/WnD/TensorFlow2/scripts/inference.sh b/modelzoo/WnD/TensorFlow2/scripts/inference.sh
 new file mode 100644
-index 0000000..696dc6c
+index 0000000..06ceee0
 --- /dev/null
 +++ b/modelzoo/WnD/TensorFlow2/scripts/inference.sh
 @@ -0,0 +1,38 @@
@@ -21654,7 +21654,7 @@ index 0000000..696dc6c
 +
 +# time mpirun -genv OMP_NUM_THREADS=16 -map-by socket -n 2 -ppn 2 -hosts `hostname` -print-rank-map \
 +# -genv I_MPI_PIN_DOMAIN=socket -genv OMP_PROC_BIND=true -genv KMP_BLOCKTIME=1 -genv KMP_AFFINITY=granularity=fine,compact,1,0 \
-+time horovodrun -np 2 -H `hostname`:2 \
++time horovodrun -np 2 -H `hostname`:2 --network-interface lo \
 +/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python -u main.py \
 +  --train_data_pattern '/home/vmagent/app/dataset/outbrain/train/part*' \
 +  --eval_data_pattern '/home/vmagent/app/dataset/outbrain/train/part*' \
@@ -21779,7 +21779,7 @@ index 0000000..009d183
 \ No newline at end of file
 diff --git a/modelzoo/WnD/TensorFlow2/scripts/train.sh b/modelzoo/WnD/TensorFlow2/scripts/train.sh
 new file mode 100644
-index 0000000..2e6fcca
+index 0000000..f4120df
 --- /dev/null
 +++ b/modelzoo/WnD/TensorFlow2/scripts/train.sh
 @@ -0,0 +1,34 @@
@@ -21802,11 +21802,11 @@ index 0000000..2e6fcca
 +#time mpirun -genv OMP_NUM_THREADS=16 -map-by socket -n 2 -ppn 2 -hosts `hostname` -print-rank-map \
 +#-genv I_MPI_PIN_DOMAIN=socket -genv OMP_PROC_BIND=true -genv KMP_BLOCKTIME=1 -genv KMP_AFFINITY=granularity=fine,compact,1,0 \
 +#-iface eth3 \
-+time horovodrun -np 2 -H `hostname`:2 \
++time horovodrun -np 2 -H `hostname`:2 --network-interface lo \
 +/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python -u main.py \
-+  --train_data_pattern '/home/vmagent/app/dataset/outbrain/tfrecords-test/train/part*' \
-+  --eval_data_pattern '/home/vmagent/app/dataset/outbrain/tfrecords-test/valid/part*' \
-+  --model_dir ./checkpoints2 --results_dir ./ \
++  --train_data_pattern '/home/vmagent/app/dataset/outbrain/train/part*' \
++  --eval_data_pattern '/home/vmagent/app/dataset/outbrain/valid/part*' \
++  --model_dir ./checkpoints --results_dir ./ \
 +  --dataset_meta_file data/outbrain/outbrain_meta.yaml \
 +  --global_batch_size 524288 \
 +  --eval_batch_size 524288 \
