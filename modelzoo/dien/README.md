@@ -79,8 +79,39 @@ python preprocessing.py --test
 
 ### Training
 ```
+conda activate tensorflow
+export KMP_AFFINITY=granularity=fine,verbose,compact,1,0
+export OMP_NUM_THREADS=4
+export HOROVOD_CPU_OPERATIONS=CCL
+# export MKLDNN_VERBOSE=2
+export CCL_WORKER_COUNT=1
+export CCL_WORKER_AFFINITY="0,32"
+export HOROVOD_THREAD_AFFINITY="1,33"
+#export I_MPI_PIN_DOMAIN=socket
+export I_MPI_PIN_PROCESSOR_EXCLUDE_LIST="0,1,32,33"
+
 # test our best parameter
 python -u run_e2eaiok.py --data_path /home/vmagent/app/dataset/amazon_reviews --model_name dien --no_sigopt
+
+# distributed training
+
+# prepare data
+sh /home/vmagent/app/e2eaiok/modelzoo/dien/feature_engineering/split_for_distribute.sh /home/vmagent/app/dataset/amazon_reviews ${num_copy}
+# copy all slices to distributed nodes as below
+scp /home/vmagent/app/dataset/amazon_reviews/local_train_splitByUser.slice00 ${node1}://home/vmagent/app/dataset/amazon_reviews/local_train_splitByUser
+
+# edit conf
+vim conf/e2eaiok_defaults_dien_example.conf
+ppn: ${num_copy}
+iface: eth0
+hosts:
+- ${node1}
+- ${node2}
+- ${node3}
+- ${node4}
+
+# run distributed training
+python -u run_e2eaiok.py --data_path /home/vmagent/app/dataset/amazon_reviews --model_name dien --no_sigopt --conf conf/e2eaiok_defaults_dien_example.conf
 
 # optional: use SDA to search best parameter
 SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN python run_e2eaiok.py --data_path /home/vmagent/app/dataset/amazon_reviews --model_name dien

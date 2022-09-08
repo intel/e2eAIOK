@@ -136,7 +136,7 @@ class DIENAdvisor(BaseModelAdvisor):
         # mpirun -n 1 -hosts 172.16.8.30 -ppn 1 -iface ens21f1 -print-rank-map
         # -prepend-rank -verbose
         cmd.extend([
-            "mpirun", "-n", f"{args['ppn']}", "-hosts", f"{args['hosts']}",
+            "mpirun", "-n", f"{args['ppn']}", "-hosts", f"{','.join(args['hosts'])}",
             "-iface", f"{args['iface']}"
         ])
         cmd.extend(["-print-rank-map", "-prepend-rank", "-verbose"])
