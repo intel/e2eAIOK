@@ -1,7 +1,7 @@
 import torch
 import logging
 
-from utils import checkpoints
+from asr.utils import checkpoints
 
 logger = logging.getLogger(__name__)
 

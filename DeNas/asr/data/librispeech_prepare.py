@@ -4,8 +4,8 @@ import random
 from collections import Counter
 import logging
 import torchaudio
-from utils.data_utils import download_file, get_all_files
-from dataio.dataio import (
+from asr.utils.data_utils import download_file, get_all_files
+from asr.dataio.dataio import (
     load_pkl,
     save_pkl,
     merge_csvs,

@@ -1,6 +1,6 @@
 import inspect
 from dataclasses import dataclass
-from utils.depgraph import DependencyGraph
+from asr.utils.depgraph import DependencyGraph
 
 
 @dataclass

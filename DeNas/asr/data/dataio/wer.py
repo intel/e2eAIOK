@@ -1,6 +1,6 @@
 import sys
 
-from utils import edit_distance
+from asr.utils import edit_distance
 
 
 def print_wer_summary(wer_details, file=sys.stdout):

@@ -1,5 +1,5 @@
 import torch
-from data.dataio.dataio import length_to_mask
+from asr.data.dataio.dataio import length_to_mask
 
 
 class CTCPrefixScorer:

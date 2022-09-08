@@ -10,24 +10,24 @@ current_dir = os.path.split(os.path.abspath(__file__))[0]
 cls_path = current_dir.rsplit("/", 1)[0]
 sys.path.append(cls_path)
 
-from utils.distributed import run_on_main, ddp_init_group
-from data.dataio.dataloader import make_dataloader
-from data.dataio.dataset import dataio_prepare
-from utils.utils import check_gradients, update_average, create_experiment_directory, init_log, parse_args
-from utils.parameter_transfer import load_torch_model, load_spm
-from lib.convolution import ConvolutionFrontEnd
-from supernet_asr import TransformerASRSuper
+from asr.utils.distributed import run_on_main, ddp_init_group
+from asr.data.dataio.dataloader import make_dataloader
+from asr.data.dataio.dataset import dataio_prepare
+from asr.utils.utils import check_gradients, update_average, create_experiment_directory, init_log, parse_args
+from asr.utils.parameter_transfer import load_torch_model, load_spm
+from asr.lib.convolution import ConvolutionFrontEnd
+from asr.supernet_asr import TransformerASRSuper
 from module.asr.linear import Linear
-from data.processing.features import InputNormalization
-from utils.checkpoints import Checkpointer
-from TransformerLM import TransformerLM
-from decoders.seq2seq import S2STransformerBeamSearch
-from trainer.losses import ctc_loss, kldiv_loss
-from trainer.schedulers import NoamScheduler
-from data.augment import SpecAugment
-from data.features import Fbank
-from utils.Accuracy import AccuracyStats
-from utils.metric_stats import ErrorRateStats
+from asr.data.processing.features import InputNormalization
+from asr.utils.checkpoints import Checkpointer
+from asr.TransformerLM import TransformerLM
+from asr.decoders.seq2seq import S2STransformerBeamSearch
+from asr.trainer.losses import ctc_loss, kldiv_loss
+from asr.trainer.schedulers import NoamScheduler
+from asr.data.augment import SpecAugment
+from asr.data.features import Fbank
+from asr.utils.Accuracy import AccuracyStats
+from asr.utils.metric_stats import ErrorRateStats
 from module.asr.utils import gen_transformer
 
 

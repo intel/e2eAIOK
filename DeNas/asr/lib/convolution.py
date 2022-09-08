@@ -1,6 +1,6 @@
 import torch
-from lib.CNN import Conv2d
-from lib.containers import Sequential
+from asr.lib.CNN import Conv2d
+from asr.lib.containers import Sequential
 from module.asr.normalization import LayerNorm
 
 

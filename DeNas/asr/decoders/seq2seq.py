@@ -1,6 +1,6 @@
 import torch
 
-from decoders.ctc import CTCPrefixScorer
+from asr.decoders.ctc import CTCPrefixScorer
 
 
 class S2SBaseSearcher(torch.nn.Module):

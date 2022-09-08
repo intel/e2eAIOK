@@ -4,10 +4,10 @@ from torch.utils.data import IterableDataset
 import logging
 from torch.utils.data import DistributedSampler
 
-from data.dataio.batch import PaddedBatch
-from data.dataio.dataset import DynamicItemDataset
-from data.dataio.sampler import ReproducibleRandomSampler, DistributedSamplerWrapper
-from utils.checkpoints import (
+from asr.data.dataio.batch import PaddedBatch
+from asr.data.dataio.dataset import DynamicItemDataset
+from asr.data.dataio.sampler import ReproducibleRandomSampler, DistributedSamplerWrapper
+from asr.utils.checkpoints import (
     mark_as_saver,
     mark_as_loader,
 )

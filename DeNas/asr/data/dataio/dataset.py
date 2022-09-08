@@ -6,10 +6,10 @@ from types import MethodType
 from torch.utils.data import Dataset
 import logging
 
-from utils.data_pipeline import DataPipeline
-from data.dataio.dataio import load_data_json, load_data_csv, read_audio
-from data.processing.speech_augmentation import SpeedPerturb
-import utils
+from asr.utils.data_pipeline import DataPipeline
+from asr.data.dataio.dataio import load_data_json, load_data_csv, read_audio
+from asr.data.processing.speech_augmentation import SpeedPerturb
+import asr.utils as utils
 
 
 logger = logging.getLogger(__name__)
