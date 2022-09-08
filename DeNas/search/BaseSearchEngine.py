@@ -118,6 +118,12 @@ class BaseSearchEngine(ABC):
                                                         resolution=self.params.img_size,
                                                         batch_size=self.params.batch_size,
                                                         mixup_gamma=1e-2,
-                                                        subconfig=subconfig)
+                                                        subconfig=subconfig,
+                                                        expressivity_weight=self.params.expressivity_weight,
+                                                        complexity_weight=self.params.complexity_weight,
+                                                        diversity_weight=self.params.diversity_weight,
+                                                        saliency_weight=self.params.saliency_weight,
+                                                        latency_weight=self.params.latency_weight)
         self.vis_dict[cand]['score'] = nas_score
         return nas_score
+

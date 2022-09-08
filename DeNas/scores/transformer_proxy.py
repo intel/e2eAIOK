@@ -125,7 +125,7 @@ def compute_diversity_score(model_type, net, *inputs):
     return disversity_score_list
 
 
-def compute_sliency_score(model_type, net, *inputs):
+def compute_saliency_score(model_type, net, *inputs):
     device = inputs[0].device
 
     # convert params to their abs. Keep sign for converting it back.
@@ -175,12 +175,15 @@ def compute_sliency_score(model_type, net, *inputs):
 
     return grads_abs
 
-def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, mixup_gamma, subconfig=None):
+def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, mixup_gamma, subconfig=None, expressivity_weight=0, complexity_weight=0, diversity_weight=0, saliency_weight=0, latency_weight=0):
     
+    expressivity_score = 0
+    complexity_score = 0
     network_weight_gaussian_init(model,model_type)
     model.train()
     model.requires_grad_(True)
     model.zero_grad()
+    
 
     if model_type == "transformer":
         dtype = torch.float32
@@ -206,11 +209,11 @@ def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, 
             disversity_score += float(torch.mean(torch.sum(grad_abs, dim=[1])))
 
     if model_type == "transformer":
-        grads_abs_list = compute_sliency_score(model_type, model, input)
+        grads_abs_list = compute_saliency_score(model_type, model, input)
     elif model_type == "bert":
-        grads_abs_list = compute_sliency_score(model_type, model, input_ids, input_masks, input_segments, subconfig)
+        grads_abs_list = compute_saliency_score(model_type, model, input_ids, input_masks, input_segments, subconfig)
     elif model_type == "asr":
-        grads_abs_list = compute_sliency_score(model_type, model, input)
+        grads_abs_list = compute_saliency_score(model_type, model, input)
    
     saliency_score = 0
     for grad_abs in grads_abs_list:
@@ -224,13 +227,13 @@ def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, 
         latency = get_model_latency(model=model, batch_size=batch_size,
                                                         resolution=resolution,
                                                         in_channels=3, gpu=None, repeat_times=3,
-                                                        fp16=False)
-        nas_score = (disversity_score + saliency_score)/(1 + latency*10000)
+                                                        fp16=False)    
     elif model_type == "bert":
         latency = get_bert_latency(model=model, subconfig=subconfig, batch_size=batch_size, max_seq_length=resolution, gpu=None, infer_cnt=10.)
-        #nas_score = (disversity_score + saliency_score)/(1 + latency*100)
-        nas_score = (disversity_score/100000 + saliency_score)/(1+latency/100)
-        print("diversity_score:{}\tsaliency_score:{}\tlatency:{}".format(disversity_score, saliency_score,latency))
     else:
-        nas_score = disversity_score + saliency_score
+        latency = 0
+    nas_score = (expressivity_score*expressivity_weight 
+                    + complexity_score*complexity_weight 
+                    + disversity_score*diversity_weight 
+                    + saliency_score*saliency_weight)/(1 + latency*latency_weight)
     return nas_score

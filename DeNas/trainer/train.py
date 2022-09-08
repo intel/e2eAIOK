@@ -13,7 +13,6 @@ def parse_args(args):
     parser = argparse.ArgumentParser('Best module training............')
     parser.add_argument('--domain', type=str, default=None, choices=['cnn','vit','asr'], help='DE-NAS model domain')
     parser.add_argument('--conf', type=str, default=None, help='DE-NAS training conf file')
-    parser.add_argument('--dist-train', action='store_true', default=False, help='Enabling distributed traing')
 
     train_args, model_args = parser.parse_known_args(args)
     update_config(model_args, train_args.conf)
@@ -25,8 +24,6 @@ def main(train_args, model_args):
     :param model_args: specific model arguments
     """
     if train_args.domain == 'vit':
-        if train_args.dist_train == True:
-            model_args = model_args[1:]
         vit_trainer = ViTTrainer(model_args)
         vit_trainer.fit()
     elif train_args.domain == 'asr':

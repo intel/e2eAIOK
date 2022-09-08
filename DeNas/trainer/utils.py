@@ -43,8 +43,9 @@ class SmoothedValue(object):
         Warning: does not synchronize the deque!
         """
         t = torch.tensor([self.count, self.total], dtype=torch.float64)
-        ext_dist.dist.barrier()
-        ext_dist.dist.all_reduce(t)
+        if ext_dist.my_size > 1:
+            ext_dist.dist.barrier()
+            ext_dist.dist.all_reduce(t)
         t = t.tolist()
         self.count = int(t[0])
         self.total = t[1]
