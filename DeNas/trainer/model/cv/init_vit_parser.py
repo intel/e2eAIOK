@@ -3,7 +3,8 @@ import argparse
 
 def init_vit_parser(args):
     parser = argparse.ArgumentParser('ViT module training............')
-    parser.add_argument('--batch-size', default=64, type=int)
+    parser.add_argument('--train-batch-size', default=64, type=int)
+    parser.add_argument('--eval-batch-size', default=128, type=int)
     parser.add_argument('--epochs', default=300, type=int)
     # config file
     parser.add_argument('--model-config',help='experiment configure file name',required=True,type=str)
@@ -123,7 +124,5 @@ def init_vit_parser(args):
 
     # distributed training parameters
     parser.add_argument("--dist-backend", type=str, default="gloo")
-
-
 
     return parser

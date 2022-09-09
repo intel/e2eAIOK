@@ -1,7 +1,7 @@
 import os
 import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from data.build_datasets import build_dataset
+from trainer.data import cv_build_datasets
+from trainer.data import nlp_build_datasets
 import numpy as np
 import torch
 
@@ -22,8 +22,11 @@ class DataBuilder():
     def get_data(self, ext_dist):
         args = self.args
         if args.data_set in ["CIFAR10","CIFAR100","IMGNET"]:
-            dataset_train, _ = build_dataset(is_train=True, args=args)
-            dataset_val, _ = build_dataset(is_train=False, args=args)
+            dataset_train, _ = cv_build_datasets.build_dataset(is_train=True, args=args)
+            dataset_val, _ = cv_build_datasets.build_dataset(is_train=False, args=args)
+        elif args.data_set in ["SQuADv1.1"]:
+            dataset_train, train_examples, train_dataset, labels = nlp_build_datasets.build_dataset(is_train=True, args=args)
+            dataset_val, val_examples, val_dataset, val_features, tokenizer = nlp_build_datasets.build_dataset(is_train=False, args=args)
         else:
             pass
 
@@ -39,31 +42,31 @@ class DataBuilder():
                     'Warning: Enabling distributed evaluation with an eval dataset not divisible by process number. '
                     'This will slightly alter validation results as extra duplicate entries are added to achieve '
                     'equal num of samples per-process.')
-            sampler_val = torch.utils.data.DistributedSampler(
-                dataset_val, num_replicas=num_tasks, rank=global_rank, shuffle=False)
+            if not self.args.domain == "bert":
+                sampler_val = torch.utils.data.DistributedSampler(
+                    dataset_val, num_replicas=num_tasks, rank=global_rank, shuffle=False)
+            else:   
+                sampler_val = torch.utils.data.SequentialSampler(dataset_val)
         else:
             sampler_val = torch.utils.data.SequentialSampler(dataset_val)
             sampler_train = torch.utils.data.RandomSampler(dataset_train)
 
         data_loader_train = torch.utils.data.DataLoader(
             dataset_train, sampler=sampler_train,
-            batch_size=args.batch_size,
+            batch_size=args.train_batch_size,
             num_workers=args.num_workers,
             pin_memory=args.pin_mem,
             drop_last=True,
         )
 
         data_loader_val = torch.utils.data.DataLoader(
-            dataset_val, batch_size=int(2 * args.batch_size),
+            dataset_val, batch_size=args.eval_batch_size,
             sampler=sampler_val, num_workers=args.num_workers,
             pin_memory=args.pin_mem, drop_last=False
         )
-        return data_loader_train, data_loader_val
+        if args.data_set in ["CIFAR10","CIFAR100","IMGNET"]:
+            return data_loader_train, data_loader_val
+        elif args.data_set in ["SQuADv1.1"]:
+            return data_loader_train, data_loader_val, train_examples, val_examples, val_dataset, val_features, tokenizer
         
-
-
-            
-            
-            
-        
-            
+             
