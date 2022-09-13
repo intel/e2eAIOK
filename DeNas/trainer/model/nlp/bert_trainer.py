@@ -32,7 +32,7 @@ class BertTrainer(BaseTrainer):
         self.qa_tasks = ["squad1"]
         self.default_params = {
             "squad1": {"num_train_epochs": 4, "max_seq_length": 384,
-            "learning_rate": 3e-5, "eval_step": 50, "train_batch_size": 24},
+            "learning_rate": 3e-5, "eval_step": 50, "train_batch_size": 16},
         }
         ext_dist.init_distributed(backend=self.args.dist_backend)
 
@@ -112,6 +112,9 @@ class BertTrainer(BaseTrainer):
 
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
+
+        if ext_dist.my_size > 1:
+            self.default_params[self.task_name]['learning_rate'] =  self.default_params[self.task_name]['learning_rate'] * math.sqrt(int(ext_dist.my_size))
         
         if self.task_name in self.default_params:
             self.args.num_train_epochs = self.default_params[self.task_name]["num_train_epochs"]

@@ -42,7 +42,7 @@ class DataBuilder():
                     'Warning: Enabling distributed evaluation with an eval dataset not divisible by process number. '
                     'This will slightly alter validation results as extra duplicate entries are added to achieve '
                     'equal num of samples per-process.')
-            if not self.args.domain == "bert":
+            if not args.data_set in ["SQuADv1.1"]:
                 sampler_val = torch.utils.data.DistributedSampler(
                     dataset_val, num_replicas=num_tasks, rank=global_rank, shuffle=False)
             else:   
