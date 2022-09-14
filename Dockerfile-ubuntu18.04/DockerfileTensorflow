@@ -17,6 +17,9 @@ RUN source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force \
         python -m pip install --no-cache-dir horovod[intel-tensorflow]==0.23.0 \
         && python -m pip install --no-cache-dir --no-deps tensorflow-transform==0.24.1 tensorflow-metadata==0.14.0 pydot dill
 
+SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
+RUN python -m pip install --no-cache-dir --ignore-installed sigopt==7.5.0 pandas pytest pyrecdp
+
 RUN apt-get update -y && apt-get install -y openssh-server openjdk-8-jdk
 RUN sed -i 's/#Port 22/Port 12344/g' /etc/ssh/sshd_config
 RUN sed -i 's/#   Port 22/    Port 12344/g' /etc/ssh/ssh_config
