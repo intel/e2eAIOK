@@ -1,4 +1,5 @@
 # coding=utf-8
+# Copyright (c) 2022, Intel. and its affiliates.
 # Copyright (c) 2019, Facebook, Inc. and its affiliates. All Rights Reserved
 # Copyright 2018 The Google AI Language Team Authors and The HuggingFace Inc. team.
 #
