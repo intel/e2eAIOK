@@ -1,7 +1,7 @@
 #!/bin/bash
 
 get_original_model () {
-    cp -r ../../third_party/DeepLearningExamples/TensorFlow2/Recommendation/WideAndDeep/* ./
+    cp -nr ../../third_party/DeepLearningExamples/TensorFlow2/Recommendation/WideAndDeep/* ./
 }
 
 apply_patch () {
