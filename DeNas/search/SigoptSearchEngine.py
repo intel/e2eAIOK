@@ -55,6 +55,28 @@ class SigoptSearchEngine(BaseSearchEngine):
                     num_tried = 0
                 time.sleep(5)
 
+    def _set_illegal_observation(self, experiment, suggestion_id):
+        num_tried = 0
+        while True:
+            try:
+                return self.conn.experiments(experiment.id).observations().create(
+                    suggestion=suggestion_id,
+                    failed=True,
+                )
+            except Exception as e:
+                num_tried += 1
+                self.logger.error("""Met exception when connecting to sigopt,
+                    will do retry in 5 secs, err msg is: {}""".format(e))
+                if num_tried >= 30:
+                    n = timeout_input(
+                        """Retried connection for 30 times, do you still
+                        want to continue?(n for exit)""",
+                        default='y',
+                        timeout=10)
+                    if n != 'y':
+                        return None
+                    num_tried = 0
+                time.sleep(5)
     '''
     Unified API for SigoptSearchEngine
     '''
@@ -84,6 +106,7 @@ class SigoptSearchEngine(BaseSearchEngine):
                     suggestion.assignments['INTERMEDIATE_SIZE']*self.params.cfg["SEARCH_SPACE"]['INTERMEDIATE_SIZE']['bounds']['step'],
                 )
                 if not self.cand_islegal(cand):
+                    self._set_illegal_observation(experiment, suggestion.id)
                     continue
                 nas_score = self.cand_evaluate(cand).item()
                 self.logger.info('epoch = {} nas_score = {} cand = {}'.format(epoch, nas_score, cand))
@@ -148,6 +171,7 @@ class SigoptSearchEngine(BaseSearchEngine):
                 cand_tuple.append(int(suggestion.assignments['EMBED_DIM']))
                 cand = tuple(cand_tuple)
                 if not self.cand_islegal(cand):
+                    self._set_illegal_observation(experiment, suggestion.id)
                     continue
                 nas_score = self.cand_evaluate(cand).item()
                 self.logger.info('epoch = {} nas_score = {} cand = {}'.format(epoch, nas_score, cand))
