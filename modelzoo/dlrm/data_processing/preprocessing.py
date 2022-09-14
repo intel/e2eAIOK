@@ -11,6 +11,11 @@ from pyspark.sql.types import *
 import numpy as np
 import pandas as pd
 
+###############################################
+# !!!put HDFS NODE here, empty won't proceed!!!
+HDFS_NODE = ""
+###############################################
+
 # Define Schema
 LABEL_COL = 0
 INT_COLS = list(range(1, 14))
@@ -20,53 +25,51 @@ int_fields = [StructField('_c%d' % i, IntegerType()) for i in INT_COLS]
 str_fields = [StructField('_c%d' % i, StringType()) for i in CAT_COLS]
 schema = StructType(label_fields + int_fields + str_fields)
 
-
-def categorifyAllFeatures(df, proc, output_name="categorified", gen_dict=False, only_gen_dict = False, enable_freqlimit=False):
-    dict_dfs = []
-    to_categorify_cols = ['_c%d' % i for i in CAT_COLS]
-    max_ind_range = 40000000
-    op_mod = FeatureModification(to_categorify_cols, udfImpl=udf(lambda x: int(x, 16) % max_ind_range if x else 0))
-    proc.reset_ops([op_mod])
-    df = proc.apply(df)
-    if gen_dict:
-        # only call below function when target dicts were not pre-prepared        
-        #op_gen_dict = GenerateDictionary(to_categorify_cols, isParquet=False)
-        op_gen_dict = GenerateDictionary(to_categorify_cols)
-        proc.reset_ops([op_gen_dict])
-        t1 = timer()
-        dict_dfs = proc.generate_dicts(df)
-        t2 = timer()
-        print("Generate Dictionary took %.3f" % (t2 - t1))
-    else:
-        # or we can simply load from pre-gened
-        dict_dfs = [{'col_name': name, 'dict': proc.spark.read.parquet(
-            "%s/%s/%s/%s" % (proc.path_prefix, proc.current_path, proc.dicts_path, name))} for name in to_categorify_cols]
-
+def categorifyAllFeatures(df, proc, output_name="categorified"):
+    to_categorify_cols = ['_c%d' % i for i in CAT_COLS]    
+    dict_dfs = [{'col_name': name, 'dict': proc.spark.read.parquet(
+        "%s/%s/%s/%s" % (proc.path_prefix, proc.current_path, proc.dicts_path, name))} for name in to_categorify_cols]
     print([i['dict'].count() for i in dict_dfs])
-    if only_gen_dict:
-        return
-
-    if enable_freqlimit:
-        dict_dfs = [{'col_name': dict_df['col_name'], 'dict': dict_df['dict'].filter('count >= 15')} for dict_df in dict_dfs]
 
     # start to do categorify
     op_categorify = Categorify(to_categorify_cols, dict_dfs=dict_dfs)
-    op_fillna_for_categorified = FillNA(to_categorify_cols, 0)
-    proc.append_ops([op_categorify, op_fillna_for_categorified])
+    op_sort = Sort(["monotonically_increasing_id"])
+    proc.reset_ops([op_categorify, op_sort])
+    
     t1 = timer()
     df = proc.transform(df, name=output_name)
     t2 = timer()
-    print("Categorify took %.3f" % (t2 - t1))
-    
+    print("Categorify took %.3f" % (t2 - t1)) 
     return df
 
-def main():
+def generate_dicts(spark, path_list, proc):
+    dict_dfs = []
+    first = True
+    for file in path_list:
+        df_single = spark.read.parquet(file)
+        df_single = df_single.orderBy("monotonically_increasing_id")
+        if first:
+            first = False
+            df = df_single
+        else:
+            df = df.union(df_single)
+    # only call below function when target dicts were not pre-prepared        
+    to_categorify_cols = ['_c%d' % i for i in CAT_COLS]
+    op_gen_dict = GenerateDictionary(to_categorify_cols, id_by_count = False)
+    proc.reset_ops([op_gen_dict])
+    t1 = timer()
+    dict_dfs = proc.generate_dicts(df)
+    t2 = timer()
+    print("Generate Dictionary took %.3f" % (t2 - t1))
+    
+    print([i['dict'].count() for i in dict_dfs])
+
+def main(hdfs_node):
     import os
     host_name = os.uname()[1]
     print(host_name)
-    path_prefix = "file://"
+    path_prefix = f"hdfs://{hdfs_node}:9000"
     current_path = "/home/vmagent/app/dataset/criteo/output/"
-    csv_folder = "/home/raw_data/"
 
     scala_udf_jars = "/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/python3.7/site-packages/ScalaProcessUtils/built/31/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
 
@@ -84,49 +87,80 @@ def main():
         .config("spark.executor.extraClassPath", f"{scala_udf_jars}")\
         .getOrCreate()
     spark.sparkContext.setLogLevel("ERROR")
-    proc = DataProcessor(spark, path_prefix, current_path=current_path, shuffle_disk_capacity="550GB", spark_mode='standalone')
+    proc = DataProcessor(spark, path_prefix, current_path=current_path, shuffle_disk_capacity="800GB", spark_mode='standalone')
 
-    # prepare, since data is too large, convert to parquet
+    
     train_files = ["day_%d" % i for i in range(0, 23)]
-    file_names = [f"{path_prefix}{csv_folder}{filename}" for filename in train_files]
-    train_df = spark.read.schema(schema).option('sep', '\t').csv(file_names)
-    train_df = proc.transform(train_df, name="dlrm_parquet_train")
 
-    day_23 = ["day_23"]
-    file_names = [f"{path_prefix}{csv_folder}{filename}" for filename in day_23]
-    day23_df = spark.read.schema(schema).option('sep', '\t').csv(file_names)
-    day23_df = proc.transform(day23_df, name="dlrm_parquet_23")
+    #############################
+    # 1. Process category columns
+    #############################
+    max_ind_range = 40000000
+    to_categorify_cols = ['_c%d' % i for i in CAT_COLS]
+    int_cols = ['_c%d' % i for i in INT_COLS]    
+    label_cols = ['_c0']    
+    op_mod = FeatureModification(dict((i, f"(f.conv(f.col('{i}'), 16, 10) % {max_ind_range}).cast('int')") for i in to_categorify_cols), op = 'inline')
+    op_fillna_for_categorified = FillNA(to_categorify_cols, 0)
+    op_fillna_for_label = FillNA(label_cols, 0)
+    op_fillna_for_int = FillNA(int_cols, 0)
+    op_fillnegative_for_int = FeatureModification(dict((i, f"f.when(f.col('{i}') < 0, 0).otherwise(f.col('{i}'))") for i in int_cols), op = "inline")
+    for filename in train_files:
+        t11 = timer()
+        proc.reset_ops([op_mod, op_fillna_for_categorified, op_fillna_for_label, op_fillna_for_int, op_fillnegative_for_int])
+        train_df = spark.read.parquet(f"{path_prefix}{current_path}/dlrm_parquet_train_{filename}")
+        train_df = proc.transform(train_df, name=f"dlrm_parquet_train_proc_{filename}")
+        t12 = timer()
+        print(f"Process {filename} categorified columns completed, took {(t12 - t11)} secs")
 
-    # generate dict
-    df = train_df.union(day23_df)
-    df = categorifyAllFeatures(df, proc, output_name="dlrm_categorified", gen_dict=True, only_gen_dict=True, enable_freqlimit=False)
- 
-    # categorify
-    df = train_df
-    df = categorifyAllFeatures(df, proc, output_name="dlrm_categorified", gen_dict=False, enable_freqlimit=False)
-    t2 = timer()
-    print(f"Train data process time is {(t2 - t1)} secs")
+    t11 = timer()
+    proc.reset_ops([op_mod, op_fillna_for_categorified, op_fillna_for_label, op_fillna_for_int, op_fillnegative_for_int])
+    test_df = spark.read.parquet(f"{path_prefix}{current_path}/dlrm_parquet_test")
+    test_df = proc.transform(test_df, name="dlrm_parquet_test_proc")
+    t12 = timer()
+    print(f"Process test categorified columns completed, took {(t12 - t11)} secs")
 
-    # for valid + test data
-    import subprocess
-    process = subprocess.Popen(["sh", "raw_test_split.sh", csv_folder])
-    process.wait()
-    test_files = ["test/day_23"]
-    test_file_names = [f"{path_prefix}{csv_folder}{filename}" for filename in test_files]
-    test_df = spark.read.schema(schema).option('sep', '\t').csv(test_file_names)
-    test_df = proc.transform(test_df, name="dlrm_parquet_test")
-    test_df = categorifyAllFeatures(test_df, proc, output_name="dlrm_categorified_test", gen_dict=False, enable_freqlimit=False)
+    t11 = timer()
+    proc.reset_ops([op_mod, op_fillna_for_categorified, op_fillna_for_label, op_fillna_for_int, op_fillnegative_for_int])
+    valid_df = spark.read.parquet(f"{path_prefix}{current_path}/dlrm_parquet_valid")
+    valid_df = proc.transform(valid_df, name="dlrm_parquet_valid_proc")
+    t12 = timer()
+    print(f"Process valid categorified columns completed, took {(t12 - t11)} secs")
 
-    valid_files = ["validation/day_23"]
-    valid_file_names = [f"{path_prefix}{csv_folder}{filename}" for filename in valid_files]
-    valid_df = spark.read.schema(schema).option('sep', '\t').csv(valid_file_names)
-    valid_df = proc.transform(valid_df, name="dlrm_parquet_valid")
-    valid_df = categorifyAllFeatures(valid_df, proc, output_name="dlrm_categorified_valid", gen_dict=False, enable_freqlimit=False)
+    #############################
+    # 2. generate dict
+    #############################
+    path_list = [f"{path_prefix}{current_path}/dlrm_parquet_train_proc_{filename}" for filename in train_files]
+    path_list += [f"{path_prefix}{current_path}/dlrm_parquet_test_proc", f"{path_prefix}{current_path}/dlrm_parquet_valid_proc"]
+    generate_dicts(spark, path_list, proc)
+
+    #############################
+    # 3. Apply dicts to all days
+    #############################
+    for filename in train_files:
+        t11 = timer()
+        train_df = spark.read.parquet(f"{path_prefix}{current_path}/dlrm_parquet_train_proc_{filename}")
+        categorifyAllFeatures(train_df, proc, output_name=f"dlrm_categorified_{filename}")
+        t12 = timer()
+        print(f"Apply dicts to {filename} completed, took {(t12 - t11)} secs")
+    
+    t11 = timer()
+    train_df = spark.read.parquet(f"{path_prefix}{current_path}/dlrm_parquet_test_proc")
+    categorifyAllFeatures(train_df, proc, output_name=f"dlrm_categorified_test")
+    t12 = timer()
+    print(f"Apply dicts to test completed, took {(t12 - t11)} secs")
+    t11 = timer()
+    train_df = spark.read.parquet(f"{path_prefix}{current_path}/dlrm_parquet_valid_proc")
+    categorifyAllFeatures(train_df, proc, output_name=f"dlrm_categorified_valid")
+    t12 = timer()
+    print(f"Apply dicts to valid completed, took {(t12 - t11)} secs")
+    
     t3 = timer()
-
     print(f"Total process time is {(t3 - t1)} secs")
 
 
 if __name__ == "__main__":
-    main()
+    if HDFS_NODE == "":
+        print("Please add correct HDFS_NODE name in this file, or this script won't be able to process")
+    else:
+        main(HDFS_NODE)
     

@@ -60,30 +60,24 @@ mkdir -p /home/vmagent/app/e2eaiok/modelzoo/dlrm/data_processing/spark_local_dir
 mkdir -p /home/mnt/applicationHistory
 sh ./start_spark_service.sh
 
-# process data
-# IMPORTANT!! dlrm data processing requires huge space
-# make sure ~1.4T for /home/vmagent/app/e2eaiok/modelzoo/dlrm/data_processing/
-python preprocessing.py
-# convert processed data to binary 
-python splitconversion.py
+# add your HDFS master node in below files
+convert_to_parquet.py
+preprocessing.py
+convert_to_binary.py
 
-# clean up tmp
-rm /home/vmagent/app/dataset/criteo/output/tmp
+# upload and trsnform downloaded data as parquet to HDFS, may take 30 mins
+python convert_to_parquet.py
+# process data, may take about 1 hour
+python preprocessing.py
+# download processed data and convert to binary, may take 30 mins
+python convert_to_binary.py
 
 # check result
-(pytorch_mlperf) root@sr414:/home/vmagent/app/e2eaiok/modelzoo/dlrm# ll /home/vmagent/app/dataset/criteo/output/
+(pytorch_mlperf) ll /home/vmagent/app/dataset/criteo/output/
 total 683357412
          4096  ./
          4096  ../
           474  day_fea_count.npz
-         4096  dicts/
-       249856  dlrm_categorified/
-        45056  dlrm_categorified_test/
-        45056  dlrm_categorified_valid/
-        73728  dlrm_parquet_23/
-        40960  dlrm_parquet_test/
-      1806336  dlrm_parquet_train/
-        40960  dlrm_parquet_valid/
   14261971040  test_data.bin
  671231630720  train_data.bin
   14261970880  valid_data.bin
