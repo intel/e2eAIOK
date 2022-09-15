@@ -1,29 +1,24 @@
-import enum
 import os
-import sys
 import time
+import math
 import logging
-from typing import Iterable
-import extend_distributed as ext_dist
-from tqdm import tqdm, trange
-
 import torch
-import torch.nn as nn
-from TorchTrainer import BaseTrainer
-from model.nlp.init_bert_parser import init_bert_parser
-from model.nlp.bert_model_builder import *
-from data_builder import *
-from model.nlp.utils import *
+import trainer.extend_distributed as ext_dist
 
+from tqdm import tqdm, trange
 from module.nlp.optimization import BertAdam
-
-logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
-                    datefmt='%m/%d/%Y %H:%M:%S',
-                    level=logging.INFO)
-logger = logging.getLogger(__name__)
+from TorchTrainer import BaseTrainer
+from data_builder import DataBuilder
+from model.nlp.init_bert_parser import init_bert_parser
+from model.nlp.bert_model_builder import BertModelBuilder
+from model.nlp.utils import do_qa_eval, result_to_file
 
 class BertTrainer(BaseTrainer):
     def __init__(self, args):
+        logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
+                    datefmt='%m/%d/%Y %H:%M:%S',
+                    level=logging.INFO)
+        self.logger = logging.getLogger(__name__)
         parser = init_bert_parser()
         self.args = parser.parse_args(args)
         self.model_builder = BertModelBuilder(self.args)
@@ -72,9 +67,9 @@ class BertTrainer(BaseTrainer):
                 self.evaluate(model, tr_loss, tr_cls_loss, step)
 
     def evaluate(self, model: torch.nn.Module, tr_loss, tr_cls_loss, step):
-        logger.info("***** Running evaluation *****")
-        logger.info("  Epoch = {} iter {} step".format(self.epoch_, self.global_step))
-        logger.info("  Num examples = %d", len(self.eval_examples))
+        self.logger.info("***** Running evaluation *****")
+        self.logger.info("  Epoch = {} iter {} step".format(self.epoch_, self.global_step))
+        self.logger.info("  Num examples = %d", len(self.eval_examples))
 
         model.eval()
 
@@ -150,7 +145,7 @@ class BertTrainer(BaseTrainer):
                              warmup=self.args.warmup_proportion,
                              t_total=num_train_optimization_steps)
 
-        logger.info("***** Running training *****")
+        self.logger.info("***** Running training *****")
         print("  Num examples = %d" % (len(self.train_examples)))
         print("  Batch size = %d" % (self.args.train_batch_size))
         print("  Num steps = %d" % (num_train_optimization_steps))

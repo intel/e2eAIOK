@@ -1,27 +1,24 @@
-import os
 import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import json
-from TorchTrainer import BaseTrainer
-import torch.nn as nn
 import torch
 import random
-from model.cv.vit_model_builder import *
-from data_builder import *
-from timm.scheduler import create_scheduler
-from timm.optim import create_optimizer
-from argparse import Namespace
-from pathlib import Path
 import utils
-from model.cv.init_vit_parser import init_vit_parser
-import argparse
 import datetime
 import time
-from pathlib import Path
-from typing import Iterable, Optional
 import math
-from timm.utils import accuracy
 import extend_distributed as ext_dist
+
+from timm.scheduler import create_scheduler
+from timm.optim import create_optimizer
+from pathlib import Path
+from pathlib import Path
+from typing import Iterable
+from timm.utils import accuracy
+
+from model.cv.init_vit_parser import init_vit_parser
+from model.cv.vit_model_builder import ViTModelBuilder
+from data_builder import DataBuilder
+from TorchTrainer import BaseTrainer
 
 class ViTTrainer(BaseTrainer):
     def __init__(self, args):

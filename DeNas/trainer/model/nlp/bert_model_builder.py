@@ -1,12 +1,9 @@
 import ast
 import os
-import sys
 import logging
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
-logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
-from trainer.ModelBuilder import BaseModelBuilder
-
 import torch
+
+from trainer.ModelBuilder import BaseModelBuilder
 from nlp.supernet_bert import SuperBertForQuestionAnswering, BertConfig
 from nlp.utils import get_subconfig
 
@@ -14,6 +11,7 @@ class BertModelBuilder(BaseModelBuilder):
     def __init__(self, args):
         self.args = args
         self.model_dir = self.args.model_dir
+        logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
         self.logger = logging.getLogger(__name__)
 
     def decode_arch(self):

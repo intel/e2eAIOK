@@ -1,10 +1,7 @@
-import os
-import sys
-from trainer.data import cv_build_datasets
-from trainer.data import nlp_build_datasets
-import numpy as np
 import torch
 
+from trainer.data import cv_build_datasets
+from trainer.data import nlp_build_datasets
 
 class DataBuilder():
     """

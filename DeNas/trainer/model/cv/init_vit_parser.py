@@ -1,6 +1,5 @@
 import argparse
 
-
 def init_vit_parser(args):
     parser = argparse.ArgumentParser('ViT module training............')
     parser.add_argument('--train-batch-size', default=64, type=int)

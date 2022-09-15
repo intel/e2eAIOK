@@ -1,13 +1,11 @@
-import io
-import os
 import time
-from collections import defaultdict, deque
 import datetime
 import yaml
-from easydict import EasyDict as edict
 import torch
 import extend_distributed as ext_dist
 
+from collections import defaultdict, deque
+from easydict import EasyDict as edict
 
 def is_main_process():
     if ext_dist.my_size > 1:
@@ -15,10 +13,8 @@ def is_main_process():
     return 0
 
 def save_model(*args, **kwargs):
-    
     if is_main_process():
         torch.save(*args, **kwargs)
-
 
 class SmoothedValue(object):
     """Track a series of values and provide access to smoothed values over a

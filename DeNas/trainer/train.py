@@ -1,14 +1,10 @@
-import random
 import sys
 import argparse
-import torch
-import yaml
-import numpy as np
+
 from utils import update_config
 from model.cv.vit_trainer import ViTTrainer
 from model.nlp.bert_trainer import BertTrainer
 from model.asr.asr_trainer import ASRTrainer
-
 
 def parse_args(args):
     parser = argparse.ArgumentParser('Best module training............')

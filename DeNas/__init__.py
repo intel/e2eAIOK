@@ -1,1 +1,1 @@
-__all__ = ['cv','nlp','recsys','scores','search','utils','module']
+__all__ = ['asr','cv','module','nlp','recsys','scores','search','trainer','utils']

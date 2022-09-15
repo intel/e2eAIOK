@@ -22,7 +22,7 @@ from asr.utils.Accuracy import AccuracyStats
 from asr.utils.metric_stats import ErrorRateStats
 from trainer.TorchTrainer import BaseTrainer
 from trainer.model.asr.asr_model_builder import ASRModelBuilder
-from DeNas.trainer.model.asr.init_asr_parser import parse_args
+from trainer.model.asr.init_asr_parser import parse_args
 
 class ASRTrainer(BaseTrainer):
     def __init__(self, args):
