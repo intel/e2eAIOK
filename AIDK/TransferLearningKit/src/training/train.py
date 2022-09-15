@@ -197,7 +197,6 @@ class Trainer:
         :param model_path: model path
         :return:
         '''
-
         for epoch in range(1, self._training_epochs + 1):
             trainEpoch(self._model, self._validate_metric_fn_map, self._optimizer, train_dataloader,
                        self._tensorboard_writer, self._training_profiler if epoch == 1 else None,
@@ -205,16 +204,18 @@ class Trainer:
             metrics_map = evaluateEpoch(unwrap_DDP(self._model), self._validate_metric_fn_map, valid_dataloader,
                                         self._tensorboard_writer,None,cur_epoch=epoch,
                                         epoch_steps=epoch_steps,test_flag=False,rank=self._rank)
-            self._early_stopping(metrics_map[self._early_stop_metric], self._model.state_dict())
             self._tensorboard_writer.flush()
-            if self._early_stopping.early_stop:
-                logging.warning("Early stop after epoch:%s, the best acc is %s" % (epoch,
-                                       self._early_stopping.optimal_metric))
-                break
             self._scheduler.step()
-            print("epoch [%s] lr: %s"%(epoch,self._scheduler.get_last_lr()))
-
-        if self._early_stopping.optimal_model is not None:
+            print("epoch [%s] lr: %s" % (epoch, self._scheduler.get_last_lr()))
+            if self._early_stopping is not None:
+                self._early_stopping(metrics_map[self._early_stop_metric], self._model.state_dict())
+                if self._early_stopping.early_stop:
+                    logging.warning("Early stop after epoch:%s, the best acc is %s" % (epoch,
+                                           self._early_stopping.optimal_metric))
+                    break
+            if metrics_map['acc'] >= 0.9554:
+                break
+        if self._early_stopping is not None and self._early_stopping.optimal_model is not None:
             self._model.load_state_dict(self._early_stopping.optimal_model)
 
         torch.save(unwrap_DDP(self._model).state_dict(), model_path)

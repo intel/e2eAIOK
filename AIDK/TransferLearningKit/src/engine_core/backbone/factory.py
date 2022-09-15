@@ -7,6 +7,7 @@ from .resnet_imagenet import resnet50 as resnet50_imagenet
 from .resnetv2 import ResNet18 as resnet18_v2
 from .resnetv2 import ResNet34 as resnet34_v2
 from .resnetv2 import ResNet50 as resnet50_v2
+from .resnet_cifar import ResNet50 as resnet50_cifar
 import logging
 import torch
 
@@ -41,6 +42,8 @@ def createBackbone(backbone_name,**kwargs):
         model = resnet34_v2(num_classes=kwargs['num_classes'])
     elif backbone_name == 'resnet50_v2':
         model = resnet50_v2(num_classes=kwargs['num_classes'])
+    elif backbone_name == "resnet50_cifar":
+        model = resnet50_cifar(num_classes=kwargs['num_classes'])
     else:
         logging.error("[%s] is not supported"%backbone_name)
         raise NotImplementedError("[%s] is not supported"%backbone_name)

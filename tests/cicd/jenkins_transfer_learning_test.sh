@@ -9,6 +9,6 @@ cd /home/vmagent/app/AIDK/TransferLearningKit/src
 python main.py -s1 -r0
 # run unittest
 cd /home/vmagent/app/AIDK/TransferLearningKit/test
-pytest -v test_transferrable_model.py # pytest for single test file
+pytest -v adapter_test.py # pytest for single test file
 # pytest -v test_basic_finetunner.py
 python run_testting.py

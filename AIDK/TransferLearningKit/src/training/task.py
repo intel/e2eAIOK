@@ -66,9 +66,9 @@ class Task:
         ############## optimizer ############
         # optimizer_learning_rate : learning rate
         # optimizer_weight_decay : weight decay
-
+        # optimizer_momentum : momentum
         ############### lr_scheduler ##########
-        # scheduler_gamma : scheduler gamma
+        # scheduler_T_max : scheduler T_max
 
         ######## tensorboard_writer ########
         # tensorboard_dir: tensorboard dir
@@ -120,9 +120,12 @@ class Task:
         validate_loader = torch.utils.data.DataLoader(validate_dataset,
                                                       batch_size=batch_size, shuffle=True,
                                                       num_workers=num_workers, drop_last=data_drop_last)
-        test_loader = torch.utils.data.DataLoader(test_dataset,
+        if test_dataset is not None:
+            test_loader = torch.utils.data.DataLoader(test_dataset,
                                                   batch_size=batch_size, shuffle=True,
                                                   num_workers=num_workers, drop_last=data_drop_last)
+        else:
+            test_loader = None
         self._train_loader = train_loader     # may be use by other component
         self._epoch_steps = len(train_loader) # may be use by other component
         logging.info("epoch_steps:%s" % self._epoch_steps)
@@ -150,9 +153,9 @@ class Task:
 
         if enable_transfer_learning:
             pretrained_model = createBackbone(backbone_name, num_classes=pretrained_num_classes)
-            pretrained_model.load_state_dict(torch.load(pretrained_path), strict=True)
+            pretrained_model.load_state_dict(torch.load(pretrained_path)['net'], strict=True)
             finetunner = BasicFinetunner(pretrained_model, top_finetuned_layer=top_finetuned_layer, is_frozen=finetune_frozen)
-            model = make_transferrable_with_finetune(model, loss, initWeights, finetunner=finetunner)
+            model = make_transferrable_with_finetune(model, loss, finetunner=finetunner)
             model.init_weight()
             logging.info('finetunner:%s' % finetunner)
             logging.info('transferrable model:%s' % model)
@@ -172,14 +175,15 @@ class Task:
         is_distributed = self._kwargs['is_distributed']
         learning_rate = self._kwargs['optimizer_learning_rate']
         weight_decay = self._kwargs['optimizer_weight_decay']
+        momentum = self._kwargs['optimizer_momentum']
 
         if is_distributed:
             logging.info("training with DistributedDataParallel")
-            optimizer = ZeRO(filter(lambda p: p.requires_grad, self._model.parameters()), optim.Adam,
-                             lr=learning_rate, weight_decay=weight_decay)
+            optimizer = ZeRO(filter(lambda p: p.requires_grad, self._model.parameters()), optim.SGD,
+                             lr=learning_rate, weight_decay=weight_decay,momentum=momentum)
         else:
-            optimizer = optim.Adam(filter(lambda p: p.requires_grad, self._model.parameters()),
-                                  lr=learning_rate, weight_decay=weight_decay)
+            optimizer = optim.SGD(filter(lambda p: p.requires_grad, self._model.parameters()),
+                                  lr=learning_rate, weight_decay=weight_decay,momentum=momentum)
         logging.info("optimizer:%s"%optimizer)
         self._optimizer = optimizer # may be use by other component
         return optimizer
@@ -188,8 +192,8 @@ class Task:
 
         :return: a lr_scheduler
         '''
-        scheduler_gamma = self._kwargs['scheduler_gamma']
-        scheduler = optim.lr_scheduler.ExponentialLR(self._optimizer,gamma=scheduler_gamma)
+        T_max = self._kwargs['scheduler_T_max']
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self._optimizer, T_max=T_max)
         return scheduler
     def _create_tensorboard_writer(self):
         ''' create tensorboard_writer
@@ -207,6 +211,9 @@ class Task:
         :return: an early_stopping
         '''
         tolerance_epoch = self._kwargs['earlystop_tolerance_epoch']
+        if tolerance_epoch <= 0:
+            return None
+
         delta = self._kwargs['earlystop_delta']
         is_max = self._kwargs['earlystop_is_max']
         early_stopping = EarlyStopping(tolerance_epoch=tolerance_epoch, delta=delta, is_max=is_max)
@@ -287,7 +294,8 @@ class Task:
             else:
                 trainer.train(train_loader, self._epoch_steps, validate_loader, model_saved_path)
         ################################### test ###################################
-        if (not is_distributed) or (is_distributed and rank == 0):  # only test once
-            trained_model = self._load_trained_model()
-            with Timer():
-                evaluator.evaluate(trained_model, test_loader)
+        if test_loader is not None:
+            if (not is_distributed) or (is_distributed and rank == 0):  # only test once
+                trained_model = self._load_trained_model()
+                with Timer():
+                    evaluator.evaluate(trained_model, test_loader)
