@@ -145,12 +145,26 @@ class Operation:
                 if self.doSplit:
                     dict_df = dict_df.select(
                         spk_func.explode(spk_func.split(spk_func.col('dict_col'), self.sep))).withColumn('dict_col', spk_func.col('col'))
-            dict_df = dict_df.groupBy('dict_col').count()
             if self.bucketSize == -1:
-                dict_df = dict_df.withColumn('dict_col_id', spk_func.row_number().over(
-                    Window.orderBy(spk_func.desc('count')))).withColumn('dict_col_id', spk_func.col('dict_col_id') - 1).select('dict_col', 'dict_col_id', 'count')
+                if self.id_by_python_dict:
+                    dict_df = dict_df.distinct()
+                    dict_data = dict((row['dict_col'], 1) for row in dict_df.collect())
+                    for i, x in enumerate(dict_data):
+                        dict_data[x] = i
+                    dict_df = convert_to_spark_df(dict_data, df.spark)
+                elif self.id_by_count:
+                    dict_df = dict_df.groupBy('dict_col').count()
+                    dict_df = dict_df.withColumn('dict_col_id', spk_func.row_number().over(
+                        Window.orderBy(spk_func.desc('count')))).withColumn('dict_col_id', spk_func.col('dict_col_id') - 1).select('dict_col', 'dict_col_id', 'count')
+                else:
+                    dict_df = dict_df.withColumn("monotonically_increasing_id", spk_func.monotonically_increasing_id())
+                    dict_df = dict_df.groupBy('dict_col').agg(spk_func.min("monotonically_increasing_id").alias("monotonically_increasing_id"), spk_func.count("*").alias("count"))
+                    dict_df = dict_df.withColumn('dict_col_id', spk_func.row_number().over(
+                    Window.orderBy(spk_func.col('monotonically_increasing_id')))).withColumn('dict_col_id', spk_func.col('dict_col_id') - 1).select('dict_col', 'dict_col_id', 'count')
+
             else:
                 # when user set a bucketSize, we will quantileDiscretizer in this case
+                dict_df = dict_df.groupBy('dict_col').count()
                 qd = QuantileDiscretizer(numBuckets=self.bucketSize, inputCol="count", outputCol='dict_col_id')
                 dict_df  = qd.fit(dict_df).transform(dict_df).withColumn('dict_col_id', spk_func.col('dict_col_id').cast(spk_type.IntegerType()))
             if withCount:
@@ -408,6 +422,13 @@ class SelectFeature(Operation):
 
         return df.selectExpr(*to_select)
 
+
+class Sort(Operation):
+    def __init__(self, args = []):
+        self.args = args
+
+    def process(self, df, spark, df_cnt, enable_scala=True, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
+        return df.orderBy(*self.args)
 
 class Categorify(Operation):
     '''
@@ -671,7 +692,7 @@ class GenerateDictionary(Operation):
     '''
     # TODO: We should add an optimization for csv input
 
-    def __init__(self, cols, withCount=True, doSplit=False, sep='\t', isParquet=True, bucketSize=-1):
+    def __init__(self, cols, withCount=True, doSplit=False, sep='\t', isParquet=True, bucketSize=-1, id_by_count = True, id_by_python_dict = False):
         self.op_name = "GenerateDictionary"
         self.cols = cols
         self.doSplit = doSplit
@@ -680,6 +701,8 @@ class GenerateDictionary(Operation):
         self.dict_dfs = []
         self.isParquet = isParquet
         self.bucketSize = bucketSize
+        self.id_by_count = id_by_count
+        self.id_by_python_dict = id_by_python_dict
 
     def merge_dict(self, dict_dfs, to_merge_dict_dfs):
         self.dict_dfs = []
@@ -1076,7 +1099,7 @@ class DataProcessor:
         return op
 
     def apply(self, df, df_cnt = None):
-        if df_cnt == None:
+        if len(self.ops) > 0 and df_cnt == None:
             df_cnt = df.count()
         for op in self.ops:
             save_path = self.get_tmp_cache_path()
