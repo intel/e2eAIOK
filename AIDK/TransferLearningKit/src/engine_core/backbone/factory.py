@@ -10,6 +10,7 @@ from .resnetv2 import ResNet50 as resnet50_v2
 from .resnet_cifar import ResNet50 as resnet50_cifar
 import logging
 import torch
+import timm
 
 def createBackbone(backbone_name,**kwargs):
     ''' create backbone by name
@@ -44,6 +45,8 @@ def createBackbone(backbone_name,**kwargs):
         model = resnet50_v2(num_classes=kwargs['num_classes'])
     elif backbone_name == "resnet50_cifar":
         model = resnet50_cifar(num_classes=kwargs['num_classes'])
+    elif backbone_name == 'resnet50_timm':
+        model = timm.create_model('resnet50', pretrained=False, num_classes=kwargs['num_classes'])
     else:
         logging.error("[%s] is not supported"%backbone_name)
         raise NotImplementedError("[%s] is not supported"%backbone_name)

@@ -60,12 +60,11 @@ class TransferrableModel(nn.Module):
     ''' A wrapper to make model transferrable
 
     '''
-    def __init__(self,backbone,finetunner,adapter,distiller,transfer_strategy,enable_target_training_label,
+    def __init__(self,backbone,adapter,distiller,transfer_strategy,enable_target_training_label,
                 backbone_loss_weight=1.0, distiller_loss_weight=0.0, adapter_loss_weight=0.0):
         ''' Init method
 
         :param backbone: the backbone model to be wrapped
-        :param finetunner: a finetunner to perform pretraining-finetunning.
         :param adapter: an adapter to perform domain adaption
         :param distiller: a distiller to perform knowledge distillation
         :param transfer_strategy: transfer strategy
@@ -77,7 +76,6 @@ class TransferrableModel(nn.Module):
         if 'original' not in self.backbone.__dict__:
             raise RuntimeError("Backbone must have original attribute.")
 
-        self.finetunner = finetunner
         self.adapter = adapter
         self.distiller = distiller
         self.transfer_strategy = transfer_strategy
@@ -365,14 +363,7 @@ class TransferrableModel(nn.Module):
                 metric_values[metric_name] = metric_value
 
         return metric_values
-    def init_weight(self):
-        ''' Initialize model weight
 
-        :return:
-        '''
-        if self.transfer_strategy in [TransferStrategy.OnlyFinetuneStrategy,
-                                      TransferStrategy.FinetuneAndDomainAdaptionStrategy]:
-            self.finetunner.finetune_network(self.backbone)
 
 def extract_distiller_adapter_features(model,intermediate_layer_name_for_distiller,
                                      intermediate_layer_name_for_adapter):
@@ -507,7 +498,11 @@ def _make_transferrable(model, loss,
                               TransferStrategy.DistillationAndDomainAdaptionStrategy]:
         logging.info("Make composed dataset")
         training_dataloader.__dict__["dataset"] = ComposedDataset(training_dataloader.dataset,adaption_source_domain_training_dataset)
-    return TransferrableModel(new_model,finetunner,adapter,distiller,transfer_strategy,enable_target_training_label,backbone_loss_weight,distiller_loss_weight,adapter_loss_weight)
+    ###################### initialize ####################
+    if transfer_strategy in [TransferStrategy.OnlyFinetuneStrategy,
+                                      TransferStrategy.FinetuneAndDomainAdaptionStrategy]:
+            finetunner.finetune_network(model)
+    return TransferrableModel(new_model,adapter,distiller,transfer_strategy,enable_target_training_label,backbone_loss_weight,distiller_loss_weight,adapter_loss_weight)
 
 def _transferrable(loss, finetunner, distiller, adapter,
                    distiller_feature_size, distiller_feature_layer_name,

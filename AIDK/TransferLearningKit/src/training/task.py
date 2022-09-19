@@ -20,6 +20,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.distributed.optim.zero_redundancy_optimizer import ZeroRedundancyOptimizer as ZeRO
 from torch.distributed.algorithms.join import Join
 from torch.profiler import profile, ProfilerActivity
+import intel_extension_for_pytorch as ipex
 
 def trace_handler(trace_file,p):
     ''' profile trace handler
@@ -37,10 +38,12 @@ class Task:
     '''
     def __init__(self,**kwargs):
         self._kwargs = kwargs
+        print('Task config:%s'%kwargs)
         # parameters:
         ############### global ##############
         # is_distributed : whether is distributed
         # enable_transfer_learning : whether use transfer learning
+        # enable_ipex : whether use intel-extension-for-pytorch
         # training_epochs : training epochs
         # logging_interval_step : logging interval step
         # validate_metric_fn_map : validate metric function map
@@ -58,7 +61,7 @@ class Task:
         # model_num_classes : num classes
         # model_backbone_name : backbone name
         # model_loss : loss function
-        # finetune_pretrained_path : pretrained model path
+        # finetune_pretrained_state_dict : pretrained model state dict
         # finetune_top_finetuned_layer : layer under which is used for finetuning
         # finetune_frozen : frozen finetune layer
         # finetune_pretrained_num_classes : num classes of pretrained model
@@ -78,6 +81,7 @@ class Task:
         # earlystop_tolerance_epoch : tolerance epoch
         # earlystop_delta : delta
         # earlystop_is_max : is max or min
+        # earlystop_limitation : the absolute limitation of validation metric
 
         ######### profiler ##############
         # profile_skip_first: skip first n iteration
@@ -140,7 +144,7 @@ class Task:
         num_classes = self._kwargs['model_num_classes']
         backbone_name = self._kwargs['model_backbone_name']
         loss = self._kwargs['model_loss']
-        pretrained_path = self._kwargs['finetune_pretrained_path']
+        pretrained_state_dict = self._kwargs['finetune_pretrained_state_dict']
         top_finetuned_layer = self._kwargs['finetune_top_finetuned_layer']
         finetune_frozen = self._kwargs['finetune_frozen']
         pretrained_num_classes = self._kwargs['finetune_pretrained_num_classes']
@@ -153,10 +157,9 @@ class Task:
 
         if enable_transfer_learning:
             pretrained_model = createBackbone(backbone_name, num_classes=pretrained_num_classes)
-            pretrained_model.load_state_dict(torch.load(pretrained_path)['net'], strict=True)
+            pretrained_model.load_state_dict(pretrained_state_dict, strict=True)
             finetunner = BasicFinetunner(pretrained_model, top_finetuned_layer=top_finetuned_layer, is_frozen=finetune_frozen)
             model = make_transferrable_with_finetune(model, loss, finetunner=finetunner)
-            model.init_weight()
             logging.info('finetunner:%s' % finetunner)
             logging.info('transferrable model:%s' % model)
 
@@ -216,7 +219,8 @@ class Task:
 
         delta = self._kwargs['earlystop_delta']
         is_max = self._kwargs['earlystop_is_max']
-        early_stopping = EarlyStopping(tolerance_epoch=tolerance_epoch, delta=delta, is_max=is_max)
+        limitation = self._kwargs['earlystop_limitation']
+        early_stopping = EarlyStopping(tolerance_epoch=tolerance_epoch, delta=delta, is_max=is_max, limitation=limitation)
         logging.info('early_stopping :%s' % early_stopping)
         return early_stopping
     def _create_profiler(self):
@@ -271,11 +275,16 @@ class Task:
         earlystop_metric = self._kwargs['earlystop_metric']
         rank = self._kwargs['rank']
         is_distributed = self._kwargs['is_distributed']
+        enable_ipex = self._kwargs['enable_ipex']
         model_saved_path = self._kwargs['model_saved_path']
         ######################### create components #########################
         (train_loader, validate_loader, test_loader) = self._create_dataloader()
         model = self._create_model()
         optimizer = self._create_optimizer()
+        if enable_ipex:
+            model = model.to(memory_format = torch.channels_last)
+            model, optimizer = ipex.optimize(model, optimizer=optimizer)
+            setattr(model.backbone, "loss", self._kwargs['model_loss'])
         lr_scheduler = self._create_lr_scheduler()
         tensorboard_writer = self._create_tensorboard_writer()
         early_stopping = self._create_early_stopping()

@@ -27,19 +27,26 @@ def main(rank, world_size, enable_transfer_learning):
     is_distributed = (world_size > 1)  # distributed flag
     #################### configuration ################
     torch.manual_seed(0)
+    LOG_DIR = "../log"          # to save training log
+    PROFILE_DIR = '.'           # to save profiling result
+    MODEL_DIR = "../model"      # to save trained model
+    DATASET_DIR = "../datasets" # where dataset located
+    TENSORBOARD_DIR = "../tensorboard_log" # to save tensorboard log
+    enable_ipex = False          # intel-extension-for-pytorch
+ 
     if is_distributed:
         dist.init_process_group("gloo", rank=rank, world_size=world_size, timeout=datetime.timedelta(seconds=300))
-        log_filename = "../log/%s_rank_%s.txt" % (int(time.time()), rank)
+        log_filename = "%s/%s_rank_%s.txt" % (LOG_DIR,int(time.time()), rank)
         tensorboard_filename_suffix = "_rank%s" % (rank)
-        profile_trace_file_training = "./training_profile_rank%s_"%(rank)
-        profile_trace_file_inference = './test_profile_rank%s_'%(rank)
-        model_save_path = "../model/pretrain_resnet50_cifar10_rank%s.pth"%(rank)
+        profile_trace_file_training = "%s/training_profile_rank%s_"%(PROFILE_DIR,rank)
+        profile_trace_file_inference = '%s/test_profile_rank%s_'%(PROFILE_DIR,rank)
+        model_save_path = "%s/pretrain_resnet50_cifar10_rank%s.pth"%(MODEL_DIR,rank)
     else:
-        log_filename = "../log/%s.txt" % (int(time.time()))
+        log_filename = "%s/%s.txt" % (LOG_DIR,int(time.time()))
         tensorboard_filename_suffix = ""
-        profile_trace_file_training = "./training_profile"
-        profile_trace_file_inference = './test_profile'
-        model_save_path = "../model/pretrain_resnet50_cifar10.pth"
+        profile_trace_file_training = "%s/training_profile"%PROFILE_DIR
+        profile_trace_file_inference = '%s/test_profile'%PROFILE_DIR
+        model_save_path = "%s/pretrain_resnet50_cifar10.pth"%MODEL_DIR
 
     logging.basicConfig(filename=log_filename, level=logging.INFO,
                         format='%(asctime)s %(levelname)s [%(filename)s %(funcName)s %(lineno)d]: %(message)s',
@@ -48,25 +55,28 @@ def main(rank, world_size, enable_transfer_learning):
     ##################### parameters ##############
     transform_train = torchvision.transforms.Compose([
         torchvision.transforms.RandomCrop(32, padding=4),
+        torchvision.transforms.Resize(224),
         torchvision.transforms.RandomHorizontalFlip(),
         torchvision.transforms.ToTensor(),
-        torchvision.transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-    ])
+        torchvision.transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),]
+    )
 
     transform_test = torchvision.transforms.Compose([
+        torchvision.transforms.Resize(224),
         torchvision.transforms.ToTensor(),
-        torchvision.transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-    ])
+        torchvision.transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),]
+    )
 
-    train_dataset = torchvision.datasets.CIFAR10(root="../datasets", train=True,
+    train_dataset = torchvision.datasets.CIFAR10(root=DATASET_DIR, train=True,
                                                      download=False, transform=transform_train)
-    test_dataset = torchvision.datasets.CIFAR10(root="../datasets", train=False,
+    test_dataset = torchvision.datasets.CIFAR10(root=DATASET_DIR, train=False,
                                                      download=False, transform=transform_test)
     kwargs = {
         ############### global ##############
         'is_distributed' : is_distributed,
         'enable_transfer_learning' : enable_transfer_learning,
-        'training_epochs' : 200,
+        'enable_ipex' : enable_ipex, # intel-extension-for-pytorch
+        'training_epochs' :  2,
         'logging_interval_step' : 10,
         'validate_metric_fn_map' : {'acc': accuracy},
         'earlystop_metric' : 'acc',
@@ -81,25 +91,26 @@ def main(rank, world_size, enable_transfer_learning):
         'data_drop_last' : False,
         ############## model ############
         'model_num_classes' : 10,
-        'model_backbone_name' : 'resnet50_cifar',
+        'model_backbone_name' : 'resnet50_timm',
         'model_loss' : nn.CrossEntropyLoss(reduction='mean'),
-        'finetune_pretrained_path' : '../pretrained/Resnet50_CIFAR100_ckpt.pth',
-        'finetune_top_finetuned_layer' : 'view',
+        'finetune_pretrained_state_dict' : torch.load('../pretrained/resnet50_miil_21k.pth')['state_dict'],
+        'finetune_top_finetuned_layer' : 'global_pool_flatten',
         'finetune_frozen' : False,
-        'finetune_pretrained_num_classes' : 100,
+        'finetune_pretrained_num_classes' : 11221,
         ############## optimizer ############
-        'optimizer_learning_rate' : 0.1,
+        'optimizer_learning_rate' : 0.01,
         'optimizer_weight_decay' : 5e-4, # L2 penalty
         'optimizer_momentum': 0.9,
         ############### lr_scheduler ##########
         'scheduler_T_max' : 200, # max epoch
         ######## tensorboard_writer ########
-        'tensorboard_dir' : "../tensorboard_log",
+        'tensorboard_dir' : TENSORBOARD_DIR,
         'tensorboard_filename_suffix' : tensorboard_filename_suffix,
         ######### early_stopping ###########
-        'earlystop_tolerance_epoch' : -1,
-        # 'earlystop_delta' : 0.001,
-        # 'earlystop_is_max' : True,
+        'earlystop_tolerance_epoch' : 200,
+        'earlystop_delta' : 0.001,
+        'earlystop_is_max' : True,
+        'earlystop_limitation' : 0.9554,
         ######### profiler ##############
         'profile_skip_first' : 1,
         'profile_wait':1,

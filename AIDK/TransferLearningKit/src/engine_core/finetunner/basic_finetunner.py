@@ -118,7 +118,7 @@ class BasicFinetunner:
             next_names = self.node_successors[name]     # successor for next item
             for next_name in sorted(next_names): # sorted to make deterministic
                 if next_name in already_names:  # every layer has one hierarchy
-                    logging.info("[%s] has already exist, use the exist one")
+                    logging.info("[%s] has already exist, use the exist one"%next_name)
                 else:
                     queue.insert(0, (next_name, hierarchy + 1))
 

@@ -40,17 +40,19 @@ class EarlyStopping():
     ''' Early Stopping
 
     '''
-    def __init__(self, tolerance_epoch = 5, delta=0, is_max = False):
+    def __init__(self, tolerance_epoch = 5, delta=0, is_max = False, limitation = None):
         ''' Init method
 
         :param tolerance_epoch: tolarance epoch
         :param delta: delta for difference
         :param is_max: max or min
+        :param limitation: when metric up/down limiation then stop training. None means ignore.
         '''
 
         self._tolerance_epoch = tolerance_epoch
         self._delta = delta
         self._is_max = is_max
+        self._limitation = limitation
 
         self._counter = 0
         self.early_stop = False
@@ -58,6 +60,14 @@ class EarlyStopping():
         self.optimal_metric = None
 
     def __call__(self, validation_metric,model_state_dict):
+        ############## absolute level #################
+        if self._limitation is not None:
+            if (self._is_max and validation_metric >= self._limitation) or\
+            ((not self._is_max) and validation_metric <= self._limitation):
+                self.early_stop = True
+                logging.info("Earlystop when meet limitation [%s]"%self._limitation)
+                return
+        ############## relative level #################
         if self.optimal_metric is not None:
             if (self._is_max and (validation_metric < self.optimal_metric - self._delta)) or\
                 ((not self._is_max) and (validation_metric > self.optimal_metric + self._delta)): # less optimal
@@ -77,6 +87,7 @@ class EarlyStopping():
         _str = 'EarlyStopping:%s\n'%self._tolerance_epoch
         _str += '\tdelta:%s\n'%self._delta
         _str += '\tis_max:%s\n' % self._is_max
+        _str += '\tlimitation:%s\n' % self._limitation
         return _str
 
 def adjust_learning_rate(epoch, optimizer, cfg):
@@ -101,3 +112,16 @@ class Timer:
         _str = "Total seconds:%s" % (total_seconds)
         print(_str)
         logging.info(_str)
+
+class ToChannelsLast:
+    ''' channels_last transformation
+    '''
+    def __call__(self, x):
+        if x.ndim == 3:
+            x = x.unsqueeze(0)
+        elif x.ndim !=4:
+            raise RuntimeError
+        return x.to(memory_format=torch.channels_last)
+
+    def __repr__(self):
+        return self.__class__.__name__ + '()'

@@ -159,7 +159,6 @@ class TestMakeTransferrable:
         assert new_model.backbone.original is kwargs['model']
         assert new_model.adapter is kwargs['adapter']
         assert new_model.distiller is kwargs['distiller']
-        assert new_model.finetunner is kwargs['finetunner']
         assert type(kwargs['training_dataloader'].dataset) is ComposedDataset
 
     def test_valid_decorator(self):
@@ -191,7 +190,6 @@ class TestMakeTransferrable:
         assert new_model.backbone.adapter_feature_size is kwargs['adapter_feature_size']
         assert new_model.adapter is kwargs['adapter']
         assert new_model.distiller is kwargs['distiller']
-        assert new_model.finetunner is kwargs['finetunner']
         assert type(kwargs['training_dataloader'].dataset) is ComposedDataset
 
     def test_return_ComposedDataset(self):
@@ -287,7 +285,6 @@ class TestMakeTransferrable:
                                                      finetunner=kwargs['finetunner'])
 
         assert type(new_model) == TransferrableModel
-        assert new_model.finetunner is kwargs['finetunner']
         assert new_model.adapter is None
         assert new_model.distiller is None
 
@@ -311,7 +308,6 @@ class TestMakeTransferrable:
             distiller_loss_weight=kwargs['distiller_loss_weight'])
 
         assert type(new_model) == TransferrableModel
-        assert new_model.finetunner is None
         assert new_model.adapter is None
         assert new_model.distiller is kwargs['distiller']
 
@@ -337,7 +333,6 @@ class TestMakeTransferrable:
             adapter_loss_weight=kwargs['adapter_loss_weight'])
 
         assert type(new_model) == TransferrableModel
-        assert new_model.finetunner is None
         assert new_model.adapter is kwargs['adapter']
         assert new_model.distiller is None
 
@@ -364,7 +359,6 @@ class TestMakeTransferrable:
             adapter_loss_weight=kwargs['adapter_loss_weight'])
 
         assert type(new_model) == TransferrableModel
-        assert new_model.finetunner is kwargs['finetunner']
         assert new_model.adapter is kwargs['adapter']
         assert new_model.distiller is None
 
@@ -394,7 +388,6 @@ class TestMakeTransferrable:
             adapter_loss_weight=kwargs['adapter_loss_weight'])
 
         assert type(new_model) == TransferrableModel
-        assert new_model.finetunner is None
         assert new_model.adapter is kwargs['adapter']
         assert new_model.distiller is kwargs['distiller']
 
@@ -463,10 +456,10 @@ class TestTransferrableModel:
             for transfer_strategy in ALL_STRATEGIES:
                 if enable_target_training_label == False and transfer_strategy == TransferStrategy.OnlyFinetuneStrategy:
                     with pytest.raises(RuntimeError) as e:
-                        TransferrableModel(model, finetunner, adapter, distiller,transfer_strategy, enable_target_training_label)
+                        TransferrableModel(model, adapter, distiller,transfer_strategy, enable_target_training_label)
                     assert e.value.args[0] == "Must enable target training label when only finetune."
                 else:
-                    TransferrableModel(model, finetunner, adapter, distiller, transfer_strategy,enable_target_training_label) # valid
+                    TransferrableModel(model, adapter, distiller, transfer_strategy,enable_target_training_label) # valid
 
     def test_create_invalid_backbone(self):
         ''' create TransferrableModel with invalid backbone
@@ -478,7 +471,7 @@ class TestTransferrableModel:
         adapter = DANNAdapter(512, 8, 0.0, 5.0, 1.0, 100)
         distiller = BasicDistiller(torchvision.models.resnet18(pretrained=True), True)
         with pytest.raises(RuntimeError) as e:
-            TransferrableModel(model, finetunner, adapter, distiller, TransferStrategy.OnlyFinetuneStrategy,True)
+            TransferrableModel(model, adapter, distiller, TransferStrategy.OnlyFinetuneStrategy,True)
         assert e.value.args[0] == "Backbone must have original attribute."
 
     def test_getattribute_in_train_mode(self):
@@ -998,7 +991,6 @@ class TestTransferrableModel:
                              kwargs['finetunner']._pretrained_network.named_parameters()}
             kwargs['transfer_strategy'] = strategy
             model = _make_transferrable(**kwargs)
-            model.init_weight()
             for (name,weight) in model.backbone.named_parameters():
                 if strategy in [TransferStrategy.OnlyFinetuneStrategy,
                                 TransferStrategy.FinetuneAndDomainAdaptionStrategy]:

@@ -213,8 +213,6 @@ class Trainer:
                     logging.warning("Early stop after epoch:%s, the best acc is %s" % (epoch,
                                            self._early_stopping.optimal_metric))
                     break
-            if metrics_map['acc'] >= 0.9554:
-                break
         if self._early_stopping is not None and self._early_stopping.optimal_model is not None:
             self._model.load_state_dict(self._early_stopping.optimal_model)
 
