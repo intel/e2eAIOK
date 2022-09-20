@@ -55,8 +55,9 @@ cd /home/vmagent/app/e2eaiok/modelzoo/dlrm/data_processing/
 pip install pyrecdp pyarrow
 
 # start spark service
+cd /home/vmagent/app/e2eaiok/conf/spark/
 cp spark-defaults.conf /home/spark-3.2.1-bin-hadoop3.2/conf/
-mkdir -p /home/vmagent/app/e2eaiok/modelzoo/dlrm/data_processing/spark_local_dir
+mkdir -p /home/vmagent/app/e2eaiok/spark_local_dir
 mkdir -p /home/mnt/applicationHistory
 sh ./start_spark_service.sh
 
@@ -69,7 +70,7 @@ convert_to_binary.py
 python convert_to_parquet.py
 # process data, may take about 1 hour
 python preprocessing.py
-# download processed data and convert to binary, may take 30 mins
+# download processed data and convert to binary
 python convert_to_binary.py
 
 # check result
