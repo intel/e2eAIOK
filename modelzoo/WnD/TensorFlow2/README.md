@@ -38,7 +38,7 @@ The original dataset can be downloaded at https://www.kaggle.com/c/outbrain-clic
 # need to setup ssh service first
 cd /home/vmagent/app/e2eaiok/conf/spark/
 cp spark-defaults.conf /home/spark-3.2.1-bin-hadoop3.2/conf/
-mkdir -p /home/vmagent/app/spark_data_processing/spark_local_dir
+mkdir -p /home/vmagent/app/e2eaiok/spark_data_processing/spark_local_dir
 mkdir -p /home/mnt/applicationHistory
 sh ./start_spark_service.sh
 
