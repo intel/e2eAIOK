@@ -4,7 +4,6 @@ import sigopt
 from search.BaseSearchEngine import BaseSearchEngine
 from AIDK.common.utils import timeout_input
 
-
 class SigoptSearchEngine(BaseSearchEngine):
     def __init__(self, params=None, super_net=None, search_space=None):
         super().__init__(params,super_net,search_space)
@@ -108,8 +107,11 @@ class SigoptSearchEngine(BaseSearchEngine):
                 if not self.cand_islegal(cand):
                     self._set_illegal_observation(experiment, suggestion.id)
                     continue
+                if not self.cand_islegal_latency(cand):
+                    self._set_illegal_observation(experiment, suggestion.id)
+                    continue
                 nas_score = self.cand_evaluate(cand).item()
-                self.logger.info('epoch = {} nas_score = {} cand = {}'.format(epoch, nas_score, cand))
+                self.logger.info('epoch = {} structure = {} nas_score = {} params = {}'.format(epoch, cand, self.vis_dict[cand]['score'], self.vis_dict[cand]['params']))
                 self._set_sigopt_observation(experiment, suggestion.id, nas_score)
             best_assignments = self.conn.experiments(experiment.id).best_assignments().fetch().data[0].assignments
             self.best_struct = (best_assignments['LAYER_NUM'],best_assignments['HEAD_NUM'],64*best_assignments['HEAD_NUM'],best_assignments['HIDDEN_SIZE']*self.params.cfg["SEARCH_SPACE"]['HIDDEN_SIZE']['bounds']['step'],best_assignments['INTERMEDIATE_SIZE']*self.params.cfg["SEARCH_SPACE"]['INTERMEDIATE_SIZE']['bounds']['step'])
@@ -173,8 +175,11 @@ class SigoptSearchEngine(BaseSearchEngine):
                 if not self.cand_islegal(cand):
                     self._set_illegal_observation(experiment, suggestion.id)
                     continue
+                if not self.cand_islegal_latency(cand):
+                    self._set_illegal_observation(experiment, suggestion.id)
+                    continue
                 nas_score = self.cand_evaluate(cand).item()
-                self.logger.info('epoch = {} nas_score = {} cand = {}'.format(epoch, nas_score, cand))
+                self.logger.info('epoch = {} structure = {} nas_score = {} params = {}'.format(epoch, cand, self.vis_dict[cand]['score'], self.vis_dict[cand]['params']))
                 self._set_sigopt_observation(experiment, suggestion.id, nas_score)
             best_assignments = self.conn.experiments(experiment.id).best_assignments().fetch().data[0].assignments  
             depth = int(best_assignments['DEPTH'])
@@ -187,9 +192,12 @@ class SigoptSearchEngine(BaseSearchEngine):
                 cand_tuple.append(int(best_assignments[num_heads_name]))
             cand_tuple.append(int(best_assignments['EMBED_DIM']))
             self.best_struct = tuple(cand_tuple)
+        else:
+            raise RuntimeError(f"Domain {self.params.domain} is not supported")
 
     '''
     Unified API to get best searched structure
     '''
     def get_best_structures(self):
+        self.logger.info('best structure {} nas_score {} params {}'.format(self.best_struct, self.vis_dict[self.best_struct]['score'], self.vis_dict[self.best_struct]['params']))
         return self.best_struct

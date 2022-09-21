@@ -1,8 +1,6 @@
 import heapq
-import numpy as np
 
 from search.BaseSearchEngine import BaseSearchEngine
-
 
 class RandomSearchEngine(BaseSearchEngine):
     
@@ -31,7 +29,7 @@ class RandomSearchEngine(BaseSearchEngine):
             if not self.cand_islegal_latency(cand):
                 continue
             nas_score = self.cand_evaluate(cand)
-            self.logger.info('epoch = {} nas_score = {} cand = {}'.format(epoch, nas_score, cand))
+            self.logger.info('epoch = {} structure = {} nas_score = {} params = {}'.format(epoch, cand, self.vis_dict[cand]['score'], self.vis_dict[cand]['params']))
             heapq.heappush(self.candidates, (nas_score, cand))
             self.update_population_pool()
         with open("best_model_structure.txt", 'w') as f:
@@ -41,4 +39,6 @@ class RandomSearchEngine(BaseSearchEngine):
     Unified API to get best searched structure
     '''
     def get_best_structures(self):
-        return heapq.nlargest(1, self.candidates)[0][1]
+        best_structure = heapq.nlargest(1, self.candidates)[0][1]
+        self.logger.info('best structure {} nas_score {} params {}'.format(best_structure, self.vis_dict[best_structure]['score'], self.vis_dict[best_structure]['params']))
+        return best_structure

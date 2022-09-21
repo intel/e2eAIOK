@@ -1,4 +1,5 @@
 import random
+from ptflops import get_model_complexity_info
 
 def cnn_is_legal(cand, vis_dict, params, super_net):
     if cand not in vis_dict:
@@ -28,20 +29,26 @@ def cnn_is_legal(cand, vis_dict, params, super_net):
         the_model_flops = the_model.get_FLOPs(params.img_size)
         if params.budget_flops < the_model_flops:
             return False
+    info['params'] = get_model_complexity_info(super_net(num_classes=params.num_classes, plainnet_struct=cand, no_reslink=False),
+                                              (3, params.img_size, params.img_size),
+                                              as_strings=False,
+                                              print_per_layer_stat=True)[1]
     info['visited'] = True
     return True
 
-def cnn_populate_random_func(candidates, super_net, search_space, num_classes, plainnet_struct, no_reslink, no_BN, use_se):
-    if len(candidates) <= 10:
-        random_structure_str = get_new_random_structure_str(super_net, search_space, num_classes, 
-            structure_str=str(super_net(num_classes=num_classes, plainnet_struct = plainnet_struct, no_create=True, no_reslink=no_reslink, no_BN=no_BN, use_se=use_se)), num_replaces=1)
-    else:
-        tmp_idx = random.randint(0, len(candidates) - 1)
-        tmp_random_structure_str = candidates[tmp_idx][2]
-        random_structure_str = get_new_random_structure_str(super_net, search_space, num_classes, 
-            structure_str=tmp_random_structure_str, num_replaces=2)
-    random_structure_str = get_splitted_structure_str(super_net, num_classes, random_structure_str)
-    return random_structure_str
+def cnn_populate_random_func(super_net, search_space, num_classes, plainnet_struct, no_reslink, no_BN, use_se):
+    random_structure_str = get_new_random_structure_str(super_net, search_space, num_classes, structure_str=str(super_net(num_classes=num_classes, plainnet_struct = plainnet_struct, no_create=True, no_reslink=no_reslink, no_BN=no_BN, use_se=use_se)), num_replaces=1)
+    return get_splitted_structure_str(super_net, num_classes, random_structure_str)
+
+def cnn_mutation_random_func(candidates, super_net, search_space, num_classes):
+    tmp_idx = random.randint(0, len(candidates) - 1)
+    tmp_random_structure_str = candidates[tmp_idx]
+    random_structure_str = get_new_random_structure_str(super_net, search_space, num_classes, structure_str=tmp_random_structure_str, num_replaces=2)
+    return get_splitted_structure_str(super_net, num_classes, random_structure_str)
+
+def cnn_crossover_random_func(super_net, search_space, num_classes, plainnet_struct, no_reslink, no_BN, use_se):
+    random_structure_str = get_new_random_structure_str(super_net, search_space, num_classes, structure_str=str(super_net(num_classes=num_classes, plainnet_struct = plainnet_struct, no_create=True, no_reslink=no_reslink, no_BN=no_BN, use_se=use_se)), num_replaces=1)
+    return get_splitted_structure_str(super_net, num_classes, random_structure_str)
 
 def get_new_random_structure_str(super_net, search_space, num_classes, structure_str, num_replaces=1):
     the_net = super_net(num_classes, plainnet_struct=structure_str, no_create=True)

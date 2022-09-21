@@ -6,6 +6,7 @@ conda activate pytorch-1.10.0
 
 # launch denas for cnn-based supernet
 cd /home/vmagent/app/hydro.ai/DeNas
+sed -i '/max_epochs:/ s/:.*/: 1/' ../conf/denas/cv/aidk_denas_cnn.conf
 python -u search.py --domain cnn --conf ../conf/denas/cv/aidk_denas_cnn.conf
 cd /home/vmagent/app/hydro.ai
 

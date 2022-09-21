@@ -59,6 +59,8 @@ def main(params):
         super_net = TransformerASRSuper
         search_space = {'num_heads': cfg.SEARCH_SPACE.NUM_HEADS, 'mlp_ratio': cfg.SEARCH_SPACE.MLP_RATIO,
                         'embed_dim': cfg.SEARCH_SPACE.EMBED_DIM , 'depth': cfg.SEARCH_SPACE.DEPTH}
+    else:
+        raise RuntimeError(f"Domain {params.domain} is not supported")
 
     '''
     Unified Call for DE-NAS Search Engine

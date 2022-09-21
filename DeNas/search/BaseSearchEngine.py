@@ -1,10 +1,10 @@
 import logging
-from abc import ABC, abstractmethod
 import gc
 import numpy as np
+import cv.benchmark_network_latency as benchmark_network_latency
 
-from scores.compute_de_score import do_compute_nas_score
-import cv.benchmark_network_latency as benchmark_network_latency 
+from abc import ABC, abstractmethod
+from scores.compute_de_score import do_compute_nas_score 
 from cv.utils.cnn import cnn_is_legal, cnn_populate_random_func
 from cv.utils.vit import vit_is_legal, vit_populate_random_func
 from nlp.utils import LatencyPredictor, bert_is_legal, bert_populate_random_func, get_subconfig
@@ -84,6 +84,8 @@ class BaseSearchEngine(ABC):
             predictor = LatencyPredictor(feature_norm=self.params.feature_norm, lat_norm=self.params.lat_norm, feature_dim=self.params.feature_dim, hidden_dim=self.params.hidden_dim, ckpt_path=self.params.ckpt_path)
             predictor.load_ckpt()
             latency = predictor.predict_lat(sampled_config)
+        else:
+            raise RuntimeError(f"Domain {self.params.domain} is not supported")
         self.vis_dict[cand]['latency']= latency
         return self.vis_dict[cand]['latency']
 
@@ -92,13 +94,15 @@ class BaseSearchEngine(ABC):
     '''
     def populate_random_func(self):
         if self.params.domain == "cnn":
-            return cnn_populate_random_func(self.candidates, self.super_net, self.search_space, self.params.num_classes, self.params.plainnet_struct, self.params.no_reslink, self.params.no_BN, self.params.use_se)
+            return cnn_populate_random_func(self.super_net, self.search_space, self.params.num_classes, self.params.plainnet_struct, self.params.no_reslink, self.params.no_BN, self.params.use_se)
         elif self.params.domain == "vit":
             return vit_populate_random_func(self.search_space)
         elif self.params.domain == "bert":
             return bert_populate_random_func(self.search_space)
         elif self.params.domain == "asr":
             return asr_populate_random_func(self.search_space)
+        else:
+            raise RuntimeError(f"Domain {self.params.domain} is not supported")
 
     '''
     Compute nas score for sample structure
@@ -114,6 +118,8 @@ class BaseSearchEngine(ABC):
             model = self.super_net
         elif self.params.domain == "asr":
             model = self.super_net
+        else:
+            raise RuntimeError(f"Domain {self.params.domain} is not supported")
         nas_score = do_compute_nas_score(model_type = self.params.model_type, model=model, 
                                                         resolution=self.params.img_size,
                                                         batch_size=self.params.batch_size,
@@ -126,4 +132,3 @@ class BaseSearchEngine(ABC):
                                                         latency_weight=self.params.latency_weight)
         self.vis_dict[cand]['score'] = nas_score
         return nas_score
-
