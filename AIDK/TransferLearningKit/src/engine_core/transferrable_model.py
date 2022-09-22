@@ -72,9 +72,6 @@ class TransferrableModel(nn.Module):
         '''
         super(TransferrableModel, self).__init__()
         self.backbone = backbone
-        self.__dict__['backbone'] = backbone
-        if 'original' not in self.backbone.__dict__:
-            raise RuntimeError("Backbone must have original attribute.")
 
         self.adapter = adapter
         self.distiller = distiller
@@ -87,28 +84,6 @@ class TransferrableModel(nn.Module):
         if self.transfer_strategy == TransferStrategy.OnlyFinetuneStrategy:
             if not self.enable_target_training_label:
                 raise RuntimeError("Must enable target training label when only finetune.")
-
-
-    def __getattribute__(self, item):
-        ''' Change the action for training and evaluation. When training, use self. When evaluation, use self._backbone.
-        It is called when visit any property.
-
-        :param item:
-        :return:
-        '''
-        if item == '__dict__': # this is special
-            return object.__getattribute__(self, item)
-
-        attr_dict = object.__getattribute__(self, "__dict__")
-        is_eval = "training" in attr_dict and (not attr_dict["training"])
-        if is_eval: # eval mode
-            if item in ('train',): # from eval to train
-                instance = self
-            else:
-                instance = attr_dict['backbone'].__dict__['original'] # the original model
-        else: # train mode
-            instance = self
-        return object.__getattribute__(instance, item)
 
     def __str__(self):
         _str = 'TransferrableModel:transfer_strategy = %s, enable_target_training_label = %s\n'%(
@@ -422,7 +397,7 @@ def set_attribute(obj_name,obj,attr_name,attr):
     :return:
     '''
     if not hasattr(obj, attr_name):
-        obj.__dict__[attr_name] = attr
+        setattr(obj, attr_name, attr)
         logging.info("Set %s for %s"%(attr_name,obj_name))
     else:
         logging.info("Use %s.%s"%(obj_name,attr_name))
@@ -491,7 +466,6 @@ def _make_transferrable(model, loss,
     set_attribute("new_model", new_model, "loss", loss)
     set_attribute("new_model", new_model, "distiller_feature_size", distiller_feature_size)
     set_attribute("new_model", new_model, "adapter_feature_size", adapter_feature_size)
-    set_attribute("new_model", new_model, "original", model) # remember the orignal one
     ###################### set dataset ##################
     if transfer_strategy in  [TransferStrategy.OnlyDomainAdaptionStrategy,
                               TransferStrategy.FinetuneAndDomainAdaptionStrategy,

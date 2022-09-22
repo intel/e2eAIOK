@@ -265,7 +265,7 @@ def main(args):
     else:
         scheduler = optim.lr_scheduler.ExponentialLR(optimizer,gamma=0.99)
         trainer = Trainer(model, optimizer, scheduler,early_stopping, validate_metric_fn_map, 'acc', cfg.SOLVER.EPOCHS,
-                          tensorboard_writer, None,cfg.EXPERIMENT.LOG_INTERVAL_STEP, rank)
+                          tensorboard_writer, None,cfg.EXPERIMENT.LOG_INTERVAL_STEP, rank, is_transferrable=True)
         logging.info("trainer:%s" % trainer)
         ############ train and evaluate ###############
         seconds_stats(stats_map, "Training", True)

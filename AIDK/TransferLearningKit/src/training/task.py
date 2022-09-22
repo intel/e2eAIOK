@@ -32,6 +32,24 @@ def trace_handler(trace_file,p):
     logging.info("trace_output:%s"%p.key_averages().table(sort_by="cpu_time_total", row_limit=20))
     p.export_chrome_trace(trace_file + str(p.step_num) + ".json")
 
+
+def channels_last_collate(batch):
+    """Custom collate fn for channels_last.
+    Arguments:
+        batch: (tuple) A tuple of images and labels
+    Return:
+        A tuple containing:
+            1) (tensor) batch of images stacked on their 0 dim and to channels_last
+            2) (list of tensors) labels
+    """
+    data = [item[0] for item in batch]
+    target = [item[1] for item in batch]
+
+    data = torch.stack(data, 0).to(memory_format=torch.channels_last)
+    target = torch.LongTensor(target)
+    
+    return data, target
+
 class Task:
     ''' A whole training Task
 
@@ -105,35 +123,54 @@ class Task:
         num_workers = self._kwargs['data_num_workers']
         batch_size = self._kwargs['data_batch_size']
         data_drop_last = self._kwargs['data_drop_last']
+        enable_ipex = self._kwargs['enable_ipex']
 
         logging.info("train_dataset:" + str(train_dataset))
         logging.info("validate_dataset:" + str(validate_dataset))
         logging.info("test_dataset:" + str(test_dataset))
 
+        train_loader_kwargs = {
+            'dataset' : train_dataset,
+            'batch_size' : batch_size,
+            'shuffle' : True,
+            'num_workers' : num_workers,
+            'drop_last' : data_drop_last,
+        }
+
+        validate_loader_kwargs = {
+            'dataset' : validate_dataset,
+            'batch_size' : batch_size,
+            'shuffle' : True,
+            'num_workers' : num_workers,
+            'drop_last' : data_drop_last,
+        }
+
+        test_loader_kwargs = {
+            'dataset' : test_dataset,
+            'batch_size' : batch_size,
+            'shuffle' : True,
+            'num_workers' : num_workers,
+            'drop_last' : data_drop_last,
+        }
         if is_distributed:
-            train_loader = torch.utils.data.DataLoader(train_dataset,  # only split train dataset
-                                                       batch_size=batch_size, shuffle=False,
-                                                       # shuffle is conflict with sampler
-                                                       num_workers=num_workers, drop_last=data_drop_last,
-                                                       sampler=DistributedSampler(train_dataset))
-        else:
-            train_loader = torch.utils.data.DataLoader(train_dataset,  # only split train dataset
-                                                       batch_size=batch_size, shuffle=True,
-                                                       # shuffle is conflict with sampler
-                                                       num_workers=num_workers, drop_last=data_drop_last)
-        validate_loader = torch.utils.data.DataLoader(validate_dataset,
-                                                      batch_size=batch_size, shuffle=True,
-                                                      num_workers=num_workers, drop_last=data_drop_last)
+            train_loader_kwargs['shuffle'] = False # shuffle is conflict with sampler
+            train_loader_kwargs['sampler'] = DistributedSampler(train_dataset)
+        if enable_ipex:
+            train_loader_kwargs['collate_fn'] = channels_last_collate
+            validate_loader_kwargs['collate_fn'] = channels_last_collate
+            test_loader_kwargs['collate_fn'] = channels_last_collate
+
+
+        train_loader = torch.utils.data.DataLoader(**train_loader_kwargs)
+        validate_loader = torch.utils.data.DataLoader(**validate_loader_kwargs)
         if test_dataset is not None:
-            test_loader = torch.utils.data.DataLoader(test_dataset,
-                                                  batch_size=batch_size, shuffle=True,
-                                                  num_workers=num_workers, drop_last=data_drop_last)
+            test_loader = torch.utils.data.DataLoader(**test_loader_kwargs)
         else:
             test_loader = None
         self._train_loader = train_loader     # may be use by other component
         self._epoch_steps = len(train_loader) # may be use by other component
         logging.info("epoch_steps:%s" % self._epoch_steps)
-        return (train_loader, validate_loader, test_loader)
+        return train_loader, validate_loader, test_loader
     def _create_model(self):
         ''' create model
 
@@ -152,6 +189,7 @@ class Task:
         model = createBackbone(backbone_name, num_classes=num_classes)
         model.apply(initWeights) # init weight
         set_attribute("model", model, "loss", loss)
+        self._kwargs['backbone_model'] = model
 
         logging.info('backbone:%s' % model)
 
@@ -276,6 +314,7 @@ class Task:
         rank = self._kwargs['rank']
         is_distributed = self._kwargs['is_distributed']
         enable_ipex = self._kwargs['enable_ipex']
+        enable_transfer_learning = self._kwargs['enable_transfer_learning']
         model_saved_path = self._kwargs['model_saved_path']
         ######################### create components #########################
         (train_loader, validate_loader, test_loader) = self._create_dataloader()
@@ -284,14 +323,16 @@ class Task:
         if enable_ipex:
             model = model.to(memory_format = torch.channels_last)
             model, optimizer = ipex.optimize(model, optimizer=optimizer)
-            setattr(model.backbone, "loss", self._kwargs['model_loss'])
+            set_attribute("backbone",model.backbone, "loss", self._kwargs['model_loss'])
+        
         lr_scheduler = self._create_lr_scheduler()
         tensorboard_writer = self._create_tensorboard_writer()
         early_stopping = self._create_early_stopping()
         training_profiler, inference_profiler = self._create_profiler()
         trainer = Trainer(model, optimizer, lr_scheduler, early_stopping, validate_metric_fn_map,
                           earlystop_metric, training_epochs,
-                          tensorboard_writer,training_profiler, logging_interval_step,rank=rank)
+                          tensorboard_writer,training_profiler, logging_interval_step,rank=rank,
+                          is_transferrable=enable_transfer_learning)
         logging.info("trainer:%s" % trainer)
         evaluator = Evaluator(validate_metric_fn_map, tensorboard_writer,inference_profiler)
         logging.info("evaluator:%s" % evaluator)

@@ -7,7 +7,6 @@ import logging
 import torch
 import datetime
 import torch.nn
-from engine_core.transferrable_model import TransferrableModel
 from torch.nn.parallel import DistributedDataParallel
 import contextlib
 
@@ -52,7 +51,7 @@ def add_tensorboard_metric(tensorboard_writer,dataset_name,metric_values,cur_epo
     print(out_str)
     logging.info(out_str)
 def trainEpoch(model, metric_fn_map, optimizer, train_dataloader,
-               tensorboard_writer,profiler,cur_epoch,epoch_steps,logging_interval,rank):
+               tensorboard_writer,profiler,cur_epoch,epoch_steps,logging_interval,rank,is_transferrable):
     ''' train one epoch
 
     :param model: the training model
@@ -65,20 +64,20 @@ def trainEpoch(model, metric_fn_map, optimizer, train_dataloader,
     :param cur_epoch: current epoch
     :param logging_interval: logging interval durring training
     :param rank: rank for distributed training (-1 for non-distributed training)
+    :param is_transferrable: is model transferrable
     :return:
     '''
     model.train()  # set training flag
     context = profiler if profiler is not None else contextlib.nullcontext()
+    unwrapped_model = unwrap_DDP(model)
     with context:
         for (cur_step,(data, label)) in enumerate(train_dataloader):
             optimizer.zero_grad()
             output = model(data)
-            loss_value = unwrap_DDP(model).loss(output, label)
+            loss_value = unwrapped_model.loss(output, label)
             loss_value.backward()
-
             if cur_step % logging_interval == 0:
-                unwrapped_model = unwrap_DDP(model)
-                if isinstance(unwrapped_model,TransferrableModel): # for DDP
+                if is_transferrable: 
                     metric_values = unwrapped_model.get_training_metrics(output, label, loss_value, metric_fn_map)
                 else:
                     metric_values = {"loss": loss_value}
@@ -92,7 +91,7 @@ def trainEpoch(model, metric_fn_map, optimizer, train_dataloader,
                 context.step()
 
 def evaluateEpoch(model, metric_fn_map, dataloader,tensorboard_writer,profiler,
-                  cur_epoch,epoch_steps,test_flag,rank):
+                  cur_epoch,epoch_steps,test_flag,rank,original_output_position):
     ''' evaluate epoch
 
     :param model: the evaluated model
@@ -104,6 +103,7 @@ def evaluateEpoch(model, metric_fn_map, dataloader,tensorboard_writer,profiler,
     :param epoch_steps: steps per step
     :param test_flag : whether is test or validation
     :param rank: rank for distributed training (-1 for non-distributed training)
+    :param original_output_position: original output position in a tuple for TransferrableModel. If none, then output is the original one.
     :return: metric_value_maps
     '''
     datasetName = 'Test' if test_flag else 'Validation'
@@ -118,6 +118,9 @@ def evaluateEpoch(model, metric_fn_map, dataloader,tensorboard_writer,profiler,
             for data, label in dataloader:
                 # data, target = data.cuda(), target.cuda()
                 output = model(data)
+                if original_output_position is not None:
+                    output = output[original_output_position]
+                    
                 batch_size = data.size(0)
                 sample_num += batch_size
                 loss_value += model.loss(output, label).item() * batch_size
@@ -142,7 +145,7 @@ class Trainer:
 
     '''
     def __init__(self, model, optimizer, scheduler,early_stopping, validate_metric_fn_map,early_stop_metric,training_epochs,
-                 tensorboard_writer,training_profiler,logging_interval,rank=-1):
+                 tensorboard_writer,training_profiler,logging_interval,rank=-1,is_transferrable=False):
         ''' Init method
 
         :param model: the trained model
@@ -156,6 +159,7 @@ class Trainer:
         :param training_profiler : training profiler
         :param logging_interval: training logging interval
         :param rank: rank for distributed training (-1 for non-distributed training)
+        :param is_transferrable: is transferrable
         '''
         self._model = model
         self._optimizer = optimizer
@@ -168,6 +172,7 @@ class Trainer:
         self._training_profiler = training_profiler
         self._logging_interval = logging_interval
         self._rank = rank
+        self._is_transferrable = is_transferrable
 
         if early_stop_metric not in validate_metric_fn_map:
             raise RuntimeError("early stop metric [%s] not in validate_metric_fn_map keys [%s]"%(
@@ -197,26 +202,35 @@ class Trainer:
         :param model_path: model path
         :return:
         '''
+        if self._is_transferrable:
+            backbone = unwrap_DDP(self._model).backbone
+            original_output_position = 0
+        else:
+            backbone = unwrap_DDP(self._model)
+            original_output_position = None
+
         for epoch in range(1, self._training_epochs + 1):
             trainEpoch(self._model, self._validate_metric_fn_map, self._optimizer, train_dataloader,
                        self._tensorboard_writer, self._training_profiler if epoch == 1 else None,
-                       epoch,epoch_steps,self._logging_interval,self._rank)
-            metrics_map = evaluateEpoch(unwrap_DDP(self._model), self._validate_metric_fn_map, valid_dataloader,
+                       epoch,epoch_steps,self._logging_interval,self._rank,self._is_transferrable)
+
+            metrics_map = evaluateEpoch(backbone, self._validate_metric_fn_map, valid_dataloader,
                                         self._tensorboard_writer,None,cur_epoch=epoch,
-                                        epoch_steps=epoch_steps,test_flag=False,rank=self._rank)
+                                        epoch_steps=epoch_steps,test_flag=False,rank=self._rank,
+                                        original_output_position=original_output_position)
             self._tensorboard_writer.flush()
             self._scheduler.step()
             print("epoch [%s] lr: %s" % (epoch, self._scheduler.get_last_lr()))
             if self._early_stopping is not None:
-                self._early_stopping(metrics_map[self._early_stop_metric], self._model.state_dict())
+                self._early_stopping(metrics_map[self._early_stop_metric], backbone.state_dict())
                 if self._early_stopping.early_stop:
                     logging.warning("Early stop after epoch:%s, the best acc is %s" % (epoch,
                                            self._early_stopping.optimal_metric))
                     break
         if self._early_stopping is not None and self._early_stopping.optimal_model is not None:
-            self._model.load_state_dict(self._early_stopping.optimal_model)
-
-        torch.save(unwrap_DDP(self._model).state_dict(), model_path)
+            torch.save(self._early_stopping.optimal_model, model_path)
+        else:
+            torch.save(backbone.state_dict(), model_path)
 
 class Evaluator:
     ''' The Evaluator
@@ -241,7 +255,7 @@ class Evaluator:
         :return: metric_value_maps
         '''
         return evaluateEpoch(model, self._metric_fn_map, dataloader,self._tensorboard_writer,self._profiler,
-                             cur_epoch=0,epoch_steps=0,test_flag=True,rank=-1)
+                             cur_epoch=0,epoch_steps=0,test_flag=True,rank=-1,original_output_position=None)
     def __str__(self):
         _str = "Trainer: metric_fn_map:%s\n" % self._metric_fn_map
         _str += "\ttensorboard_writer:%s\n" % self._tensorboard_writer

@@ -112,16 +112,3 @@ class Timer:
         _str = "Total seconds:%s" % (total_seconds)
         print(_str)
         logging.info(_str)
-
-class ToChannelsLast:
-    ''' channels_last transformation
-    '''
-    def __call__(self, x):
-        if x.ndim == 3:
-            x = x.unsqueeze(0)
-        elif x.ndim !=4:
-            raise RuntimeError
-        return x.to(memory_format=torch.channels_last)
-
-    def __repr__(self):
-        return self.__class__.__name__ + '()'

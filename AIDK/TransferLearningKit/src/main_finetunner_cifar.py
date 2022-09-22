@@ -32,7 +32,7 @@ def main(rank, world_size, enable_transfer_learning):
     MODEL_DIR = "../model"      # to save trained model
     DATASET_DIR = "../datasets" # where dataset located
     TENSORBOARD_DIR = "../tensorboard_log" # to save tensorboard log
-    enable_ipex = False          # intel-extension-for-pytorch
+    enable_ipex = True          # intel-extension-for-pytorch
  
     if is_distributed:
         dist.init_process_group("gloo", rank=rank, world_size=world_size, timeout=datetime.timedelta(seconds=300))

@@ -86,17 +86,6 @@ class TestExtractDistillerAdapterFeatures:
                 extract_distiller_adapter_features(self.model, "x", layer_name)
             assert e.value.args[0].startswith("Can not find layer name")
 
-def test_set_attribute():
-    '''
-
-    :return:
-    '''
-    model = torchvision.models.resnet18(pretrained=False)
-    with pytest.raises(AttributeError) as e:
-        _tmp = model.original
-    assert e.value.args[0] == "'ResNet' object has no attribute 'original'"
-    set_attribute("model",model,"original","this is for test")
-    assert model.original == "this is for test"
 
 class TestMakeTransferrable:
     ''' test _make_transferrable
@@ -156,7 +145,6 @@ class TestMakeTransferrable:
         assert tensor_near_equal(new_model.backbone.loss(tensor1, tensor0), kwargs['loss'](tensor1, tensor0))
         assert new_model.backbone.distiller_feature_size is kwargs['distiller_feature_size']
         assert new_model.backbone.adapter_feature_size is kwargs['adapter_feature_size']
-        assert new_model.backbone.original is kwargs['model']
         assert new_model.adapter is kwargs['adapter']
         assert new_model.distiller is kwargs['distiller']
         assert type(kwargs['training_dataloader'].dataset) is ComposedDataset
@@ -447,7 +435,6 @@ class TestTransferrableModel:
         :return:
         '''
         model = torchvision.models.resnet18(pretrained=False)
-        model.__dict__["original"] = torchvision.models.resnet18(pretrained=False)
         finetunner = BasicFinetunner( torchvision.models.resnet18(pretrained=True),-1,True)
         adapter = DANNAdapter(512, 8, 0.0, 5.0, 1.0, 100)
         distiller = BasicDistiller(torchvision.models.resnet18(pretrained=True), True)
@@ -461,19 +448,6 @@ class TestTransferrableModel:
                 else:
                     TransferrableModel(model, adapter, distiller, transfer_strategy,enable_target_training_label) # valid
 
-    def test_create_invalid_backbone(self):
-        ''' create TransferrableModel with invalid backbone
-
-        :return:
-        '''
-        model = torchvision.models.resnet18(pretrained=False)
-        finetunner = BasicFinetunner(torchvision.models.resnet18(pretrained=True),-1,True)
-        adapter = DANNAdapter(512, 8, 0.0, 5.0, 1.0, 100)
-        distiller = BasicDistiller(torchvision.models.resnet18(pretrained=True), True)
-        with pytest.raises(RuntimeError) as e:
-            TransferrableModel(model, adapter, distiller, TransferStrategy.OnlyFinetuneStrategy,True)
-        assert e.value.args[0] == "Backbone must have original attribute."
-
     def test_getattribute_in_train_mode(self):
         ''' test __getattribute__ in training mode
 
@@ -484,29 +458,8 @@ class TestTransferrableModel:
         model.__dict__  # no exception
         ############### training mode ##########
         model.train()
-        assert model.backbone.original is kwargs['model']
         assert type(model(self.input)) is TransferrableModelOutput
         assert tensor_near_equal(model(self.input).backbone_output,kwargs['model'](self.input))
-        assert type(model.loss(model(self.input),model(self.input))) is TransferrableModelLoss
-
-    def test_getattribute_in_eval_mode(self):
-        ''' test __getattribute__ in eval mode
-
-        :return:
-        '''
-        kwargs = self._create_kwargs()
-        model = _make_transferrable(**kwargs)
-        model.__dict__  # no exception
-        ############## eval mode ############
-        model.eval()
-        assert type(model(self.input)) is torch.Tensor
-        assert tensor_near_equal(model(self.input),kwargs['model'](self.input))
-        assert type(model.loss(model(self.input),model(self.input))) is torch.Tensor
-        # ############### train mode again ##########
-        model.train()
-        assert model.backbone.original is kwargs['model']
-        assert type(model(self.input)) is TransferrableModelOutput
-        assert tensor_near_equal(model(self.input).backbone_output, kwargs['model'](self.input))
         assert type(model.loss(model(self.input),model(self.input))) is TransferrableModelLoss
 
     def test_finetune_forward(self):
