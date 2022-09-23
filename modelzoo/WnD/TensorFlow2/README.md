@@ -22,8 +22,12 @@ Google's [Wide & Deep Learning for Recommender Systems](https://arxiv.org/abs/16
 
 ```
 cd Dockerfile-ubuntu18.04/
+# [option 1]: No proxy required
 docker build -t e2eaiok-tensorflow . -f DockerfileTensorflow
-docker run -it --privileged --network host --device=/dev/dri -v $data_path:/home/vmagent/app/dataset/outbrain -v $e2eaiok_path:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-tensorflow /bin/bash
+# [option 2]: Proxy required
+docker build -t e2eaiok-tensorflow . -f DockerfileTensorflow --build-arg http_proxy --build-arg https_proxy
+docker run -itd --name wnd --privileged --network host --device=/dev/dri -v $data_path:/home/vmagent/app/dataset/outbrain -v $e2eaiok_path:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-tensorflow /bin/bash
+docker exec -it wnd bash
 ```
 
 ## Dataset
@@ -48,8 +52,54 @@ bash scripts/spark_preproc.sh
 
 ### Training
 
+Edit scripts/train.sh
+```
+source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force
+conda activate tensorflow
+
+export OMP_NUM_THREADS=30
+
+time horovodrun -np 8 -H ${node1}:2,${node2}:2,${node3}:2,${node4}:2 --network-interface ${interface} \
+/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python -u main.py \
+  --train_data_pattern '/home/vmagent/app/dataset/outbrain/train/part*' \
+  --eval_data_pattern '/home/vmagent/app/dataset/outbrain/valid/part*' \
+  --model_dir ./checkpoints --results_dir ./ \
+  --dataset_meta_file data/outbrain/outbrain_meta.yaml \
+  --global_batch_size 524288 \
+  --eval_batch_size 524288 \
+  --num_epochs 20 \
+  --deep_learning_rate 0.011150920451008404 \
+  --linear_learning_rate 1 \
+  --deep_hidden_units 128 128 64 \
+  --metric MAP \
+  --deep_warmup_epochs 3 --deep_dropout 0.21076275738334013 \
+  --metric_threshold 0.6553
+```
 `bash scripts/train.sh`
 
 ### Inference
 
+Edit scripts/inference.sh
+```
+source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force
+conda activate tensorflow
+
+export OMP_NUM_THREADS=30
+
+time horovodrun -np 8 -H ${node1}:2,${node2}:2,${node3}:2,${node4}:2 --network-interface ${interface} \
+/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python -u main.py \
+  --train_data_pattern '/home/vmagent/app/dataset/outbrain/train/part*' \
+  --eval_data_pattern '/home/vmagent/app/dataset/outbrain/valid/part*' \
+  --model_dir ./checkpoints \
+  --dataset_meta_file data/outbrain/outbrain_meta.yaml \
+  --deep_learning_rate 0.00048 \
+  --linear_learning_rate 0.8 \
+  --eval_batch_size 1048576 \
+  --evaluate \
+  --use_checkpoint \
+  --benchmark \
+  --benchmark_warmup_steps 50 \
+  --benchmark_steps 100 \
+  --metric MAP --deep_hidden_units 128 128 64
+```
 `bash scripts/inference.sh`
