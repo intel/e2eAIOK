@@ -109,6 +109,7 @@ def init_bert_parser():
     parser.add_argument("--data_set", type=str, default="SQuADv1.1")
     parser.add_argument("--model_dir", type=str, default=None)
     parser.add_argument("--output_dir", type=str, default=None)
+    parser.add_argument("--f1_threshold", type=float, default=None, help='Enable early stop using f1 threshold')
 
     # distributed training parameters
     parser.add_argument("--dist-backend", type=str, default="gloo")

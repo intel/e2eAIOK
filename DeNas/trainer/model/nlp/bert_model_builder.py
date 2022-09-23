@@ -41,8 +41,6 @@ class BertModelBuilder(BaseModelBuilder):
         subbert_config = self.decode_arch()
         model.module.set_sample_config(subbert_config) if hasattr(model, 'module') \
             else model.set_sample_config(subbert_config)
-        size = 0
-        for n, p in model.named_parameters():
-            size += p.nelement()
+        size = model.module.calc_sampled_param_num()
         self.logger.info('Total parameters: {}'.format(size))
         return model, subbert_config

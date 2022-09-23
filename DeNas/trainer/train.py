@@ -1,6 +1,8 @@
 import sys
 import argparse
-
+import numpy as np
+import torch
+import random
 from utils import update_config
 from model.cv.vit_trainer import ViTTrainer
 from model.nlp.bert_trainer import BertTrainer
@@ -10,6 +12,7 @@ def parse_args(args):
     parser = argparse.ArgumentParser('Best module training............')
     parser.add_argument('--domain', type=str, default=None, choices=['cnn','vit','bert','asr'], help='DE-NAS model domain')
     parser.add_argument('--conf', type=str, default=None, help='DE-NAS training conf file')
+    parser.add_argument('--random_seed', type=int, default=12345, help='Random seed for consistent training')
 
     train_args, model_args = parser.parse_known_args(args)
     if train_args.conf is not None:
@@ -21,6 +24,11 @@ def main(train_args, model_args):
     :param train_args: the overall arguments
     :param model_args: specific model arguments
     """
+    if train_args.random_seed:
+        random.seed(train_args.random_seed)
+        np.random.seed(train_args.random_seed)
+        torch.manual_seed(train_args.random_seed)
+        
     if train_args.domain == 'vit':
         vit_trainer = ViTTrainer(model_args)
         vit_trainer.fit()

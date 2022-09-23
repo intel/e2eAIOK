@@ -1,4 +1,5 @@
 # coding=utf-8
+# Copyright (c) 2022, Intel. and its affiliates.
 # 2021.12.30-Changed for TinyBERT general distillation
 #      Huawei Technologies Co., Ltd. <yinyichun@huawei.com>
 # Copyright 2021 Huawei Technologies Co., Ltd.

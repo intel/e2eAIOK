@@ -395,7 +395,7 @@ class SuperBertModel(BertPreTrainedModel):
                                                                subbert_config, kd=False, out_index=in_out_index)
             sequence_output = all_encoder_layers[-1]
             pooled_output = self.pooler(sequence_output, subbert_config['sample_hidden_size'])
-            return sequence_output, pooled_output
+            return all_encoder_layers[-1], pooled_output
 
 
 class SuperTinyBertForPreTraining(BertPreTrainedModel):

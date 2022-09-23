@@ -27,7 +27,7 @@ class BertTrainer(BaseTrainer):
         self.qa_tasks = ["squad1"]
         self.default_params = {
             "squad1": {"num_train_epochs": 4, "max_seq_length": 384,
-            "learning_rate": 3e-5, "eval_step": 50, "train_batch_size": 16},
+            "learning_rate": 3e-5, "eval_step": 200, "train_batch_size": 12},
         }
         ext_dist.init_distributed(backend=self.args.dist_backend)
 
@@ -64,7 +64,11 @@ class BertTrainer(BaseTrainer):
                 self.global_step += 1
 
             if (self.global_step + 1) % self.args.eval_step == 0:
-                self.evaluate(model, tr_loss, tr_cls_loss, step)
+                res_f1 = self.evaluate(model, tr_loss, tr_cls_loss, step)
+                if self.args.f1_threshold and res_f1 >= self.args.f1_threshold:
+                    self.logger.info("Early stop at epoch {} iter {} with F1 {}".format(self.epoch_, self.global_step, res_f1))
+                    self.is_stop = True
+                    break
 
     def evaluate(self, model: torch.nn.Module, tr_loss, tr_cls_loss, step):
         self.logger.info("***** Running evaluation *****")
@@ -100,6 +104,7 @@ class BertTrainer(BaseTrainer):
             output_model_file = os.path.join(self.output_dir, model_name)
             torch.save(model_to_save.state_dict(), output_model_file)
             self.tokenizer.save_vocabulary(self.output_dir)
+        return result['f1']
 
 
     def fit(self):
@@ -151,6 +156,7 @@ class BertTrainer(BaseTrainer):
         print("  Num steps = %d" % (num_train_optimization_steps))
 
         # Train and evaluate
+        self.is_stop = False
         self.global_step = 0
         self.best_dev_acc = 0.0
         self.best_dev_acc_str = ''
@@ -160,6 +166,8 @@ class BertTrainer(BaseTrainer):
 
         start_time = time.time()
         for epoch_ in trange(int(self.args.num_train_epochs), desc="Epoch"):
+            if self.is_stop:
+                break
             self.epoch_ = epoch_
             self.train_one_epoch(model, optimizer)
         end_time = time.time()
