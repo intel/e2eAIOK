@@ -11,10 +11,10 @@ from torch import nn
 import torch.nn.functional as F
 import numpy as np
 import uuid
-from utils import global_utils
+from PlainNet import global_utils
 
 import PlainNet
-from utils.net_struct_utils import _get_right_parentheses_index_, create_netblock_list_from_str
+from PlainNet.net_struct_utils import _get_right_parentheses_index_, create_netblock_list_from_str
 from PlainNet import basic_blocks
 
 class PlainNetSuperBlockClass(basic_blocks.PlainNetBasicBlockClass):

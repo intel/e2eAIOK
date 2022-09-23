@@ -2,13 +2,12 @@
 Copyright (C) 2010-2021 Alibaba Group Holding Limited.
 '''
 
-
 import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import torch, argparse
 from torch import nn
-from utils.net_struct_utils import _create_netblock_list_from_str_
+from PlainNet.net_struct_utils import _create_netblock_list_from_str_
 
 _all_netblocks_dict_ = {}
 

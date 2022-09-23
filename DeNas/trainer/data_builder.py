@@ -18,7 +18,7 @@ class DataBuilder():
     '''
     def get_data(self, ext_dist):
         args = self.args
-        if args.data_set in ["CIFAR10","CIFAR100","IMGNET"]:
+        if args.data_set in ["CIFAR10","CIFAR100"]:
             dataset_train, _ = cv_build_datasets.build_dataset(is_train=True, args=args)
             dataset_val, _ = cv_build_datasets.build_dataset(is_train=False, args=args)
         elif args.data_set in ["SQuADv1.1"]:
@@ -61,7 +61,7 @@ class DataBuilder():
             sampler=sampler_val, num_workers=args.num_workers,
             pin_memory=args.pin_mem, drop_last=False
         )
-        if args.data_set in ["CIFAR10","CIFAR100","IMGNET"]:
+        if args.data_set in ["CIFAR10","CIFAR100"]:
             return data_loader_train, data_loader_val
         elif args.data_set in ["SQuADv1.1"]:
             return data_loader_train, data_loader_val, train_examples, val_examples, val_dataset, val_features, tokenizer

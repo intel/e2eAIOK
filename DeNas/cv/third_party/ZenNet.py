@@ -5,12 +5,13 @@ Copyright (C) 2010-2021 Alibaba Group Holding Limited.
 import os, sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+
 import numpy as np
 import torch, argparse
 from torch import nn
 import torch.nn.functional as F
 import PlainNet
-from utils import global_utils
+from PlainNet import global_utils
 from PlainNet import basic_blocks, super_blocks, SuperResKXKX, SuperResK1KXK1, SuperResIDWEXKX
 import itertools
 

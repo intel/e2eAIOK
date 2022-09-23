@@ -13,7 +13,7 @@ import numpy as np
 import uuid
 
 import PlainNet
-from utils.net_struct_utils import _get_right_parentheses_index_, _create_netblock_list_from_str_
+from PlainNet.net_struct_utils import _get_right_parentheses_index_, _create_netblock_list_from_str_
 
 class PlainNetBasicBlockClass(nn.Module):
     def __init__(self, in_channels=None, out_channels=None, stride=1, no_create=False, block_name=None, **kwargs):

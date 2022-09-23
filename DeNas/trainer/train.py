@@ -5,6 +5,7 @@ import torch
 import random
 from utils import update_config
 from model.cv.vit_trainer import ViTTrainer
+from model.cv.cnn_trainer import CNNTrainer
 from model.nlp.bert_trainer import BertTrainer
 from model.asr.asr_trainer import ASRTrainer
 
@@ -38,6 +39,9 @@ def main(train_args, model_args):
     elif train_args.domain == 'asr':
         trainer = ASRTrainer(model_args)
         trainer.fit()
+    elif train_args.domain == 'cnn':
+        cnn_trainer = CNNTrainer(model_args)
+        cnn_trainer.fit()
     else:
         pass
 

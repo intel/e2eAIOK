@@ -8,10 +8,10 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import uuid
 
 import PlainNet
-from utils.net_struct_utils import _get_right_parentheses_index_, create_netblock_list_from_str
+from PlainNet.net_struct_utils import _get_right_parentheses_index_, create_netblock_list_from_str
 from PlainNet.super_blocks import PlainNetSuperBlockClass
 from torch import nn
-from utils import global_utils
+from PlainNet import global_utils
 
 
 class SuperResK1KXK1(PlainNetSuperBlockClass):
