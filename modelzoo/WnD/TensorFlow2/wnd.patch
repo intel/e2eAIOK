@@ -2423,10 +2423,10 @@ index 0000000..fcd3d17
 \ No newline at end of file
 diff --git a/modelzoo/WnD/TensorFlow2/data/outbrain/spark/preproc.py b/modelzoo/WnD/TensorFlow2/data/outbrain/spark/preproc.py
 new file mode 100644
-index 0000000..0baac6a
+index 0000000..50ebf0c
 --- /dev/null
 +++ b/modelzoo/WnD/TensorFlow2/data/outbrain/spark/preproc.py
-@@ -0,0 +1,840 @@
+@@ -0,0 +1,841 @@
 +from pyspark.context import SparkContext, SparkConf
 +from pyspark.sql.functions import col, udf
 +from pyspark.sql.session import SparkSession
@@ -2479,7 +2479,7 @@ index 0000000..0baac6a
 +TENSORFLOW_HADOOP = "data/outbrain/spark/data/tensorflow-hadoop-1.5.0.jar"
 +
 +# set spark config according to test environment
-+conf = SparkConf().setMaster(args.spark_master).set('spark.executor.memory', '40g').set('spark.driver.memory', '50g').set('spark.executor.cores', '8')
++conf = SparkConf().setMaster(args.spark_master).set('spark.executor.memory', '60g').set('spark.driver.memory', '50g').set('spark.executor.cores', '8')
 +conf.set("spark.jars", TENSORFLOW_HADOOP)
 +conf.set("spark.sql.files.maxPartitionBytes", 805306368)
 +conf.set("spark.memory.offHeap.enabled", True)
@@ -2488,6 +2488,7 @@ index 0000000..0baac6a
 +conf.set("spark.sql.adaptive.enabled", True)
 +conf.set("spark.sql.adaptive.coalescePartitions.enabled", True)
 +conf.set("spark.sql.adaptive.skewJoin.enabled", True)
++conf.set("spark.sql.parquet.int96RebaseModeInWrite", "CORRECTED")
 +
 +sc = SparkContext(conf=conf)
 +spark = SparkSession(sc)
