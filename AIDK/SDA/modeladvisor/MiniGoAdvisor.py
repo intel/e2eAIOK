@@ -50,7 +50,7 @@ class MiniGoAdvisor(BaseModelAdvisor):
         config['project'] = self.params['model_parameter']['project']
         config['experiment'] = self.params['model_parameter']['experiment']
         parameters = [
-        {'name':'train_batch_size','grid':[512,1024,2048,4196,8192],'type':'int'}
+        {'name':'train_batch_size','grid':[512,1024,2048,4096,8192],'type':'int'}
         ]
         config['parameters'] = parameters
         config['metrics'] = [{
