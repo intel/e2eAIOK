@@ -21,6 +21,7 @@ from torch.distributed.optim.zero_redundancy_optimizer import ZeroRedundancyOpti
 from torch.distributed.algorithms.join import Join
 from torch.profiler import profile, ProfilerActivity
 import intel_extension_for_pytorch as ipex
+import os
 
 def trace_handler(trace_file,p):
     ''' profile trace handler
@@ -86,6 +87,7 @@ class Task:
 
         ############## optimizer ############
         # optimizer_learning_rate : learning rate
+        # optimizer_finetune_learning_rate : finetuned layer learning rate
         # optimizer_weight_decay : weight decay
         # optimizer_momentum : momentum
         ############### lr_scheduler ##########
@@ -200,7 +202,7 @@ class Task:
             model = make_transferrable_with_finetune(model, loss, finetunner=finetunner)
             logging.info('finetunner:%s' % finetunner)
             logging.info('transferrable model:%s' % model)
-
+            self._kwargs['finetunner_finetuned_state_keys'] = finetunner.finetuned_state_keys
 
         if is_distributed:
             logging.info("training with DistributedDataParallel")
@@ -214,17 +216,30 @@ class Task:
         :return: an optimizer
         '''
         is_distributed = self._kwargs['is_distributed']
+        enable_transfer_learning = self._kwargs['enable_transfer_learning']
         learning_rate = self._kwargs['optimizer_learning_rate']
         weight_decay = self._kwargs['optimizer_weight_decay']
         momentum = self._kwargs['optimizer_momentum']
-
+        if enable_transfer_learning:
+            finetuned_state_keys = self._kwargs['finetunner_finetuned_state_keys']
+            finetuner_learning_rate = self._kwargs['optimizer_finetune_learning_rate']
+            finetuner_params = {'params':[p for (name, p) in self._model.named_parameters() if p.requires_grad and name in finetuned_state_keys],
+                                'lr': finetuner_learning_rate}
+            remain_params = {'params':[p for (name, p) in self._model.named_parameters() if p.requires_grad and name not in finetuned_state_keys],
+                                'lr': learning_rate}
+            logging.info("[%s] params set finetuner learning rate[%s]" % (len(finetuner_params['params']), finetuner_learning_rate))
+            logging.info("[%s] params set common learning rate [%s]" % (len(remain_params['params']), learning_rate))
+            parameters = [finetuner_params,remain_params]
+        else:
+            remain_params = {'params': [p for p in self._model.parameters() if p.requires_grad],
+                             'lr': learning_rate}
+            logging.info("[%s] params set common learning rate [%s]" % (len(remain_params), learning_rate))
+            parameters = [remain_params]
         if is_distributed:
             logging.info("training with DistributedDataParallel")
-            optimizer = ZeRO(filter(lambda p: p.requires_grad, self._model.parameters()), optim.SGD,
-                             lr=learning_rate, weight_decay=weight_decay,momentum=momentum)
+            optimizer = ZeRO(parameters, optim.SGD,weight_decay=weight_decay,momentum=momentum)
         else:
-            optimizer = optim.SGD(filter(lambda p: p.requires_grad, self._model.parameters()),
-                                  lr=learning_rate, weight_decay=weight_decay,momentum=momentum)
+            optimizer = optim.SGD(parameters,lr=learning_rate, weight_decay=weight_decay,momentum=momentum)
         logging.info("optimizer:%s"%optimizer)
         self._optimizer = optimizer # may be use by other component
         return optimizer
@@ -255,10 +270,11 @@ class Task:
         if tolerance_epoch <= 0:
             return None
 
+        model_saved_path = self._kwargs['model_saved_path']
         delta = self._kwargs['earlystop_delta']
         is_max = self._kwargs['earlystop_is_max']
         limitation = self._kwargs['earlystop_limitation']
-        early_stopping = EarlyStopping(tolerance_epoch=tolerance_epoch, delta=delta, is_max=is_max, limitation=limitation)
+        early_stopping = EarlyStopping(model_path=model_saved_path,tolerance_epoch=tolerance_epoch, delta=delta, is_max=is_max, limitation=limitation)
         logging.info('early_stopping :%s' % early_stopping)
         return early_stopping
     def _create_profiler(self):
@@ -300,10 +316,19 @@ class Task:
         num_classes = self._kwargs['model_num_classes']
         loss = self._kwargs['model_loss']
         model_saved_path = self._kwargs['model_saved_path']
+        candidate_model_saved_path = "%s_epoch_%s"%(model_saved_path,self._kwargs['training_epochs'])
         backbone_name = self._kwargs['model_backbone_name']
 
         trained_model = createBackbone(backbone_name, num_classes=num_classes)
-        trained_model.load_state_dict(torch.load(model_saved_path))
+        if os.path.exists(model_saved_path):
+            logging.info("load the best trained model")
+            trained_model.load_state_dict(torch.load(model_saved_path),strict=True)
+        elif os.path.exists(candidate_model_saved_path):
+            logging.info("load the latest trained model")
+            trained_model.load_state_dict(torch.load(candidate_model_saved_path), strict=True)
+        else:
+            raise RuntimeError("Can not find [%s] or [%s]"%(model_saved_path,candidate_model_saved_path))
+
         set_attribute("trained_model", trained_model, "loss",loss)
         return trained_model
     def run(self):

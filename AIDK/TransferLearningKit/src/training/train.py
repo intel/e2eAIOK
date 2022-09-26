@@ -222,15 +222,14 @@ class Trainer:
             self._scheduler.step()
             print("epoch [%s] lr: %s" % (epoch, self._scheduler.get_last_lr()))
             if self._early_stopping is not None:
-                self._early_stopping(metrics_map[self._early_stop_metric], backbone.state_dict())
+                self._early_stopping(metrics_map[self._early_stop_metric], backbone.state_dict(), epoch)
                 if self._early_stopping.early_stop:
                     logging.warning("Early stop after epoch:%s, the best acc is %s" % (epoch,
                                            self._early_stopping.optimal_metric))
                     break
-        if self._early_stopping is not None and self._early_stopping.optimal_model is not None:
-            torch.save(self._early_stopping.optimal_model, model_path)
-        else:
-            torch.save(backbone.state_dict(), model_path)
+            else:
+                torch.save(backbone.state_dict(), "%s_epoch_%s"%(model_path,epoch))
+            
 
 class Evaluator:
     ''' The Evaluator

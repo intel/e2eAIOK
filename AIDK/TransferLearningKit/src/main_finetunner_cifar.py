@@ -55,17 +55,21 @@ def main(rank, world_size, enable_transfer_learning):
     ##################### parameters ##############
     transform_train = torchvision.transforms.Compose([
         torchvision.transforms.RandomCrop(32, padding=4),
-        torchvision.transforms.Resize(224),
+        torchvision.transforms.Resize(112),
         torchvision.transforms.RandomHorizontalFlip(),
         torchvision.transforms.ToTensor(),
-        torchvision.transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),]
-    )
+        #torchvision.transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)), #CIFAR10
+        torchvision.transforms.Normalize((0.5070751592371323, 0.48654887331495095, 0.4409178433670343),
+                                         (0.2673342858792401, 0.2564384629170883, 0.27615047132568404)), #CIFAR100
+    ])
 
     transform_test = torchvision.transforms.Compose([
-        torchvision.transforms.Resize(224),
+        torchvision.transforms.Resize(112),
         torchvision.transforms.ToTensor(),
-        torchvision.transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),]
-    )
+        #torchvision.transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)), #CIFAR10
+        torchvision.transforms.Normalize((0.5070751592371323, 0.48654887331495095, 0.4409178433670343),
+                                         (0.2673342858792401, 0.2564384629170883, 0.27615047132568404)), #CIFAR100
+    ])
 
     train_dataset = torchvision.datasets.CIFAR10(root=DATASET_DIR, train=True,
                                                      download=False, transform=transform_train)
@@ -85,7 +89,7 @@ def main(rank, world_size, enable_transfer_learning):
         ############### dataset #############
         'data_train_dataset' : train_dataset,
         'data_validate_dataset': test_dataset,
-        'data_test_dataset': None,
+        'data_test_dataset': test_dataset,
         'data_num_workers' : 1, # 0 means that the data will be loaded in the main process
         'data_batch_size' : 128, # larger is better
         'data_drop_last' : False,
@@ -98,7 +102,8 @@ def main(rank, world_size, enable_transfer_learning):
         'finetune_frozen' : False,
         'finetune_pretrained_num_classes' : 11221,
         ############## optimizer ############
-        'optimizer_learning_rate' : 0.01,
+        'optimizer_learning_rate' : 0.02, # classifier
+        'optimizer_finetune_learning_rate' : 0.01, # finetunning
         'optimizer_weight_decay' : 5e-4, # L2 penalty
         'optimizer_momentum': 0.9,
         ############### lr_scheduler ##########

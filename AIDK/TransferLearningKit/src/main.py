@@ -240,7 +240,7 @@ def main(args):
     logging.info('tensorboard_writer :%s' % tensorboard_writer)
 
     if cfg.SOLVER.EARLY_STOP.FLAG and not args.eval:
-        early_stopping = EarlyStopping(tolerance_epoch=3, delta=0.0001, is_max=True)
+        early_stopping = EarlyStopping(model_path=os.path.join(model_dir, "backbone.pth"),tolerance_epoch=3, delta=0.0001, is_max=True)
         logging.info('early_stopping :%s' % early_stopping)
     else:
         early_stopping = None
