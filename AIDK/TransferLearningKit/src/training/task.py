@@ -221,7 +221,7 @@ class Task:
         weight_decay = self._kwargs['optimizer_weight_decay']
         momentum = self._kwargs['optimizer_momentum']
         if enable_transfer_learning:
-            finetuned_state_keys = self._kwargs['finetunner_finetuned_state_keys']
+            finetuned_state_keys = ["backbone.%s"%name for name in self._kwargs['finetunner_finetuned_state_keys']] # add component prefix
             finetuner_learning_rate = self._kwargs['optimizer_finetune_learning_rate']
             finetuner_params = {'params':[p for (name, p) in self._model.named_parameters() if p.requires_grad and name in finetuned_state_keys],
                                 'lr': finetuner_learning_rate}
@@ -229,6 +229,7 @@ class Task:
                                 'lr': learning_rate}
             logging.info("[%s] params set finetuner learning rate[%s]" % (len(finetuner_params['params']), finetuner_learning_rate))
             logging.info("[%s] params set common learning rate [%s]" % (len(remain_params['params']), learning_rate))
+            assert len(finetuner_params) > 0,"Empty finetuner_params"
             parameters = [finetuner_params,remain_params]
         else:
             remain_params = {'params': [p for p in self._model.parameters() if p.requires_grad],
