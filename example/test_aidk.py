@@ -22,7 +22,7 @@ def main(input_args):
         'learning_rate':float(0.9),
         'min_split_loss':float(7)
     }
-    model_info["execute_cmd_base"] = "/opt/intel/oneapi/intelpython/latest/bin/python /home/vmagent/app/hydro.ai/example/sklearn_train.py"
+    model_info["execute_cmd_base"] = "/opt/intel/oneapi/intelpython/latest/bin/python /home/vmagent/app/e2eaiok/example/sklearn_train.py"
     model_info["result_file_name"] = "result"
     sda.register(model_info)
     ##################################################
@@ -66,7 +66,7 @@ def main(input_args):
     }, {
         'name': 'extra',
     }]
-    model_info["execute_cmd_base"] = "/opt/intel/oneapi/intelpython/latest/bin/python /home/vmagent/app/hydro.ai/example/sklearn_train.py"
+    model_info["execute_cmd_base"] = "/opt/intel/oneapi/intelpython/latest/bin/python /home/vmagent/app/e2eaiok/example/sklearn_train.py"
     model_info["result_file_name"] = "result"
     model_info["observation_budget"] = 1
     sda.register(model_info)

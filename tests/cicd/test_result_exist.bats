@@ -8,6 +8,6 @@ setup() {
     PATH="$DIR/src:$PATH"
 }
 
-@test "Check AIDK CI/CD hydroai.db existence" {
-    assert_file_exist $CUSTOM_RESULT_PATH/hydroai.db
+@test "Check e2eAIOK CI/CD e2eaiok.db existence" {
+    assert_file_exist $CUSTOM_RESULT_PATH/e2eaiok.db
 }

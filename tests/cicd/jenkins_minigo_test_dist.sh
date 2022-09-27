@@ -3,7 +3,7 @@
 # set vars
 MODEL_NAME="minigo"
 DATA_PATH="/mnt/DP_disk1/dataset/minigo"
-CONF_FILE="tests/cicd/conf/hydroai_defaults_minigo_dist_example.conf"
+CONF_FILE="tests/cicd/conf/e2eaiok_defaults_minigo_dist_example.conf"
 
 # enable oneAPI
 source /opt/intel/oneapi/setvars.sh --force
@@ -13,11 +13,11 @@ eval "$('/root/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
 
 # create ci log dir
 hashstr_id=$(date +%Y-%m-%d)_$(echo $RANDOM | md5sum | head -c 8)
-tmp_dir="/root/cicd_logs/aidk_cicd_"$MODEL_NAME"_"$hashstr_id
+tmp_dir="/root/cicd_logs/e2eaiok_cicd_"$MODEL_NAME"_"$hashstr_id
 mkdir -p $tmp_dir
 
 set -e
-# lauch AIDK minigo
+# lauch e2eaiok minigo
 cd modelzoo/minigo
 conda activate minigo_xeon_opt
 yes "" | ./cc/configure_tensorflow.sh
@@ -29,9 +29,9 @@ sed -i '/--min_games_per_iteration=/ s/=.*/=4096/' ml_perf/flags/19/train_loop.f
 cd ../../
 [[ -d result ]] || mkdir result
 if [ $USE_SIGOPT == 1 ]; then
-  SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN python run_hydroai.py --data_path $DATA_PATH --model_name $MODEL_NAME --conf $CONF_FILE --custom_result_path $tmp_dir 2>&1 | tee $tmp_dir/aidk_cicd.log
+  SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN python run_e2eaiok.py --data_path $DATA_PATH --model_name $MODEL_NAME --conf $CONF_FILE --custom_result_path $tmp_dir 2>&1 | tee $tmp_dir/e2eaiok_cicd.log
 else
-  python run_hydroai.py --data_path $DATA_PATH --model_name $MODEL_NAME --conf $CONF_FILE --no_sigopt --custom_result_path $tmp_dir 2>&1 | tee $tmp_dir/aidk_cicd.log
+  python run_e2eaiok.py --data_path $DATA_PATH --model_name $MODEL_NAME --conf $CONF_FILE --no_sigopt --custom_result_path $tmp_dir 2>&1 | tee $tmp_dir/e2eaiok_cicd.log
 fi
 
 # test

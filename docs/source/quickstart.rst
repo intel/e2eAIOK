@@ -8,19 +8,19 @@ How to run
 
 .. code-block:: bash
 
-    SIGOPT_API_TOKEN=${SIGOPT_TOKEN} python run_hydroai.py --data_path ${dataset_path} --model_name [dlrm, wnd, dien, pipeline_test, twitter_recsys, rnnt, tpcxai09]
+    SIGOPT_API_TOKEN=${SIGOPT_TOKEN} python run_e2eaiok.py --data_path ${dataset_path} --model_name [dlrm, wnd, dien, pipeline_test, twitter_recsys, rnnt, tpcxai09]
 
 * For in-stock model without sigopt
 
 .. code-block:: bash
 
-    python run_hydroai.py --data_path ${dataset_path} --model_name [dlrm, wnd, dien, pipeline_test, twitter_recsys, rnnt, tpcxai09] --no_sigopt
+    python run_e2eaiok.py --data_path ${dataset_path} --model_name [dlrm, wnd, dien, pipeline_test, twitter_recsys, rnnt, tpcxai09] --no_sigopt
 
 * For user-define model
 
 .. code-block:: bash
 
-    python run_hydroai.py --data_path ${dataset_path} --model_name udm --executable_python ${python_path} --program ${path to your train.py}
+    python run_e2eaiok.py --data_path ${dataset_path} --model_name udm --executable_python ${python_path} --program ${path to your train.py}
 
 What is the input
 -----------------
@@ -49,13 +49,13 @@ Quick Start
 .. code-block:: bash
 
     git clone https://github.com/intel-innersource/frameworks.bigdata.bluewhale.git
-    git checkout hydro.ai
+    git checkout e2eaiok
     git submodule update --init --recursive
-    docker run -it --privileged --network host --device=/dev/dri --read-only -v ${dataset_path}:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ docker.io/xuechendi/oneapi-aikit:hydro.ai /bin/bash
+    docker run -it --privileged --network host --device=/dev/dri --read-only -v ${dataset_path}:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ docker.io/xuechendi/oneapi-aikit:hydro.ai /bin/bash
     source /etc/profile.d/spark-env.sh
     
     # optional - config proxy
-    source /home/vmagent/app/hydro.ai/config_proxy
+    source /home/vmagent/app/e2eaiok/config_proxy
     
     # optional - start sshd service
     sudo service ssh start
@@ -80,8 +80,8 @@ Quick Start
     # └── valid
     #     └── test_data.bin
 
-    # Use hydro.ai API
-    SIGOPT_API_TOKEN=${TOKEN} python run_hydroai.py --data_path "/home/vmagent/app/dataset/criteo" --model_name dlrm --conf conf/hydroai_defaults_dlrm_example.conf
+    # Use e2eaiok API
+    SIGOPT_API_TOKEN=${TOKEN} python run_e2eaiok.py --data_path "/home/vmagent/app/dataset/criteo" --model_name dlrm --conf conf/hydroai_defaults_dlrm_example.conf
 
     # Use SDA API
     SIGOPT_API_TOKEN=${TOKEN} python SDA/SDA.py --data_path "/home/vmagent/app/dataset/criteo" --model_name dlrm --conf conf/hydroai_defaults_dlrm_example.conf
@@ -104,8 +104,8 @@ Quick Start
     # hosts:
     #   - ${host_name}
 
-    # Use hydro.ai API
-    SIGOPT_API_TOKEN=${TOKEN} python run_hydroai.py --data_path "/home/vmagent/app/dataset/outbrain" --model_name wnd --conf conf/hydroai_defaults_wnd_example.conf
+    # Use e2eaiok API
+    SIGOPT_API_TOKEN=${TOKEN} python run_e2eaiok.py --data_path "/home/vmagent/app/dataset/outbrain" --model_name wnd --conf conf/hydroai_defaults_wnd_example.conf
 
     # Use SDA API
     SIGOPT_API_TOKEN=${TOKEN} python SDA/SDA.py --data_path "/home/vmagent/app/dataset/outbrain" --model_name wnd --conf conf/hydroai_defaults_wnd_example.conf
@@ -126,8 +126,8 @@ Quick Start
     # └── valid
     #     └── local_test_splitByUser
 
-    # Use hydro.ai API
-    SIGOPT_API_TOKEN=${TOKEN} python run_hydroai.py --data_path "/home/vmagent/app/dataset/amazon_reviews" --model_name dien
+    # Use e2eaiok API
+    SIGOPT_API_TOKEN=${TOKEN} python run_e2eaiok.py --data_path "/home/vmagent/app/dataset/amazon_reviews" --model_name dien
 
     # Use SDA API
     SIGOPT_API_TOKEN=${TOKEN} python SDA/SDA.py --data_path "/home/vmagent/app/dataset/amazon_reviews" --model_name dien
@@ -137,8 +137,8 @@ Quick Start
 
 `<https://app.sigopt.com/tokens/info>`_
 
-* launch hydro.ai
+* launch e2eaiok
 
 .. code-block:: bash
 
-    SIGOPT_API_TOKEN=${SIGOPT_TOKEN} python run_hydroai.py --model_name pipeline_test --data_path /home/vmagent/app/dataset/test_pipeline/
+    SIGOPT_API_TOKEN=${SIGOPT_TOKEN} python run_e2eaiok.py --model_name pipeline_test --data_path /home/vmagent/app/dataset/test_pipeline/

@@ -14,7 +14,7 @@ pipeline {
                             node(label) {
                                 cleanWs()
                                 checkout scm
-                                sh 'cd Dockerfile-ubuntu18.04 && docker build -t aidk-tensorflow . -f DockerfileTensorflow && docker build -t aidk-pytorch . -f DockerfilePytorch && docker build -t aidk-pytorch110 . -f DockerfilePytorch110 && cd .. && yes | docker container prune && yes | docker image prune'
+                                sh 'cd Dockerfile-ubuntu18.04 && docker build -t e2eaiok-tensorflow . -f DockerfileTensorflow && docker build -t e2eaiok-pytorch . -f DockerfilePytorch && docker build -t e2eaiok-pytorch110 . -f DockerfilePytorch110 && cd .. && yes | docker container prune && yes | docker image prune'
                             }
                         }
                     }
@@ -32,45 +32,45 @@ pipeline {
                 sh 'cd modelzoo/resnet  && bash patch_resnet.sh && cd ../..'
                 sh 'cd modelzoo/WnD/TensorFlow2 && bash patch_wnd.sh && cd ../../..'
                 sh 'cd modelzoo/dlrm && bash patch_dlrm.sh && cd ../..'
-                sh 'if [[ $(docker ps -q --filter "name=worker-aidk-*" | wc -l) -ne 0 ]]; then docker ps -q --filter "name=worker-aidk-*" | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi'
-                sh 'docker run -t -d --name worker-aidk-tensorflow --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-tensorflow /bin/bash && docker exec -d worker-aidk-tensorflow /bin/bash service ssh start'
-                sh 'docker run -t -d --name worker-aidk-pytorch --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch /bin/bash && docker exec -d worker-aidk-pytorch /bin/bash service ssh start'
-                sh 'docker run -t -d --name worker-aidk-pytorch110 --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch110 /bin/bash && docker exec -d worker-aidk-pytorch110 /bin/bash service ssh start'
+                sh 'if [[ $(docker ps -q --filter "name=worker-e2eaiok-*" | wc -l) -ne 0 ]]; then docker ps -q --filter "name=worker-e2eaiok-*" | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi'
+                sh 'docker run -t -d --name worker-e2eaiok-tensorflow --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-tensorflow /bin/bash && docker exec -d worker-e2eaiok-tensorflow /bin/bash service ssh start'
+                sh 'docker run -t -d --name worker-e2eaiok-pytorch --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch /bin/bash && docker exec -d worker-e2eaiok-pytorch /bin/bash service ssh start'
+                sh 'docker run -t -d --name worker-e2eaiok-pytorch110 --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch110 /bin/bash && docker exec -d worker-e2eaiok-pytorch110 /bin/bash service ssh start'
             }
         }
         stage('Run distributed bert') {
             steps {
                 sh '> /root/.ssh/known_hosts'
                 sh 'pwd && cd modelzoo/bert && bash patch_bert.sh && cd ../..'
-                sh 'docker run --rm --name test-workload-dist-bert --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_bert_test_dist.sh"'
+                sh 'docker run --rm --name test-workload-dist-bert --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/e2eaiok/tests/cicd/jenkins_bert_test_dist.sh"'
             }
         }
         stage('Run distributed rnnt') {
             steps {
                 sh '> /root/.ssh/known_hosts'
                 sh 'pwd && cd modelzoo/rnnt/pytorch && bash patch_rnnt.sh && cd ../../..'
-                sh 'docker run --rm --name test-workload-dist-rnnt --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch110 /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_rnnt_test_dist.sh"'
+                sh 'docker run --rm --name test-workload-dist-rnnt --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch110 /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/e2eaiok/tests/cicd/jenkins_rnnt_test_dist.sh"'
             }
         }
         stage('Run distributed resnet') {
             steps {
                 sh '> /root/.ssh/known_hosts'
                 sh 'pwd && cd modelzoo/resnet  && bash patch_resnet.sh && cd ../..'
-                sh 'docker run --rm --name test-workload-dist-resnet --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_resnet_test_dist.sh"'
+                sh 'docker run --rm --name test-workload-dist-resnet --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/e2eaiok/tests/cicd/jenkins_resnet_test_dist.sh"'
             }
         }
         stage('Run distributed wnd') {
             steps {
                 sh '> /root/.ssh/known_hosts'
                 sh 'cd modelzoo/WnD/TensorFlow2 && bash patch_wnd.sh && cd ../../..'
-                sh 'docker run --rm --name test-workload-dist-wnd --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_wnd_test_dist.sh"'
+                sh 'docker run --rm --name test-workload-dist-wnd --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/e2eaiok/tests/cicd/jenkins_wnd_test_dist.sh"'
             }
         }
         stage('Run distributed dlrm') {
             steps {
                 sh '> /root/.ssh/known_hosts'
                 sh 'cd modelzoo/dlrm && bash patch_dlrm.sh && cd ../..'
-                sh 'docker run --rm --name test-workload-dist-dlrm --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_dlrm_test_dist.sh"'
+                sh 'docker run --rm --name test-workload-dist-dlrm --privileged --network host --device=/dev/dri -v /root/.ssh:/root/.ssh -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/e2eaiok/tests/cicd/jenkins_dlrm_test_dist.sh"'
             }
         }
         stage('Prepare minigo') {
@@ -93,7 +93,7 @@ pipeline {
                 label 'sr608'
             }
             steps {
-                sh 'if [[ $(docker ps -q --filter "name=worker-aidk-*" | wc -l) -ne 0 ]]; then docker ps -q --filter "name=worker-aidk-*" | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi'
+                sh 'if [[ $(docker ps -q --filter "name=worker-e2eaiok-*" | wc -l) -ne 0 ]]; then docker ps -q --filter "name=worker-e2eaiok-*" | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi'
             }
         }
     }
