@@ -3,7 +3,7 @@ FROM intel/oneapi-aikit:2022.2-devel-ubuntu18.04
 SHELL ["/bin/bash", "-c"]
 WORKDIR /root/
 ENV PATH /opt/intel/oneapi/intelpython/latest/condabin:$PATH
-RUN apt-get update -y && apt-get install -y libsndfile1-dev openssh-server
+RUN apt-get update -y && apt-get install -y libsndfile1-dev openssh-server numactl
 
 SHELL ["conda", "run", "-n", "pytorch-1.10.0", "/bin/bash", "-c"]
 RUN python -m pip install pyyaml typing cffi cmake ninja numpy Unidecode prefetch_generator \
