@@ -48,11 +48,12 @@ def do_compute_nas_score_cnn(model_type, model, resolution, batch_size, mixup_ga
         else:
             raise RuntimeError('only support grad shape of 4 or 2')
     
-    nas_score = (expressivity_score*expressivity_weight 
+    score = (expressivity_score*expressivity_weight 
                     + complexity_score*complexity_weight 
                     + disversity_score*diversity_weight 
-                    + saliency_score*saliency_weight)/(1 + latency*latency_weight)
-    return nas_score
+                    + saliency_score*saliency_weight)
+    nas_score = score/(1 + latency*latency_weight)
+    return nas_score, score, latency
 
 
 
@@ -99,7 +100,9 @@ def do_compute_nas_score_cnn_plus(model_type, model, resolution, batch_size, mix
 
 def do_compute_nas_score(model_type, model, resolution, batch_size, mixup_gamma, subconfig=None, expressivity_weight=0, complexity_weight=0, diversity_weight=0, saliency_weight=0, latency_weight=0):
     if model_type == "cnn":
-        return do_compute_nas_score_cnn(model_type, model, resolution, batch_size, mixup_gamma, expressivity_weight, complexity_weight, diversity_weight, saliency_weight, latency_weight)
+        nas_score, score, latency = do_compute_nas_score_cnn(model_type, model, resolution, batch_size, mixup_gamma, expressivity_weight, complexity_weight, diversity_weight, saliency_weight, latency_weight)
+        return nas_score, score, latency
     elif model_type == "transformer" or model_type == "bert" or model_type == "asr":
-        return do_compute_nas_score_transformer(model_type, model, resolution, batch_size, mixup_gamma, subconfig, expressivity_weight, complexity_weight, diversity_weight, saliency_weight, latency_weight)
+        nas_score, score, latency = do_compute_nas_score_transformer(model_type, model, resolution, batch_size, mixup_gamma, subconfig, expressivity_weight, complexity_weight, diversity_weight, saliency_weight, latency_weight)
+        return nas_score, score, latency
 

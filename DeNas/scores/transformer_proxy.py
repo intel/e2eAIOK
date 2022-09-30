@@ -232,8 +232,9 @@ def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, 
         latency = get_bert_latency(model=model, subconfig=subconfig, batch_size=batch_size, max_seq_length=resolution, gpu=None, infer_cnt=10.)
     else:
         latency = 0
-    nas_score = (expressivity_score*expressivity_weight 
+    score = (expressivity_score*expressivity_weight 
                     + complexity_score*complexity_weight 
                     + disversity_score*diversity_weight 
-                    + saliency_score*saliency_weight)/(1 + latency*latency_weight)
-    return nas_score
+                    + saliency_score*saliency_weight)
+    nas_score = score/(1 + latency*latency_weight)
+    return nas_score, score, latency
