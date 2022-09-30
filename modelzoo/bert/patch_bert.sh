@@ -9,7 +9,7 @@ get_original_model () {
 apply_patch () {
     git apply --stat bert.patch &&
     git apply --check bert.patch &&
-    git apply bert.patch
+    git apply --whitespace=nowarn bert.patch
 }
 
 get_original_model
