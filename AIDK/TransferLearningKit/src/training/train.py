@@ -200,7 +200,7 @@ class Trainer:
         :param epoch_steps: steps per epoch
         :param valid_dataloader: validation dataloader
         :param model_path: model path
-        :return:
+        :return: validation metric. If has Earlystopping, using the best metric; Else, using the last metric.
         '''
         if self._is_transferrable:
             backbone = unwrap_DDP(self._model).backbone
@@ -229,7 +229,11 @@ class Trainer:
                     break
             else:
                 torch.save(backbone.state_dict(), "%s_epoch_%s"%(model_path,epoch))
-            
+
+        if self._early_stopping is not None:
+            return self._early_stopping.optimal_metric
+        else:
+            return metrics_map[self._early_stop_metric]
 
 class Evaluator:
     ''' The Evaluator

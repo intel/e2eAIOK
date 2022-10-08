@@ -333,6 +333,11 @@ class Task:
         set_attribute("trained_model", trained_model, "loss",loss)
         return trained_model
     def run(self):
+        ''' Run task
+
+        Returns: validation metric. If has Earlystopping, using the best metric; Else, using the last metric.
+
+        '''
         training_epochs = self._kwargs['training_epochs']
         logging_interval_step = self._kwargs['logging_interval_step']
         validate_metric_fn_map = self._kwargs['validate_metric_fn_map']
@@ -349,7 +354,8 @@ class Task:
         if enable_ipex:
             model = model.to(memory_format = torch.channels_last)
             model, optimizer = ipex.optimize(model, optimizer=optimizer)
-            set_attribute("backbone",model.backbone, "loss", self._kwargs['model_loss'])
+            if enable_transfer_learning:
+                set_attribute("backbone",model.backbone, "loss", self._kwargs['model_loss'])
         
         lr_scheduler = self._create_lr_scheduler()
         tensorboard_writer = self._create_tensorboard_writer()
@@ -366,12 +372,13 @@ class Task:
         with Timer():
             if is_distributed:
                 with Join([model, optimizer]):
-                    trainer.train(train_loader, self._epoch_steps, validate_loader, model_saved_path)
+                    val_metric = trainer.train(train_loader, self._epoch_steps, validate_loader, model_saved_path)
             else:
-                trainer.train(train_loader, self._epoch_steps, validate_loader, model_saved_path)
+                val_metric = trainer.train(train_loader, self._epoch_steps, validate_loader, model_saved_path)
         ################################### test ###################################
         if test_loader is not None:
             if (not is_distributed) or (is_distributed and rank == 0):  # only test once
                 trained_model = self._load_trained_model()
                 with Timer():
                     evaluator.evaluate(trained_model, test_loader)
+        return val_metric
