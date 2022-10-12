@@ -1,0 +1,3 @@
+uid_voc: /home/vmagent/app/dataset/amazon_reviews/uid_voc.pkl
+mid_voc: /home/vmagent/app/dataset/amazon_reviews/mid_voc.pkl
+cat_voc: /home/vmagent/app/dataset/amazon_reviews/cat_voc.pkl

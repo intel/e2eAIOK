@@ -1054,7 +1054,7 @@ index 2cd436a..ab03c02 100644
 +                if CURRENT_AUC >= TARGET_AUC:
 +                    print(f"current AUC {CURRENT_AUC} is greater than target {TARGET_AUC}, stop training")
 +                    break
-+                if LOWER_THAN_CURRENT_CNT >= 2:
++                if LOWER_THAN_CURRENT_CNT >= 6:
                      break
 +
 +            print("iteration: ", nums)

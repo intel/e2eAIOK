@@ -134,7 +134,7 @@ class DIENAdvisor(BaseModelAdvisor):
     def dist_launch(self, args):
         cmd = []
         hosts = [f"{h}:1" for h in args['hosts']]
-        cmd.extend(["horovodrun", "-np", f"{args['ppn']}", "-H",  f"{','.join(hosts)}", "--network-interface", f"{args['iface']}"])
+        cmd.extend(["/opt/intel/oneapi/tensorflow/2.5.0/bin/horovodrun", "-np", f"{args['ppn']}", "-H",  f"{','.join(hosts)}", "--network-interface", f"{args['iface']}"])
         cmd.extend(["--verbose"])
         cmd.extend(self.prepare_cmd(args))
 
