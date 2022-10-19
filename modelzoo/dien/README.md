@@ -182,7 +182,7 @@ We found the best model! Here is the model explaination
 ```
 cd /home/vmagent/app/e2eaiok/modelzoo/dien/
 rm /home/vmagent/app/e2eaiok/modelzoo/dien/train/ai-matrix/dnn_best_model_trained/ -rf
-cp ${path to your result}/dnn_best_model/ dnn_best_model_trained
+cp -r ${path to your result}/dnn_best_model/ dnn_best_model_trained
 sh infer.sh
 <!--
 ----------------------------------------------------------------

@@ -86,12 +86,12 @@ total 683357412
 
 ## Training
 ```
-bash run_and_time_launch.sh
+bash run_train.sh
 ```
 
 ## Inference
 ```
-bash inference.sh
+bash run_inference.sh
 ```
 
 ## All In One
