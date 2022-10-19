@@ -8,9 +8,9 @@ Source repo: https://github.com/facebookresearch/dlrm
 
 ## Install
 ```
-git clone https://github.com/intel/e2eAIOK.git
+git checkout AIDK_Ray
 git submodule update --init --recursive
-cd ${path_to_e2eaiok}/modelzoo/dlrm
+cd dlrm_all/dlrm
 sh patch_dlrm.sh
 ```
 
@@ -49,7 +49,7 @@ day_0  day_10  day_12  day_14  day_16  day_18  day_2   day_21  day_23  day_4  da
 day_1  day_11  day_13  day_15  day_17  day_19  day_20  day_22  day_3   day_5  day_7  day_9
 
 # enter data process folder
-cd /home/vmagent/app/e2eaiok/modelzoo/dlrm/data_processing/
+cd /home/vmagent/app/e2eaiok/dlrm_all/dlrm/data_processing/
 
 # install recdp and pyarrow
 pip install pyrecdp pyarrow

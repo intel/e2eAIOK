@@ -1,0 +1,3 @@
+[submodule "dlrm_all/third_party/dlrm"]
+	path = dlrm_all/third_party/dlrm
+	url = https://github.com/facebookresearch/dlrm.git
