@@ -1,28 +1,28 @@
-EXPERIMENT:
-  PROJECT: "adapter"
-  TAG: "usps_vs_mnist_CDAN"
-  STRATEGY: "OnlyDomainAdaptionStrategy"
-  MODEL_SAVE: '../model/'
-  LOSS:
-    BACKBONE: 1.0
-    ADAPTER: 1.0
-DATASET:
-  TYPE: "USPS_vs_MNIST"
-  PATH: "../datasets/USPS_vs_MNIST"
-  NUM_WORKERS: 1
-SOURCE_DATASET:
-  TYPE: "USPS_vs_MNIST"
-  PATH: "../datasets/USPS_vs_MNIST"
-MODEL:
-  TYPE: "LeNet"
-ADAPTER:
-  TYPE: "CDAN"
-  FEATURE_SIZE: 500
-  FEATURE_LAYER_NAME: "fc_layers_2"
-SOLVER:
-  BATCH_SIZE: 128
-  EPOCHS: 2
-  LR: 0.002
-  WEIGHT_DECAY: 0.0005
-  MOMENTUM: 0.9
-  TYPE: "SGD"
+experiment:
+  project: "adapter"
+  tag: "usps_vs_mnist_CDAN"
+  strategy: "OnlyDomainAdaptionStrategy"
+  model_save: '../model/'
+  loss:
+    backbone: 1.0
+    adapter: 1.0
+dataset:
+  type: "USPS_vs_MNIST"
+  path: "../datasets/USPS_vs_MNIST"
+  num_workers: 1
+source_dataset:
+  type: "USPS_vs_MNIST"
+  path: "../datasets/USPS_vs_MNIST"
+model:
+  type: "LeNet"
+adapter:
+  type: "CDAN"
+  feature_size: 500
+  feature_layer_name: "fc_layers_2"
+solver:
+  batch_size: 128
+  epochs: 2
+  lr: 0.002
+  weight_decay: 0.0005
+  momentum: 0.9
+  type: "SGD"

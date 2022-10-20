@@ -4,7 +4,7 @@
 # @Time   : 7/15/2022 4:17 PM
 
 from torch.utils.data import Dataset
-from .utils import rgb_loader,l_loader
+from .utils.loader import rgb_loader,l_loader
 import logging
 import os
 

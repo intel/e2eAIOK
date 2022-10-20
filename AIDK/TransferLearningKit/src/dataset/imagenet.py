@@ -3,6 +3,10 @@ import numpy as np
 import torch
 from torchvision.datasets import ImageFolder
 import torchvision.transforms as transforms
+from .utils.dataset_wrapper import DatasetWrapper
+
+mean=[0.485, 0.456, 0.406]
+std=[0.229, 0.224, 0.225]
 
 class ImageNet(ImageFolder):
     def __getitem__(self, index):
@@ -10,45 +14,50 @@ class ImageNet(ImageFolder):
         return img, target, index
 
 
-def get_imagenet_train_transform(mean, std):
-    normalize = transforms.Normalize(mean=mean, std=std)
+def get_imagenet_train_transform():
     train_transform = transforms.Compose(
         [
             transforms.RandomResizedCrop(224),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            normalize,
+            transforms.Normalize(mean=mean, std=std),
         ]
     )
     return train_transform
 
-def get_imagenet_test_transform(mean, std):
-    normalize = transforms.Normalize(mean=mean, std=std)
+def get_imagenet_test_transform():
     test_transform = transforms.Compose(
         [
             transforms.Resize(256),
             transforms.CenterCrop(224),
             transforms.ToTensor(),
-            normalize,
+            transforms.Normalize(mean=mean, std=std),
         ]
     )
     return test_transform
 
-def get_imagenet_dataloaders(path, batch_size, val_batch_size, num_workers,
-    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]):
-    train_transform = get_imagenet_train_transform(mean, std)
-    train_folder = os.path.join(path, 'train')
+def get_imagenet_dataset(cfg):
+    train_transform = get_imagenet_train_transform()
+    train_folder = os.path.join(cfg.dataset.path, 'train')
     train_set = ImageNet(train_folder, transform=train_transform)
-    num_data = len(train_set)
-    train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, 
-        shuffle=True, num_workers=num_workers, pin_memory=True)
-    test_loader = get_imagenet_val_loader(val_batch_size, mean, std)
-    return train_loader, test_loader, num_data
+    test_set, test_loader = get_imagenet_val_loader(cfg)
 
-def get_imagenet_val_loader(path, val_batch_size, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]):
-    test_transform = get_imagenet_test_transform(mean, std)
-    test_folder = os.path.join(path, 'val')
+    num_classes = 1000
+
+    if cfg.distiller.save_logits or cfg.distiller.use_saved_logits or cfg.distiller.check_logits:
+        train_set = DatasetWrapper(train_set,
+                                    logits_path=cfg.distiller.logits_path,
+                                    num_classes = num_classes,
+                                    topk=cfg.distiller.logits_topk,
+                                    write=cfg.distiller.save_logits,
+                                    )
+    
+    return train_set, test_set, test_set, num_classes
+
+def get_imagenet_val_loader(cfg):
+    test_transform = get_imagenet_test_transform()
+    test_folder = os.path.join(cfg.dataset.path, 'val')
     test_set = ImageFolder(test_folder, transform=test_transform)
     test_loader = torch.utils.data.DataLoader(test_set,
-        batch_size=val_batch_size, shuffle=False, num_workers=16, pin_memory=True)
-    return test_loader
+        batch_size=cfg.dataset.val.batch_size, shuffle=False, num_workers=cfg.dataset.num_workers, pin_memory=True)
+    return test_set, test_loader

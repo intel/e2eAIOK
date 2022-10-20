@@ -23,7 +23,6 @@ from engine_core.adapter.adversarial.adversarial_adapter import AdversarialAdapt
 from dataset.office31 import Office31
 from dataset.composed_dataset import ComposedDataset
 from training.metrics import accuracy
-from training.utils import initWeights
 from utils import tensor_near_equal
 import torch.fx
 
@@ -136,10 +135,6 @@ class TestMakeTransferrable:
         new_model = _make_transferrable(**kwargs)
         tensor1 = torch.ones((self.batch_size, 2))
         tensor0 = torch.zeros((self.batch_size, 2))
-
-        assert tensor_near_equal(kwargs['model'].loss(tensor1,tensor0) ,kwargs['loss'](tensor1, tensor0))
-        assert kwargs['model'].distiller_feature_size is kwargs['distiller_feature_size']
-        assert kwargs['model'].adapter_feature_size is kwargs['adapter_feature_size']
 
         assert type(new_model) == TransferrableModel
         assert tensor_near_equal(new_model.backbone.loss(tensor1, tensor0), kwargs['loss'](tensor1, tensor0))
@@ -457,10 +452,11 @@ class TestTransferrableModel:
         model = _make_transferrable(**kwargs)
         model.__dict__  # no exception
         ############### training mode ##########
+        student_label = torch.zeros([self.batch_size,self.num_class])
         model.train()
         assert type(model(self.input)) is TransferrableModelOutput
         assert tensor_near_equal(model(self.input).backbone_output,kwargs['model'](self.input))
-        assert type(model.loss(model(self.input),model(self.input))) is TransferrableModelLoss
+        assert type(model.loss(model(self.input),student_label)) is TransferrableModelLoss
 
     def test_finetune_forward(self):
         ''' test _finetune_forward
@@ -492,7 +488,7 @@ class TestTransferrableModel:
         new_loss = model._finetune_loss(output,label)
         assert type(new_loss) == TransferrableModelLoss
         assert tensor_near_equal(new_loss.total_loss,new_loss.backbone_loss)
-        assert tensor_near_equal(new_loss.backbone_loss, kwargs['model'].loss(output,label))
+        assert tensor_near_equal(new_loss.backbone_loss, kwargs['loss'](output,label))
         assert new_loss.distiller_loss is None
         assert new_loss.adapter_loss is None
     def test_distillation_forward(self):
@@ -527,7 +523,7 @@ class TestTransferrableModel:
         new_loss = model._distillation_loss(student_output,teacher_output,student_label)
         assert type(new_loss) == TransferrableModelLoss
         assert tensor_near_equal(new_loss.total_loss,new_loss.backbone_loss + new_loss.distiller_loss)
-        assert tensor_near_equal(new_loss.backbone_loss, kwargs['model'].loss(student_output,student_label))
+        assert tensor_near_equal(new_loss.backbone_loss, kwargs['loss'](student_output,student_label))
         assert tensor_near_equal(new_loss.distiller_loss, kwargs['distiller'].loss(teacher_output,student_output))
         assert new_loss.adapter_loss is None
     def test_adaption_forward(self):
@@ -582,12 +578,12 @@ class TestTransferrableModel:
             assert tensor_near_equal(new_loss.total_loss,new_loss.backbone_loss + new_loss.adapter_loss)
             if enable_target_training_label:
                 assert tensor_near_equal(new_loss.backbone_loss,
-                                     kwargs['model'].loss(backbone_output_tgt,backbone_label_tgt) +
-                                     kwargs['model'].loss(backbone_output_src, backbone_label_src)
+                                     kwargs['loss'](backbone_output_tgt,backbone_label_tgt) +
+                                     kwargs['loss'](backbone_output_src, backbone_label_src)
                                      )
             else:
                 assert tensor_near_equal(new_loss.backbone_loss,
-                                         kwargs['model'].loss(backbone_output_src, backbone_label_src))
+                                         kwargs['loss'](backbone_output_src, backbone_label_src))
             assert new_loss.distiller_loss is None
             adapter_label_tgt = AdversarialAdapter.make_label(adapter_output_tgt.size(0), is_source=False).view(-1, 1)
             adapter_label_src = AdversarialAdapter.make_label(adapter_output_src.size(0), is_source=True).view(-1, 1)
@@ -641,10 +637,10 @@ class TestTransferrableModel:
             backbone_label_src = torch.zeros([self.batch_size, self.num_class])
 
             if enable_target_training_label:
-                target_loss = kwargs['model'].loss(backbone_output_tgt, backbone_label_tgt)
+                target_loss = kwargs['loss'](backbone_output_tgt, backbone_label_tgt)
             else:
                 target_loss = 0.0
-            src_loss = kwargs['model'].loss(backbone_output_src, backbone_label_src)
+            src_loss = kwargs['loss'](backbone_output_src, backbone_label_src)
             new_loss = model._distillation_and_adaption_loss(backbone_output_tgt, backbone_output_src,
                                             teacher_output_tgt, teacher_output_src,
                                             adapter_output_tgt, adapter_output_src,
@@ -654,12 +650,12 @@ class TestTransferrableModel:
             assert tensor_near_equal(new_loss.total_loss, new_loss.backbone_loss + new_loss.distiller_loss + new_loss.adapter_loss)
             if enable_target_training_label:
                 assert tensor_near_equal(new_loss.backbone_loss,
-                                     kwargs['model'].loss(backbone_output_tgt, backbone_label_tgt) +
-                                     kwargs['model'].loss(backbone_output_src, backbone_label_src)
+                                     kwargs['loss'](backbone_output_tgt, backbone_label_tgt) +
+                                     kwargs['loss'](backbone_output_src, backbone_label_src)
                                      )
             else:
                 assert tensor_near_equal(new_loss.backbone_loss,
-                                         kwargs['model'].loss(backbone_output_src, backbone_label_src)
+                                         kwargs['loss'](backbone_output_src, backbone_label_src)
                                          )
             assert tensor_near_equal(new_loss.distiller_loss,
                                      kwargs['distiller'].loss(teacher_output_tgt, backbone_output_tgt) +

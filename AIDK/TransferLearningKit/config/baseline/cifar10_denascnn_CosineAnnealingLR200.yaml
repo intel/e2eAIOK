@@ -1,0 +1,24 @@
+experiment:
+  project: "baselines"
+  tag: "cifar10_denascnn_bin_e200"
+  model_save: "/home/vmagent/app/dataset/model"
+dataset:
+  type: "cifar10"
+  num_workers: 10
+  path: "/home/vmagent/app/dataset/dataset/cifar"
+  train_transform: "denascnn"
+model:
+  type: "denas_cnn"
+solver:
+  batch_size: 128
+  epochs: 200
+  optimizer:
+    type: "SGD"
+    lr: 0.1
+    weight_decay: 5e-4
+    momentum: 0.9
+  scheduler:
+    type: "CosineAnnealinglr"
+    T_max: 200
+  early_stop:
+    flag: False

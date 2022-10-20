@@ -12,7 +12,6 @@ import torch.fx
 from functools import partial
 
 from dataset.composed_dataset import ComposedDataset
-from training.utils import initWeights
 
 from enum import Enum
 class TransferStrategy(Enum):
@@ -33,8 +32,23 @@ ALL_STRATEGIES = [
     TransferStrategy.DistillationAndDomainAdaptionStrategy
 ]
 
-TransferrableModelOutput = namedtuple('TransferrableModelOutput',
-                                      ['backbone_output','distiller_output','adapter_output'])
+# TransferrableModelOutput = namedtuple('TransferrableModelOutput',
+#                                       ['backbone_output','distiller_output','adapter_output'])
+
+class TransferrableModelOutput:
+    ''' TransferrableModel Output, which is composed by backbone_output,distiller_output,adapter_output
+
+    '''
+    def __init__(self,backbone_output,distiller_output,adapter_output):
+        ''' Init method
+
+        :param backbone_output: backbone output, could be none
+        :param distiller_output: distiller output, could be none
+        :param adapter_output: adapter output, could be none
+        '''
+        self.backbone_output = backbone_output
+        self.distiller_output = distiller_output
+        self.adapter_output = adapter_output
 
 class TransferrableModelLoss:
     ''' TransferrableModel Loss, which is composed by total_loss,backbone_loss,distiller_loss,adapter_loss
@@ -339,7 +353,6 @@ class TransferrableModel(nn.Module):
 
         return metric_values
 
-
 def extract_distiller_adapter_features(model,intermediate_layer_name_for_distiller,
                                      intermediate_layer_name_for_adapter):
 
@@ -424,6 +437,9 @@ def _make_transferrable(model, loss,
     :param adaption_source_domain_training_dataset: source domain training dataset for adaption. If no adaption, then could be none.
     :param transfer_strategy: transfer strategy.
     :param enable_target_training_label: During training, whether use target training label or not.
+    :param backbone_loss_weight: the weight of backbone model loss, default=1
+    :param distiller_loss_weight: the weight of distiller_loss_weight, default=0
+    :param adapter_loss_weight: the weight of adapter_loss_weight, default=0
     :return: a TransferrableModel
     '''
     ######## check input #####
@@ -459,10 +475,6 @@ def _make_transferrable(model, loss,
     #################### modify output #######################
     new_model = extract_distiller_adapter_features(model,distiller_feature_layer_name,adapter_feature_layer_name)
     #################### set attribute  #################
-    set_attribute("model",model,"loss",loss)
-    set_attribute("model", model, "distiller_feature_size", distiller_feature_size)
-    set_attribute("model", model, "adapter_feature_size", adapter_feature_size)
-
     set_attribute("new_model", new_model, "loss", loss)
     set_attribute("new_model", new_model, "distiller_feature_size", distiller_feature_size)
     set_attribute("new_model", new_model, "adapter_feature_size", adapter_feature_size)
@@ -702,7 +714,7 @@ def make_transferrable_with_knowledge_distillation_and_domain_adaption(model,los
     :param loss : loss function for model,signature: loss(output_logit, label). If model has loss attribute, then loss could be none.
     :param distiller: a distiller.
     :param adapter: an adapter.
-    :param distiller_feature_size: input feature size of disiller.
+    :param distiller_feature_size: input feature size of distiller.
     :param distiller_feature_layer_name: specify the layer output, which is from model, as input feature of distiller.
     :param adapter_feature_size: input feature size of adapter.
     :param adapter_feature_layer_name: specify the layer output, which is from model, as input feature of adapter.

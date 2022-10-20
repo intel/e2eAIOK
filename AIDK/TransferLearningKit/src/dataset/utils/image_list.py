@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from torch.utils.data import Dataset
-from .utils import rgb_loader,l_loader
+from .loader import rgb_loader,l_loader
 import logging
 
 class ImageList(Dataset):

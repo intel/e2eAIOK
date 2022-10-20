@@ -1,0 +1,40 @@
+experiment:
+  project: "finetuner"
+  tag: "cifar10_res50PretrainI21k"
+  strategy: "OnlyFinetuneStrategy"
+  model_save: "../model"
+optimize:
+  enable_ipex: True
+dataset:
+  type: "cifar100"
+  num_workers: 8
+  path: "../datasets/cifar"
+  train_transform: "pretrainI21k"
+  test_transform: "pretrainI21k"
+  data_drop_last: False
+model:
+  type: "resnet50_timm"
+finetuner:
+  type: "Basic"
+  pretrain: '../pretrained/resnet50_miil_21k.pth'
+  pretrained_num_classes: 11221
+  learning_rate: 0.01
+  top_finetuned_layer: "global_pool_flatten"
+  is_frozen: False
+solver:
+  batch_size: 128
+  epochs: 1
+  optimizer:
+    type: "SGD"
+    lr: 0.02
+    weight_decay: 0.0005
+    momentum: 0.9
+  scheduler:
+    type: "CosineAnnealingLR"
+    T_max: 200
+  early_stop:
+    flag: True
+    tolerance_epoch: 200
+    delta: 0.001
+    is_max: True
+    limitation: 1.0

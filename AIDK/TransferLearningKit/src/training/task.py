@@ -4,16 +4,16 @@
 # @Time   : 8/19/2022 10:08 AM
 import torch
 import torchvision.models
-from torch.utils.data import Dataset
-from torch.utils.data import random_split
 from torch.utils.tensorboard import SummaryWriter
-from torch.utils.data.distributed import DistributedSampler
 from engine_core.backbone.factory import createBackbone
+from engine_core.adapter.factory import createAdapter
+from engine_core.distiller import KD, DKD
 from engine_core.finetunner.basic_finetunner import BasicFinetunner
-from engine_core.transferrable_model import make_transferrable_with_finetune, set_attribute
-from .train import Trainer, Evaluator
+from engine_core.transferrable_model import *
+from .train import Trainer,Evaluator
+from dataset import get_dataloader
 import torch.optim as optim
-from .utils import EarlyStopping, initWeights, Timer
+from .utils import EarlyStopping,Timer, WarmUpLR
 import logging
 from functools import partial
 from torch.nn.parallel import DistributedDataParallel as DDP
@@ -23,9 +23,9 @@ from torch.profiler import profile, ProfilerActivity
 import intel_extension_for_pytorch as ipex
 import os
 
-
-def trace_handler(trace_file, p):
+def trace_handler(trace_file,p):
     ''' profile trace handler
+
     :param trace_file: output trace file
     :param p: profiler
     :return:
@@ -33,268 +33,226 @@ def trace_handler(trace_file, p):
     logging.info("trace_output:%s" % p.key_averages().table(sort_by="cpu_time_total", row_limit=20))
     p.export_chrome_trace(trace_file + str(p.step_num) + ".json")
 
-
-def channels_last_collate(batch):
-    """Custom collate fn for channels_last.
-    Arguments:
-        batch: (tuple) A tuple of images and labels
-    Return:
-        A tuple containing:
-            1) (tensor) batch of images stacked on their 0 dim and to channels_last
-            2) (list of tensors) labels
-    """
-    data = [item[0] for item in batch]
-    target = [item[1] for item in batch]
-
-    data = torch.stack(data, 0).to(memory_format=torch.channels_last)
-    target = torch.LongTensor(target)
-
-    return data, target
-
-
 class Task:
     ''' A whole training Task
+
     '''
-
-    def __init__(self, **kwargs):
-        self._kwargs = kwargs
-        print('Task config:%s' % kwargs)
-        # parameters:
-        ############### global ##############
-        # is_distributed : whether is distributed
-        # enable_transfer_learning : whether use transfer learning
-        # enable_ipex : whether use intel-extension-for-pytorch
-        # training_epochs : training epochs
-        # logging_interval_step : logging interval step
-        # validate_metric_fn_map : validate metric function map
-        # earlystop_metric : early stop metric
-        # rank : rank
-        # model_saved_path: model saved path
-        ############### dataloader #############
-        # data_train_dataset : train dataset
-        # data_validate_dataset : validate dataset
-        # data_test_dataset : test dataset
-        # data_num_workers : data num workers
-        # data_batch_size : data batch size
-        # data_drop_last : whether drop last
-        ############## model ############
-        # model_num_classes : num classes
-        # model_backbone_name : backbone name
-        # model_loss : loss function
-        # finetune_pretrained_state_dict : pretrained model state dict
-        # finetune_top_finetuned_layer : layer under which is used for finetuning
-        # finetune_frozen : frozen finetune layer
-        # finetune_pretrained_num_classes : num classes of pretrained model
-
-        ############## optimizer ############
-        # optimizer_learning_rate : learning rate
-        # optimizer_finetune_learning_rate : finetuned layer learning rate
-        # optimizer_weight_decay : weight decay
-        # optimizer_momentum : momentum
-        ############### lr_scheduler ##########
-        # scheduler_T_max : scheduler T_max
-
-        ######## tensorboard_writer ########
-        # tensorboard_dir: tensorboard dir
-        # tensorboard_filename_suffix : tensorboard filename suffix
-
-        ######### early_stopping ###########
-        # earlystop_tolerance_epoch : tolerance epoch
-        # earlystop_delta : delta
-        # earlystop_is_max : is max or min
-        # earlystop_limitation : the absolute limitation of validation metric
-
-        ######### profiler ##############
-        # profile_skip_first: skip first n iteration
-        # profile_wait : wait the next n iteration
-        # profile_warmup : do profile, but not use in the next n iteration
-        # profile_active : active in the next n iteration
-        # profile_repeat : repeat k cycle
-        # profile_activities : record CPU or CUDA, can be 'cpu','cuda', or 'cpu,cuda'
-        # profile_trace_file_training : output to this file when training
-        # profile_trace_file_inference : output to this file when inference
-
+    def __init__(self, cfg, model_save_path, loss, is_distributed):
+        self._cfg = cfg
+        self._loss = loss
+        self._is_distributed = is_distributed
+        self._model_dir = model_save_path
     def _create_dataloader(self):
         ''' create dataloader
-        :return: (train_loader,validate_loader,test_loader)
+
+        :return: (train_loader,validate_loader,test_loader, num_data)
         '''
-
-        is_distributed = self._kwargs['is_distributed']
-        train_dataset = self._kwargs['data_train_dataset']
-        validate_dataset = self._kwargs['data_validate_dataset']
-        test_dataset = self._kwargs['data_test_dataset']
-        num_workers = self._kwargs['data_num_workers']
-        batch_size = self._kwargs['data_batch_size']
-        data_drop_last = self._kwargs['data_drop_last']
-        enable_ipex = self._kwargs['enable_ipex']
-
-        logging.info("train_dataset:" + str(train_dataset))
-        logging.info("validate_dataset:" + str(validate_dataset))
-        logging.info("test_dataset:" + str(test_dataset))
-
-        train_loader_kwargs = {
-            'dataset': train_dataset,
-            'batch_size': batch_size,
-            'shuffle': True,
-            'num_workers': num_workers,
-            'drop_last': data_drop_last,
-        }
-
-        validate_loader_kwargs = {
-            'dataset': validate_dataset,
-            'batch_size': batch_size,
-            'shuffle': True,
-            'num_workers': num_workers,
-            'drop_last': data_drop_last,
-        }
-
-        test_loader_kwargs = {
-            'dataset': test_dataset,
-            'batch_size': batch_size,
-            'shuffle': True,
-            'num_workers': num_workers,
-            'drop_last': data_drop_last,
-        }
-        if is_distributed:
-            train_loader_kwargs['shuffle'] = False  # shuffle is conflict with sampler
-            train_loader_kwargs['sampler'] = DistributedSampler(train_dataset)
-        if enable_ipex:
-            train_loader_kwargs['collate_fn'] = channels_last_collate
-            validate_loader_kwargs['collate_fn'] = channels_last_collate
-            test_loader_kwargs['collate_fn'] = channels_last_collate
-
-        train_loader = torch.utils.data.DataLoader(**train_loader_kwargs)
-        validate_loader = torch.utils.data.DataLoader(**validate_loader_kwargs)
-        if test_dataset is not None:
-            test_loader = torch.utils.data.DataLoader(**test_loader_kwargs)
-        else:
-            test_loader = None
-        self._train_loader = train_loader  # may be use by other component
-        self._epoch_steps = len(train_loader)  # may be use by other component
+        train_loader, validate_loader, test_loader, num_data, num_classes = get_dataloader(self._cfg, self._is_distributed, self._cfg.optimize.enable_ipex)
+        self._train_loader = train_loader     # may be use by other component
+        self._epoch_steps = len(train_loader) # may be use by other component
+        self._num_classes = num_classes 
         logging.info("epoch_steps:%s" % self._epoch_steps)
-        return train_loader, validate_loader, test_loader
+        return train_loader, validate_loader, test_loader, num_data
+    def _create_backbone(self):
+        ''' create backbone model
 
-    def _create_model(self):
-        ''' create model
-        :return: a model
+        :return: a backbone model
+        '''     
+        backbone = createBackbone(self._cfg.model.type, num_classes = self._num_classes, pretrain = self._cfg.model.pretrain)
+        set_attribute("model", backbone, "loss", self._loss)
+        num_params = sum(param.numel() for param in backbone.parameters())
+        self._backbone = backbone # may be use by other component
+        logging.info('backbone:%s' % backbone)
+        logging.info("Model params: ", num_params)
+        print("Model params: ", num_params)
+        return backbone
+    def _create_finetuner(self):
+        ''' create finetuner
+
+        :return a finetuner
         '''
-        is_distributed = self._kwargs['is_distributed']
-        enable_transfer_learning = self._kwargs['enable_transfer_learning']
-        num_classes = self._kwargs['model_num_classes']
-        backbone_name = self._kwargs['model_backbone_name']
-        loss = self._kwargs['model_loss']
-        pretrained_state_dict = self._kwargs['finetune_pretrained_state_dict']
-        top_finetuned_layer = self._kwargs['finetune_top_finetuned_layer']
-        finetune_frozen = self._kwargs['finetune_frozen']
-        pretrained_num_classes = self._kwargs['finetune_pretrained_num_classes']
+        if self._cfg.finetuner.type == "":
+            finetuner = None
+        elif self._cfg.finetuner.type == "Basic":
+            pretrained_model = createBackbone(self._cfg.model.type, num_classes=self._cfg.finetuner.pretrained_num_classes, pretrain=self._cfg.finetuner.pretrain)
+            finetuner = BasicFinetunner(pretrained_model, top_finetuned_layer=self._cfg.finetuner.top_finetuned_layer, is_frozen=self._cfg.finetuner.is_frozen)
+        else:
+            logging.error("[%s] is not supported"%self._cfg.finetuner.type)
+            raise NotImplementedError("[%s] is not supported"%self._cfg.finetuner.type)    
+        self._finetuner = finetuner
+        logging.info('finetuner:%s' % finetuner)
+        return finetuner
+    def _create_distiller(self):
+        ''' create distiller
+        
+        :return a distiller
+        '''
+        if self._cfg.distiller.type == "":
+            distiller = None
+        else:
+            teacher_model = createBackbone(self._cfg.distiller.teacher.type, num_classes = self._num_classes, pretrain = self._cfg.distiller.teacher.pretrain)
+            if self._cfg.distiller.teacher.type != "vit_base_224_in21k_ft_cifar100":
+                teacher_model = extract_distiller_adapter_features(teacher_model,self._cfg.distiller.feature_layer_name,self._cfg.adapter.feature_layer_name)
+            if self._cfg.distiller.type == "kd":
+                distiller = KD(pretrained_model = teacher_model, 
+                                temperature = self._cfg.kd.temperature,
+                                is_frozen = self._cfg.distiller.teacher.is_frozen, 
+                                teacher_forward = not self._cfg.distiller.use_saved_logits,
+                                teacher_type = self._cfg.distiller.teacher.type)
+            elif self._cfg.distiller.type == "DKD":
+                distiller = DKD(pretrained_model = teacher_model, 
+                                alpha = self._cfg.dkd.alpha, beta = self._cfg.dkd.beta,
+                                temperature = self._cfg.kd.temperature, warmup = self._cfg.dkd.warmup,
+                                is_frozen = self._cfg.distiller.teacher.is_frozen, 
+                                teacher_forward = not self._cfg.distiller.use_saved_logits,
+                                teacher_type = self._cfg.distiller.teacher.type)
+            else:
+                logging.error("[%s] is not supported"%self._cfg.distiller.type)
+                raise NotImplementedError("[%s] is not supported"%self._cfg.distiller.type)
+        self._distiller = distiller
+        logging.info('distiller:%s' % distiller)
+        return distiller
+    def _create_adapter(self):
+        ''' create adapter
 
-        model = createBackbone(backbone_name, num_classes=num_classes)
-        model.apply(initWeights)  # init weight
-        set_attribute("model", model, "loss", loss)
-        self._kwargs['backbone_model'] = model
+        :return an adapter
+        '''
+        if self._cfg.adapter.type == "":
+            adapter = None
+        elif self._cfg.adapter.type == "CDAN":
+            adapter = createAdapter('CDAN', input_size=self._cfg.adapter.feature_size * self._num_classes, hidden_size=self._cfg.adapter.feature_size,
+                                    dropout=0.0, grl_coeff_alpha=5.0, grl_coeff_high=1.0, max_iter=self._epoch_steps,
+                                    backbone_output_size=self._num_classes, enable_random_layer=0, enable_entropy_weight=0)
+        else:
+            logging.error("[%s] is not supported"%self._cfg.adapter.type)
+            raise NotImplementedError("[%s] is not supported"%self._cfg.adapter.type)
+        self._adapter = adapter
+        logging.info('adapter:%s' % adapter)
+        return adapter
+    def _create_transfer_model(self, backbone, finetuner, distiller, adapter):
+        ''' create transferrable model
 
-        logging.info('backbone:%s' % model)
-
-        if enable_transfer_learning:
-            pretrained_model = createBackbone(backbone_name, num_classes=pretrained_num_classes)
-            pretrained_model.load_state_dict(pretrained_state_dict, strict=True)
-            finetunner = BasicFinetunner(pretrained_model, top_finetuned_layer=top_finetuned_layer,
-                                         is_frozen=finetune_frozen)
-            model = make_transferrable_with_finetune(model, loss, finetunner=finetunner)
-            logging.info('finetunner:%s' % finetunner)
-            logging.info('transferrable model:%s' % model)
-            self._kwargs['finetunner_finetuned_state_keys'] = finetunner.finetuned_state_keys
-
-        if is_distributed:
+        :return: a transferrable model
+        '''
+        if self._cfg.experiment.strategy == "":
+            strategy = None
+            model = backbone
+        elif self._cfg.experiment.strategy == "OnlyFinetuneStrategy":
+            strategy = TransferStrategy.OnlyFinetuneStrategy
+            model = make_transferrable_with_finetune(backbone, self._loss, finetunner=finetuner)
+        elif self._cfg.experiment.strategy == "OnlyDistillationStrategy":
+            strategy = TransferStrategy.OnlyDistillationStrategy
+            model = make_transferrable_with_knowledge_distillation(backbone,self._loss,distiller,
+                                                   self._cfg.distiller.feature_size,self._cfg.distiller.feature_layer_name,
+                                                   True,self._cfg.experiment.loss.backbone,self._cfg.experiment.loss.distiller)
+        elif self._cfg.experiment.strategy == "OnlyDomainAdaptionStrategy":
+            strategy = TransferStrategy.OnlyDomainAdaptionStrategy
+        elif self._cfg.experiment.strategy == "FinetuneAndDomainAdaptionStrategy":
+            strategy = TransferStrategy.FinetuneAndDomainAdaptionStrategy
+        elif self._cfg.experiment.strategy == "DistillationAndDomainAdaptionStrategy":
+            strategy = TransferStrategy.DistillationAndDomainAdaptionStrategy
+        else:
+            raise NotImplementedError("[%s] is not supported"%self._cfg.experiment.strategy)
+        
+        if self._is_distributed:
             logging.info("training with DistributedDataParallel")
             model = DDP(model)
-        logging.info("model:%s" % model)
-        self._model = model  # may be use by other component
-        return model
-
+        logging.info("model:%s"%model)
+        self._model = model # may be use by other component
+        return model, strategy
     def _create_optimizer(self):
         ''' create optimizer
+
         :return: an optimizer
         '''
-        is_distributed = self._kwargs['is_distributed']
-        enable_transfer_learning = self._kwargs['enable_transfer_learning']
-        learning_rate = self._kwargs['optimizer_learning_rate']
-        weight_decay = self._kwargs['optimizer_weight_decay']
-        momentum = self._kwargs['optimizer_momentum']
-        if enable_transfer_learning:
-            finetuned_state_keys = ["backbone.%s" % name for name in
-                                    self._kwargs['finetunner_finetuned_state_keys']]  # add component prefix
-            finetuner_learning_rate = self._kwargs['optimizer_finetune_learning_rate']
-            finetuner_params = {'params': [p for (name, p) in self._model.named_parameters() if
-                                           p.requires_grad and name in finetuned_state_keys],
-                                'lr': finetuner_learning_rate}
-            remain_params = {'params': [p for (name, p) in self._model.named_parameters() if
-                                        p.requires_grad and name not in finetuned_state_keys],
-                             'lr': learning_rate}
-            logging.info("[%s] params set finetuner learning rate[%s]" % (
-            len(finetuner_params['params']), finetuner_learning_rate))
-            logging.info("[%s] params set common learning rate [%s]" % (len(remain_params['params']), learning_rate))
-            assert len(finetuner_params) > 0, "Empty finetuner_params"
-            parameters = [finetuner_params, remain_params]
+        if self._cfg.experiment.strategy == "OnlyFinetuneStrategy":
+            finetuned_state_keys = ["backbone.%s"%name for name in self._finetuner.finetuned_state_keys] # add component prefix
+            finetuner_params = {'params':[p for (name, p) in self._model.named_parameters() if p.requires_grad and name in finetuned_state_keys],
+                                'lr': self._cfg.finetuner.learning_rate}
+            remain_params = {'params':[p for (name, p) in self._model.named_parameters() if p.requires_grad and name not in finetuned_state_keys],
+                                'lr': self._cfg.solver.optimizer.lr}
+            logging.info("[%s] params set finetuner learning rate[%s]" % (len(finetuner_params['params']), self._cfg.finetuner.learning_rate))
+            logging.info("[%s] params set common learning rate [%s]" % (len(remain_params['params']), self._cfg.solver.optimizer.lr))
+            assert len(finetuner_params) > 0,"Empty finetuner_params"
+            parameters = [finetuner_params,remain_params]
         else:
             remain_params = {'params': [p for p in self._model.parameters() if p.requires_grad],
-                             'lr': learning_rate}
-            logging.info("[%s] params set common learning rate [%s]" % (len(remain_params), learning_rate))
+                             'lr': self._cfg.solver.optimizer.lr}
+            logging.info("[%s] params set common learning rate [%s]" % (len(remain_params), self._cfg.solver.optimizer.lr))
             parameters = [remain_params]
-        if is_distributed:
+        if self._is_distributed:
             logging.info("training with DistributedDataParallel")
-            optimizer = ZeRO(parameters, optim.SGD, weight_decay=weight_decay, momentum=momentum)
+            if self._cfg.solver.optimizer.type == "SGD":
+                optimizer = ZeRO(parameters, optim.SGD, weight_decay=self._cfg.solver.optimizer.weight_decay,momentum=self._cfg.solver.optimizer.momentum)
+            else:
+                logging.error("[%s] is not supported"%self._cfg.solver.optimizer.type)
+                raise NotImplementedError("[%s] is not supported"%self._cfg.solver.optimizer.type)
         else:
-            optimizer = optim.SGD(parameters, lr=learning_rate, weight_decay=weight_decay, momentum=momentum)
-        logging.info("optimizer:%s" % optimizer)
-        self._optimizer = optimizer  # may be use by other component
+            if self._cfg.solver.optimizer.type == "SGD":
+                optimizer = optim.SGD(parameters,lr=self._cfg.solver.optimizer.lr, weight_decay=self._cfg.solver.optimizer.weight_decay,momentum=self._cfg.solver.optimizer.momentum)
+            else:
+                logging.error("[%s] is not supported"%self._cfg.solver.optimizer.type)
+                raise NotImplementedError("[%s] is not supported"%self._cfg.solver.optimizer.type)
+        logging.info("optimizer:%s"%optimizer)
+        self._optimizer = optimizer # may be use by other component
         return optimizer
-
     def _create_lr_scheduler(self):
         ''' create lr_scheduler
+
         :return: a lr_scheduler
         '''
-        T_max = self._kwargs['scheduler_T_max']
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self._optimizer, T_max=T_max)
+        if self._cfg.solver.scheduler.type == "":
+            scheduler = None
+        elif self._cfg.solver.scheduler.type == "ExponentialLR":
+            scheduler = optim.lr_scheduler.ExponentialLR(self._optimizer, gamma=self._cfg.solver.scheduler.lr_decay_rate)
+        elif self._cfg.solver.scheduler.type == "MultiStepLR":
+            scheduler = optim.lr_scheduler.MultiStepLR(self._optimizer, milestones=self._cfg.solver.scheduler.lr_decay_states, gamma=self._cfg.solver.scheduler.lr_decay_rate)
+        elif self._cfg.solver.scheduler.type == "CosineAnnealingLR":
+            scheduler = optim.lr_scheduler.CosineAnnealingLR(self._optimizer, T_max=self._cfg.solver.scheduler.T_max)
+        elif self._cfg.solver.scheduler.type == "ReduceLROnPlateau":
+            scheduler = optim.lr_scheduler.ReduceLROnPlateau(self._optimizer, mode="max",factor=self._cfg.solver.scheduler.lr_decay_rate, patience=self._cfg.solver.scheduler.patience, \
+                                                            verbose=True, threshold_mode='abs')
+        else:
+            logging.error("[%s] is not supported"%self._cfg.solver.scheduler.type)
+            raise NotImplementedError("[%s] is not supported"%self._cfg.solver.scheduler.type)
+        self._scheduler = scheduler
         return scheduler
+    def _create_warmup_lr_scheduler(self):
+        ''' create warm up lr_scheduler
 
+        :return: a warm up  lr_scheduler
+        '''
+            
+        warmup_scheduler = None
+        if self._cfg.solver.warmup > 0:
+            warmup_scheduler = WarmUpLR(self._optimizer, self._epoch_steps * self._cfg.solver.warmup)
+        
+        return warmup_scheduler
     def _create_tensorboard_writer(self):
         ''' create tensorboard_writer
+
         :return: a tensorboard_writer
         '''
-        tensorboard_dir = self._kwargs['tensorboard_dir']
-        tensorboard_filename_suffix = self._kwargs['tensorboard_filename_suffix']
-        tensorboard_writer = SummaryWriter(tensorboard_dir, filename_suffix=tensorboard_filename_suffix)
+        tensorboard_writer = SummaryWriter(self._cfg.experiment.tensorboard_dir, filename_suffix=self._cfg.experiment.tensorboard_filename_suffix)
         logging.info('tensorboard_writer :%s' % tensorboard_writer)
         return tensorboard_writer
-
     def _create_early_stopping(self):
         ''' create early_stopping
+
         :return: an early_stopping
         '''
-        tolerance_epoch = self._kwargs['earlystop_tolerance_epoch']
-        if tolerance_epoch <= 0:
-            return None
-
-        model_saved_path = self._kwargs['model_saved_path']
-        delta = self._kwargs['earlystop_delta']
-        is_max = self._kwargs['earlystop_is_max']
-        limitation = self._kwargs['earlystop_limitation']
-        early_stopping = EarlyStopping(model_path=model_saved_path, tolerance_epoch=tolerance_epoch, delta=delta,
-                                       is_max=is_max, limitation=limitation)
-        logging.info('early_stopping :%s' % early_stopping)
+        if self._cfg.solver.early_stop.flag:
+            early_stopping = EarlyStopping(tolerance_epoch=self._cfg.solver.early_stop.tolerance_epoch, delta=self._cfg.solver.early_stop.delta, 
+                                        is_max=self._cfg.solver.early_stop.is_max, limitation=self._cfg.solver.early_stop.limitation)
+            logging.info('early_stopping :%s' % early_stopping)
+        else:
+            early_stopping = None
         return early_stopping
-
     def _create_profiler(self):
         ''' create a profiler
+
         :return: (training_profiler,inference_profiler)
         '''
-        skip_first = self._kwargs['profile_skip_first']
-        wait = self._kwargs['profile_wait']
-        warmup = self._kwargs['profile_warmup']
-        active = self._kwargs['profile_active']
-        repeat = self._kwargs['profile_repeat']
-
         def parse_activities(activity_str):
             result = set()
             for item in activity_str.lower().split(","):
@@ -304,87 +262,87 @@ class Task:
                     result.add(ProfilerActivity.CUDA)
             return result
 
-        activities = parse_activities(self._kwargs['profile_activities'])
-        training_trace_file = self._kwargs['profile_trace_file_training']
-        inference_trace_file = self._kwargs['profile_trace_file_inference']
-
-        schedule = torch.profiler.schedule(skip_first=skip_first, wait=wait,
-                                           warmup=warmup, active=active, repeat=repeat)
-        training_profiler = profile(activities=activities, schedule=schedule,
-                                    on_trace_ready=partial(trace_handler, training_trace_file))
+        activities = parse_activities(self._cfg.profiler.activities)
+        schedule = torch.profiler.schedule(skip_first=self._cfg.profiler.skip_first,wait=self._cfg.profiler.wait,
+            warmup=self._cfg.profiler.warmup,active=self._cfg.profiler.active,repeat=self._cfg.profiler.repeat)
+        training_profiler = profile(activities=activities,schedule=schedule,
+                           on_trace_ready=partial(trace_handler,self._cfg.profiler.trace_file_training))
         inference_profiler = profile(activities=activities, schedule=schedule,
-                                     on_trace_ready=partial(trace_handler, inference_trace_file))
-        logging.info("training_profiler:%s" % training_profiler)
+                                   on_trace_ready=partial(trace_handler, self._cfg.profiler.trace_file_inference))
+        logging.info("training_profiler:%s"%training_profiler)
         logging.info("inference_profiler:%s" % inference_profiler)
-        return (training_profiler, inference_profiler)
-
+        return (training_profiler,inference_profiler)
     def _load_trained_model(self):
         ''' load the trained model
+
         :return: a trained model
         '''
-        num_classes = self._kwargs['model_num_classes']
-        loss = self._kwargs['model_loss']
-        model_saved_path = self._kwargs['model_saved_path']
-        candidate_model_saved_path = "%s_epoch_%s" % (model_saved_path, self._kwargs['training_epochs'])
-        backbone_name = self._kwargs['model_backbone_name']
-
-        trained_model = createBackbone(backbone_name, num_classes=num_classes)
+        trained_model = createBackbone(self._cfg.model.type, num_classes=self._num_classes)
+        model_saved_path = os.path.join(self._model_dir, "backbone_best.pth")
         if os.path.exists(model_saved_path):
             logging.info("load the best trained model")
-            trained_model.load_state_dict(torch.load(model_saved_path), strict=True)
-        elif os.path.exists(candidate_model_saved_path):
-            logging.info("load the latest trained model")
-            trained_model.load_state_dict(torch.load(candidate_model_saved_path), strict=True)
+            trained_model.load_state_dict(torch.load(model_saved_path,map_location="cpu"),strict=True)
         else:
-            raise RuntimeError("Can not find [%s] or [%s]" % (model_saved_path, candidate_model_saved_path))
+            raise RuntimeError("Can not find [%s]"%(model_saved_path))
 
-        set_attribute("trained_model", trained_model, "loss", loss)
+        set_attribute("trained_model", trained_model, "loss",self._loss)
         return trained_model
-
-    def run(self):
+    def run(self, validate_metric_fn_map, rank, eval=False, resume=False):
         ''' Run task
+        :param validate_metric_fn_map: metric for validation
+        :param rank: rank
+        :param eval: whether only for evaluate
+        :param resume: whether resume for train
         Returns: validation metric. If has Earlystopping, using the best metric; Else, using the last metric.
         '''
-        training_epochs = self._kwargs['training_epochs']
-        logging_interval_step = self._kwargs['logging_interval_step']
-        validate_metric_fn_map = self._kwargs['validate_metric_fn_map']
-        earlystop_metric = self._kwargs['earlystop_metric']
-        rank = self._kwargs['rank']
-        is_distributed = self._kwargs['is_distributed']
-        enable_ipex = self._kwargs['enable_ipex']
-        enable_transfer_learning = self._kwargs['enable_transfer_learning']
-        model_saved_path = self._kwargs['model_saved_path']
         ######################### create components #########################
-        (train_loader, validate_loader, test_loader) = self._create_dataloader()
-        model = self._create_model()
+        (train_loader, validate_loader, test_loader, num_data) = self._create_dataloader()
+        backbone = self._create_backbone()
+        finetuner = self._create_finetuner()
+        distiller = self._create_distiller()
+        adapter = self._create_adapter()
+        model,strategy = self._create_transfer_model(backbone, finetuner, distiller, adapter)
+        is_transferrable = strategy != None 
         optimizer = self._create_optimizer()
-        if enable_ipex:
-            model = model.to(memory_format=torch.channels_last)
+        if self._cfg.optimize.enable_ipex:
+            model = model.to(memory_format = torch.channels_last)
             model, optimizer = ipex.optimize(model, optimizer=optimizer)
-            if enable_transfer_learning:
-                set_attribute("backbone", model.backbone, "loss", self._kwargs['model_loss'])
-
+            if is_transferrable:
+                set_attribute("backbone",model.backbone, "loss", self._loss)
+        
         lr_scheduler = self._create_lr_scheduler()
+        warmup_scheduler = self._create_warmup_lr_scheduler()
         tensorboard_writer = self._create_tensorboard_writer()
         early_stopping = self._create_early_stopping()
         training_profiler, inference_profiler = self._create_profiler()
-        trainer = Trainer(model, optimizer, lr_scheduler, early_stopping, validate_metric_fn_map,
-                          earlystop_metric, training_epochs,
-                          tensorboard_writer, training_profiler, logging_interval_step, rank=rank,
-                          is_transferrable=enable_transfer_learning)
-        logging.info("trainer:%s" % trainer)
-        evaluator = Evaluator(validate_metric_fn_map, tensorboard_writer, inference_profiler)
+
+        ######################### Evaluate #########################
+        evaluator = Evaluator(validate_metric_fn_map, tensorboard_writer, self._cfg, inference_profiler, self._cfg.profiler.activities)
         logging.info("evaluator:%s" % evaluator)
+        if eval:
+            with Timer():
+                start = datetime.datetime.now()
+                metric_values = evaluator.evaluate(model, test_loader)
+                total_seconds = datetime.datetime.now() - start
+                test_data = num_data["test"]
+                print(f"test data: {test_data}, throughput: {test_data/total_seconds} samples/second")
+                print(metric_values)
+            return metric_values
         #################################### train and evaluate ###################
+        trainer = Trainer(model, optimizer, lr_scheduler, validate_metric_fn_map, self._cfg.solver.early_stop.metric,
+                            tensorboard_writer, self._cfg, 
+                            warmup_scheduler=warmup_scheduler, early_stopping=early_stopping, is_transferrable=is_transferrable,
+                            training_profiler=training_profiler, device=self._cfg.profiler.activities, rank=rank)      
+        logging.info("trainer:%s" % trainer)
         with Timer():
-            if is_distributed:
+            if self._is_distributed:
                 with Join([model, optimizer]):
-                    val_metric = trainer.train(train_loader, self._epoch_steps, validate_loader, model_saved_path)
+                    val_metric = trainer.train(train_loader, validate_loader, self._epoch_steps, self._model_dir, self._num_classes, resume)
             else:
-                val_metric = trainer.train(train_loader, self._epoch_steps, validate_loader, model_saved_path)
+                val_metric = trainer.train(train_loader, validate_loader, self._epoch_steps, self._model_dir, self._num_classes, resume)
         ################################### test ###################################
         if test_loader is not None:
-            if (not is_distributed) or (is_distributed and rank == 0):  # only test once
+            if (not (self._cfg.distiller.save_logits or self._cfg.distiller.check_logits)) and ((not self._is_distributed) or (self._is_distributed and rank == 0)): # only test once
                 trained_model = self._load_trained_model()
                 with Timer():
                     evaluator.evaluate(trained_model, test_loader)

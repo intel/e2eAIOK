@@ -1,312 +1,166 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+# @Author : Hua XiaoZhuan
+# @Time   : 8/16/2022 1:10 PM
+from training.task import Task
 import os
-import torch
-from torch.utils.data import Dataset
-from torch.utils.data import random_split
-from torch.utils.tensorboard import SummaryWriter
-import time
-from dataset.image_list import ImageList
-from torch.utils.data.distributed import DistributedSampler
-from engine_core.backbone.factory import createBackbone
-from engine_core.adapter.factory import createAdapter
-from engine_core.transferrable_model import _make_transferrable, make_transferrable_with_domain_adaption
-from engine_core.transferrable_model import TransferStrategy, extract_distiller_adapter_features, set_attribute
-from training.train import Trainer, Evaluator
-import torch.optim as optim
-from training.utils import EarlyStopping, initWeights
-from training.metrics import accuracy
-import logging
-from torchvision import transforms
-from functools import partial
-import torch.nn as nn
-import argparse
-from cfg import CFG as cfg
-from cfg import show_cfg
-from dataset import get_dataset
-from dataset.imagenet import get_imagenet_val_loader
-from engine_core.distiller import KD, DKD
-from engine_core.finetunner import BasicFinetunner
-import time
-import torch.distributed as dist
-import torch.multiprocessing as mp
-from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.distributed.optim.zero_redundancy_optimizer import ZeroRedundancyOptimizer as ZeRO
-from torch.distributed.algorithms.join import Join
 import datetime
+import torch.distributed as dist
+import torch
+import torch.nn as nn
+import time
+import logging
+from training.metrics import accuracy
+import torchvision
+from cfg import cfg, show_cfg
+import optuna
+from optuna.trial import TrialState
+import argparse
+from functools import partial
 
-
-def seconds_stats(record_map, process_name, is_begin, ):
-    ''' stats duration (seconds)
-
-    :param record_map: already records
-    :param process_name: process name
-    :param is_begin: is begin?
-    :return:
+def objective(args,trial):
+    ''' Optuna optimize objective
+    Args:
+        args: parsed args
+        trial: a trial object
+    Returns: a metric to measure the performance of model
     '''
-    if is_begin:
-        record_map['begin'] = datetime.datetime.now()
-        _str = "Begine %s" % process_name
-    else:
-        total_seconds = (datetime.datetime.now() - record_map['begin']).total_seconds()
-        _str = "%s total seconds:%s" % (process_name, total_seconds)
-        del record_map['begin']
+    if "MASTER_ADDR" not in os.environ:
+        os.environ["MASTER_ADDR"] = "127.0.0.1"
+    if "MASTER_PORT" not in os.environ:
+        os.environ["MASTER_PORT"] = "8089"
+    # os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_id
+    return main(args, trial)
 
-    print(_str)
-    logging.info(_str)
-
-
-def get_transfer_setting(cfg, num_classes, epoch_steps):
-    # get adapter
-    if cfg.ADAPTER.TYPE == "NONE":
-        adapter_feature_size = None
-        adapter_feature_layer_name = None
-        adapter = None
-    elif cfg.ADAPTER.TYPE == "CDAN":
-        adapter_feature_size = cfg.ADAPTER.FEATURE_SIZE
-        adapter_feature_layer_name = cfg.ADAPTER.FEATURE_LAYER_NAME
-        adapter = createAdapter('CDAN', input_size=adapter_feature_size * num_classes, hidden_size=adapter_feature_size,
-                                dropout=0.0, grl_coeff_alpha=5.0, grl_coeff_high=1.0, max_iter=epoch_steps,
-                                backbone_output_size=num_classes, enable_random_layer=0, enable_entropy_weight=0)
-    else:
-        logging.error("[%s] is not supported" % cfg.ADAPTER.TYPE)
-        raise NotImplementedError("[%s] is not supported" % cfg.ADAPTER.TYPE)
-
-    # get source dataset
-    if cfg.SOURCE_DATASET.TYPE == "NONE":
-        adaption_source_domain_training_dataset = None
-    elif cfg.SOURCE_DATASET.TYPE == "USPS_vs_MNIST":
-        transform = transforms.Compose([
-            transforms.Resize(28),
-            transforms.ToTensor(), ])
-        adaption_source_domain_training_dataset = ImageList(os.path.join(cfg.SOURCE_DATASET.PATH, "USPS"),
-                                                            open(os.path.join(cfg.SOURCE_DATASET.PATH,
-                                                                              "USPS/usps_train.txt")).readlines(),
-                                                            transform, 'L')
-    else:
-        logging.error("[%s] is not supported" % cfg.SOURCE_DATASET.TYPE)
-        raise NotImplementedError("[%s] is not supported" % cfg.SOURCE_DATASET.TYPE)
-
-    # get distiller
-    distiller_feature_size = None
-    if cfg.DISTILLER.TYPE == "NONE":
-        distiller_feature_layer_name = None
-        distiller = None
-    else:
-        teacher_model = createBackbone(cfg.DISTILLER.TEACHER.TYPE, pretrain=cfg.DISTILLER.TEACHER.PRETRAIN,
-                                       num_classes=num_classes)
-        if cfg.DISTILLER.TYPE == "KD":
-            distiller_feature_layer_name = "x"
-            new_teacher_model = extract_distiller_adapter_features(teacher_model, distiller_feature_layer_name,
-                                                                   adapter_feature_layer_name)
-            distiller = KD(new_teacher_model, cfg.DISTILLER.TEACHER.IS_FROZEN, cfg.KD.TEMPERATURE,
-                           cfg.KD.CE_LOSS_WEIGHT, cfg.KD.KD_LOSS_WEIGHT)
-        elif cfg.DISTILLER.TYPE == "DKD":
-            distiller_feature_layer_name = "x"
-            new_teacher_model = extract_distiller_adapter_features(teacher_model, distiller_feature_layer_name,
-                                                                   adapter_feature_layer_name)
-            distiller = DKD(new_teacher_model, cfg.DISTILLER.TEACHER.IS_FROZEN, cfg)
-        else:
-            logging.error("[%s] is not supported" % cfg.DISTILLER.TYPE)
-            raise NotImplementedError("[%s] is not supported" % cfg.DISTILLER.TYPE)
-
-    # get finetuner
-    if cfg.FINETUNE.TYPE == "NONE":
-        finetuner = None
-    elif cfg.FINETUNE.TYPE == "Basic":
-        top_finetuned_layer = None
-        is_frozen = False
-        finetuner = BasicFinetunner(model, top_finetuned_layer, is_frozen)
-    else:
-        logging.error("[%s] is not supported" % cfg.FINETUNE.TYPE)
-        raise NotImplementedError("[%s] is not supported" % cfg.FINETUNE.TYPE)
-
-    # get strategy
-    if cfg.EXPERIMENT.STRATEGY == "OnlyFinetuneStrategy":
-        strategy = TransferStrategy.OnlyFinetuneStrategy
-    elif cfg.EXPERIMENT.STRATEGY == "OnlyDistillationStrategy":
-        strategy = TransferStrategy.OnlyDistillationStrategy
-    elif cfg.EXPERIMENT.STRATEGY == "OnlyDomainAdaptionStrategy":
-        strategy = TransferStrategy.OnlyDomainAdaptionStrategy
-    elif cfg.EXPERIMENT.STRATEGY == "FinetuneAndDomainAdaptionStrategy":
-        strategy = TransferStrategy.FinetuneAndDomainAdaptionStrategy
-    elif cfg.EXPERIMENT.STRATEGY == "DistillationAndDomainAdaptionStrategy":
-        strategy = TransferStrategy.DistillationAndDomainAdaptionStrategy
-    else:
-        raise NotImplementedError("[%s] is not supported" % CFG.EXPERIMENT.STRATEGY)
-
-    backbone_loss_weight = cfg.EXPERIMENT.LOSS.BACKBONE
-    distiller_loss_weight = cfg.EXPERIMENT.LOSS.DISTILLER
-    adapter_loss_weight = cfg.EXPERIMENT.LOSS.ADAPTER
-
-    setting = (adapter_feature_size, adapter_feature_layer_name, adapter, adaption_source_domain_training_dataset, \
-               distiller_feature_size, distiller_feature_layer_name, distiller, finetuner, strategy,
-               backbone_loss_weight, distiller_loss_weight, adapter_loss_weight)
-
-    return setting
-
-
-def main(args):
+def main(args, trial):
+    ''' main function
+    :param args: args parameters.
+    :param trial: Optuna Trial. If None, then training without automl.
+    :return: validation metric. If has Earlystopping, using the best metric; Else, using the last metric.
+    '''
     #################### configuration ################
     world_size = args.world_size
     rank = args.rank
     if world_size <= 1:
         world_size = 1
         rank = -1
-    is_distributed = (world_size > 1)  # distributed flag
-
-    device = torch.device('cuda' if torch.cuda.is_available() and args.gpu else 'cpu')
-    torch.manual_seed(0)
+    is_distributed = (world_size > 1) # distributed flag
 
     cfg.merge_from_file(args.cfg)
     cfg.merge_from_list(args.opts)
-    cfg.freeze()
-    show_cfg(cfg)
+    torch.manual_seed(cfg.experiment.seed)
+    # cfg.profiler.activities = torch.device('cuda' if torch.cuda.is_available() and args.gpu else 'cpu')
+    cfg.distiller.feature_layer_name = None if cfg.distiller.feature_layer_name == "" else cfg.distiller.feature_layer_name
+    cfg.adapter.feature_layer_name = None if cfg.adapter.feature_layer_name == "" else cfg.adapter.feature_layer_name
 
-    os.makedirs(os.path.join(cfg.EXPERIMENT.MODEL_SAVE), exist_ok=True)
-    os.makedirs(os.path.join(cfg.EXPERIMENT.MODEL_SAVE, cfg.EXPERIMENT.PROJECT), exist_ok=True)
-    os.makedirs(os.path.join(cfg.EXPERIMENT.MODEL_SAVE, cfg.EXPERIMENT.PROJECT, cfg.EXPERIMENT.TAG), exist_ok=True)
-    model_dir = os.path.join(cfg.EXPERIMENT.MODEL_SAVE, cfg.EXPERIMENT.PROJECT, cfg.EXPERIMENT.TAG)
-    os.makedirs(os.path.join(model_dir, "tensorboard"), exist_ok=True)
-
+    ## save dir setting ##
+    model_dir = os.path.join(cfg.experiment.model_save, cfg.experiment.project,cfg.experiment.tag)
+    LOG_DIR = os.path.join(model_dir,"log")                      # to save training log
+    PROFILE_DIR = os.path.join(model_dir,"profile")              # to save profiling result
+    cfg.experiment.tensorboard_dir = os.path.join(model_dir,"tensorboard_log")  # to save tensorboard log
+    os.makedirs(LOG_DIR,exist_ok=True)
+    os.makedirs(PROFILE_DIR,exist_ok=True) 
+    os.makedirs(cfg.experiment.tensorboard_dir,exist_ok=True)
+ 
     if is_distributed:
         dist.init_process_group("gloo", rank=rank, world_size=world_size, timeout=datetime.timedelta(seconds=300))
-        log_filename = os.path.join(model_dir, "%s_rank_%s.txt" % (int(time.time()), rank))
-        tensorboard_filename_suffix = "_rank%s" % (rank)
-    else:
-        log_filename = os.path.join(model_dir, "%s.txt" % int(time.time()))
-        tensorboard_filename_suffix = ""
+
+    log_filename = "%s/%s%s%s.txt" % (LOG_DIR, int(time.time()),
+                                      "" if trial is None else "_trial%s" % trial.number,
+                                      "" if not is_distributed else "_rank%s" % rank)
+    cfg.experiment.tensorboard_filename_suffix = "" if not is_distributed else "_rank%s" % (rank)
+    cfg.profiler.trace_file_training = "%s/training_profile%s%s_" % (PROFILE_DIR,
+                                                                "" if trial is None else "_trial%s" % trial.number,
+                                                                "" if not is_distributed else "_rank%s" % rank)
+    cfg.profiler.trace_file_inference = '%s/test_profile%s%s_' % (PROFILE_DIR,
+                                                             "" if trial is None else "_trial%s" % trial.number,
+                                                             "" if not is_distributed else "_rank%s" % rank)
+    model_save_path = "%s/pretrain_resnet50_cifar10%s%s" % (model_dir,
+                                                                "" if trial is None else "_trial%s" % trial.number,
+                                                                "" if not is_distributed else "_rank%s" % rank)
+    os.makedirs(model_save_path,exist_ok=True)
 
     logging.basicConfig(filename=log_filename, level=logging.INFO,
                         format='%(asctime)s %(levelname)s [%(filename)s %(funcName)s %(lineno)d]: %(message)s',
                         datefmt='%m/%d/%Y %I:%M:%S %p',
                         filemode='w')
 
-    ######################## create dataset and dataloader #####################
-    train_loader, val_loader, test_loader, num_data, num_classes = get_dataset(cfg)
-    epoch_steps = len(train_loader)
-    logging.info("epoch_steps:%s" % epoch_steps)
+    ### optimizer setting update for Optuna
+    cfg.solver.optimizer.lr = trial.suggest_float("lr", 0.001, 0.1, log=True) if trial is not None else 0.02
+    cfg.finetuner.learning_rate = trial.suggest_float("lr_finetuned", 0.001, 0.1, log=True) if trial is not None else 0.02  # finetunning
+    cfg.solver.optimizer.weight_decay = trial.suggest_float("weight_decay", 0.0001, 0.1,log=True) if trial is not None else 0.0005  # L2 penalty
 
-    ############################# Load Model #############################
-    loss = nn.CrossEntropyLoss()
-    model = createBackbone(cfg.MODEL.TYPE, pretrain=cfg.MODEL.PRETRAIN, num_classes=num_classes)
-    model.apply(initWeights)
-    set_attribute("model", model, "loss", loss)
-    logging.info('backbone:%s' % model)
+    ## deal with save logits for distiller
+    if cfg.distiller.save_logits:
+        cfg.experiment.strategy = ""
+        cfg.distiller.type = ""
+        cfg.model.type = cfg.distiller.teacher.type
+        cfg.model.pretrain = cfg.distiller.teacher.pretrain
+    if int(cfg.distiller.save_logits) + int(cfg.distiller.use_saved_logits) + int(cfg.distiller.check_logits) >=2:
+        raise RuntimeError("Can not save teacher logits, train students with logits or check logits together!")
+    if cfg.distiller.save_logits:
+        os.makedirs(cfg.distiller.logits_path, exist_ok=True)
+    if cfg.distiller.use_saved_logits or cfg.distiller.check_logits:
+        if not os.path.exists(cfg.distiller.logits_path):
+            raise RuntimeError("Need teacher saved logits!")
 
-    ########################### Make model transferrable###################
-    setting = get_transfer_setting(cfg, num_classes, epoch_steps)
-    adapter_feature_size, adapter_feature_layer_name, adapter, adaption_source_domain_training_dataset, \
-    distiller_feature_size, distiller_feature_layer_name, distiller, finetuner, strategy, \
-    backbone_loss_weight, distiller_loss_weight, adapter_loss_weight = setting
-
-    if cfg.EXPERIMENT.STRATEGY == "OnlyDomainAdaptionStrategy":
-        model = make_transferrable_with_domain_adaption(model, loss,
-                                                        adapter, adapter_feature_size, adapter_feature_layer_name,
-                                                        train_loader, adaption_source_domain_training_dataset,
-                                                        enable_target_training_label=False,
-                                                        backbone_loss_weight=backbone_loss_weight,
-                                                        adapter_loss_weight=adapter_loss_weight)
-        logging.info('adapter:%s' % adapter)
-        logging.info('transferrable model:%s' % model)
-    else:  # to do, split into several APIs
-        model = _make_transferrable(model, loss,
-                                    finetuner, distiller, adapter,
-                                    distiller_feature_size, distiller_feature_layer_name,
-                                    adapter_feature_size, adapter_feature_layer_name,
-                                    train_loader, adaption_source_domain_training_dataset,
-                                    strategy, enable_target_training_label=True,
-                                    backbone_loss_weight=backbone_loss_weight,
-                                    distiller_loss_weight=distiller_loss_weight,
-                                    adapter_loss_weight=adapter_loss_weight)
-        logging.info('adapter:%s' % adapter)
-        logging.info('distiller:%s' % distiller)
-        logging.info('finetuner:%s' % finetuner)
-        logging.info('transferrable model:%s' % model)
-
-    model = model.to(device)
-    if not args.eval:
-        if is_distributed:
-            logging.info("training with DistributedDataParallel")
-            model = DDP(model)
-            optimizer = ZeRO(filter(lambda p: p.requires_grad, model.parameters()), optim.SGD,
-                             lr=cfg.SOLVER.LR, weight_decay=cfg.SOLVER.WEIGHT_DECAY, momentum=cfg.SOLVER.MOMENTUM)
-        else:
-            optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()),
-                                  lr=cfg.SOLVER.LR, weight_decay=cfg.SOLVER.WEIGHT_DECAY, momentum=cfg.SOLVER.MOMENTUM)
-    ############################ create other components ############
-    tensorboard_writer = SummaryWriter(os.path.join(model_dir, "tensorboard"),
-                                       filename_suffix=tensorboard_filename_suffix)
-    logging.info('tensorboard_writer :%s' % tensorboard_writer)
-
-    if cfg.SOLVER.EARLY_STOP.FLAG and not args.eval:
-        early_stopping = EarlyStopping(model_path=os.path.join(model_dir, "backbone.pth"),tolerance_epoch=3, delta=0.0001, is_max=True)
-        logging.info('early_stopping :%s' % early_stopping)
-    else:
-        early_stopping = None
-
-    init_weight = False
-    if cfg.MODEL.PRETRAIN == "NONE":
-        init_weight = True
-    logging.info('init_weight :%s' % init_weight)
-
-    #################################### train and evaluate ###################
-    stats_map = dict()  # for time stats
+    ## fix congurations
+    # cfg.freeze()
+    show_cfg(cfg)
+    ##################### parameters ##############
     validate_metric_fn_map = {'acc': accuracy}
-    evaluator = Evaluator(validate_metric_fn_map, tensorboard_writer, None)
-    logging.info("evaluator:%s" % evaluator)
-    # only for evaluation
-    if args.eval:
-        seconds_stats(stats_map, "Test", True)
-        metric_values = evaluator.evaluate(model, test_loader)
-        seconds_stats(stats_map, "Test", False)
-        print(metric_values)
-    # for train
-    else:
-        scheduler = optim.lr_scheduler.ExponentialLR(optimizer,gamma=0.99)
-        trainer = Trainer(model, optimizer, scheduler,early_stopping, validate_metric_fn_map, 'acc', cfg.SOLVER.EPOCHS,
-                          tensorboard_writer, None,cfg.EXPERIMENT.LOG_INTERVAL_STEP, rank, is_transferrable=True)
-        logging.info("trainer:%s" % trainer)
-        ############ train and evaluate ###############
-        seconds_stats(stats_map, "Training", True)
-        if is_distributed:
-            with Join([model, optimizer]):
-                trainer.train(train_loader, epoch_steps, val_loader, os.path.join(model_dir, "backbone_best.pth"))
-        else:
-            trainer.train(train_loader, epoch_steps, val_loader, os.path.join(model_dir, "backbone_best.pth"))
-        if (not is_distributed) or (is_distributed and rank == 0):  # print rank 0
-            seconds_stats(stats_map, "Training", False)
-        ############ test ###############
-        if (not is_distributed) or (is_distributed and rank == 0):  # only test once
-            trained_model = createBackbone(cfg.MODEL.TYPE, num_classes=num_classes)
-            trained_model.load_state_dict(torch.load(os.path.join(model_dir, "backbone_best.pth"), map_location="cpu"))
-            set_attribute("trained_model", trained_model, "loss", loss)
-            seconds_stats(stats_map, "Test", True)
-            evaluator.evaluate(trained_model, test_loader)
-            seconds_stats(stats_map, "Test", False)
-        ########### destroy dist #########
-        if is_distributed:
-            dist.destroy_process_group()
-
+    model_loss = nn.CrossEntropyLoss(reduction='mean')
+    ###################### task ###############
+    task = Task(cfg, model_save_path, model_loss, is_distributed)
+    if trial is not None:
+        logging.info("[%s]: Begin trial %s" % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), trial.number))
+        print("[%s]: Begin trial %s" % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), trial.number))
+    metric = task.run(validate_metric_fn_map, rank, eval=args.eval, resume=args.resume)
+    ########### destroy dist #########
+    if is_distributed:
+        dist.destroy_process_group()
+    if trial is not None:
+        logging.info("End trial %s" % trial.number)
+        print("[%s]: End trial %s" % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), trial.number))
+    return metric
 
 if __name__ == '__main__':
     start_time = time.time()
     parser = argparse.ArgumentParser()
     parser.description = 'Must set world_size.'
-    parser.add_argument("--cfg", type=str, default="../config/adapter/usps_vs_minist_CDAN.yaml")
-    parser.add_argument('--eval', action='store_true')
-    parser.add_argument('--gpu', action='store_true')
-    parser.add_argument('--resume', action='store_true')
-    parser.add_argument('-s', "--world_size", default=1, help="The worker num. World_size <= 1 means no parallel.",
-                        type=int)
+    parser.add_argument("--cfg", type=str, default="../config/finetuner/cifar100_res50PretrainI21k.yaml")
+    parser.add_argument('--eval',action='store_true')
+    parser.add_argument('--resume',action='store_true')
+    parser.add_argument('--gpu',action='store_true')
+    parser.add_argument('-s',"--world_size",default=1, help="The worker num. World_size <= 0 means no parallel.", type=int)
     parser.add_argument('-r', "--rank", default=0, help="The current rank. Begins from 0.", type=int)
+    parser.add_argument('-R', "--trial_round", default=0,help="The hyper-param tunning round. trial_round <= 0 means no tunning.", type=int)
     parser.add_argument("opts", default=None, nargs=argparse.REMAINDER)
     args = parser.parse_args()
 
-    if "MASTER_ADDR" not in os.environ:
-        os.environ["MASTER_ADDR"] = "127.0.0.1"
-    if "MASTER_PORT" not in os.environ:
-        os.environ["MASTER_PORT"] = "8087"
+    trial_round = parser.parse_args().trial_round
+    if trial_round > 0:
+        study = optuna.create_study(direction="maximize")
+        study.optimize(partial(objective,args), n_trials=trial_round, timeout=None)
 
-    main(args)
-    print(f"Totally take {(time.time() - start_time)} seconds")
+        pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
+        complete_trials = study.get_trials(deepcopy=False, states=[TrialState.COMPLETE])
+
+        print("Study statistics: ")
+        print("  Number of finished trials: ", len(study.trials))
+        print("  Number of pruned trials: ", len(pruned_trials))
+        print("  Number of complete trials: ", len(complete_trials))
+
+        print("Best trial:")
+        trial = study.best_trial
+
+        print("  Value: ", trial.value)
+
+        print("  Params: ")
+        for key, value in trial.params.items():
+            print("    {}: {}".format(key, value))
+    else:
+        print("No Trial")
+        objective(args,None)
+
+    print(f"Totally take {(time.time()-start_time)} seconds")

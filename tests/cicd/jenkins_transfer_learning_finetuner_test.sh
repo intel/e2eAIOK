@@ -7,5 +7,3 @@ conda activate pytorch-1.10.0
 # run main.py
 cd /home/vmagent/app/AIDK/TransferLearningKit/src
 python main.py -s1 -r0
-python main_finetunner_cifar.py -s1 -r0 -t0
-python main_finetunner_cifar.py -s1 -r0 -t1

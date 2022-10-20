@@ -118,6 +118,10 @@ src/
            composed_dataset.py ------------------------------- compose multi domain datasets
            image_list.py ------------------------------------- dataset for MNIST
            office31.py --------------------------------------- dataset for office31
+           usps_vs_minist.py --------------------------------- dataset for USPS_vs_MNIST
+           cifar10.py --------------------------------------- dataset for CIFAR10
+           cifar100.py --------------------------------------- dataset for CIFAR100
+           imagenet.py --------------------------------------- dataset for ImageNet1k
            utils.py ------------------------------------------ dataset helper function
    engine_core/ ---------------------------------------------- transfer learning engine
               adapter/ --------------------------------------- domain adapters
@@ -130,8 +134,13 @@ src/
               backbone/ -------------------------------------- backbone networks
                       factory.py ----------------------------- backbone factory
                       lenet.py ------------------------------- built-in lenet network
+                      resnet_cifar.py ------------------------------- built-in resnet network for CIFAR dataset
+                      resnet_imagenet.py --------------------- build-in ResNet network for ImageNet1k
+                      resnetv2.py ---------------------------- build-in ResNet V2 network
               distiller/ ------------------------------------- knowledge distillers
                       basic_distiller.py --------------------- basic knowledge distiller
+                      kd.py ---------------------------------- KD knowledge distiller
+                      dkd.py --------------------------------- DKD knowledge distiller
               finetunner/ ------------------------------------ finetunners
                         basic_distiller.py ------------------- basic distiller
               transfeerable_model.py ------------------------- the core interface to make a model transferrable
@@ -140,6 +149,7 @@ src/
               train.py --------------------------------------- Trainer and Evaluator for training and evaluating
               utils.py --------------------------------------- helper function for training
    main.py --------------------------------------------------- the main file  
+   cfg.py ---------------------------------------------------- the configuration file
 test/ -------------------------------------------------------- pytest unit test                      
 ```
 

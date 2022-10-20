@@ -1,0 +1,25 @@
+experiment:
+  project: "baselines"
+  tag: "cifar100_res18_ReduceLROnPlateau"
+  model_save: "../model"
+dataset:
+  type: "cifar100"
+  num_workers: 4
+  path: "../datasets/cifar"
+model:
+  type: "resnet18_cifar"
+solver:
+  batch_size: 128
+  epochs: 1
+  optimizer:
+    type: "SGD"
+    lr: 0.1
+    weight_decay: 5e-4
+    momentum: 0.9
+  scheduler:
+    type: "ReduceLROnPlateau"
+    lr_decay_rate: 0.2
+    patience: 10
+  early_stop:
+    flag: True
+    tolerance_epoch: 15

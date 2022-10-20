@@ -4,6 +4,8 @@
 # @Time   : 7/18/2022 8:37 AM
 import logging
 import re
+import torch
+import os
 
 def layerNamePatternMatch(source_name,source_name_pattern_map):
     ''' Check whether source_name match the pattern
@@ -50,3 +52,39 @@ def copyParameterFromPretrained(source_model,pretrained_state_dict,source_name_p
                 param.requires_grad = False
     else:
         logging.info("no untrainable parameters")
+
+
+def initWeights(layer,pretrain=None):
+    ''' Initialize layer parameters
+
+    :param layer: the layer to be initialized
+    :return:
+    '''
+    if pretrain == "" or pretrain is None:
+        classname = layer.__class__.__name__
+        if classname.find('Conv2d') != -1 or classname.find('ConvTranspose2d') != -1:
+            nn.init.kaiming_uniform_(layer.weight)
+            if layer.bias is not None:
+                nn.init.zeros_(layer.bias)
+            logging.info("init layer [%s] with kaiming_uniform"% classname)
+        elif classname.find('BatchNorm') != -1:
+            nn.init.normal_(layer.weight, 1.0, 0.02)
+            if layer.bias is not None:
+                nn.init.zeros_(layer.bias)
+            logging.info("init layer [%s] with normal" % classname)
+        elif classname.find('Linear') != -1:
+            nn.init.xavier_normal_(layer.weight)
+            if layer.bias is not None:
+                nn.init.zeros_(layer.bias)
+            logging.info("init layer [%s] with xavier_normal" % classname)
+        else:
+            logging.info("no init layer[%s]"%classname)
+            print("no init layer[%s]"%classname)
+    else:
+        if not os.path.exists(pretrain):
+            raise RuntimeError(f"Can not find {pretrain}!")
+        print(f"load pretrained model at {pretrain}")
+        logging.info(f"load pretrained model at {pretrain}")
+        state_dict = torch.load(pretrain,map_location=torch.device('cpu'))
+        state_dict = state_dict["state_dict"] if "state_dict" in state_dict else state_dict
+        layer.load_state_dict(state_dict, strict=True)

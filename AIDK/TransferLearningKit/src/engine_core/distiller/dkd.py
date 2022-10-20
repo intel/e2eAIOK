@@ -52,21 +52,39 @@ def cat_mask(t, mask1, mask2):
 
 class DKD(nn.Module):
     """Decoupled Knowledge Distillation(CVPR 2022)"""
+    def __init__(self, pretrained_model, alpha, beta, temperature, warmup, is_frozen=True, teacher_forward=True, teacher_type=None):
+        ''' Init method.
 
-    def __init__(self, pretrained_model, is_frozen, cfg):
+        :param pretrained_model: the pretrained model as teacher
+        :param alpha: the alpha for DKD 
+        :param beta: the beta for DKD 
+        :param temperature: the temperature for DKD 
+        :param warmup: warmup epoches for DKD
+        :param is_frozen: whether frozen teacher when training
+        :param teacher_forward: whether do teacher forwarding, set False when train with pre-saved logits
+        :param teacher_type: teacher model type
+        '''
         super(DKD, self).__init__()
         self.pretrained_model = pretrained_model
-        self._is_frozen = is_frozen
-        self.alpha = cfg.DKD.ALPHA
-        self.beta = cfg.DKD.BETA
-        self.temperature = cfg.DKD.T
-        self.warmup = cfg.DKD.WARMUP
-        if is_frozen:
+        self.alpha = alpha
+        self.beta = beta
+        self.temperature = temperature
+        self.warmup = warmup
+        self.is_frozen = is_frozen
+        self.teacher_forward = teacher_forward
+        self.teacher_type = teacher_type
+        
+        if self.is_frozen:
             for param in self.pretrained_model.parameters():
                 param.requires_grad = False
 
     def forward(self, x):
-        return self.pretrained_model(x)
+        if self.teacher_forward:
+            output = self.pretrained_model(x)
+            output = (output.logits,None) if self.teacher_type == "vit_base_224_in21k_ft_cifar100" else output
+            return output
+        else:
+            return None,None
 
     def loss(self,teacher_logits, student_logits,**kwargs):
         distiller_loss = min(kwargs["epoch"] / self.warmup, 1.0) * dkd_loss(
