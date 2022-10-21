@@ -18,8 +18,8 @@ INT_COLS = [f"_c{i}" for i in list(range(1, 14))]
 CAT_COLS = [f"_c{i}" for i in list(range(14, 40))]
 sorted_column_name = [f"_c{i}" for i in list(range(0, 40))]
 path_prefix = f"hdfs://{HDFS_NODE}:9000"
-output_folder = "/home/vmagent/app/dataset/criteo/output/"
-current_path = "/home/vmagent/app/dataset/criteo/output/"
+output_folder = "/home/vmagent/app/dataset/criteo/output"
+current_path = "/home/vmagent/app/dataset/criteo/output"
 
 def process(files, output_name):
     os.makedirs(output_folder, exist_ok=True)

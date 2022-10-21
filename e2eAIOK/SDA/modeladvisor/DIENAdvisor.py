@@ -133,13 +133,9 @@ class DIENAdvisor(BaseModelAdvisor):
 
     def dist_launch(self, args):
         cmd = []
-        # mpirun -n 1 -hosts 172.16.8.30 -ppn 1 -iface ens21f1 -print-rank-map
-        # -prepend-rank -verbose
-        cmd.extend([
-            "mpirun", "-n", f"{args['ppn']}", "-hosts", f"{','.join(args['hosts'])}",
-            "-iface", f"{args['iface']}"
-        ])
-        cmd.extend(["-print-rank-map", "-prepend-rank", "-verbose"])
+        hosts = [f"{h}:1" for h in args['hosts']]
+        cmd.extend(["/opt/intel/oneapi/tensorflow/2.5.0/bin/horovodrun", "-np", f"{args['ppn']}", "-H",  f"{','.join(hosts)}", "--network-interface", f"{args['iface']}"])
+        cmd.extend(["--verbose"])
         cmd.extend(self.prepare_cmd(args))
 
         self.logger.info(f'training launch command: {" ".join(cmd)}')
