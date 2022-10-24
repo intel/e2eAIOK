@@ -1,0 +1,2960 @@
+diff -uprN third_party/nnUNet/nnunet/dataset_conversion/amos_convert_label.py nnunet/dataset_conversion/amos_convert_label.py
+--- third_party/nnUNet/nnunet/dataset_conversion/amos_convert_label.py	1970-01-01 00:00:00.000000000 +0000
++++ nnunet/dataset_conversion/amos_convert_label.py	2022-10-24 14:50:43.261325896 +0000
+@@ -0,0 +1,124 @@
++#    Copyright 2022, Intel Corporation.
++#
++#    Licensed under the Apache License, Version 2.0 (the "License");
++#    you may not use this file except in compliance with the License.
++#    You may obtain a copy of the License at
++#
++#        http://www.apache.org/licenses/LICENSE-2.0
++#
++#    Unless required by applicable law or agreed to in writing, software
++#    distributed under the License is distributed on an "AS IS" BASIS,
++#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++#    See the License for the specific language governing permissions and
++#    limitations under the License.
++
++from logging import root
++import os
++from glob import glob
++import numpy as np
++import nibabel as nib
++import json
++from batchgenerators.utilities.file_and_folder_operations import *
++
++
++def convert_label(input_nifti_file_path, out_nifti_file_path):
++    print(output_label_nifti_file_path)
++    os.system(f'mkdir -p {output_label_nifti_file_path}')
++
++    for patient in glob(f'{input_nifti_file_path}/*'):
++        patient_name = os.path.basename(os.path.normpath(patient))
++        print(patient_name)
++
++        nifti_file = nib.load(patient)
++
++        data = np.asarray(nifti_file.dataobj)
++
++        for i in range(3, 16):
++            data[np.where(data == i)] = i-1
++
++        data[np.where(data == 1)] = 20
++        data[np.where(data == 2)] = 1
++        data[np.where(data == 20)] = 2
++
++        new_nifti = nib.Nifti1Image(data, nifti_file.affine, nifti_file.header)
++        nib.save(new_nifti, os.path.join(out_nifti_file_path, patient_name))
++
++
++def convert_json(input_path, output_path):
++    with open(input_path) as f:
++        d = json.load(f)
++        # d["labels"] = {
++        #     "0": "background", 
++        #     "1": "kidney", 
++        #     "2": "spleen", 
++        #     "3": "gall bladder", 
++        #     "4": "esophagus", 
++        #     "5": "liver", 
++        #     "6": "stomach", 
++        #     "7": "arota", 
++        #     "8": "postcava", 
++        #     "9": "pancreas", 
++        #     "10": "right adrenal gland", 
++        #     "11": "left adrenal gland", 
++        #     "12": "duodenum", 
++        #     "13": "bladder", 
++        #     "14": "prostate/uterus"
++        # }
++        d["labels"] = {
++            "0": "background", 
++            "1": "spleen", 
++            "2": "right kidney", 
++            "3": "left kidney", 
++            "4": "gall bladder", 
++            "5": "esophagus", 
++            "6": "liver", 
++            "7": "stomach", 
++            "8": "arota", 
++            "9": "postcava", 
++            "10": "pancreas", 
++            "11": "right adrenal gland", 
++            "12": "left adrenal gland", 
++            "13": "duodenum", 
++            "14": "bladder", 
++            "15": "prostate/uterus"
++        }
++        d["numTest"] = 0
++        d["test"] = []
++
++    save_json(d, output_path)
++
++
++def copy_label(input_path, output_path):
++    os.system(f'mkdir -p {output_path}')
++    os.system(f'cp -r {input_path} {output_path}')
++    
++
++def convert_sample(input_path, output_path):
++    os.system(f'mkdir -p {output_path}')
++    os.system(f'cp -r {input_path} {output_path}')
++    os.system(f"cd {output_path}/imagesTr && rename 's/\.nii/_0000\.nii/' *")
++    
++
++if __name__ == '__main__':
++    root_path = '/home/vmagent/app/dataset/nnUNet_raw_data_base/nnUNet_raw_data'
++    source_task = 'Task505_AMOS'
++    target_task = 'Task508_AMOS_kidney'
++
++    input_label_nifti_file_path = f'{root_path}/{source_task}/labelsTr'
++    output_label_nifti_file_path = f'{root_path}/{target_task}/labelsTr'
++    # convert_label(input_label_nifti_file_path, output_label_nifti_file_path)
++
++    input_label_nifti_file_path = f'{root_path}/{source_task}/labelsTr'
++    output_label_nifti_file_path = f'{root_path}/{target_task}'
++    copy_label(input_label_nifti_file_path, output_label_nifti_file_path)
++
++    input_data_nifti_file_path = f'{root_path}/{source_task}/imagesTr'
++    output_data_nifti_file_path = f'{root_path}/{target_task}'
++    convert_sample(input_data_nifti_file_path, output_data_nifti_file_path)
++
++    input_json_path = f'{root_path}/{source_task}/task1_dataset.json'
++    output_json_path = f'{root_path}/{target_task}/dataset.json'
++    convert_json(input_json_path, output_json_path)
++
++
++# python nnunet/dataset_conversion/amos_convert_label.py
+\ No newline at end of file
+diff -uprN third_party/nnUNet/nnunet/dataset_conversion/kits_convert_label.py nnunet/dataset_conversion/kits_convert_label.py
+--- third_party/nnUNet/nnunet/dataset_conversion/kits_convert_label.py	1970-01-01 00:00:00.000000000 +0000
++++ nnunet/dataset_conversion/kits_convert_label.py	2022-10-24 14:50:43.261325896 +0000
+@@ -0,0 +1,178 @@
++#    Copyright 2022, Intel Corporation.
++#
++#    Licensed under the Apache License, Version 2.0 (the "License");
++#    you may not use this file except in compliance with the License.
++#    You may obtain a copy of the License at
++#
++#        http://www.apache.org/licenses/LICENSE-2.0
++#
++#    Unless required by applicable law or agreed to in writing, software
++#    distributed under the License is distributed on an "AS IS" BASIS,
++#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++#    See the License for the specific language governing permissions and
++#    limitations under the License.
++
++from logging import root
++import os
++import sys
++from glob import glob
++import numpy as np
++import nibabel as nib
++import json
++from batchgenerators.utilities.file_and_folder_operations import *
++import argparse
++
++
++def convert_data(input_nifti_file_path, out_nifti_file_path):
++    os.system(f'mkdir -p {out_nifti_file_path}')
++
++    generated = [
++        os.path.basename(os.path.normpath(patient))
++        for patient in 
++            glob(f'{out_nifti_file_path}/case_*')
++    ]
++
++    for patient in glob(f'{input_nifti_file_path}/case_*'):
++        patient_name = os.path.basename(os.path.normpath(patient))
++        print(patient_name)
++        if patient_name in generated:
++            continue
++
++        nifti_file = nib.load(patient)
++        nifti_file = nib.as_closest_canonical(nifti_file)
++        print(nib.aff2axcodes(nifti_file.affine))
++
++        nib.save(nifti_file, os.path.join(out_nifti_file_path, patient_name))
++
++
++def convert_label(input_nifti_file_path, out_nifti_file_path, axis_reorder=True):
++    os.system(f'mkdir -p {out_nifti_file_path}')
++    print(out_nifti_file_path)
++
++    generated = [
++        os.path.basename(os.path.normpath(patient))
++        for patient in 
++            glob(f'{out_nifti_file_path}/case_*')
++    ]
++
++    for patient in glob(f'{input_nifti_file_path}/*'):
++        patient_name = os.path.basename(os.path.normpath(patient))
++        print(patient_name)
++        if patient_name in generated:
++            continue
++
++        nifti_file = nib.load(patient)
++        if axis_reorder:
++            nifti_file = nib.as_closest_canonical(nifti_file)
++
++        # method 1
++        # data = nifti_file.get_fdata()
++        # data[np.where(data == 2)] = 1
++        # nib.save(nifti_file, os.path.join(out_nifti_file_path, patient_name))
++        # del nifti_file, data
++
++        # method 2
++        data = np.asarray(nifti_file.dataobj)
++        data[np.where(data == 2)] = 1
++        new_nifti = nib.Nifti1Image(data, nifti_file.affine, nifti_file.header)
++        nib.save(new_nifti, os.path.join(out_nifti_file_path, patient_name))
++
++
++def convert_json(input_path, output_path):
++    with open(input_path) as f:
++        d = json.load(f)
++        d["labels"] = {
++            "0": "background",
++            "1": "Kidney"
++        }
++        d["numTest"] = 0
++        d["test"] = []
++
++    save_json(d, output_path)
++
++
++def convert_predict_data():
++    input_nifti_file_path = '/data/tmp'
++    out_nifti_file_path = '/data/tmp2'
++
++    os.system(f'mkdir -p {out_nifti_file_path}')
++    print(out_nifti_file_path)
++
++    for patient in glob(f'{input_nifti_file_path}/*.gz'):
++        patient_name = os.path.basename(os.path.normpath(patient))
++        print(patient_name)
++
++        nifti_file = nib.load(patient)
++
++        # method 2
++        data = np.asarray(nifti_file.dataobj)
++        data[np.where(data == 1)] = 20
++        data[np.where(data == 2)] = 1
++        data[np.where(data == 20)] = 2
++        new_nifti = nib.Nifti1Image(data, nifti_file.affine, nifti_file.header)
++        nib.save(new_nifti, os.path.join(out_nifti_file_path, patient_name))
++
++
++def change_intensity_distribution(source_task_name, target_task_name):
++    from nnunet.paths import preprocessing_output_dir
++
++    def print_intensity(plans):
++        print(f"mean: {plans['dataset_properties']['intensityproperties'][0]['mean']}")
++        print(f"std: {plans['dataset_properties']['intensityproperties'][0]['sd']}")
++        print(f"percentile_99_5: {plans['dataset_properties']['intensityproperties'][0]['percentile_99_5']}")
++        print(f"percentile_00_5: {plans['dataset_properties']['intensityproperties'][0]['percentile_00_5']}")
++
++    source_plan_name = 'nnUNetPlansv2.1_trgSp_kits19_plans_3D.pkl'
++    target_plan_name = 'nnUNetPlansv2.1_trgSp_kits19_plans_3D.pkl'
++
++    source_plans_fname = join(preprocessing_output_dir, source_task_name, source_plan_name)
++    source_plans = load_pickle(source_plans_fname)
++
++    target_plans_fname = join(preprocessing_output_dir, target_task_name, target_plan_name)
++    target_plans = load_pickle(target_plans_fname)
++
++    print('before changing...')
++    print_intensity(source_plans)
++
++    source_plans['dataset_properties']['intensityproperties'][0]['mean']            = target_plans['dataset_properties']['intensityproperties'][0]['mean']
++    source_plans['dataset_properties']['intensityproperties'][0]['sd']              = target_plans['dataset_properties']['intensityproperties'][0]['sd']
++    source_plans['dataset_properties']['intensityproperties'][0]['percentile_99_5'] = target_plans['dataset_properties']['intensityproperties'][0]['percentile_99_5']
++    source_plans['dataset_properties']['intensityproperties'][0]['percentile_00_5'] = target_plans['dataset_properties']['intensityproperties'][0]['percentile_00_5']
++
++    print('after changing...')
++    print_intensity(source_plans)
++    
++    save_pickle(source_plans, source_plans_fname)
++
++
++if __name__ == '__main__':
++    parser = argparse.ArgumentParser()
++    parser.add_argument("task")
++    args = parser.parse_args()
++
++    root_path = '/home/vmagent/app/dataset/nnUNet_raw_data_base/nnUNet_raw_data'
++    source_task = 'Task041_KiTS'
++    target_task = 'Task507_KiTS_kidney'
++
++    if args.task == 'basic':
++
++        input_label_nifti_file_path = f'{root_path}/{source_task}/labelsTr'
++        output_label_nifti_file_path = f'{root_path}/{target_task}/labelsTr'
++        convert_label(input_label_nifti_file_path, output_label_nifti_file_path)
++
++        input_data_nifti_file_path = f'{root_path}/{source_task}/imagesTr'
++        output_data_nifti_file_path = f'{root_path}/{target_task}/imagesTr'
++        convert_data(input_data_nifti_file_path, output_data_nifti_file_path)
++
++        input_json_path = f'{root_path}/{source_task}/dataset.json'
++        output_json_path = f'{root_path}/{target_task}/dataset.json'
++        convert_json(input_json_path, output_json_path)
++    
++    elif args.task == 'intensity':
++        source_task_name = 'Task507_KiTS_kidney'
++        target_task_name = 'Task508_AMOS_kidney'
++
++        change_intensity_distribution(source_task_name, target_task_name)
++
++
++# python nnunet/dataset_conversion/kits_convert_label.py
+\ No newline at end of file
+diff -uprN third_party/nnUNet/nnunet/dataset_conversion/kits_tumor_size.py nnunet/dataset_conversion/kits_tumor_size.py
+--- third_party/nnUNet/nnunet/dataset_conversion/kits_tumor_size.py	1970-01-01 00:00:00.000000000 +0000
++++ nnunet/dataset_conversion/kits_tumor_size.py	2022-10-24 14:50:43.261325896 +0000
+@@ -0,0 +1,104 @@
++#    Copyright 2022, Intel Corporation.
++#
++#    Licensed under the Apache License, Version 2.0 (the "License");
++#    you may not use this file except in compliance with the License.
++#    You may obtain a copy of the License at
++#
++#        http://www.apache.org/licenses/LICENSE-2.0
++#
++#    Unless required by applicable law or agreed to in writing, software
++#    distributed under the License is distributed on an "AS IS" BASIS,
++#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++#    See the License for the specific language governing permissions and
++#    limitations under the License.
++
++import pandas as pd
++import json
++from nnunet.paths import nnUNet_raw_data
++from batchgenerators.utilities.file_and_folder_operations import *
++import shutil
++import os
++
++
++def get_size_map(file_path):
++    with open(file_path, 'r') as f:
++        case_list = json.load(f)
++    case_id = []
++    radiographic_size = []
++    for case in case_list:
++        case_id.append(case['case_id'])
++        radiographic_size.append(case['radiographic_size'])
++    d = {
++        "case_id": case_id,
++        "r_size": radiographic_size
++    }
++    df = pd.DataFrame(d)
++    print(df['r_size'].describe())
++    case_small = df[df['r_size'] < 4]['case_id'].to_list()
++    case_big = df[df['r_size'] >= 4]['case_id'].to_list()
++    return case_small, case_big
++
++
++def save_raw_data(image_base, label_base, task_id, task_name, case_ids):
++    
++    foldername = "Task%03.0d_%s" % (task_id, task_name)
++    out_base = join(nnUNet_raw_data, foldername)
++    imagestr = join(out_base, "imagesTr")
++    imagests = join(out_base, "imagesTs")
++    labelstr = join(out_base, "labelsTr")
++    maybe_mkdir_p(imagestr)
++    maybe_mkdir_p(imagests)
++    maybe_mkdir_p(labelstr)
++
++    for p in nifti_files(image_base, join=False):
++        cur_case_id = p.rsplit('_', 1)[0]
++        if cur_case_id not in case_ids:
++            continue
++        label_file = join(label_base, f'{cur_case_id}.nii.gz')
++        image_file = join(image_base, p)
++        shutil.copy(image_file, join(imagestr, cur_case_id + "_0000.nii.gz"))
++        shutil.copy(label_file, join(labelstr, cur_case_id + ".nii.gz"))
++
++    json_dict = {}
++    json_dict['name'] = "KiTS"
++    json_dict['description'] = "kidney and kidney tumor segmentation"
++    json_dict['tensorImageSize'] = "4D"
++    json_dict['reference'] = "KiTS data for nnunet"
++    json_dict['licence'] = ""
++    json_dict['release'] = "0.0"
++    json_dict['modality'] = {
++        "0": "CT",
++    }
++    json_dict['labels'] = {
++        "0": "background",
++        "1": "Kidney",
++        "2": "Tumor"
++    }
++
++    json_dict['numTraining'] = len(case_ids)
++    json_dict['numTest'] = 0
++    json_dict['training'] = [{'image': "./imagesTr/%s.nii.gz" % i, "label": "./labelsTr/%s.nii.gz" % i} for i in
++                             case_ids]
++    json_dict['test'] = []
++
++    save_json(json_dict, os.path.join(out_base, "dataset.json"))
++
++
++if __name__ == "__main__":
++    file_path = '/data/kits19/data/kits.json'
++    os.system(f'du -sh ~/code/kits19/data/kits.json')
++    case_small, case_big = get_size_map(file_path)
++
++
++    image_base = f'{nnUNet_raw_data}/Task040_KiTS/imagesTr'
++    label_base = f'{nnUNet_raw_data}/Task040_KiTS/labelsTr'
++
++    task_id = 502
++    task_name = "KiTS_tumor_small"
++    save_raw_data(image_base, label_base, task_id, task_name, case_small)
++
++    task_id = 503
++    task_name = "KiTS_tumor_big"
++    save_raw_data(image_base, label_base, task_id, task_name, case_big)
++    
++
+diff -uprN third_party/nnUNet/nnunet/dataset_conversion/Task029_LiverTumorSegmentationChallenge.py nnunet/dataset_conversion/Task029_LiverTumorSegmentationChallenge.py
+--- third_party/nnUNet/nnunet/dataset_conversion/Task029_LiverTumorSegmentationChallenge.py	2022-10-24 14:55:07.353321438 +0000
++++ nnunet/dataset_conversion/Task029_LiverTumorSegmentationChallenge.py	2022-10-24 14:50:43.261325896 +0000
+@@ -52,11 +52,11 @@ def export_segmentations_postprocess(ind
+ 
+ 
+ if __name__ == "__main__":
+-    train_dir = "/media/fabian/DeepLearningData/tmp/LITS-Challenge-Train-Data"
+-    test_dir = "/media/fabian/My Book/datasets/LiTS/test_data"
++    train_dir = "/data/lits17"
++    test_dir = "/data/lits17"
+ 
+ 
+-    output_folder = "/media/fabian/My Book/MedicalDecathlon/MedicalDecathlon_raw_splitted/Task029_LITS"
++    output_folder = "/data/nnUNet_raw_data_base/nnUNet_raw_data/Task029_LITS"
+     img_dir = join(output_folder, "imagesTr")
+     lab_dir = join(output_folder, "labelsTr")
+     img_dir_te = join(output_folder, "imagesTs")
+diff -uprN third_party/nnUNet/nnunet/dataset_conversion/Task040_KiTS.py nnunet/dataset_conversion/Task040_KiTS.py
+--- third_party/nnUNet/nnunet/dataset_conversion/Task040_KiTS.py	2022-10-24 14:55:07.353321438 +0000
++++ nnunet/dataset_conversion/Task040_KiTS.py	2022-10-24 14:50:43.261325896 +0000
+@@ -1,3 +1,4 @@
++#    Copyright 2022, Intel Corporation.
+ #    Copyright 2020 Division of Medical Image Computing, German Cancer Research Center (DKFZ), Heidelberg, Germany
+ #
+ #    Licensed under the Apache License, Version 2.0 (the "License");
+@@ -198,8 +199,8 @@ def reset_trainerName_these(experiments=
+ 
+ 
+ if __name__ == "__main__":
+-    base = "/media/fabian/My Book/datasets/KiTS2019_Challenge/kits19/data"
+-    out = "/media/fabian/My Book/MedicalDecathlon/nnUNet_raw_splitted/Task040_KiTS"
++    base = "/data/kits19/data"
++    out = "/data/nnUNet_raw_data_base/nnUNet_raw_data/Task041_KiTS"
+     cases = subdirs(base, join=False)
+ 
+     maybe_mkdir_p(out)
+@@ -230,11 +231,13 @@ if __name__ == "__main__":
+         "1": "Kidney",
+         "2": "Tumor"
+     }
+-    json_dict['numTraining'] = len(cases)
+-    json_dict['numTest'] = 0
++    json_dict['numTraining'] = 210
++    json_dict['numTest'] = 90
+     json_dict['training'] = [{'image': "./imagesTr/%s.nii.gz" % i, "label": "./labelsTr/%s.nii.gz" % i} for i in
+-                             cases]
+-    json_dict['test'] = []
++                             cases[:210]]
++    json_dict['test'] = ["./imagesTs/%s.nii.gz" % i for i in cases[210:]]
+ 
+     save_json(json_dict, os.path.join(out, "dataset.json"))
+ 
++
++# python nnunet/dataset_conversion/Task040_KiTS.py
+\ No newline at end of file
+diff -uprN third_party/nnUNet/nnunet/evaluation/evaluator.py nnunet/evaluation/evaluator.py
+--- third_party/nnUNet/nnunet/evaluation/evaluator.py	2022-10-24 14:55:07.357321438 +0000
++++ nnunet/evaluation/evaluator.py	2022-10-24 14:50:43.261325896 +0000
+@@ -1,3 +1,4 @@
++#    Copyright 2022, Intel Corporation.
+ #    Copyright 2020 Division of Medical Image Computing, German Cancer Research Center (DKFZ), Heidelberg, Germany
+ #
+ #    Licensed under the Apache License, Version 2.0 (the "License");
+@@ -396,8 +397,10 @@ def aggregate_scores(test_ref_pairs,
+         json_dict["id"] = hashlib.md5(json.dumps(json_dict).encode("utf-8")).hexdigest()[:12]
+         save_json(json_dict, json_output_file)
+ 
++    mean_score = [v["Dice"] for k,v in all_scores["mean"].items() if k != "0"]
++    mean_score = sum(mean_score) / len(mean_score) 
+ 
+-    return all_scores
++    return mean_score
+ 
+ 
+ def aggregate_scores_for_experiment(score_file,
+@@ -443,7 +446,7 @@ def aggregate_scores_for_experiment(scor
+     return json_dict
+ 
+ 
+-def evaluate_folder(folder_with_gts: str, folder_with_predictions: str, labels: tuple, **metric_kwargs):
++def evaluate_folder(folder_with_gts: str, folder_with_predictions: str, labels: tuple, eval_on_common: bool, **metric_kwargs):
+     """
+     writes a summary.json to folder_with_predictions
+     :param folder_with_gts: folder where the ground truth segmentations are saved. Must be nifti files.
+@@ -453,6 +456,9 @@ def evaluate_folder(folder_with_gts: str
+     """
+     files_gt = subfiles(folder_with_gts, suffix=".nii.gz", join=False)
+     files_pred = subfiles(folder_with_predictions, suffix=".nii.gz", join=False)
++    if eval_on_common:
++        files_gt = [i for i in files_gt if i in files_pred]
++        files_pred = [i for i in files_pred if i in files_gt]
+     assert all([i in files_pred for i in files_gt]), "files missing in folder_with_predictions"
+     assert all([i in files_gt for i in files_pred]), "files missing in folder_with_gts"
+     test_ref_pairs = [(join(folder_with_predictions, i), join(folder_with_gts, i)) for i in files_pred]
+@@ -479,5 +485,7 @@ def nnunet_evaluate_folder():
+                                                                        "evaluate the background label (0) but in "
+                                                                        "this case that would not give any useful "
+                                                                        "information.")
++    parser.add_argument("--common", required=False, default=False, action="store_true",
++                        help="find the intersection between pred and ref, and then evaluate")
+     args = parser.parse_args()
+-    return evaluate_folder(args.ref, args.pred, args.l)
++    return evaluate_folder(args.ref, args.pred, args.l, args.common)
+Binary files third_party/nnUNet/nnunet/evaluation/__pycache__/evaluator.cpython-38.pyc and nnunet/evaluation/__pycache__/evaluator.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/evaluation/__pycache__/__init__.cpython-38.pyc and nnunet/evaluation/__pycache__/__init__.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/evaluation/__pycache__/metrics.cpython-38.pyc and nnunet/evaluation/__pycache__/metrics.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/alternative_experiment_planning/normalization/__pycache__/experiment_planner_2DUNet_v21_RGB_scaleto_0_1.cpython-38.pyc and nnunet/experiment_planning/alternative_experiment_planning/normalization/__pycache__/experiment_planner_2DUNet_v21_RGB_scaleto_0_1.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/alternative_experiment_planning/normalization/__pycache__/experiment_planner_3DUNet_CT2.cpython-38.pyc and nnunet/experiment_planning/alternative_experiment_planning/normalization/__pycache__/experiment_planner_3DUNet_CT2.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/alternative_experiment_planning/normalization/__pycache__/experiment_planner_3DUNet_nonCT.cpython-38.pyc and nnunet/experiment_planning/alternative_experiment_planning/normalization/__pycache__/experiment_planner_3DUNet_nonCT.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/alternative_experiment_planning/normalization/__pycache__/__init__.cpython-38.pyc and nnunet/experiment_planning/alternative_experiment_planning/normalization/__pycache__/__init__.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/alternative_experiment_planning/patch_size/__pycache__/experiment_planner_3DUNet_isotropic_in_mm.cpython-38.pyc and nnunet/experiment_planning/alternative_experiment_planning/patch_size/__pycache__/experiment_planner_3DUNet_isotropic_in_mm.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/alternative_experiment_planning/patch_size/__pycache__/experiment_planner_3DUNet_isotropic_in_voxels.cpython-38.pyc and nnunet/experiment_planning/alternative_experiment_planning/patch_size/__pycache__/experiment_planner_3DUNet_isotropic_in_voxels.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/alternative_experiment_planning/patch_size/__pycache__/__init__.cpython-38.pyc and nnunet/experiment_planning/alternative_experiment_planning/patch_size/__pycache__/__init__.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/alternative_experiment_planning/pooling_and_convs/__pycache__/experiment_planner_baseline_3DUNet_allConv3x3.cpython-38.pyc and nnunet/experiment_planning/alternative_experiment_planning/pooling_and_convs/__pycache__/experiment_planner_baseline_3DUNet_allConv3x3.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/alternative_experiment_planning/pooling_and_convs/__pycache__/experiment_planner_baseline_3DUNet_poolBasedOnSpacing.cpython-38.pyc and nnunet/experiment_planning/alternative_experiment_planning/pooling_and_convs/__pycache__/experiment_planner_baseline_3DUNet_poolBasedOnSpacing.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/alternative_experiment_planning/pooling_and_convs/__pycache__/__init__.cpython-38.pyc and nnunet/experiment_planning/alternative_experiment_planning/pooling_and_convs/__pycache__/__init__.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/alternative_experiment_planning/__pycache__/experiment_planner_baseline_3DUNet_v21_11GB.cpython-38.pyc and nnunet/experiment_planning/alternative_experiment_planning/__pycache__/experiment_planner_baseline_3DUNet_v21_11GB.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/alternative_experiment_planning/__pycache__/experiment_planner_baseline_3DUNet_v21_16GB.cpython-38.pyc and nnunet/experiment_planning/alternative_experiment_planning/__pycache__/experiment_planner_baseline_3DUNet_v21_16GB.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/alternative_experiment_planning/__pycache__/experiment_planner_baseline_3DUNet_v21_32GB.cpython-38.pyc and nnunet/experiment_planning/alternative_experiment_planning/__pycache__/experiment_planner_baseline_3DUNet_v21_32GB.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/alternative_experiment_planning/__pycache__/experiment_planner_baseline_3DUNet_v21_3convperstage.cpython-38.pyc and nnunet/experiment_planning/alternative_experiment_planning/__pycache__/experiment_planner_baseline_3DUNet_v21_3convperstage.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/alternative_experiment_planning/__pycache__/experiment_planner_baseline_3DUNet_v22.cpython-38.pyc and nnunet/experiment_planning/alternative_experiment_planning/__pycache__/experiment_planner_baseline_3DUNet_v22.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/alternative_experiment_planning/__pycache__/experiment_planner_baseline_3DUNet_v23.cpython-38.pyc and nnunet/experiment_planning/alternative_experiment_planning/__pycache__/experiment_planner_baseline_3DUNet_v23.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/alternative_experiment_planning/__pycache__/experiment_planner_pretrained.cpython-38.pyc and nnunet/experiment_planning/alternative_experiment_planning/__pycache__/experiment_planner_pretrained.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/alternative_experiment_planning/__pycache__/experiment_planner_residual_3DUNet_v21.cpython-38.pyc and nnunet/experiment_planning/alternative_experiment_planning/__pycache__/experiment_planner_residual_3DUNet_v21.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/alternative_experiment_planning/__pycache__/__init__.cpython-38.pyc and nnunet/experiment_planning/alternative_experiment_planning/__pycache__/__init__.cpython-38.pyc differ
+diff -uprN third_party/nnUNet/nnunet/experiment_planning/alternative_experiment_planning/target_spacing/experiment_planner_baseline_3DUNet_v21_customTargetSpacing_kits19.py nnunet/experiment_planning/alternative_experiment_planning/target_spacing/experiment_planner_baseline_3DUNet_v21_customTargetSpacing_kits19.py
+--- third_party/nnUNet/nnunet/experiment_planning/alternative_experiment_planning/target_spacing/experiment_planner_baseline_3DUNet_v21_customTargetSpacing_kits19.py	1970-01-01 00:00:00.000000000 +0000
++++ nnunet/experiment_planning/alternative_experiment_planning/target_spacing/experiment_planner_baseline_3DUNet_v21_customTargetSpacing_kits19.py	2022-10-24 14:50:43.269325896 +0000
+@@ -0,0 +1,34 @@
++#    Copyright 2022, Intel Corporation.
++#    Copyright 2020 Division of Medical Image Computing, German Cancer Research Center (DKFZ), Heidelberg, Germany
++#
++#    Licensed under the Apache License, Version 2.0 (the "License");
++#    you may not use this file except in compliance with the License.
++#    You may obtain a copy of the License at
++#
++#        http://www.apache.org/licenses/LICENSE-2.0
++#
++#    Unless required by applicable law or agreed to in writing, software
++#    distributed under the License is distributed on an "AS IS" BASIS,
++#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++#    See the License for the specific language governing permissions and
++#    limitations under the License.
++
++import numpy as np
++from nnunet.experiment_planning.experiment_planner_baseline_3DUNet_v21 import ExperimentPlanner3D_v21
++from nnunet.paths import *
++
++
++class ExperimentPlanner3D_v21_customTargetSpacing_kits19(ExperimentPlanner3D_v21):
++    def __init__(self, folder_with_cropped_data, preprocessed_output_folder):
++        super(ExperimentPlanner3D_v21, self).__init__(folder_with_cropped_data, preprocessed_output_folder)
++        # we change the data identifier and plans_fname. This will make this experiment planner save the preprocessed
++        # data in a different folder so that they can co-exist with the default (ExperimentPlanner3D_v21). We also
++        # create a custom plans file that will be linked to this data
++        self.data_identifier = "nnUNetData_plans_v2.1_trgSp_kits19"
++        self.plans_fname = join(self.preprocessed_output_folder,
++                                "nnUNetPlansv2.1_trgSp_kits19_plans_3D.pkl")
++
++    def get_target_spacing(self):
++        # simply return the desired spacing as np.array
++        return np.array([3.22, 1.62, 1.62]) # make sure this is float!!!! Not int!
++
+Binary files third_party/nnUNet/nnunet/experiment_planning/alternative_experiment_planning/target_spacing/__pycache__/experiment_planner_baseline_3DUNet_targetSpacingForAnisoAxis.cpython-38.pyc and nnunet/experiment_planning/alternative_experiment_planning/target_spacing/__pycache__/experiment_planner_baseline_3DUNet_targetSpacingForAnisoAxis.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/alternative_experiment_planning/target_spacing/__pycache__/experiment_planner_baseline_3DUNet_v21_customTargetSpacing_2x2x2.cpython-38.pyc and nnunet/experiment_planning/alternative_experiment_planning/target_spacing/__pycache__/experiment_planner_baseline_3DUNet_v21_customTargetSpacing_2x2x2.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/alternative_experiment_planning/target_spacing/__pycache__/experiment_planner_baseline_3DUNet_v21_customTargetSpacing_amos22.cpython-38.pyc and nnunet/experiment_planning/alternative_experiment_planning/target_spacing/__pycache__/experiment_planner_baseline_3DUNet_v21_customTargetSpacing_amos22.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/alternative_experiment_planning/target_spacing/__pycache__/experiment_planner_baseline_3DUNet_v21_customTargetSpacing_kits19.cpython-38.pyc and nnunet/experiment_planning/alternative_experiment_planning/target_spacing/__pycache__/experiment_planner_baseline_3DUNet_v21_customTargetSpacing_kits19.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/alternative_experiment_planning/target_spacing/__pycache__/experiment_planner_baseline_3DUNet_v21_noResampling.cpython-38.pyc and nnunet/experiment_planning/alternative_experiment_planning/target_spacing/__pycache__/experiment_planner_baseline_3DUNet_v21_noResampling.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/alternative_experiment_planning/target_spacing/__pycache__/__init__.cpython-38.pyc and nnunet/experiment_planning/alternative_experiment_planning/target_spacing/__pycache__/__init__.cpython-38.pyc differ
+diff -uprN third_party/nnUNet/nnunet/experiment_planning/change_batch_size.py nnunet/experiment_planning/change_batch_size.py
+--- third_party/nnUNet/nnunet/experiment_planning/change_batch_size.py	2022-10-24 14:55:07.361321438 +0000
++++ nnunet/experiment_planning/change_batch_size.py	2022-10-24 14:50:43.265325896 +0000
+@@ -1,3 +1,17 @@
++#    Copyright 2020 Division of Medical Image Computing, German Cancer Research Center (DKFZ), Heidelberg, Germany
++#
++#    Licensed under the Apache License, Version 2.0 (the "License");
++#    you may not use this file except in compliance with the License.
++#    You may obtain a copy of the License at
++#
++#        http://www.apache.org/licenses/LICENSE-2.0
++#
++#    Unless required by applicable law or agreed to in writing, software
++#    distributed under the License is distributed on an "AS IS" BASIS,
++#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++#    See the License for the specific language governing permissions and
++#    limitations under the License.
++
+ from batchgenerators.utilities.file_and_folder_operations import *
+ import numpy as np
+ 
+diff -uprN third_party/nnUNet/nnunet/experiment_planning/change_patch_size.py nnunet/experiment_planning/change_patch_size.py
+--- third_party/nnUNet/nnunet/experiment_planning/change_patch_size.py	1970-01-01 00:00:00.000000000 +0000
++++ nnunet/experiment_planning/change_patch_size.py	2022-10-24 14:50:43.265325896 +0000
+@@ -0,0 +1,75 @@
++#    Copyright 2022, Intel Corporation.
++#
++#    Licensed under the Apache License, Version 2.0 (the "License");
++#    you may not use this file except in compliance with the License.
++#    You may obtain a copy of the License at
++#
++#        http://www.apache.org/licenses/LICENSE-2.0
++#
++#    Unless required by applicable law or agreed to in writing, software
++#    distributed under the License is distributed on an "AS IS" BASIS,
++#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++#    See the License for the specific language governing permissions and
++#    limitations under the License.
++
++from batchgenerators.utilities.file_and_folder_operations import *
++import numpy as np
++from nnunet.paths import preprocessing_output_dir, network_training_output_dir_base
++import sys
++
++# task_name = 'Task040_KiTS'
++# plan_name = 'nnUNetPlansv2.1_trgSp_kits19_plans_3D.pkl'
++
++# task_name = 'Task502_KiTS_tumor_small'
++# plan_name = 'nnUNetPlansv2.1_trgSp_kits19_plans_3D.pkl'
++
++# task_name = 'Task503_KiTS_tumor_big'
++# plan_name = 'nnUNetPlansv2.1_trgSp_kits19_plans_3D.pkl'
++
++# task_name = 'Task504_KiTS_kidney'
++# plan_name = 'nnUNetPlansv2.1_trgSp_kits19_plans_3D.pkl'
++# plan_name = 'plans.pkl'
++
++task_name = 'Task506_AMOS_kidney'
++plan_name = 'nnUNetPlansv2.1_trgSp_kits19_plans_3D.pkl'
++# # plan_name = 'model_final_checkpoint.model.pkl'
++
++# task_name = 'Task507_KiTS_kidney'
++# plan_name = 'nnUNetPlansv2.1_trgSp_kits19_plans_3D.pkl'
++
++
++if __name__ == '__main__':
++    # data_prop_fname = join(preprocessing_output_dir, task_name, 'dataset_properties.pkl')
++    # print(load_pickle(data_prop_fname))
++    # sys.exit(0)
++
++    plans_fname = join(preprocessing_output_dir, task_name, plan_name)
++    plans = load_pickle(plans_fname)
++
++    # 修改 plan.pkl
++    # # plans['num_classes'] = 14
++    # plans['conv_per_stage'] = 2
++    # for i in range(len(plans['plans_per_stage'])):
++    #     plans['plans_per_stage'][i]['patch_size'] = np.array((80, 128, 128))
++    #     # plans['plans_per_stage'][i]['batch_size'] = 3
++    # save_pickle(plans, plans_fname)
++
++    # # 修改 model.pkl
++    # plans['plans']['transpose_forward'] = [2, 0, 1]
++    # plans['plans']['transpose_backward'] = [1, 2, 0]
++    # save_pickle(plans, plans_fname)
++    
++
++    # print(plans)
++    for i in range(len(plans['plans_per_stage'])):
++        print(f"plans['plans_per_stage']{i}: {plans['plans_per_stage'][i]}")
++        print(f"patch_size: {plans['plans_per_stage'][i]['patch_size']}")
++        print(f"batch_size: {plans['plans_per_stage'][i]['batch_size']}")
++    print(f"num_classes: {plans['num_classes']}")
++    print(f"conv_per_stage: {plans['conv_per_stage']}")
++    print(f"mean: {plans['dataset_properties']['intensityproperties'][0]['mean']}")
++    print(f"std: {plans['dataset_properties']['intensityproperties'][0]['sd']}")
++    print(f"percentile_99_5: {plans['dataset_properties']['intensityproperties'][0]['percentile_99_5']}")
++    print(f"percentile_00_5: {plans['dataset_properties']['intensityproperties'][0]['percentile_00_5']}")
++    print(f"transpose_forward: {plans['transpose_forward']}")
++    print(f"transpose_backward: {plans['transpose_backward']}")
+diff -uprN third_party/nnUNet/nnunet/experiment_planning/experiment_planner_baseline_3DUNet.py nnunet/experiment_planning/experiment_planner_baseline_3DUNet.py
+--- third_party/nnUNet/nnunet/experiment_planning/experiment_planner_baseline_3DUNet.py	2022-10-24 14:55:07.361321438 +0000
++++ nnunet/experiment_planning/experiment_planner_baseline_3DUNet.py	2022-10-24 14:50:43.265325896 +0000
+@@ -426,6 +426,8 @@ class ExperimentPlanner(object):
+             shutil.rmtree(join(self.preprocessed_output_folder, "gt_segmentations"))
+         shutil.copytree(join(self.folder_with_cropped_data, "gt_segmentations"),
+                         join(self.preprocessed_output_folder, "gt_segmentations"))
++        self.load_my_plans()
++        
+         normalization_schemes = self.plans['normalization_schemes']
+         use_nonzero_mask_for_normalization = self.plans['use_mask_for_norm']
+         intensityproperties = self.plans['dataset_properties']['intensityproperties']
+diff -uprN third_party/nnUNet/nnunet/experiment_planning/nnUNet_plan_and_preprocess.py nnunet/experiment_planning/nnUNet_plan_and_preprocess.py
+--- third_party/nnUNet/nnunet/experiment_planning/nnUNet_plan_and_preprocess.py	2022-10-24 14:55:07.361321438 +0000
++++ nnunet/experiment_planning/nnUNet_plan_and_preprocess.py	2022-10-24 14:50:43.265325896 +0000
+@@ -1,3 +1,4 @@
++#    Copyright 2022, Intel Corporation.
+ #    Copyright 2020 Division of Medical Image Computing, German Cancer Research Center (DKFZ), Heidelberg, Germany
+ #
+ #    Licensed under the Apache License, Version 2.0 (the "License");
+@@ -22,7 +23,7 @@ import shutil
+ from nnunet.utilities.task_name_id_conversion import convert_id_to_task_name
+ from nnunet.preprocessing.sanity_checks import verify_dataset_integrity
+ from nnunet.training.model_restore import recursive_find_python_class
+-
++import sys
+ 
+ def main():
+     import argparse
+@@ -39,9 +40,12 @@ def main():
+     parser.add_argument("-pl2d", "--planner2d", type=str, default="ExperimentPlanner2D_v21",
+                         help="Name of the ExperimentPlanner class for the 2D U-Net. Default is ExperimentPlanner2D_v21. "
+                              "Can be 'None', in which case this U-Net will not be configured")
++    parser.add_argument("-no_plan", action="store_true",
++                        help="Set this flag if you dont want to run the planning. If this is set then this script "
++                             "will not run the experiment planning and not create the plans file")
+     parser.add_argument("-no_pp", action="store_true",
+                         help="Set this flag if you dont want to run the preprocessing. If this is set then this script "
+-                             "will only run the experiment planning and create the plans file")
++                             "will not run the experiment preprocessing")
+     parser.add_argument("-tl", type=int, required=False, default=8,
+                         help="Number of processes used for preprocessing the low resolution data for the 3D low "
+                              "resolution U-Net. This can be larger than -tf. Don't overdo it or you will run out of "
+@@ -76,6 +80,7 @@ def main():
+ 
+     args = parser.parse_args()
+     task_ids = args.task_ids
++    dont_run_planning = args.no_plan
+     dont_run_preprocessing = args.no_pp
+     tl = args.tl
+     tf = args.tf
+@@ -103,6 +108,7 @@ def main():
+ 
+         if args.verify_dataset_integrity:
+             verify_dataset_integrity(join(nnUNet_raw_data, task_name))
++            sys.exit(0)
+ 
+         crop(task_name, False, tf)
+ 
+@@ -156,12 +162,14 @@ def main():
+                                          args.overwrite_plans_identifier)
+             else:
+                 exp_planner = planner_3d(cropped_out_dir, preprocessing_output_dir_this_task)
+-            exp_planner.plan_experiment()
++            if not dont_run_planning:
++                exp_planner.plan_experiment()
+             if not dont_run_preprocessing:  # double negative, yooo
+                 exp_planner.run_preprocessing(threads)
+         if planner_2d is not None:
+             exp_planner = planner_2d(cropped_out_dir, preprocessing_output_dir_this_task)
+-            exp_planner.plan_experiment()
++            if not dont_run_planning:
++                exp_planner.plan_experiment()
+             if not dont_run_preprocessing:  # double negative, yooo
+                 exp_planner.run_preprocessing(threads)
+ 
+Binary files third_party/nnUNet/nnunet/experiment_planning/old/__pycache__/__init__.cpython-38.pyc and nnunet/experiment_planning/old/__pycache__/__init__.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/old/__pycache__/old_plan_and_preprocess_task.cpython-38.pyc and nnunet/experiment_planning/old/__pycache__/old_plan_and_preprocess_task.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/__pycache__/change_batch_size.cpython-38.pyc and nnunet/experiment_planning/__pycache__/change_batch_size.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/__pycache__/change_patch_size.cpython-38.pyc and nnunet/experiment_planning/__pycache__/change_patch_size.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/__pycache__/common_utils.cpython-38.pyc and nnunet/experiment_planning/__pycache__/common_utils.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/__pycache__/DatasetAnalyzer.cpython-38.pyc and nnunet/experiment_planning/__pycache__/DatasetAnalyzer.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/__pycache__/experiment_planner_baseline_2DUNet.cpython-38.pyc and nnunet/experiment_planning/__pycache__/experiment_planner_baseline_2DUNet.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/__pycache__/experiment_planner_baseline_2DUNet_v21.cpython-38.pyc and nnunet/experiment_planning/__pycache__/experiment_planner_baseline_2DUNet_v21.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/__pycache__/experiment_planner_baseline_3DUNet.cpython-38.pyc and nnunet/experiment_planning/__pycache__/experiment_planner_baseline_3DUNet.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/__pycache__/experiment_planner_baseline_3DUNet_v21.cpython-38.pyc and nnunet/experiment_planning/__pycache__/experiment_planner_baseline_3DUNet_v21.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/__pycache__/__init__.cpython-38.pyc and nnunet/experiment_planning/__pycache__/__init__.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/__pycache__/nnUNet_convert_decathlon_task.cpython-38.pyc and nnunet/experiment_planning/__pycache__/nnUNet_convert_decathlon_task.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/__pycache__/nnUNet_plan_and_preprocess.cpython-38.pyc and nnunet/experiment_planning/__pycache__/nnUNet_plan_and_preprocess.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/__pycache__/summarize_plans.cpython-38.pyc and nnunet/experiment_planning/__pycache__/summarize_plans.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/experiment_planning/__pycache__/utils.cpython-38.pyc and nnunet/experiment_planning/__pycache__/utils.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/inference/__pycache__/__init__.cpython-38.pyc and nnunet/inference/__pycache__/__init__.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/inference/__pycache__/predict.cpython-38.pyc and nnunet/inference/__pycache__/predict.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/inference/__pycache__/predict_simple.cpython-38.pyc and nnunet/inference/__pycache__/predict_simple.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/inference/__pycache__/segmentation_export.cpython-38.pyc and nnunet/inference/__pycache__/segmentation_export.cpython-38.pyc differ
+diff -uprN third_party/nnUNet/nnunet/__init__.py nnunet/__init__.py
+--- third_party/nnUNet/nnunet/__init__.py	2022-10-24 14:55:07.353321438 +0000
++++ nnunet/__init__.py	2022-10-24 14:50:43.257325896 +0000
+@@ -1,7 +1,3 @@
+ from __future__ import absolute_import
+-print("\n\nPlease cite the following paper when using nnUNet:\n\nIsensee, F., Jaeger, P.F., Kohl, S.A.A. et al. "
+-      "\"nnU-Net: a self-configuring method for deep learning-based biomedical image segmentation.\" "
+-      "Nat Methods (2020). https://doi.org/10.1038/s41592-020-01008-z\n\n")
+-print("If you have questions or suggestions, feel free to open an issue at https://github.com/MIC-DKFZ/nnUNet\n")
+ 
+ from . import *
+\ No newline at end of file
+Binary files third_party/nnUNet/nnunet/network_architecture/custom_modules/__pycache__/conv_blocks.cpython-38.pyc and nnunet/network_architecture/custom_modules/__pycache__/conv_blocks.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/network_architecture/custom_modules/__pycache__/helperModules.cpython-38.pyc and nnunet/network_architecture/custom_modules/__pycache__/helperModules.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/network_architecture/custom_modules/__pycache__/__init__.cpython-38.pyc and nnunet/network_architecture/custom_modules/__pycache__/__init__.cpython-38.pyc differ
+diff -uprN third_party/nnUNet/nnunet/network_architecture/DA/DA_Loss.py nnunet/network_architecture/DA/DA_Loss.py
+--- third_party/nnUNet/nnunet/network_architecture/DA/DA_Loss.py	1970-01-01 00:00:00.000000000 +0000
++++ nnunet/network_architecture/DA/DA_Loss.py	2022-10-24 14:50:43.273325896 +0000
+@@ -0,0 +1,132 @@
++#    Copyright 2022, Intel Corporation.
++#
++#    Licensed under the Apache License, Version 2.0 (the "License");
++#    you may not use this file except in compliance with the License.
++#    You may obtain a copy of the License at
++#
++#        http://www.apache.org/licenses/LICENSE-2.0
++#
++#    Unless required by applicable law or agreed to in writing, software
++#    distributed under the License is distributed on an "AS IS" BASIS,
++#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++#    See the License for the specific language governing permissions and
++#    limitations under the License.
++
++
++from typing import Optional, List
++import torch
++import torch.nn as nn
++import torch.nn.functional as F
++
++from tllib.modules.grl import WarmStartGradientReverseLayer
++from tllib.utils.metric import binary_accuracy, accuracy
++
++
++class SegDomainAdversarialLoss(nn.Module):
++    def __init__(self, domain_discriminator: nn.Module, reduction: Optional[str] = 'mean',
++                 grl: Optional[nn.Module] = WarmStartGradientReverseLayer(alpha=1., lo=0., hi=1., max_iters=1000, auto_step=True), 
++                 sigmoid=True):
++        super(SegDomainAdversarialLoss, self).__init__()
++        self.grl = grl
++        self.domain_discriminator = domain_discriminator
++        self.sigmoid = sigmoid
++        self.reduction = reduction
++        self.bce = lambda input, target, weight: \
++            F.binary_cross_entropy(input, target, weight=weight, reduction=reduction)
++        self.domain_discriminator_accuracy = None
++
++    def forward(self, f_s_list: List[torch.Tensor], f_t_list: List[torch.Tensor],
++                w_s: Optional[torch.Tensor] = None, w_t: Optional[torch.Tensor] = None) -> torch.Tensor:
++        f = [
++            self.grl(torch.cat((f_s, f_t), dim=0))
++            for f_s, f_t in zip(f_s_list, f_t_list)
++        ]
++        d = self.domain_discriminator(f)
++        if self.sigmoid:
++            d_s, d_t = d.chunk(2, dim=0)
++            d_label_s = torch.ones((d_s.size(0), 1)).to(d_s.device)
++            d_label_t = torch.zeros((d_t.size(0), 1)).to(d_t.device)
++            self.domain_discriminator_accuracy = 0.5 * (
++                        binary_accuracy(d_s, d_label_s) + binary_accuracy(d_t, d_label_t))
++
++            if w_s is None:
++                w_s = torch.ones_like(d_label_s)
++            if w_t is None:
++                w_t = torch.ones_like(d_label_t)
++            return 0.5 * (
++                F.binary_cross_entropy(d_s, d_label_s, weight=w_s.view_as(d_s), reduction=self.reduction) +
++                F.binary_cross_entropy(d_t, d_label_t, weight=w_t.view_as(d_t), reduction=self.reduction)
++            )
++        else:
++            d_label = torch.cat((
++                torch.ones((f_s_list[-1].size(0),)).to(f_s_list[-1].device),
++                torch.zeros((f_t_list[-1].size(0),)).to(f_t_list[-1].device),
++            )).long()
++            if w_s is None:
++                w_s = torch.ones((f_s_list[-1].size(0),)).to(f_s_list[-1].device)
++            if w_t is None:
++                w_t = torch.ones((f_t_list[-1].size(0),)).to(f_t_list[-1].device)
++            self.domain_discriminator_accuracy = accuracy(d, d_label)
++            loss = F.cross_entropy(d, d_label, reduction='none') * torch.cat([w_s, w_t], dim=0)
++            if self.reduction == "mean":
++                return loss.mean()
++            elif self.reduction == "sum":
++                return loss.sum()
++            elif self.reduction == "none":
++                return loss
++            else:
++                raise NotImplementedError(self.reduction)
++
++
++class DomainAdversarialLoss(nn.Module):
++    def __init__(self, domain_discriminator: nn.Module, reduction: Optional[str] = 'mean',
++                 grl: Optional[nn.Module] = WarmStartGradientReverseLayer(alpha=1., lo=0., hi=1., max_iters=1000, auto_step=True), 
++                 sigmoid=True):
++        super(DomainAdversarialLoss, self).__init__()
++        self.grl = grl
++        self.domain_discriminator = domain_discriminator
++        self.sigmoid = sigmoid
++        self.reduction = reduction
++        self.bce = lambda input, target, weight: \
++            F.binary_cross_entropy(input, target, weight=weight, reduction=reduction)
++        self.domain_discriminator_accuracy = None
++
++    def forward(self, f_s: torch.Tensor, f_t: torch.Tensor,
++                w_s: Optional[torch.Tensor] = None, w_t: Optional[torch.Tensor] = None) -> torch.Tensor:
++        f = self.grl(torch.cat((f_s, f_t), dim=0))
++        d = self.domain_discriminator(f)
++        if self.sigmoid:
++            d_s, d_t = d.chunk(2, dim=0)
++            d_label_s = torch.ones((d_s.size(0), 1)).to(d_s.device)
++            d_label_t = torch.zeros((d_t.size(0), 1)).to(d_t.device)
++            self.domain_discriminator_accuracy = 0.5 * (
++                        binary_accuracy(d_s, d_label_s) + binary_accuracy(d_t, d_label_t))
++
++            if w_s is None:
++                w_s = torch.ones_like(d_label_s)
++            if w_t is None:
++                w_t = torch.ones_like(d_label_t)
++            return 0.5 * (
++                F.binary_cross_entropy(d_s, d_label_s, weight=w_s.view_as(d_s), reduction=self.reduction) +
++                F.binary_cross_entropy(d_t, d_label_t, weight=w_t.view_as(d_t), reduction=self.reduction)
++            )
++        else:
++            d_label = torch.cat((
++                torch.ones((f_s.size(0),)).to(f_s.device),
++                torch.zeros((f_t.size(0),)).to(f_t.device),
++            )).long()
++            if w_s is None:
++                w_s = torch.ones((f_s.size(0),)).to(f_s.device)
++            if w_t is None:
++                w_t = torch.ones((f_t.size(0),)).to(f_t.device)
++            self.domain_discriminator_accuracy = accuracy(d, d_label)
++            loss = F.cross_entropy(d, d_label, reduction='none') * torch.cat([w_s, w_t], dim=0)
++            if self.reduction == "mean":
++                return loss.mean()
++            elif self.reduction == "sum":
++                return loss.sum()
++            elif self.reduction == "none":
++                return loss
++            else:
++                raise NotImplementedError(self.reduction)
++
+diff -uprN third_party/nnUNet/nnunet/network_architecture/DA/discriminator.py nnunet/network_architecture/DA/discriminator.py
+--- third_party/nnUNet/nnunet/network_architecture/DA/discriminator.py	1970-01-01 00:00:00.000000000 +0000
++++ nnunet/network_architecture/DA/discriminator.py	2022-10-24 14:50:43.273325896 +0000
+@@ -0,0 +1,207 @@
++#    Copyright 2022, Intel Corporation.
++#    Copyright 2020 Division of Medical Image Computing, German Cancer Research Center (DKFZ), Heidelberg, Germany
++#
++#    Licensed under the Apache License, Version 2.0 (the "License");
++#    you may not use this file except in compliance with the License.
++#    You may obtain a copy of the License at
++#
++#        http://www.apache.org/licenses/LICENSE-2.0
++#
++#    Unless required by applicable law or agreed to in writing, software
++#    distributed under the License is distributed on an "AS IS" BASIS,
++#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++#    See the License for the specific language governing permissions and
++#    limitations under the License.
++
++
++from torch import nn
++import torch
++import numpy as np
++from nnunet.network_architecture.initialization import InitWeights_He
++from nnunet.network_architecture.generic_UNet import (ConvDropoutNormNonlin, StackedConvLayers)
++import torch.nn.functional
++
++
++
++class SegDiscriminator(nn.Module):
++    BASE_NUM_FILTERS = 50
++
++    def __init__(self, input_channels, num_conv_per_stage=2,
++                 conv_op=nn.Conv2d,
++                 norm_op=nn.BatchNorm2d, norm_op_kwargs=None,
++                 dropout_op=nn.Dropout2d, dropout_op_kwargs=None,
++                 nonlin=nn.LeakyReLU, nonlin_kwargs=None, 
++                 weightInitializer=InitWeights_He(1e-2), 
++                 pool_op_kernel_sizes=None,
++                 basic_block=ConvDropoutNormNonlin):
++
++        super(SegDiscriminator, self).__init__()
++        self.input_channels = input_channels
++
++        if nonlin_kwargs is None:
++            nonlin_kwargs = {'negative_slope': 1e-2, 'inplace': True}
++        if dropout_op_kwargs is None:
++            dropout_op_kwargs = {'p': 0.5, 'inplace': True}
++        if norm_op_kwargs is None:
++            norm_op_kwargs = {'eps': 1e-5, 'affine': True, 'momentum': 0.1}
++
++        self.conv_kwargs = {'stride': 1, 'dilation': 1, 'bias': True}
++
++        self.nonlin = nonlin
++        self.nonlin_kwargs = nonlin_kwargs
++        self.dropout_op_kwargs = dropout_op_kwargs
++        self.norm_op_kwargs = norm_op_kwargs
++        self.weightInitializer = weightInitializer
++        self.conv_op = conv_op
++        self.norm_op = norm_op
++        self.dropout_op = dropout_op
++
++        if conv_op == nn.Conv2d:
++            if pool_op_kernel_sizes is None:
++                pool_op_kernel_sizes = [(2, 2)] * len(input_channels)
++            self.avgpool = nn.AdaptiveAvgPool2d(1)
++            conv_kernel_sizes = (3, 3)
++            conv_pad_sizes = [1, 1]
++        elif conv_op == nn.Conv3d:
++            if pool_op_kernel_sizes is None:
++                pool_op_kernel_sizes = [(2, 2, 2)] * len(input_channels)
++            self.avgpool = nn.AdaptiveAvgPool3d(1)
++            conv_kernel_sizes = (3, 3, 3)
++            conv_pad_sizes = [1, 1, 1]
++        else:
++            raise ValueError("unknown convolution dimensionality, conv op: %s" % str(conv_op))
++
++        self.conv_kwargs['kernel_size'] = conv_kernel_sizes
++        self.conv_kwargs['padding'] = conv_pad_sizes
++
++        self.conv_blocks_context = []
++        for d in range(len(input_channels)):
++
++            if d == 0:
++                input_features = input_channels[d]
++                output_features = self.BASE_NUM_FILTERS
++            else:
++                input_features = d * self.BASE_NUM_FILTERS + input_channels[d]
++                output_features = (d+1) * self.BASE_NUM_FILTERS
++            
++            first_stride = pool_op_kernel_sizes[d]
++
++            # add convolutions
++            self.conv_blocks_context.append(StackedConvLayers(input_features, output_features, num_conv_per_stage,
++                                                              self.conv_op, self.conv_kwargs, self.norm_op,
++                                                              self.norm_op_kwargs, self.dropout_op,
++                                                              self.dropout_op_kwargs, self.nonlin, self.nonlin_kwargs,
++                                                              first_stride, basic_block=basic_block))
++
++        # register all modules properly
++        self.conv_blocks_context = nn.ModuleList(self.conv_blocks_context)
++        if self.weightInitializer is not None:
++            self.apply(self.weightInitializer)
++
++        self.final_layer = nn.Sequential(
++            nn.Sigmoid()
++        )
++        
++    def forward(self, features):
++        if not isinstance(features, list) and not isinstance(features, tuple):
++            features = [features]
++
++        input = features[0]
++        x = self.conv_blocks_context[0](input)
++
++        for i in range(1, len(self.input_channels)):
++            x = torch.cat((x, features[i]), dim=1)
++            x = self.conv_blocks_context[i](x)
++   
++        x = self.avgpool(x)
++        x = x.view(x.size(0) * x.size(1), -1)
++        x = self.final_layer(x)
++
++        return x
++        
++
++class FCDiscriminator(nn.Module):
++    BASE_NUM_FILTERS = 50
++    CONV_NUM = 4
++
++    def __init__(self, input_channel=1, num_conv_per_stage=2,
++                 pool_op_kernel_sizes=None,
++                 norm_op_kwargs=None,
++                 dropout_op_kwargs=None,
++                 nonlin=nn.LeakyReLU, 
++                 nonlin_kwargs=None, 
++                 weightInitializer=InitWeights_He(1e-2), 
++                 basic_block=ConvDropoutNormNonlin):
++
++        super().__init__()
++
++        conv_op = nn.Conv2d
++        norm_op = nn.BatchNorm2d
++        dropout_op = nn.Dropout2d
++
++        if nonlin_kwargs is None:
++            nonlin_kwargs = {'negative_slope': 1e-2, 'inplace': True}
++        if dropout_op_kwargs is None:
++            dropout_op_kwargs = {'p': 0.5, 'inplace': True}
++        if norm_op_kwargs is None:
++            norm_op_kwargs = {'eps': 1e-5, 'affine': True, 'momentum': 0.1}
++
++        self.conv_kwargs = {'stride': 1, 'dilation': 1, 'bias': True}
++
++        self.nonlin = nonlin
++        self.nonlin_kwargs = nonlin_kwargs
++        self.dropout_op_kwargs = dropout_op_kwargs
++        self.norm_op_kwargs = norm_op_kwargs
++        self.weightInitializer = weightInitializer
++        self.conv_op = conv_op
++        self.norm_op = norm_op
++        self.dropout_op = dropout_op
++
++        if pool_op_kernel_sizes is None:
++            pool_op_kernel_size = (2, 2)
++        self.avgpool = nn.AdaptiveAvgPool2d(1)
++        conv_kernel_sizes = (3, 3)
++        conv_pad_sizes = [1, 1]
++        
++        self.conv_kwargs['kernel_size'] = conv_kernel_sizes
++        self.conv_kwargs['padding'] = conv_pad_sizes
++        first_stride = pool_op_kernel_size
++
++        self.conv_blocks_context = []
++        for d in range(self.CONV_NUM):
++
++            if d == 0:
++                input_features = input_channel
++            else:
++                input_features = d * self.BASE_NUM_FILTERS
++            output_features = (d+1) * self.BASE_NUM_FILTERS
++
++            # add convolutions
++            self.conv_blocks_context.append(StackedConvLayers(input_features, output_features, num_conv_per_stage,
++                                                              self.conv_op, self.conv_kwargs, self.norm_op,
++                                                              self.norm_op_kwargs, self.dropout_op,
++                                                              self.dropout_op_kwargs, self.nonlin, self.nonlin_kwargs,
++                                                              first_stride, basic_block=basic_block))
++
++        # register all modules properly
++        self.conv_blocks_context = nn.ModuleList(self.conv_blocks_context)
++        if self.weightInitializer is not None:
++            self.apply(self.weightInitializer)
++
++        self.final_layer = nn.Sequential(
++            nn.Linear(output_features, 1),
++            nn.Sigmoid()
++        )
++        
++    def forward(self, x):
++        x = torch.flatten(x, start_dim=0, end_dim=2)
++        x = torch.unsqueeze(x, 1)
++
++        for i in range(self.CONV_NUM):
++            x = self.conv_blocks_context[i](x)
++   
++        x = self.avgpool(x)
++        x = x.view(x.size(0), -1)
++        x = self.final_layer(x)
++
++        return x
+Binary files third_party/nnUNet/nnunet/network_architecture/DA/__pycache__/DA_Loss.cpython-38.pyc and nnunet/network_architecture/DA/__pycache__/DA_Loss.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/network_architecture/DA/__pycache__/discriminator.cpython-38.pyc and nnunet/network_architecture/DA/__pycache__/discriminator.cpython-38.pyc differ
+diff -uprN third_party/nnUNet/nnunet/network_architecture/generic_UNet_DA_V2.py nnunet/network_architecture/generic_UNet_DA_V2.py
+--- third_party/nnUNet/nnunet/network_architecture/generic_UNet_DA_V2.py	1970-01-01 00:00:00.000000000 +0000
++++ nnunet/network_architecture/generic_UNet_DA_V2.py	2022-10-24 14:50:43.269325896 +0000
+@@ -0,0 +1,83 @@
++#    Copyright 2022, Intel Corporation.
++#    Copyright 2020 Division of Medical Image Computing, German Cancer Research Center (DKFZ), Heidelberg, Germany
++#
++#    Licensed under the Apache License, Version 2.0 (the "License");
++#    you may not use this file except in compliance with the License.
++#    You may obtain a copy of the License at
++#
++#        http://www.apache.org/licenses/LICENSE-2.0
++#
++#    Unless required by applicable law or agreed to in writing, software
++#    distributed under the License is distributed on an "AS IS" BASIS,
++#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++#    See the License for the specific language governing permissions and
++#    limitations under the License.
++
++
++from copy import deepcopy
++from nnunet.utilities.nd_softmax import softmax_helper
++from torch import nn
++import torch
++import numpy as np
++from nnunet.network_architecture.initialization import InitWeights_He
++from nnunet.network_architecture.generic_UNet import Generic_UNet, ConvDropoutNormNonlin
++import torch.nn.functional
++
++
++class Generic_UNet_DA_V2(Generic_UNet):
++
++    def __init__(self, input_channels, base_num_features, num_classes, num_pool, num_conv_per_stage=2,
++                 feat_map_mul_on_downscale=2, conv_op=nn.Conv2d,
++                 norm_op=nn.BatchNorm2d, norm_op_kwargs=None,
++                 dropout_op=nn.Dropout2d, dropout_op_kwargs=None,
++                 nonlin=nn.LeakyReLU, nonlin_kwargs=None, deep_supervision=True, dropout_in_localization=False,
++                 final_nonlin=softmax_helper, weightInitializer=InitWeights_He(1e-2), pool_op_kernel_sizes=None,
++                 conv_kernel_sizes=None,
++                 upscale_logits=False, convolutional_pooling=False, convolutional_upsampling=False,
++                 max_num_features=None, basic_block=ConvDropoutNormNonlin,
++                 seg_output_use_bias=False):
++        
++        super(Generic_UNet_DA_V2, self).__init__(input_channels, base_num_features, num_classes, 
++                num_pool, num_conv_per_stage=num_conv_per_stage,
++                feat_map_mul_on_downscale=feat_map_mul_on_downscale, conv_op=conv_op,
++                norm_op=norm_op, norm_op_kwargs=norm_op_kwargs,
++                dropout_op=dropout_op, dropout_op_kwargs=dropout_op_kwargs,
++                nonlin=nonlin, nonlin_kwargs=nonlin_kwargs, deep_supervision=deep_supervision, 
++                dropout_in_localization=dropout_in_localization,
++                final_nonlin=final_nonlin, weightInitializer=weightInitializer, 
++                pool_op_kernel_sizes=pool_op_kernel_sizes,
++                conv_kernel_sizes=conv_kernel_sizes,
++                upscale_logits=upscale_logits, convolutional_pooling=convolutional_pooling, 
++                convolutional_upsampling=convolutional_upsampling,
++                max_num_features=max_num_features, basic_block=basic_block,
++                seg_output_use_bias=seg_output_use_bias)
++
++
++    def forward(self, x):
++        skips = []
++        seg_outputs = []
++        decoder_feats = []
++        for d in range(len(self.conv_blocks_context) - 1):
++            x = self.conv_blocks_context[d](x)
++            skips.append(x)
++            if not self.convolutional_pooling:
++                x = self.td[d](x)
++
++        x = self.conv_blocks_context[-1](x)
++
++        for u in range(len(self.tu)):
++            x = self.tu[u](x)
++            x = torch.cat((x, skips[-(u + 1)]), dim=1)
++            x = self.conv_blocks_localization[u](x)
++            decoder_feats.append(x)
++            seg_outputs.append(self.final_nonlin(self.seg_outputs[u](x)))
++
++        if self._deep_supervision and self.do_ds:
++            logits = tuple([seg_outputs[-1]] + [i(j) for i, j in
++                                              zip(list(self.upscale_logits_ops)[::-1], seg_outputs[:-1][::-1])])
++        else:
++            logits = seg_outputs[-1]
++
++        if self.training:
++            return logits, skips, decoder_feats[::-1]
++        return logits
+diff -uprN third_party/nnUNet/nnunet/network_architecture/generic_UNet.py nnunet/network_architecture/generic_UNet.py
+--- third_party/nnUNet/nnunet/network_architecture/generic_UNet.py	2022-10-24 14:55:07.365321438 +0000
++++ nnunet/network_architecture/generic_UNet.py	2022-10-24 14:50:43.269325896 +0000
+@@ -270,6 +270,7 @@ class Generic_UNet(SegmentationNetwork):
+         output_features = base_num_features
+         input_features = input_channels
+ 
++        self.encoder_channels = []
+         for d in range(num_pool):
+             # determine the first stride
+             if d != 0 and self.convolutional_pooling:
+@@ -285,6 +286,7 @@ class Generic_UNet(SegmentationNetwork):
+                                                               self.norm_op_kwargs, self.dropout_op,
+                                                               self.dropout_op_kwargs, self.nonlin, self.nonlin_kwargs,
+                                                               first_stride, basic_block=basic_block))
++            self.encoder_channels.append(output_features)
+             if not self.convolutional_pooling:
+                 self.td.append(pool_op(pool_op_kernel_sizes[d]))
+             input_features = output_features
+Binary files third_party/nnUNet/nnunet/network_architecture/__pycache__/discriminator.cpython-38.pyc and nnunet/network_architecture/__pycache__/discriminator.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/network_architecture/__pycache__/generic_modular_residual_UNet.cpython-38.pyc and nnunet/network_architecture/__pycache__/generic_modular_residual_UNet.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/network_architecture/__pycache__/generic_modular_UNet.cpython-38.pyc and nnunet/network_architecture/__pycache__/generic_modular_UNet.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/network_architecture/__pycache__/generic_UNet.cpython-38.pyc and nnunet/network_architecture/__pycache__/generic_UNet.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/network_architecture/__pycache__/generic_UNet_DA.cpython-38.pyc and nnunet/network_architecture/__pycache__/generic_UNet_DA.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/network_architecture/__pycache__/generic_UNet_DA_V2.cpython-38.pyc and nnunet/network_architecture/__pycache__/generic_UNet_DA_V2.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/network_architecture/__pycache__/generic_UNet_DP.cpython-38.pyc and nnunet/network_architecture/__pycache__/generic_UNet_DP.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/network_architecture/__pycache__/__init__.cpython-38.pyc and nnunet/network_architecture/__pycache__/__init__.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/network_architecture/__pycache__/initialization.cpython-38.pyc and nnunet/network_architecture/__pycache__/initialization.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/network_architecture/__pycache__/neural_network.cpython-38.pyc and nnunet/network_architecture/__pycache__/neural_network.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/postprocessing/__pycache__/connected_components.cpython-38.pyc and nnunet/postprocessing/__pycache__/connected_components.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/postprocessing/__pycache__/__init__.cpython-38.pyc and nnunet/postprocessing/__pycache__/__init__.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/preprocessing/__pycache__/cropping.cpython-38.pyc and nnunet/preprocessing/__pycache__/cropping.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/preprocessing/__pycache__/__init__.cpython-38.pyc and nnunet/preprocessing/__pycache__/__init__.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/preprocessing/__pycache__/preprocessing.cpython-38.pyc and nnunet/preprocessing/__pycache__/preprocessing.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/preprocessing/__pycache__/sanity_checks.cpython-38.pyc and nnunet/preprocessing/__pycache__/sanity_checks.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/__pycache__/configuration.cpython-38.pyc and nnunet/__pycache__/configuration.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/__pycache__/__init__.cpython-38.pyc and nnunet/__pycache__/__init__.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/__pycache__/paths.cpython-38.pyc and nnunet/__pycache__/paths.cpython-38.pyc differ
+diff -uprN third_party/nnUNet/nnunet/run/default_configuration.py nnunet/run/default_configuration.py
+--- third_party/nnUNet/nnunet/run/default_configuration.py	2022-10-24 14:55:07.369321438 +0000
++++ nnunet/run/default_configuration.py	2022-10-24 14:50:43.273325896 +0000
+@@ -78,3 +78,25 @@ def get_default_configuration(network, t
+     print("\nI am using data from this folder: ", join(dataset_directory, plans['data_identifier']))
+     print("###############################################")
+     return plans_file, output_folder_name, dataset_directory, batch_dice, stage, trainer_class
++
++
++def get_source_configuration(network, task, plans_identifier=default_plans_identifier):
++    assert network in ['2d', '3d_lowres', '3d_fullres', '3d_cascade_fullres'], \
++        "network can only be one of the following: \'2d\', \'3d_lowres\', \'3d_fullres\', \'3d_cascade_fullres\'"
++
++    dataset_directory = join(preprocessing_output_dir, task)
++
++    if network == '2d':
++        plans_file = join(preprocessing_output_dir, task, plans_identifier + "_plans_2D.pkl")
++    else:
++        plans_file = join(preprocessing_output_dir, task, plans_identifier + "_plans_3D.pkl")
++
++    plans = load_pickle(plans_file)
++    
++    print("###############################################")
++    print("For that I will be using the following source data configuration:")
++    summarize_plans(plans_file)
++    print("\nI am using source data from this folder: ", join(dataset_directory, plans['data_identifier']))
++    print("###############################################")
++
++    return plans_file, dataset_directory
+diff -uprN third_party/nnUNet/nnunet/run/exp1.sh nnunet/run/exp1.sh
+--- third_party/nnUNet/nnunet/run/exp1.sh	1970-01-01 00:00:00.000000000 +0000
++++ nnunet/run/exp1.sh	2022-10-24 14:50:43.273325896 +0000
+@@ -0,0 +1,97 @@
++#    Copyright 2022, Intel Corporation.
++#
++#    Licensed under the Apache License, Version 2.0 (the "License");
++#    you may not use this file except in compliance with the License.
++#    You may obtain a copy of the License at
++#
++#        http://www.apache.org/licenses/LICENSE-2.0
++#
++#    Unless required by applicable law or agreed to in writing, software
++#    distributed under the License is distributed on an "AS IS" BASIS,
++#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++#    See the License for the specific language governing permissions and
++#    limitations under the License.
++
++#!/bin/bash
++set -x
++
++############################################# env #############################################
++# pip install SimpleITK==2.0.2
++# docker-compose run --rm --service-ports kits19_cpu bash
++
++############################################# 预处理 #############################################
++# nnUNet_plan_and_preprocess -t 507 --verify_dataset_integrity
++# nnUNet_plan_and_preprocess -t 507 -pl2d None -pl3d ExperimentPlanner3D_v21_customTargetSpacing_kits19 -no_pp
++# nnUNet_plan_and_preprocess -t 507 -pl2d None -pl3d ExperimentPlanner3D_v21_customTargetSpacing_kits19 -no_plan
++# nnUNet_plan_and_preprocess -t 508 -pl2d None -pl3d ExperimentPlanner3D_v21_customTargetSpacing_kits19
++# python nnunet/experiment_planning/change_patch_size.py
++
++
++############################################# 跑实验 #############################################
++
++# cac evaluate
++# nnUNet_train_da 3d_fullres nnUNetTrainer_DA_V2 508 507 1 \
++#     -p nnUNetPlansv2.1_trgSp_kits19 \
++#     -sp nnUNetPlansv2.1_trgSp_kits19 \
++#     --loss_weights 1 0 1 0 0 -val -chk model_latest
++
++# erm
++# nnUNet_train 3d_fullres nnUNetTrainerV2 508 1 --epochs 800 -p nnUNetPlansv2.1_trgSp_kits19 -c
++
++
++# cac
++nnUNet_train_da 3d_fullres nnUNetTrainer_DA_V2 508 507 1 \
++    -p nnUNetPlansv2.1_trgSp_kits19 \
++    -sp nnUNetPlansv2.1_trgSp_kits19 \
++    --epochs 100 --loss_weights 0 1 0 0 0 -c \
++    -exp_name 'pre-600-lr-0-2-finetune-epoch-100' 
++
++
++# nnUNet_train_da 3d_fullres nnUNetTrainer_DA_V2 508 507 1 \
++#     -p nnUNetPlansv2.1_trgSp_kits19 \
++#     -sp nnUNetPlansv2.1_trgSp_kits19 \
++#     --epochs 60 --loss_weights 0 1 0 0 0 \
++#     -exp_name 'pre-600-lr-0-2-finetune-epoch-60' \
++#     -pretrained_weights /data/nnUNet_trained_models/nnUNet/3d_fullres/Task508_AMOS_kidney/nnUNetTrainerV2__nnUNetPlansv2.1_trgSp_kits19/fold_1/model_final_checkpoint-600.model
++
++
++# erm evaluate
++# nnUNet_train_da 3d_fullres nnUNetTrainer_DA_V2 508 507 1 \
++#     -p nnUNetPlansv2.1_trgSp_kits19 \
++#     -sp nnUNetPlansv2.1_trgSp_kits19 \
++#     --loss_weights 1 0 0 0 0 \
++#     -val -chk model_final_checkpoint-800
++
++
++# orancle
++nnUNet_train 3d_fullres nnUNetTrainerV2 507 1 \
++    -p nnUNetPlansv2.1_trgSp_kits19 \
++    --epochs 800 -c
++
++
++# directory
++# input_dir=/data/nnUNet_trained_models/nnUNet/3d_fullres/Task502_KiTS_tumor_small/nnUNetTrainer_DA_V2__nnUNetPlansv2.1_trgSp_kits19
++# output_dir=/data/nnUNet_trained_models/nnUNet/3d_fullres/Task502_KiTS_tumor_small
++# mv $input_dir $output_dir"/cac-enc-dec-seg"
++
++exit 0
++
++
++############################################# 预测评估 #############################################
++
++# # predict
++# # -chk model_latest \
++# nnUNet_predict \
++#     -i /data/nnUNet_raw_data_base/nnUNet_raw_data/Task040_KiTS/imagesTs/ \
++#     -o /data/tmp \
++#     -f 1 \
++#     -t 507 -m 3d_fullres -p nnUNetPlansv2.1_trgSp_kits19 \
++#     --disable_tta \
++#     -tr nnUNetTrainer_DA_V2
++
++# # evaluate with given label    
++# nnUNet_evaluate_folder \
++#     -ref /mnt/DP_disk1/yu/nnUNet_raw_data_base/nnUNet_raw_data/Task507_KiTS_kidney/labelsTr \
++#     -pred /data/tmp \
++#     -l 1 \
++#     --common
+diff -uprN third_party/nnUNet/nnunet/run/exp2.sh nnunet/run/exp2.sh
+--- third_party/nnUNet/nnunet/run/exp2.sh	1970-01-01 00:00:00.000000000 +0000
++++ nnunet/run/exp2.sh	2022-10-24 14:50:43.273325896 +0000
+@@ -0,0 +1,80 @@
++#    Copyright 2022, Intel Corporation.
++#
++#    Licensed under the Apache License, Version 2.0 (the "License");
++#    you may not use this file except in compliance with the License.
++#    You may obtain a copy of the License at
++#
++#        http://www.apache.org/licenses/LICENSE-2.0
++#
++#    Unless required by applicable law or agreed to in writing, software
++#    distributed under the License is distributed on an "AS IS" BASIS,
++#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++#    See the License for the specific language governing permissions and
++#    limitations under the License.
++
++#!/bin/bash
++set -x
++
++
++############################################# 预处理 #############################################
++# nnUNet_plan_and_preprocess -t 507 -pl2d None -pl3d ExperimentPlanner3D_v21_customTargetSpacing_kits19 -no_plan
++# nnUNet_plan_and_preprocess -t 508 -pl2d None -pl3d ExperimentPlanner3D_v21_customTargetSpacing_kits19
++# python nnunet/experiment_planning/change_patch_size.py
++
++
++############################################# 跑实验 #############################################
++
++# cac evaluate
++# nnUNet_train_da 3d_fullres nnUNetTrainer_DA_V2 508 507 1 \
++#     -p nnUNetPlansv2.1_trgSp_kits19 \
++#     -sp nnUNetPlansv2.1_trgSp_kits19 \
++#     --loss_weights 1 0 1 0 0 -val -chk model_latest
++
++# erm
++# nnUNet_train 3d_fullres nnUNetTrainerV2 508 1 --epochs 800 -p nnUNetPlansv2.1_trgSp_kits19 -c
++
++
++# cac
++# nnUNet_train_da 3d_fullres nnUNetTrainer_DA_V2 508 507 1 \
++#     -p nnUNetPlansv2.1_trgSp_kits19 \
++#     -sp nnUNetPlansv2.1_trgSp_kits19 \
++#     --epochs 50 --loss_weights 1 0 1 0 0 -c \
++#     -exp_name 'pre-600-lr-0-2-epoch-50'
++
++
++# nnUNet_train_da 3d_fullres nnUNetTrainer_DA_V2 508 507 1 \
++#     --epochs 50 -p nnUNetPlansv2.1_trgSp_kits19 \
++#     -sp nnUNetPlansv2.1_trgSp_kits19 --loss_weights 1 0 1 0 0 \
++#     -exp_name 'pre-600-lr-0-2-scheduler-60' \
++#     -pretrained_weights /data/nnUNet_trained_models/nnUNet/3d_fullres/Task508_AMOS_kidney/nnUNetTrainerV2__nnUNetPlansv2.1_trgSp_kits19/fold_1/model_final_checkpoint-600.model
++
++
++# erm evaluate
++# nnUNet_train_da 3d_fullres nnUNetTrainer_DA_V2 508 507 1 \
++#     -p nnUNetPlansv2.1_trgSp_kits19 \
++#     -sp nnUNetPlansv2.1_trgSp_kits19 \
++#     --loss_weights 1 0 0 0 0 \
++#     -val -chk model_final_checkpoint-800
++
++
++# orancle
++# nnUNet_train 3d_fullres nnUNetTrainerV2 507 1 --epochs 150 -p nnUNetPlansv2.1_trgSp_kits19
++
++
++# directory
++# input_dir=/data/nnUNet_trained_models/nnUNet/3d_fullres/Task502_KiTS_tumor_small/nnUNetTrainer_DA_V2__nnUNetPlansv2.1_trgSp_kits19
++# output_dir=/data/nnUNet_trained_models/nnUNet/3d_fullres/Task502_KiTS_tumor_small
++# mv $input_dir $output_dir"/cac-enc-dec-seg"
++
++flag=1
++result=1
++while [ "$flag" -eq 1 ]
++do
++    sleep 3s
++    result=`pidof sh`
++    echo $result
++    if [ -z "$result" ]; then
++        echo "process is finished"
++        flag=0
++    fi
++done
+diff -uprN third_party/nnUNet/nnunet/run/load_pretrained_weights.py nnunet/run/load_pretrained_weights.py
+--- third_party/nnUNet/nnunet/run/load_pretrained_weights.py	2022-10-24 14:55:07.369321438 +0000
++++ nnunet/run/load_pretrained_weights.py	2022-10-24 14:50:43.273325896 +0000
+@@ -60,3 +60,10 @@ def load_pretrained_weights(network, fna
+     else:
+         raise RuntimeError("Pretrained weights are not compatible with the current network architecture")
+ 
++
++def print_model_param_size(model):
++    from thop import profile
++    input = torch.randn(1, 1, 80, 160, 160)
++    input = input.cuda()
++    macs, params = profile(model, inputs=(input, ))
++    print(f'flops: {macs}, params: {params}')
+diff -uprN third_party/nnUNet/nnunet/run/predict.sh nnunet/run/predict.sh
+--- third_party/nnUNet/nnunet/run/predict.sh	1970-01-01 00:00:00.000000000 +0000
++++ nnunet/run/predict.sh	2022-10-24 14:50:43.273325896 +0000
+@@ -0,0 +1,59 @@
++#    Copyright 2022, Intel Corporation.
++#
++#    Licensed under the Apache License, Version 2.0 (the "License");
++#    you may not use this file except in compliance with the License.
++#    You may obtain a copy of the License at
++#
++#        http://www.apache.org/licenses/LICENSE-2.0
++#
++#    Unless required by applicable law or agreed to in writing, software
++#    distributed under the License is distributed on an "AS IS" BASIS,
++#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++#    See the License for the specific language governing permissions and
++#    limitations under the License.
++
++#!/bin/bash
++
++output_path=/data/predict_pretrain
++
++# prepare env
++# docker-compose run --rm --service-ports kits19 bash
++# pip install -e .
++
++# prepare data
++# python nnunet/dataset_conversion/Task040_KiTS.py
++
++# preprocess
++# python nnunet/experiment_planning/nnUNet_plan_and_preprocess.py -t 40 -pl2d None -pl3d ExperimentPlanner3D_v21_customTargetSpacing_kits19 --verify_dataset_integrity
++# nnUNet_plan_and_preprocess -t 500 -pl2d None -pl3d ExperimentPlanner3D_v21_customTargetSpacing_kits19
++
++# for train
++# python nnunet/run/run_training.py 3d_fullres nnUNetTrainerV2 40 1 -c -p nnUNetPlansv2.1_trgSp_kits19
++# nnUNet_train 3d_fullres nnUNetTrainerV2 500 1 --epochs 50 -p nnUNetPlansv2.1_trgSp_kits19
++# nnUNet_train_da 3d_fullres nnUNetTrainer_DA 29 40 1 --epochs 50 --loss_weights 1 0 1 -p nnUNetPlansv2.1_trgSp_kits19 -sp nnUNetPlansv2.1_trgSp_kits19
++
++# for evaluation
++# python nnunet/run/run_training.py 3d_fullres nnUNetTrainerV2 40 1 -val -chk model_latest -p nnUNetPlansv2.1_trgSp_kits19
++# nnUNet_train 3d_fullres nnUNetTrainerV2 40 1 -val -p nnUNetPlansv2.1_trgSp_kits19 -chk model_latest
++# nnUNet_train_da 3d_fullres nnUNetTrainer_DA 29 40 1 -val -p nnUNetPlansv2.1_trgSp_kits19 -sp nnUNetPlansv2.1_trgSp_kits19 -chk model_latest
++
++# choose model
++# nnUNet_determine_postprocessing -t 48 -tr nnUNetTrainerV2 -m 3d_fullres
++# nnUNet_find_best_configuration -m 3d_fullres -t 48
++
++# pretrain predict
++# nnUNet_predict -i $nnUNet_raw_data_base/nnUNet_raw_data/Task048_KiTS_clean/imagesTs/ -o /data/predict_pretrain -t 48 -m 3d_fullres --num_threads_preprocessing 10
++
++# normal predict
++# python nnunet/inference/predict_simple.py \
++#     -i /data/nnUNet_raw_data_base/nnUNet_raw_data/Task040_KiTS/imagesTs/ \
++#     -o $output_path -t 40 -m 3d_fullres -p nnUNetPlansv2.1_trgSp_kits19 \
++#     -chk model_latest
++
++# submission
++# cd $output_path
++# rename "s/case/prediction/" *
++# zip prediction.zip prediction_*.nii.gz
++
++# other util
++# nnUNet_find_best_configuration, nnUNet_determine_postprocessing, nnUNet_evaluate_folder
+\ No newline at end of file
+Binary files third_party/nnUNet/nnunet/run/__pycache__/default_configuration.cpython-38.pyc and nnunet/run/__pycache__/default_configuration.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/run/__pycache__/__init__.cpython-38.pyc and nnunet/run/__pycache__/__init__.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/run/__pycache__/load_pretrained_weights.cpython-38.pyc and nnunet/run/__pycache__/load_pretrained_weights.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/run/__pycache__/run_training.cpython-38.pyc and nnunet/run/__pycache__/run_training.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/run/__pycache__/run_training_da.cpython-38.pyc and nnunet/run/__pycache__/run_training_da.cpython-38.pyc differ
+diff -uprN third_party/nnUNet/nnunet/run/run_training_da.py nnunet/run/run_training_da.py
+--- third_party/nnUNet/nnunet/run/run_training_da.py	1970-01-01 00:00:00.000000000 +0000
++++ nnunet/run/run_training_da.py	2022-10-24 14:50:43.273325896 +0000
+@@ -0,0 +1,223 @@
++#    Copyright 2022, Intel Corporation.
++#    Copyright 2020 Division of Medical Image Computing, German Cancer Research Center (DKFZ), Heidelberg, Germany
++#
++#    Licensed under the Apache License, Version 2.0 (the "License");
++#    you may not use this file except in compliance with the License.
++#    You may obtain a copy of the License at
++#
++#        http://www.apache.org/licenses/LICENSE-2.0
++#
++#    Unless required by applicable law or agreed to in writing, software
++#    distributed under the License is distributed on an "AS IS" BASIS,
++#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++#    See the License for the specific language governing permissions and
++#    limitations under the License.
++
++
++import argparse
++import sys
++import wandb
++from batchgenerators.utilities.file_and_folder_operations import *
++from nnunet.run.default_configuration import get_default_configuration, get_source_configuration
++from nnunet.paths import default_plans_identifier
++from nnunet.run.load_pretrained_weights import load_pretrained_weights, print_model_param_size
++from nnunet.training.cascade_stuff.predict_next_stage import predict_next_stage
++from nnunet.training.network_training.nnUNetTrainer import nnUNetTrainer
++from nnunet.utilities.task_name_id_conversion import convert_id_to_task_name
++from nnunet.training.network_training.nnUNetTrainerCascadeFullRes import nnUNetTrainerCascadeFullRes
++from nnunet.training.network_training.nnUNetTrainerV2_CascadeFullRes import nnUNetTrainerV2CascadeFullRes
++
++def main():
++    parser = argparse.ArgumentParser()
++    parser.add_argument("network")
++    parser.add_argument("network_trainer")
++    parser.add_argument("source_task", help="can be task name or task id")
++    parser.add_argument("target_task", help="can be task name or task id")
++    parser.add_argument("fold", help='0, 1, ..., 5 or \'all\'')
++    parser.add_argument("-val", "--validation_only", help="use this if you want to only run the validation",
++                        action="store_true")
++    parser.add_argument("-c", "--continue_training", help="use this if you want to continue a training",
++                        action="store_true")
++    parser.add_argument("-p", help="plans identifier. Only change this if you created a custom experiment planner",
++                        default=default_plans_identifier, required=False)
++    parser.add_argument("-sp", help="source plans identifier. Only change this if you created a custom experiment planner",
++                        default=default_plans_identifier, required=False)
++    parser.add_argument("--use_compressed_data", default=False, action="store_true",
++                        help="If you set use_compressed_data, the training cases will not be decompressed. Reading compressed data "
++                             "is much more CPU and RAM intensive and should only be used if you know what you are "
++                             "doing", required=False)
++    parser.add_argument("--deterministic",
++                        help="Makes training deterministic, but reduces training speed substantially. I (Fabian) think "
++                             "this is not necessary. Deterministic training will make you overfit to some random seed. "
++                             "Don't use that.",
++                        required=False, default=False, action="store_true")
++    parser.add_argument("--npz", required=False, default=False, action="store_true", help="if set then nnUNet will "
++                                                                                          "export npz files of "
++                                                                                          "predicted segmentations "
++                                                                                          "in the validation as well. "
++                                                                                          "This is needed to run the "
++                                                                                          "ensembling step so unless "
++                                                                                          "you are developing nnUNet "
++                                                                                          "you should enable this")
++    parser.add_argument("--valbest", required=False, default=False, action="store_true",
++                        help="hands off. This is not intended to be used")
++    parser.add_argument("--fp16", required=False, default=False, action="store_true",
++                        help="disable fp32 precision training and run mixed precision")
++    parser.add_argument("--val_folder", required=False, default="validation_raw",
++                        help="name of the validation folder. No need to use this for most people")
++    parser.add_argument("--disable_saving", required=False, action='store_true',
++                        help="If set nnU-Net will not save any parameter files (except a temporary checkpoint that "
++                             "will be removed at the end of the training). Useful for development when you are "
++                             "only interested in the results and want to save some disk space")
++    parser.add_argument("--enable_postprocessing_on_folds", required=False, action='store_true',
++                        help="Running postprocessing on each fold only makes sense when developing with nnU-Net and "
++                             "closely observing the model performance on specific configurations. You do not need it "
++                             "when applying nnU-Net because the postprocessing for this will be determined only once "
++                             "all five folds have been trained and nnUNet_find_best_configuration is called. Usually "
++                             "running postprocessing on each fold is computationally cheap, but some users have "
++                             "reported issues with very large images. If your images are large (>600x600x600 voxels) "
++                             "you should consider setting this flag.")
++    parser.add_argument('--val_disable_overwrite', action='store_false', default=True,
++                        help='Validation does not overwrite existing segmentations')
++    parser.add_argument('--disable_next_stage_pred', action='store_true', default=False,
++                        help='do not predict next stage')
++    parser.add_argument('-pretrained_weights', type=str, required=False, default=None,
++                        help='path to nnU-Net checkpoint file to be used as pretrained model (use .model '
++                             'file, for example model_final_checkpoint.model). Will only be used when actually training. '
++                             'Optional. Beta. Use with caution.')
++    parser.add_argument('-chk',
++                        help='checkpoint name, default: model_final_checkpoint',
++                        required=False,
++                        default='model_final_checkpoint')
++    parser.add_argument("--epochs", required=False, default=1000, type=int, 
++        help = "maximum training epochs")
++    parser.add_argument("--loss_weights", nargs='+',
++                        help="the weight of each loss"
++                        "(source, target, encoder-gan, decoder-gan, seg-gan)", 
++                        type=float,
++                        default=[1.0, 0, 1.0, 0, 0])
++    parser.add_argument('-exp_name',
++                        help='experiement name',
++                        required=False,
++                        default='')
++    args = parser.parse_args()
++
++    config_wandb(args)
++
++    source_task = args.source_task
++    task = args.target_task
++    fold = args.fold
++    network = args.network
++    network_trainer = args.network_trainer
++    validation_only = args.validation_only
++    plans_identifier = args.p
++    souce_plans_identifier = args.sp
++    enable_postprocessing_on_folds = args.enable_postprocessing_on_folds
++
++    use_compressed_data = args.use_compressed_data
++    decompress_data = not use_compressed_data
++
++    deterministic = args.deterministic
++    valbest = args.valbest
++
++    run_mixed_precision = args.fp16
++
++    val_folder = args.val_folder
++
++    if not task.startswith("Task"):
++        task_id = int(task)
++        task = convert_id_to_task_name(task_id)
++    if not source_task.startswith("Task"):
++        source_task_id = int(source_task)
++        source_task = convert_id_to_task_name(source_task_id)
++        source_plans_file, source_dataset_directory = get_source_configuration(network, source_task, souce_plans_identifier)
++
++    if fold == 'all':
++        pass
++    else:
++        fold = int(fold)
++
++    plans_file, output_folder_name, dataset_directory, batch_dice, stage, \
++    trainer_class = get_default_configuration(network, task, network_trainer, plans_identifier)
++
++    if trainer_class is None:
++        raise RuntimeError("Could not find trainer class in nnunet.training.network_training")
++
++    if network == "3d_cascade_fullres":
++        assert issubclass(trainer_class, (nnUNetTrainerCascadeFullRes, nnUNetTrainerV2CascadeFullRes)), \
++            "If running 3d_cascade_fullres then your " \
++            "trainer class must be derived from " \
++            "nnUNetTrainerCascadeFullRes"
++    else:
++        assert issubclass(trainer_class,
++                          nnUNetTrainer), "network_trainer was found but is not derived from nnUNetTrainer"
++
++    model_finetune = False
++    if args.continue_training or (args.pretrained_weights is not None):
++        model_finetune = True
++    
++    trainer = trainer_class(plans_file, fold, output_folder=output_folder_name, dataset_directory=dataset_directory,
++                            batch_dice=batch_dice, stage=stage, unpack_data=decompress_data,
++                            deterministic=deterministic,
++                            fp16=run_mixed_precision,
++                            source_dataset_directory=source_dataset_directory,
++                            source_plans_file=source_plans_file,
++                            epochs=args.epochs,
++                            loss_weights=args.loss_weights,
++                            model_finetune=model_finetune
++                            )
++    if args.disable_saving:
++        trainer.save_final_checkpoint = False # whether or not to save the final checkpoint
++        trainer.save_best_checkpoint = False  # whether or not to save the best checkpoint according to
++        # self.best_val_eval_criterion_MA
++        trainer.save_intermediate_checkpoints = True  # whether or not to save checkpoint_latest. We need that in case
++        # the training chashes
++        trainer.save_latest_only = True  # if false it will not store/overwrite _latest but separate files each
++
++    trainer.initialize(not validation_only)
++
++    # # view model size
++    # print_model_param_size(trainer.network)
++    # sys.exit(0)
++
++    if not validation_only:
++        if args.continue_training:
++            # -c was set, continue a previous training and ignore pretrained weights
++            trainer.load_latest_checkpoint()
++        elif (not args.continue_training) and (args.pretrained_weights is not None):
++            # we start a new training. If pretrained_weights are set, use them
++            load_pretrained_weights(trainer.network, args.pretrained_weights)
++        else:
++            # new training without pretraine weights, do nothing
++            pass
++
++        trainer.run_training()
++    else:
++        if valbest:
++            trainer.load_best_checkpoint(train=False)
++        else:
++            trainer.load_final_checkpoint(train=False, checkpoint_name=args.chk)
++
++    # predict validation
++    mean_dice_score = trainer.validate(save_softmax=args.npz, validation_folder_name=val_folder,
++                        run_postprocessing_on_folds=enable_postprocessing_on_folds,
++                        overwrite=args.val_disable_overwrite)
++
++    if network == '3d_lowres' and not args.disable_next_stage_pred:
++        print("predicting segmentations for the next stage of the cascade")
++        predict_next_stage(trainer, join(dataset_directory, trainer.plans['data_identifier'] + "_stage%d" % 1))
++
++    return mean_dice_score
++
++
++def config_wandb(args):
++    wandb_mode = 'online'
++    if not args.exp_name:
++        wandb_mode = 'disabled'
++    wandb.init(project='kits19', name=args.exp_name, config={}, mode=wandb_mode)
++    wandb.config.update(args)
++    wandb.define_metric("train/*", summary='mean')
++    wandb.define_metric("val/*", summary='mean')
++
++if __name__ == "__main__":
++    main()
+diff -uprN third_party/nnUNet/nnunet/run/run_training.py nnunet/run/run_training.py
+--- third_party/nnUNet/nnunet/run/run_training.py	2022-10-24 14:55:07.369321438 +0000
++++ nnunet/run/run_training.py	2022-10-24 14:50:43.273325896 +0000
+@@ -1,3 +1,4 @@
++#    Copyright 2022, Intel Corporation.
+ #    Copyright 2020 Division of Medical Image Computing, German Cancer Research Center (DKFZ), Heidelberg, Germany
+ #
+ #    Licensed under the Apache License, Version 2.0 (the "License");
+@@ -58,8 +59,8 @@ def main():
+                         help="not used here, just for fun")
+     parser.add_argument("--valbest", required=False, default=False, action="store_true",
+                         help="hands off. This is not intended to be used")
+-    parser.add_argument("--fp32", required=False, default=False, action="store_true",
+-                        help="disable mixed precision training and run old school fp32")
++    parser.add_argument("--fp16", required=False, default=False, action="store_true",
++                        help="disable fp32 precision training and run mixed precision")
+     parser.add_argument("--val_folder", required=False, default="validation_raw",
+                         help="name of the validation folder. No need to use this for most people")
+     parser.add_argument("--disable_saving", required=False, action='store_true',
+@@ -89,7 +90,12 @@ def main():
+                         help='path to nnU-Net checkpoint file to be used as pretrained model (use .model '
+                              'file, for example model_final_checkpoint.model). Will only be used when actually training. '
+                              'Optional. Beta. Use with caution.')
+-
++    parser.add_argument('-chk',
++                        help='checkpoint name, default: model_final_checkpoint',
++                        required=False,
++                        default='model_final_checkpoint')
++    parser.add_argument("--epochs", required=False, default=1000, type=int, 
++        help = "maximum training epochs")
+     args = parser.parse_args()
+ 
+     task = args.task
+@@ -107,8 +113,7 @@ def main():
+     deterministic = args.deterministic
+     valbest = args.valbest
+ 
+-    fp32 = args.fp32
+-    run_mixed_precision = not fp32
++    run_mixed_precision = args.fp16
+ 
+     val_folder = args.val_folder
+     # interp_order = args.interp_order
+@@ -151,7 +156,8 @@ def main():
+     trainer = trainer_class(plans_file, fold, output_folder=output_folder_name, dataset_directory=dataset_directory,
+                             batch_dice=batch_dice, stage=stage, unpack_data=decompress_data,
+                             deterministic=deterministic,
+-                            fp16=run_mixed_precision)
++                            fp16=run_mixed_precision, 
++                            epochs=args.epochs)
+     if args.disable_saving:
+         trainer.save_final_checkpoint = False # whether or not to save the final checkpoint
+         trainer.save_best_checkpoint = False  # whether or not to save the best checkpoint according to
+@@ -181,7 +187,7 @@ def main():
+             if valbest:
+                 trainer.load_best_checkpoint(train=False)
+             else:
+-                trainer.load_final_checkpoint(train=False)
++                trainer.load_final_checkpoint(train=False, checkpoint_name=args.chk)
+ 
+         trainer.network.eval()
+ 
+Binary files third_party/nnUNet/nnunet/training/cascade_stuff/__pycache__/__init__.cpython-38.pyc and nnunet/training/cascade_stuff/__pycache__/__init__.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/training/cascade_stuff/__pycache__/predict_next_stage.cpython-38.pyc and nnunet/training/cascade_stuff/__pycache__/predict_next_stage.cpython-38.pyc differ
+diff -uprN third_party/nnUNet/nnunet/training/data_augmentation/data_augmentation_moreDA.py nnunet/training/data_augmentation/data_augmentation_moreDA.py
+--- third_party/nnUNet/nnunet/training/data_augmentation/data_augmentation_moreDA.py	2022-10-24 14:55:07.369321438 +0000
++++ nnunet/training/data_augmentation/data_augmentation_moreDA.py	2022-10-24 14:50:43.273325896 +0000
+@@ -208,3 +208,131 @@ def get_moreDA_augmentation(dataloader_t
+ 
+     return batchgenerator_train, batchgenerator_val
+ 
++
++def get_source_DA_augmentation(dataloader_train, patch_size, params=default_3D_augmentation_params,
++                            border_val_seg=-1,
++                            seeds_train=None, order_seg=1, order_data=3, deep_supervision_scales=None,
++                            soft_ds=False,
++                            classes=None, pin_memory=True, regions=None,
++                            use_nondetMultiThreadedAugmenter: bool = False):
++    assert params.get('mirror') is None, "old version of params, use new keyword do_mirror"
++
++    tr_transforms = []
++
++    if params.get("selected_data_channels") is not None:
++        tr_transforms.append(DataChannelSelectionTransform(params.get("selected_data_channels")))
++
++    if params.get("selected_seg_channels") is not None:
++        tr_transforms.append(SegChannelSelectionTransform(params.get("selected_seg_channels")))
++
++    # don't do color augmentations while in 2d mode with 3d data because the color channel is overloaded!!
++    if params.get("dummy_2D") is not None and params.get("dummy_2D"):
++        ignore_axes = (0,)
++        tr_transforms.append(Convert3DTo2DTransform())
++        patch_size_spatial = patch_size[1:]
++    else:
++        patch_size_spatial = patch_size
++        ignore_axes = None
++
++    tr_transforms.append(SpatialTransform(
++        patch_size_spatial, patch_center_dist_from_border=None,
++        do_elastic_deform=params.get("do_elastic"), alpha=params.get("elastic_deform_alpha"),
++        sigma=params.get("elastic_deform_sigma"),
++        do_rotation=params.get("do_rotation"), angle_x=params.get("rotation_x"), angle_y=params.get("rotation_y"),
++        angle_z=params.get("rotation_z"), p_rot_per_axis=params.get("rotation_p_per_axis"),
++        do_scale=params.get("do_scaling"), scale=params.get("scale_range"),
++        border_mode_data=params.get("border_mode_data"), border_cval_data=0, order_data=order_data,
++        border_mode_seg="constant", border_cval_seg=border_val_seg,
++        order_seg=order_seg, random_crop=params.get("random_crop"), p_el_per_sample=params.get("p_eldef"),
++        p_scale_per_sample=params.get("p_scale"), p_rot_per_sample=params.get("p_rot"),
++        independent_scale_for_each_axis=params.get("independent_scale_factor_for_each_axis")
++    ))
++
++    if params.get("dummy_2D"):
++        tr_transforms.append(Convert2DTo3DTransform())
++
++    # we need to put the color augmentations after the dummy 2d part (if applicable). Otherwise the overloaded color
++    # channel gets in the way
++    tr_transforms.append(GaussianNoiseTransform(p_per_sample=0.1))
++    tr_transforms.append(GaussianBlurTransform((0.5, 1.), different_sigma_per_channel=True, p_per_sample=0.2,
++                                               p_per_channel=0.5))
++    tr_transforms.append(BrightnessMultiplicativeTransform(multiplier_range=(0.75, 1.25), p_per_sample=0.15))
++
++    if params.get("do_additive_brightness"):
++        tr_transforms.append(BrightnessTransform(params.get("additive_brightness_mu"),
++                                                 params.get("additive_brightness_sigma"),
++                                                 True, p_per_sample=params.get("additive_brightness_p_per_sample"),
++                                                 p_per_channel=params.get("additive_brightness_p_per_channel")))
++
++    tr_transforms.append(ContrastAugmentationTransform(p_per_sample=0.15))
++    tr_transforms.append(SimulateLowResolutionTransform(zoom_range=(0.5, 1), per_channel=True,
++                                                        p_per_channel=0.5,
++                                                        order_downsample=0, order_upsample=3, p_per_sample=0.25,
++                                                        ignore_axes=ignore_axes))
++    tr_transforms.append(
++        GammaTransform(params.get("gamma_range"), True, True, retain_stats=params.get("gamma_retain_stats"),
++                       p_per_sample=0.1))  # inverted gamma
++
++    if params.get("do_gamma"):
++        tr_transforms.append(
++            GammaTransform(params.get("gamma_range"), False, True, retain_stats=params.get("gamma_retain_stats"),
++                           p_per_sample=params["p_gamma"]))
++
++    if params.get("do_mirror") or params.get("mirror"):
++        tr_transforms.append(MirrorTransform(params.get("mirror_axes")))
++
++    if params.get("mask_was_used_for_normalization") is not None:
++        mask_was_used_for_normalization = params.get("mask_was_used_for_normalization")
++        tr_transforms.append(MaskTransform(mask_was_used_for_normalization, mask_idx_in_seg=0, set_outside_to=0))
++
++    tr_transforms.append(RemoveLabelTransform(-1, 0))
++
++    if params.get("move_last_seg_chanel_to_data") is not None and params.get("move_last_seg_chanel_to_data"):
++        tr_transforms.append(MoveSegAsOneHotToData(1, params.get("all_segmentation_labels"), 'seg', 'data'))
++        if params.get("cascade_do_cascade_augmentations") is not None and params.get(
++                "cascade_do_cascade_augmentations"):
++            if params.get("cascade_random_binary_transform_p") > 0:
++                tr_transforms.append(ApplyRandomBinaryOperatorTransform(
++                    channel_idx=list(range(-len(params.get("all_segmentation_labels")), 0)),
++                    p_per_sample=params.get("cascade_random_binary_transform_p"),
++                    key="data",
++                    strel_size=params.get("cascade_random_binary_transform_size"),
++                    p_per_label=params.get("cascade_random_binary_transform_p_per_label")))
++            if params.get("cascade_remove_conn_comp_p") > 0:
++                tr_transforms.append(
++                    RemoveRandomConnectedComponentFromOneHotEncodingTransform(
++                        channel_idx=list(range(-len(params.get("all_segmentation_labels")), 0)),
++                        key="data",
++                        p_per_sample=params.get("cascade_remove_conn_comp_p"),
++                        fill_with_other_class_p=params.get("cascade_remove_conn_comp_max_size_percent_threshold"),
++                        dont_do_if_covers_more_than_X_percent=params.get(
++                            "cascade_remove_conn_comp_fill_with_other_class_p")))
++
++    tr_transforms.append(RenameTransform('seg', 'target', True))
++
++    if regions is not None:
++        tr_transforms.append(ConvertSegmentationToRegionsTransform(regions, 'target', 'target'))
++
++    if deep_supervision_scales is not None:
++        if soft_ds:
++            assert classes is not None
++            tr_transforms.append(DownsampleSegForDSTransform3(deep_supervision_scales, 'target', 'target', classes))
++        else:
++            tr_transforms.append(DownsampleSegForDSTransform2(deep_supervision_scales, 0, input_key='target',
++                                                              output_key='target'))
++
++    tr_transforms.append(NumpyToTensor(['data', 'target'], 'float'))
++    tr_transforms = Compose(tr_transforms)
++
++    if use_nondetMultiThreadedAugmenter:
++        if NonDetMultiThreadedAugmenter is None:
++            raise RuntimeError('NonDetMultiThreadedAugmenter is not yet available')
++        batchgenerator_train = NonDetMultiThreadedAugmenter(dataloader_train, tr_transforms, params.get('num_threads'),
++                                                            params.get("num_cached_per_thread"), seeds=seeds_train,
++                                                            pin_memory=pin_memory)
++    else:
++        batchgenerator_train = MultiThreadedAugmenter(dataloader_train, tr_transforms, params.get('num_threads'),
++                                                      params.get("num_cached_per_thread"),
++                                                      seeds=seeds_train, pin_memory=pin_memory)
++
++    return batchgenerator_train
+Binary files third_party/nnUNet/nnunet/training/data_augmentation/__pycache__/custom_transforms.cpython-38.pyc and nnunet/training/data_augmentation/__pycache__/custom_transforms.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/training/data_augmentation/__pycache__/data_augmentation_moreDA.cpython-38.pyc and nnunet/training/data_augmentation/__pycache__/data_augmentation_moreDA.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/training/data_augmentation/__pycache__/default_data_augmentation.cpython-38.pyc and nnunet/training/data_augmentation/__pycache__/default_data_augmentation.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/training/data_augmentation/__pycache__/downsampling.cpython-38.pyc and nnunet/training/data_augmentation/__pycache__/downsampling.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/training/data_augmentation/__pycache__/__init__.cpython-38.pyc and nnunet/training/data_augmentation/__pycache__/__init__.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/training/data_augmentation/__pycache__/pyramid_augmentations.cpython-38.pyc and nnunet/training/data_augmentation/__pycache__/pyramid_augmentations.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/training/dataloading/__pycache__/dataset_loading.cpython-38.pyc and nnunet/training/dataloading/__pycache__/dataset_loading.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/training/dataloading/__pycache__/__init__.cpython-38.pyc and nnunet/training/dataloading/__pycache__/__init__.cpython-38.pyc differ
+diff -uprN third_party/nnUNet/nnunet/training/learning_rate/poly_lr.py nnunet/training/learning_rate/poly_lr.py
+--- third_party/nnUNet/nnunet/training/learning_rate/poly_lr.py	2022-10-24 14:55:07.369321438 +0000
++++ nnunet/training/learning_rate/poly_lr.py	2022-10-24 14:50:43.277325896 +0000
+@@ -14,4 +14,6 @@
+ 
+ 
+ def poly_lr(epoch, max_epochs, initial_lr, exponent=0.9):
++    if epoch >= max_epochs:
++        return 0
+     return initial_lr * (1 - epoch / max_epochs)**exponent
+Binary files third_party/nnUNet/nnunet/training/learning_rate/__pycache__/__init__.cpython-38.pyc and nnunet/training/learning_rate/__pycache__/__init__.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/training/learning_rate/__pycache__/poly_lr.cpython-38.pyc and nnunet/training/learning_rate/__pycache__/poly_lr.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/training/loss_functions/__pycache__/crossentropy.cpython-38.pyc and nnunet/training/loss_functions/__pycache__/crossentropy.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/training/loss_functions/__pycache__/deep_supervision.cpython-38.pyc and nnunet/training/loss_functions/__pycache__/deep_supervision.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/training/loss_functions/__pycache__/dice_loss.cpython-38.pyc and nnunet/training/loss_functions/__pycache__/dice_loss.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/training/loss_functions/__pycache__/__init__.cpython-38.pyc and nnunet/training/loss_functions/__pycache__/__init__.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/training/loss_functions/__pycache__/TopK_loss.cpython-38.pyc and nnunet/training/loss_functions/__pycache__/TopK_loss.cpython-38.pyc differ
+diff -uprN third_party/nnUNet/nnunet/training/network_training/network_trainer.py nnunet/training/network_training/network_trainer.py
+--- third_party/nnUNet/nnunet/training/network_training/network_trainer.py	2022-10-24 14:55:07.373321438 +0000
++++ nnunet/training/network_training/network_trainer.py	2022-10-24 14:50:43.277325896 +0000
+@@ -1,3 +1,4 @@
++#    Copyright 2022, Intel Corporation.
+ #    Copyright 2020 Division of Medical Image Computing, German Cancer Research Center (DKFZ), Heidelberg, Germany
+ #
+ #    Licensed under the Apache License, Version 2.0 (the "License");
+@@ -26,11 +27,13 @@ from torch.optim.lr_scheduler import _LR
+ 
+ matplotlib.use("agg")
+ from time import time, sleep
++from collections import defaultdict
+ import torch
+ import numpy as np
+ from torch.optim import lr_scheduler
+ import matplotlib.pyplot as plt
+ import sys
++import os
+ from collections import OrderedDict
+ import torch.backends.cudnn as cudnn
+ from abc import abstractmethod
+@@ -106,7 +109,7 @@ class NetworkTrainer(object):
+         self.best_val_eval_criterion_MA = None
+         self.best_MA_tr_loss_for_patience = None
+         self.best_epoch_based_on_MA_tr_loss = None
+-        self.all_tr_losses = []
++        self.all_tr_losses = defaultdict(list)
+         self.all_val_losses = []
+         self.all_val_losses_tr_mode = []
+         self.all_val_eval_metrics = []  # does not have to be used
+@@ -189,6 +192,8 @@ class NetworkTrainer(object):
+         Should probably by improved
+         :return:
+         """
++        # solid, dotted, dashdot, 'loosely dotted', 'loosely dashdotted', 'dashdotdotted', 
++        line_style_list = ['-', ':', '-.', (0, (1, 10)),  (0, (3, 10, 1, 10)), (0, (3, 5, 1, 5, 1, 5))]
+         try:
+             font = {'weight': 'normal',
+                     'size': 18}
+@@ -201,7 +206,11 @@ class NetworkTrainer(object):
+ 
+             x_values = list(range(self.epoch + 1))
+ 
+-            ax.plot(x_values, self.all_tr_losses, color='b', ls='-', label="loss_tr")
++            for index, key in enumerate(sorted(self.all_tr_losses.keys())):
++                if 'adv_acc' in key:
++                    ax2.plot(x_values, self.all_tr_losses[key], color='g', ls=line_style_list[index], label=f'{key}, train=True')
++                else:
++                    ax.plot(x_values, self.all_tr_losses[key], color='b', ls=line_style_list[index], label=key)
+ 
+             ax.plot(x_values, self.all_val_losses, color='r', ls='-', label="loss_val, train=False")
+ 
+@@ -255,6 +264,9 @@ class NetworkTrainer(object):
+         if also_print_to_console:
+             print(*args)
+ 
++    def may_update_saved_ckpt(self, save_this):
++        return save_this
++
+     def save_checkpoint(self, fname, save_optimizer=True):
+         start_time = time()
+         state_dict = self.network.state_dict()
+@@ -284,6 +296,8 @@ class NetworkTrainer(object):
+         if self.amp_grad_scaler is not None:
+             save_this['amp_grad_scaler'] = self.amp_grad_scaler.state_dict()
+ 
++        save_this = self.may_update_saved_ckpt(save_this)
++
+         torch.save(save_this, fname)
+         self.print_to_log_file("done, saving took %.2f seconds" % (time() - start_time))
+ 
+@@ -306,8 +320,8 @@ class NetworkTrainer(object):
+             return self.load_best_checkpoint(train)
+         raise RuntimeError("No checkpoint found")
+ 
+-    def load_final_checkpoint(self, train=False):
+-        filename = join(self.output_folder, "model_final_checkpoint.model")
++    def load_final_checkpoint(self, train=False, checkpoint_name="model_final_checkpoint"):
++        filename = join(self.output_folder, f"{checkpoint_name}.model")
+         if not isfile(filename):
+             raise RuntimeError("Final checkpoint not found. Expected: %s. Please finish the training first." % filename)
+         return self.load_checkpoint(filename, train=train)
+@@ -387,12 +401,13 @@ class NetworkTrainer(object):
+         # after the training is done, the epoch is incremented one more time in my old code. This results in
+         # self.epoch = 1001 for old trained models when the epoch is actually 1000. This causes issues because
+         # len(self.all_tr_losses) = 1000 and the plot function will fail. We can easily detect and correct that here
+-        if self.epoch != len(self.all_tr_losses):
++        if train and self.epoch != len(self.all_tr_losses['train/total_loss']):
+             self.print_to_log_file("WARNING in loading checkpoint: self.epoch != len(self.all_tr_losses). This is "
+                                    "due to an old bug and should only appear when you are loading old models. New "
+                                    "models should have this fixed! self.epoch is now set to len(self.all_tr_losses)")
+-            self.epoch = len(self.all_tr_losses)
+-            self.all_tr_losses = self.all_tr_losses[:self.epoch]
++            self.epoch = len(self.all_tr_losses['train/total_loss'])
++            for key in self.all_tr_losses:
++                self.all_tr_losses[key] = self.all_tr_losses[key][:self.epoch]
+             self.all_val_losses = self.all_val_losses[:self.epoch]
+             self.all_val_losses_tr_mode = self.all_val_losses_tr_mode[:self.epoch]
+             self.all_val_eval_metrics = self.all_val_eval_metrics[:self.epoch]
+@@ -437,7 +452,7 @@ class NetworkTrainer(object):
+         while self.epoch < self.max_num_epochs:
+             self.print_to_log_file("\nepoch: ", self.epoch)
+             epoch_start_time = time()
+-            train_losses_epoch = []
++            train_losses_epoch = defaultdict(list)
+ 
+             # train one epoch
+             self.network.train()
+@@ -449,15 +464,18 @@ class NetworkTrainer(object):
+ 
+                         l = self.run_iteration(self.tr_gen, True)
+ 
+-                        tbar.set_postfix(loss=l)
+-                        train_losses_epoch.append(l)
++                        tbar.set_postfix(loss=l['train/total_loss'])
++                        for key in l:
++                            train_losses_epoch[key].append(l[key])
+             else:
+                 for _ in range(self.num_batches_per_epoch):
+                     l = self.run_iteration(self.tr_gen, True)
+-                    train_losses_epoch.append(l)
++                    for key in l:
++                        train_losses_epoch[key].append(l[key])
+ 
+-            self.all_tr_losses.append(np.mean(train_losses_epoch))
+-            self.print_to_log_file("train loss : %.4f" % self.all_tr_losses[-1])
++            for key in train_losses_epoch:
++                self.all_tr_losses[key].append(np.mean(train_losses_epoch[key]))
++            self.print_to_log_file("train loss : %.4f" % self.all_tr_losses['train/total_loss'][-1])
+ 
+             with torch.no_grad():
+                 # validation with train=False
+@@ -475,7 +493,7 @@ class NetworkTrainer(object):
+                     val_losses = []
+                     for b in range(self.num_val_batches_per_epoch):
+                         l = self.run_iteration(self.val_gen, False)
+-                        val_losses.append(l)
++                        val_losses.append(l['train/total_loss'])
+                     self.all_val_losses_tr_mode.append(np.mean(val_losses))
+                     self.print_to_log_file("validation loss (train=True): %.4f" % self.all_val_losses_tr_mode[-1])
+ 
+@@ -619,10 +637,10 @@ class NetworkTrainer(object):
+ 
+     def update_train_loss_MA(self):
+         if self.train_loss_MA is None:
+-            self.train_loss_MA = self.all_tr_losses[-1]
++            self.train_loss_MA = self.all_tr_losses['train/total_loss'][-1]
+         else:
+             self.train_loss_MA = self.train_loss_MA_alpha * self.train_loss_MA + (1 - self.train_loss_MA_alpha) * \
+-                                 self.all_tr_losses[-1]
++                                 self.all_tr_losses['train/total_loss'][-1]
+ 
+     def run_iteration(self, data_generator, do_backprop=True, run_online_evaluation=False):
+         data_dict = next(data_generator)
+@@ -705,7 +723,7 @@ class NetworkTrainer(object):
+ 
+         for batch_num in range(1, num_iters + 1):
+             # +1 because this one here is not designed to have negative loss...
+-            loss = self.run_iteration(self.tr_gen, do_backprop=True, run_online_evaluation=False).data.item() + 1
++            loss = self.run_iteration(self.tr_gen, do_backprop=True, run_online_evaluation=False)['train/total_loss'].data.item() + 1
+ 
+             # Compute the smoothed loss
+             avg_loss = beta * avg_loss + (1 - beta) * loss
+diff -uprN third_party/nnUNet/nnunet/training/network_training/nnUNetTrainer_DA_V2.py nnunet/training/network_training/nnUNetTrainer_DA_V2.py
+--- third_party/nnUNet/nnunet/training/network_training/nnUNetTrainer_DA_V2.py	1970-01-01 00:00:00.000000000 +0000
++++ nnunet/training/network_training/nnUNetTrainer_DA_V2.py	2022-10-24 14:50:43.277325896 +0000
+@@ -0,0 +1,667 @@
++#    Copyright 2022, Intel Corporation.
++#    Copyright 2020 Division of Medical Image Computing, German Cancer Research Center (DKFZ), Heidelberg, Germany
++#
++#    Licensed under the Apache License, Version 2.0 (the "License");
++#    you may not use this file except in compliance with the License.
++#    You may obtain a copy of the License at
++#
++#        http://www.apache.org/licenses/LICENSE-2.0
++#
++#    Unless required by applicable law or agreed to in writing, software
++#    distributed under the License is distributed on an "AS IS" BASIS,
++#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++#    See the License for the specific language governing permissions and
++#    limitations under the License.
++
++
++import numpy as np
++import torch
++import wandb
++from nnunet.training.data_augmentation.data_augmentation_moreDA import get_moreDA_augmentation, get_source_DA_augmentation
++from nnunet.training.loss_functions.deep_supervision import MultipleOutputLoss2
++from nnunet.utilities.to_torch import maybe_to_torch, to_cuda
++from nnunet.network_architecture.generic_UNet_DA_V2 import Generic_UNet_DA_V2
++from nnunet.network_architecture.DA.discriminator import SegDiscriminator, FCDiscriminator
++from nnunet.network_architecture.DA.DA_Loss import SegDomainAdversarialLoss, DomainAdversarialLoss
++from tllib.modules.grl import GradientReverseLayer, WarmStartGradientReverseLayer
++from nnunet.network_architecture.initialization import InitWeights_He
++from nnunet.network_architecture.neural_network import SegmentationNetwork
++from nnunet.training.dataloading.dataset_loading import unpack_dataset
++from nnunet.training.network_training.nnUNetTrainerV2 import nnUNetTrainerV2
++from nnunet.utilities.nd_softmax import softmax_helper
++from nnunet.evaluation.evaluator import aggregate_scores
++from nnunet.inference.segmentation_export import save_segmentation_nifti_from_softmax
++from nnunet.configuration import default_num_threads
++from multiprocessing import Pool
++from nnunet.postprocessing.connected_components import determine_postprocessing
++import shutil
++from time import sleep
++from torch import nn
++from torch.cuda.amp import autocast
++from batchgenerators.utilities.file_and_folder_operations import *
++import sys
++from nnunet.training.learning_rate.poly_lr import poly_lr
++
++
++class nnUNetTrainer_DA_V2(nnUNetTrainerV2):
++
++    def __init__(self, plans_file, fold, output_folder=None, dataset_directory=None, batch_dice=True, stage=None,
++                 unpack_data=True, deterministic=True, fp16=False, source_dataset_directory=None,
++                 source_plans_file=None, epochs=1000, loss_weights=[1,1,1,1,1], model_finetune=False
++                 ):
++        super().__init__(plans_file, fold, output_folder, dataset_directory, batch_dice, stage, unpack_data,
++                         deterministic, fp16)
++        self.init_args = (plans_file, fold, output_folder, dataset_directory, batch_dice, stage, unpack_data,
++                          deterministic, fp16, source_dataset_directory, source_plans_file, epochs, loss_weights, model_finetune)
++        self.model_finetune = model_finetune
++        self.max_num_epochs = epochs
++        self.lr_max_num_epochs = 100
++        self.lr_adv_max_num_epochs = 100
++        self.initial_lr = 1e-2
++        self.deep_supervision_scales = None
++        self.ds_loss_weights = None
++        self.pin_memory = True
++        self.source_dataset_directory = source_dataset_directory
++        self.source_plans_file = source_plans_file
++        self.encoder_domain_adv = None
++        self.decoder_domain_adv = None
++        self.seg_domain_adv = None
++        self.loss_weights = loss_weights
++        self.save_every = 2
++
++    def initialize(self, training=True, force_load_plans=True):
++        """
++        - replaced get_default_augmentation with get_moreDA_augmentation
++        - enforce to only run this code once
++        - loss function wrapper for deep supervision
++
++        :param training:
++        :param force_load_plans:
++        :return:
++        """
++        if not self.was_initialized:
++            maybe_mkdir_p(self.output_folder)
++
++            self.source_plans = load_pickle(self.source_plans_file)
++            self.process_plans(self.source_plans)
++
++            if force_load_plans or (self.plans is None):
++                self.load_plans_file()
++            self.target_num_classes = self.plans['num_classes'] + 1
++
++            self.setup_DA_params()
++
++            ################# Here we wrap the loss for deep supervision ############
++            # we need to know the number of outputs of the network
++            net_numpool = len(self.net_num_pool_op_kernel_sizes)
++
++            # we give each output a weight which decreases exponentially (division by 2) as the resolution decreases
++            # this gives higher resolution outputs more weight in the loss
++            weights = np.array([1 / (2 ** i) for i in range(net_numpool)])
++
++            # we don't use the lowest 2 outputs. Normalize weights so that they sum to 1
++            mask = np.array([True] + [True if i < net_numpool - 1 else False for i in range(1, net_numpool)])
++            weights[~mask] = 0
++            weights = weights / weights.sum()
++            self.ds_loss_weights = weights
++            # now wrap the loss
++            self.loss = MultipleOutputLoss2(self.loss, self.ds_loss_weights)
++            ################# END ###################
++
++            self.folder_with_preprocessed_data = join(self.dataset_directory, self.plans['data_identifier'] +
++                                                      "_stage%d" % self.stage)
++            self.source_folder_with_preprocessed_data = join(self.source_dataset_directory, self.source_plans['data_identifier'] +
++                                                      "_stage%d" % self.stage)
++            if training:
++                self.dl_tr, self.dl_val = self.get_basic_generators()
++                self.source_dl = self.get_source_generators(self.source_folder_with_preprocessed_data)
++                if self.unpack_data:
++                    print("unpacking dataset")
++                    unpack_dataset(self.folder_with_preprocessed_data)
++                    unpack_dataset(self.source_folder_with_preprocessed_data)
++                    print("done")
++                else:
++                    print(
++                        "INFO: Not unpacking data! Training may be slow due to that. Pray you are not using 2d or you "
++                        "will wait all winter for your model to finish!")
++
++                self.tr_gen, self.val_gen = get_moreDA_augmentation(
++                    self.dl_tr, self.dl_val,
++                    self.data_aug_params[
++                        'patch_size_for_spatialtransform'],
++                    self.data_aug_params,
++                    deep_supervision_scales=self.deep_supervision_scales,
++                    pin_memory=self.pin_memory,
++                    use_nondetMultiThreadedAugmenter=False
++                )
++
++                self.source_gen = get_source_DA_augmentation(
++                    self.source_dl,
++                    self.data_aug_params[
++                        'patch_size_for_spatialtransform'],
++                    self.data_aug_params,
++                    deep_supervision_scales=self.deep_supervision_scales,
++                    pin_memory=self.pin_memory,
++                    use_nondetMultiThreadedAugmenter=False
++                )
++
++                self.print_to_log_file("TRAINING KEYS:\n %s" % (str(self.dataset_tr.keys())),
++                                       also_print_to_console=False)
++                self.print_to_log_file("VALIDATION KEYS:\n %s" % (str(self.dataset_val.keys())),
++                                       also_print_to_console=False)
++            else:
++                pass
++
++            self.initialize_network()
++            self.initialize_optimizer_and_scheduler()
++
++            assert isinstance(self.network, (SegmentationNetwork, nn.DataParallel))
++        else:
++            self.print_to_log_file('self.was_initialized is True, not running self.initialize again')
++        self.was_initialized = True
++
++    def initialize_optimizer_and_scheduler(self):
++        assert self.network is not None, "self.initialize_network must be called first"
++        parameters = [{
++            'params': self.network.parameters(),
++        }]
++        if self.loss_weights[2] > 0:
++            parameters += [{
++                'params': self.encoder_domain_discri.parameters(),
++            }]
++        if self.loss_weights[3] > 0:
++            parameters += [{
++                'params': self.decoder_domain_discri.parameters(),
++            }]
++        if self.loss_weights[4] > 0:
++            parameters += [{
++                'params': self.seg_domain_discri.parameters(),
++            }]
++        self.optimizer = torch.optim.SGD(parameters, self.initial_lr, weight_decay=self.weight_decay,
++                                         momentum=0.99, nesterov=True)
++        self.lr_scheduler = None
++
++    def maybe_update_lr(self, epoch=None):
++        self.backbone_initial_lr = 0.2 * self.initial_lr if self.model_finetune else self.initial_lr
++        self.adv_initial_lr = self.initial_lr
++
++        if epoch is None:
++            ep = self.epoch + 1
++        else:
++            ep = epoch
++        
++        for index, group in enumerate(self.optimizer.param_groups):
++            if index == 0:
++                group['lr'] = poly_lr(ep, self.lr_max_num_epochs, self.backbone_initial_lr, 0.9)
++            else:
++                group['lr'] = poly_lr(ep, self.lr_adv_max_num_epochs, self.adv_initial_lr, 0.9)
++            self.print_to_log_file(f"lr index {index}: {np.round(group['lr'], decimals=6)}")
++
++    def initialize_network(self):
++        """
++        - momentum 0.99
++        - SGD instead of Adam
++        - self.lr_scheduler = None because we do poly_lr
++        - deep supervision = True
++        - i am sure I forgot something here
++
++        Known issue: forgot to set neg_slope=0 in InitWeights_He; should not make a difference though
++        :return:
++        """
++        if self.threeD:
++            conv_op = nn.Conv3d
++            dropout_op = nn.Dropout3d
++            norm_op = nn.InstanceNorm3d
++
++        else:
++            conv_op = nn.Conv2d
++            dropout_op = nn.Dropout2d
++            norm_op = nn.InstanceNorm2d
++
++        norm_op_kwargs = {'eps': 1e-5, 'affine': True}
++        dropout_op_kwargs = {'p': 0, 'inplace': True}
++        net_nonlin = nn.LeakyReLU
++        net_nonlin_kwargs = {'negative_slope': 1e-2, 'inplace': True}
++        self.network = Generic_UNet_DA_V2(self.num_input_channels, self.base_num_features, self.num_classes,
++                                    len(self.net_num_pool_op_kernel_sizes),
++                                    self.conv_per_stage, 2, conv_op, norm_op, norm_op_kwargs, dropout_op,
++                                    dropout_op_kwargs,
++                                    net_nonlin, net_nonlin_kwargs, True, False, lambda x: x, InitWeights_He(1e-2),
++                                    self.net_num_pool_op_kernel_sizes, self.net_conv_kernel_sizes, False, True, True)
++        if torch.cuda.is_available():
++            self.network.cuda()
++            
++        self.network.inference_apply_nonlin = softmax_helper
++        # define gradient reverselayer type
++        # self.grl = GradientReverseLayer()
++        self.grl = WarmStartGradientReverseLayer(alpha=1., lo=0., hi=1., max_iters=1000, auto_step=True)
++
++        if self.loss_weights[2] > 0:
++            self.encoder_domain_discri = SegDiscriminator(self.network.encoder_channels, 2, 
++                conv_op, norm_op, norm_op_kwargs,
++                dropout_op, dropout_op_kwargs,
++                net_nonlin, net_nonlin_kwargs, 
++                InitWeights_He(1e-2),
++                self.net_num_pool_op_kernel_sizes
++            )
++            self.encoder_domain_adv = SegDomainAdversarialLoss(self.encoder_domain_discri, grl=self.grl)
++            if torch.cuda.is_available():
++                self.encoder_domain_adv.cuda()
++
++        if self.loss_weights[3] > 0:
++            self.decoder_domain_discri = SegDiscriminator(self.network.encoder_channels, 2, 
++                conv_op, norm_op, norm_op_kwargs,
++                dropout_op, dropout_op_kwargs,
++                net_nonlin, net_nonlin_kwargs, 
++                InitWeights_He(1e-2),
++                self.net_num_pool_op_kernel_sizes
++            )
++            self.decoder_domain_adv = SegDomainAdversarialLoss(self.decoder_domain_discri, grl=self.grl)
++            if torch.cuda.is_available():
++                self.decoder_domain_adv.cuda()
++
++        if self.loss_weights[4] > 0:
++            self.seg_domain_discri = FCDiscriminator(1, 2)
++            self.seg_domain_adv = DomainAdversarialLoss(self.seg_domain_discri, grl=self.grl)
++            if torch.cuda.is_available():
++                self.seg_domain_adv.cuda()
++
++    def run_iteration(self, data_generator, do_backprop=True, run_online_evaluation=False):
++        """
++        gradient clipping improves training stability
++
++        :param data_generator:
++        :param do_backprop:
++        :param run_online_evaluation:
++        :return:
++        """
++        if do_backprop:
++            if self.encoder_domain_adv: self.encoder_domain_adv.train()
++            if self.decoder_domain_adv: self.decoder_domain_adv.train()
++            if self.seg_domain_adv: self.seg_domain_adv.train()
++
++        source_loss = 0
++        gan_loss = 0
++        
++        data_dict = next(data_generator)
++        data = data_dict['data']
++        target = data_dict['target']
++
++        data = maybe_to_torch(data)
++        target = maybe_to_torch(target)
++
++        if torch.cuda.is_available():
++            data = to_cuda(data)
++            target = to_cuda(target)
++
++        if do_backprop:
++            source_data_dict = next(self.source_gen)
++            source_data = source_data_dict['data']
++            source_label = source_data_dict['target']
++
++            source_data = maybe_to_torch(source_data)
++            source_label = maybe_to_torch(source_label)
++
++            if torch.cuda.is_available():
++                source_data = to_cuda(source_data)
++                source_label = to_cuda(source_label)
++
++        self.optimizer.zero_grad()
++
++        if self.fp16:
++            with autocast():
++                
++                if do_backprop:
++                    output, encoder_f_t, decoder_f_t = self.network(data)
++                    del data
++                    source_output, encoder_f_s, decoder_f_s = self.network(source_data)
++                    del source_data
++                    l = self.loss_weights[0] * self.loss(source_output, source_label)
++                    source_loss += l.detach().cpu().numpy()
++                    if self.loss_weights[1] > 0:
++                        l += self.loss_weights[1] * self.loss(
++                            [self.source_pred_to_target_pred(output[0])], 
++                            [target[0]]
++                        )
++                    if self.loss_weights[2] > 0:
++                        gan_encoder = self.loss_weights[2] * self.encoder_domain_adv(encoder_f_s, encoder_f_t)
++                        l += gan_encoder
++                        gan_loss += gan_encoder.detach().cpu().numpy()
++                    if self.loss_weights[3] > 0:
++                        gan_decoder = self.loss_weights[3] * self.decoder_domain_adv(decoder_f_s, decoder_f_t)
++                        l += gan_decoder
++                        gan_loss += gan_decoder.detach().cpu().numpy()
++                    if self.loss_weights[4] > 0:
++                        gan_seg = self.loss_weights[4] * self.seg_domain_adv(
++                            source_label[0],
++                            torch.argmax(source_output[0], dim=1, keepdim=True)
++                        )
++                        l += gan_seg
++                        gan_loss += gan_seg.detach().cpu().numpy()
++                else:
++                    output = self.network(data)
++                    del data  
++                    l = self.loss(
++                        [self.source_pred_to_target_pred(output[0])], 
++                        [target[0]]
++                    )
++
++            if do_backprop:
++                self.amp_grad_scaler.scale(l).backward()
++                self.amp_grad_scaler.unscale_(self.optimizer)
++                torch.nn.utils.clip_grad_norm_(self.network.parameters(), 12)
++                self.amp_grad_scaler.step(self.optimizer)
++                self.amp_grad_scaler.update()
++        else:         
++
++            if do_backprop:
++                output, encoder_f_t, decoder_f_t = self.network(data)
++                del data
++                source_output, encoder_f_s, decoder_f_s = self.network(source_data)
++                del source_data
++                # print(f'encoder_f_s.shape: {encoder_f_s.shape}')
++                l = self.loss_weights[0] * self.loss(source_output, source_label)
++                source_loss += l.detach().cpu().numpy()
++                if self.loss_weights[1] > 0:
++                    l += self.loss_weights[1] * self.loss(
++                        [self.source_pred_to_target_pred(output[0])], 
++                        [target[0]]
++                    )
++                if self.loss_weights[2] > 0:
++                    gan_encoder = self.loss_weights[2] * self.encoder_domain_adv(encoder_f_s, encoder_f_t)
++                    l += gan_encoder
++                    gan_loss += gan_encoder.detach().cpu().numpy()
++                if self.loss_weights[3] > 0:
++                    gan_decoder = self.loss_weights[3] * self.decoder_domain_adv(decoder_f_s, decoder_f_t)
++                    l += gan_decoder
++                    gan_loss += gan_decoder.detach().cpu().numpy()
++                    # from thop import profile
++                    # macs, params = profile(self.decoder_domain_adv, inputs=(decoder_f_s, decoder_f_t, ))
++                    # print(f'flops: {macs}, params: {params}')
++                    # sys.exit(0)
++                if self.loss_weights[4] > 0:
++                    gan_seg = self.loss_weights[4] * self.seg_domain_adv(
++                        source_label[0],
++                        torch.argmax(source_output[0], dim=1, keepdim=True)
++                    )
++                    l += gan_seg
++                    gan_loss += gan_seg.detach().cpu().numpy()
++
++                l.backward()
++                torch.nn.utils.clip_grad_norm_(self.network.parameters(), 12)
++                self.optimizer.step()
++            else:
++                output = self.network(data)
++                del data  
++                l = self.loss(
++                    [self.source_pred_to_target_pred(output[0])], 
++                    [target[0]]
++                )
++
++        if run_online_evaluation:
++            self.run_online_evaluation(output, target)
++
++        del target
++
++        if run_online_evaluation:
++            return l.detach().cpu().numpy()
++        
++        rt_loss = {
++            'train/total_loss': l.detach().cpu().numpy()
++        }
++        if source_loss != 0:
++            rt_loss['train/source_loss'] = source_loss
++        if gan_loss != 0:
++            rt_loss['train/gan_loss'] = gan_loss
++
++        if self.encoder_domain_adv:
++            rt_loss['train/encoder_adv_acc'] = self.encoder_domain_adv.domain_discriminator_accuracy.item() / 100.
++
++        if self.decoder_domain_adv:
++            rt_loss['train/decoder_adv_acc'] = self.decoder_domain_adv.domain_discriminator_accuracy.item() / 100.
++
++        if self.seg_domain_adv:
++            rt_loss['train/seg_adv_acc'] = self.seg_domain_adv.domain_discriminator_accuracy.item() / 100.
++
++        return rt_loss
++
++    def source_pred_to_target_pred(self, output, is_tensor=True):
++        # TODO: source class and target class index map need to refine
++        start_index, end_index = 2, 3
++        if is_tensor:
++            output_main = output[:, start_index:end_index+1, ...]
++            output_main = torch.max(output_main, 1, keepdim=True)[0]
++            output_auxiliary = torch.cat(
++                (
++                    output[:, :start_index, ...],
++                    output[:, end_index+1:, ...]
++                ),
++                dim = 1
++            )
++            output_auxiliary = torch.max(output_auxiliary, 1, keepdim=True)[0]
++            output = torch.cat((output_auxiliary, output_main), dim=1)
++        else:
++            output_main = output[start_index:end_index+1, ...]
++            output_main = np.max(output_main, axis=0, keepdims=True)
++            output_auxiliary = np.concatenate(
++                (
++                    output[:start_index, ...],
++                    output[end_index+1:, ...]
++                ),
++                axis = 0
++            )
++            output_auxiliary = np.max(output_auxiliary, axis=0, keepdims=True)
++            output = np.concatenate((output_auxiliary, output_main), axis=0)
++        return output
++
++    def run_online_evaluation(self, output, target):
++        """
++        due to deep supervision the return value and the reference are now lists of tensors. We only need the full
++        resolution output because this is what we are interested in in the end. The others are ignored
++        :param output:
++        :param target:
++        :return:
++        """
++        target = target[0]
++        output = self.source_pred_to_target_pred(output[0])
++        return super().run_online_evaluation([output], [target])
++
++    def load_checkpoint_ram(self, checkpoint, train=True):
++        super(nnUNetTrainer_DA_V2, self).load_checkpoint_ram(checkpoint, train=train)
++        if self.encoder_domain_adv:
++            self.encoder_domain_adv.load_state_dict(checkpoint['enc_adv_state_dict'])
++        if self.decoder_domain_adv:
++            self.decoder_domain_adv.load_state_dict(checkpoint['dec_adv_state_dict'])
++        if self.seg_domain_adv:
++            self.seg_domain_adv.load_state_dict(checkpoint['seg_adv_state_dict'])
++
++    def may_update_saved_ckpt(self, save_this):
++        def get_network_state_dict(network):
++            if not network:
++                return None
++            state_dict = network.state_dict()
++            for key in state_dict.keys():
++                state_dict[key] = state_dict[key].cpu()
++            return state_dict
++        save_this['enc_adv_state_dict'] = get_network_state_dict(self.encoder_domain_adv)
++        save_this['dec_adv_state_dict'] = get_network_state_dict(self.decoder_domain_adv)
++        save_this['seg_adv_state_dict'] = get_network_state_dict(self.seg_domain_adv)
++        return save_this
++
++    def validate(self, do_mirroring: bool = True, use_sliding_window: bool = True, step_size: float = 0.5,
++                 save_softmax: bool = True, use_gaussian: bool = True, overwrite: bool = True,
++                 validation_folder_name: str = 'validation_raw', debug: bool = False, all_in_gpu: bool = False,
++                 segmentation_export_kwargs: dict = None, run_postprocessing_on_folds: bool = True):
++        """
++        if debug=True then the temporary files generated for postprocessing determination will be kept
++        """
++        ds = self.network.do_ds
++        self.network.do_ds = False
++
++        current_mode = self.network.training
++        self.network.eval()
++
++        assert self.was_initialized, "must initialize, ideally with checkpoint (or train first)"
++        if self.dataset_val is None:
++            self.load_dataset()
++            self.do_split()
++
++        if segmentation_export_kwargs is None:
++            if 'segmentation_export_params' in self.plans.keys():
++                force_separate_z = self.plans['segmentation_export_params']['force_separate_z']
++                interpolation_order = self.plans['segmentation_export_params']['interpolation_order']
++                interpolation_order_z = self.plans['segmentation_export_params']['interpolation_order_z']
++            else:
++                force_separate_z = None
++                interpolation_order = 1
++                interpolation_order_z = 0
++        else:
++            force_separate_z = segmentation_export_kwargs['force_separate_z']
++            interpolation_order = segmentation_export_kwargs['interpolation_order']
++            interpolation_order_z = segmentation_export_kwargs['interpolation_order_z']
++
++        # predictions as they come from the network go here
++        output_folder = join(self.output_folder, validation_folder_name)
++        maybe_mkdir_p(output_folder)
++        # this is for debug purposes
++        my_input_args = {'do_mirroring': do_mirroring,
++                         'use_sliding_window': use_sliding_window,
++                         'step_size': step_size,
++                         'save_softmax': save_softmax,
++                         'use_gaussian': use_gaussian,
++                         'overwrite': overwrite,
++                         'validation_folder_name': validation_folder_name,
++                         'debug': debug,
++                         'all_in_gpu': all_in_gpu,
++                         'segmentation_export_kwargs': segmentation_export_kwargs,
++                         }
++        save_json(my_input_args, join(output_folder, "validation_args.json"))
++
++        if do_mirroring:
++            if not self.data_aug_params['do_mirror']:
++                raise RuntimeError("We did not train with mirroring so you cannot do inference with mirroring enabled")
++            mirror_axes = self.data_aug_params['mirror_axes']
++        else:
++            mirror_axes = ()
++
++        pred_gt_tuples = []
++
++        export_pool = Pool(default_num_threads)
++        results = []
++
++        for k in self.dataset_val.keys():
++            properties = load_pickle(self.dataset[k]['properties_file'])
++            fname = properties['list_of_data_files'][0].split("/")[-1][:-12]
++            if overwrite or (not isfile(join(output_folder, fname + ".nii.gz"))) or \
++                    (save_softmax and not isfile(join(output_folder, fname + ".npz"))):
++                data = np.load(self.dataset[k]['data_file'])['data']
++
++                print(k, data.shape)
++                data[-1][data[-1] == -1] = 0
++
++                softmax_pred = self.predict_preprocessed_data_return_seg_and_softmax(data[:-1],
++                                                                                     do_mirroring=do_mirroring,
++                                                                                     mirror_axes=mirror_axes,
++                                                                                     use_sliding_window=use_sliding_window,
++                                                                                     step_size=step_size,
++                                                                                     use_gaussian=use_gaussian,
++                                                                                     all_in_gpu=all_in_gpu,
++                                                                                     mixed_precision=self.fp16)[1]
++
++                softmax_pred = self.source_pred_to_target_pred(softmax_pred, is_tensor=False)
++                softmax_pred = softmax_pred.transpose([0] + [i + 1 for i in self.transpose_backward])
++
++                if save_softmax:
++                    softmax_fname = join(output_folder, fname + ".npz")
++                else:
++                    softmax_fname = None
++
++                """There is a problem with python process communication that prevents us from communicating objects
++                larger than 2 GB between processes (basically when the length of the pickle string that will be sent is
++                communicated by the multiprocessing.Pipe object then the placeholder (I think) does not allow for long
++                enough strings (lol). This could be fixed by changing i to l (for long) but that would require manually
++                patching system python code. We circumvent that problem here by saving softmax_pred to a npy file that will
++                then be read (and finally deleted) by the Process. save_segmentation_nifti_from_softmax can take either
++                filename or np.ndarray and will handle this automatically"""
++                if np.prod(softmax_pred.shape) > (2e9 / 4 * 0.85):  # *0.85 just to be save
++                    np.save(join(output_folder, fname + ".npy"), softmax_pred)
++                    softmax_pred = join(output_folder, fname + ".npy")
++
++                results.append(export_pool.starmap_async(save_segmentation_nifti_from_softmax,
++                                                         ((softmax_pred, join(output_folder, fname + ".nii.gz"),
++                                                           properties, interpolation_order, self.regions_class_order,
++                                                           None, None,
++                                                           softmax_fname, None, force_separate_z,
++                                                           interpolation_order_z),
++                                                          )
++                                                         )
++                               )
++
++            pred_gt_tuples.append([join(output_folder, fname + ".nii.gz"),
++                                   join(self.gt_niftis_folder, fname + ".nii.gz")])
++
++        _ = [i.get() for i in results]
++        self.print_to_log_file("finished prediction")
++
++        # evaluate raw predictions
++        self.print_to_log_file("evaluation of raw predictions")
++        task = self.dataset_directory.split("/")[-1]
++        job_name = self.experiment_name
++        mean_dice_score = aggregate_scores(pred_gt_tuples, labels=list(range(self.target_num_classes)),
++                             json_output_file=join(output_folder, "summary.json"),
++                             json_name=job_name + " val tiled %s" % (str(use_sliding_window)),
++                             json_author="Fabian",
++                             json_task=task, num_threads=default_num_threads)
++        self.print_to_log_file(f"mean dice score is: {mean_dice_score}")
++
++        if run_postprocessing_on_folds:
++            # in the old nnunet we would stop here. Now we add a postprocessing. This postprocessing can remove everything
++            # except the largest connected component for each class. To see if this improves results, we do this for all
++            # classes and then rerun the evaluation. Those classes for which this resulted in an improved dice score will
++            # have this applied during inference as well
++            self.print_to_log_file("determining postprocessing")
++            determine_postprocessing(self.output_folder, self.gt_niftis_folder, validation_folder_name,
++                                     final_subf_name=validation_folder_name + "_postprocessed", debug=debug)
++            # after this the final predictions for the vlaidation set can be found in validation_folder_name_base + "_postprocessed"
++            # They are always in that folder, even if no postprocessing as applied!
++
++        # detemining postprocesing on a per-fold basis may be OK for this fold but what if another fold finds another
++        # postprocesing to be better? In this case we need to consolidate. At the time the consolidation is going to be
++        # done we won't know what self.gt_niftis_folder was, so now we copy all the niftis into a separate folder to
++        # be used later
++        gt_nifti_folder = join(self.output_folder_base, "gt_niftis")
++        maybe_mkdir_p(gt_nifti_folder)
++        for f in subfiles(self.gt_niftis_folder, suffix=".nii.gz"):
++            success = False
++            attempts = 0
++            e = None
++            while not success and attempts < 10:
++                try:
++                    shutil.copy(f, gt_nifti_folder)
++                    success = True
++                except OSError as e:
++                    attempts += 1
++                    sleep(1)
++            if not success:
++                print("Could not copy gt nifti file %s into folder %s" % (f, gt_nifti_folder))
++                if e is not None:
++                    raise e
++
++        self.network.train(current_mode)
++        self.network.do_ds = ds
++
++        return mean_dice_score
++
++    def metric_to_wandb(self):
++        wandb.log(
++            {k: v[-1] for k, v in self.all_tr_losses.items()}, 
++            step=self.epoch
++        )
++        wandb.log({'val/target_loss': self.all_val_losses[-1]}, step=self.epoch)
++        wandb.log({'val/target_dice': self.all_val_eval_metrics[-1]}, step=self.epoch)
++        
++    def on_epoch_end(self):
++        continue_training = super().on_epoch_end()
++        self.metric_to_wandb()
++        return continue_training
++        
+\ No newline at end of file
+diff -uprN third_party/nnUNet/nnunet/training/network_training/nnUNetTrainer.py nnunet/training/network_training/nnUNetTrainer.py
+--- third_party/nnUNet/nnunet/training/network_training/nnUNetTrainer.py	2022-10-24 14:55:48.401320745 +0000
++++ nnunet/training/network_training/nnUNetTrainer.py	2022-10-24 14:50:43.277325896 +0000
+@@ -414,6 +414,19 @@ class nnUNetTrainer(NetworkTrainer):
+                                   pad_mode="constant", pad_sides=self.pad_all_sides, memmap_mode='r')
+         return dl_tr, dl_val
+ 
++    def get_source_generators(self, folder_with_preprocessed_data):
++        source_dataset = load_dataset(folder_with_preprocessed_data)
++
++        if self.threeD:
++            dl_tr = DataLoader3D(source_dataset, self.basic_generator_patch_size, self.patch_size, self.batch_size,
++                                 False, oversample_foreground_percent=self.oversample_foreground_percent,
++                                 pad_mode="constant", pad_sides=self.pad_all_sides, memmap_mode='r')
++        else:
++            dl_tr = DataLoader2D(source_dataset, self.basic_generator_patch_size, self.patch_size, self.batch_size,
++                                 oversample_foreground_percent=self.oversample_foreground_percent,
++                                 pad_mode="constant", pad_sides=self.pad_all_sides, memmap_mode='r')
++        return dl_tr
++
+     def preprocess_patient(self, input_files):
+         """
+         Used to predict new unseen data. Not used for the preprocessing of the training/test data
+diff -uprN third_party/nnUNet/nnunet/training/network_training/nnUNetTrainerV2.py nnunet/training/network_training/nnUNetTrainerV2.py
+--- third_party/nnUNet/nnunet/training/network_training/nnUNetTrainerV2.py	2022-10-24 14:55:07.373321438 +0000
++++ nnunet/training/network_training/nnUNetTrainerV2.py	2022-10-24 14:50:43.277325896 +0000
+@@ -15,7 +15,7 @@
+ 
+ from collections import OrderedDict
+ from typing import Tuple
+-
++import sys
+ import numpy as np
+ import torch
+ from nnunet.training.data_augmentation.data_augmentation_moreDA import get_moreDA_augmentation
+@@ -42,14 +42,15 @@ class nnUNetTrainerV2(nnUNetTrainer):
+     """
+ 
+     def __init__(self, plans_file, fold, output_folder=None, dataset_directory=None, batch_dice=True, stage=None,
+-                 unpack_data=True, deterministic=True, fp16=False):
++                 unpack_data=True, deterministic=True, fp16=False, epochs=1000):
+         super().__init__(plans_file, fold, output_folder, dataset_directory, batch_dice, stage, unpack_data,
+                          deterministic, fp16)
+-        self.max_num_epochs = 1000
++        self.max_num_epochs = epochs
++        self.lr_max_num_epochs = 1000
+         self.initial_lr = 1e-2
+         self.deep_supervision_scales = None
+         self.ds_loss_weights = None
+-
++        self.save_every = 2
+         self.pin_memory = True
+ 
+     def initialize(self, training=True, force_load_plans=False):
+@@ -269,8 +270,13 @@ class nnUNetTrainerV2(nnUNetTrainer):
+ 
+         del target
+ 
+-        return l.detach().cpu().numpy()
+-
++        if run_online_evaluation:
++            return l.detach().cpu().numpy()
++        
++        return {
++            'train/total_loss': l.detach().cpu().numpy()
++        }
++        
+     def do_split(self):
+         """
+         The default split is a 5 fold CV on all available training cases. nnU-Net will create a split (it is seeded,
+@@ -402,7 +408,7 @@ class nnUNetTrainerV2(nnUNetTrainer):
+             ep = self.epoch + 1
+         else:
+             ep = epoch
+-        self.optimizer.param_groups[0]['lr'] = poly_lr(ep, self.max_num_epochs, self.initial_lr, 0.9)
++        self.optimizer.param_groups[0]['lr'] = poly_lr(ep, self.lr_max_num_epochs, self.initial_lr, 0.9)
+         self.print_to_log_file("lr:", np.round(self.optimizer.param_groups[0]['lr'], decimals=6))
+ 
+     def on_epoch_end(self):
+Binary files third_party/nnUNet/nnunet/training/network_training/__pycache__/__init__.cpython-38.pyc and nnunet/training/network_training/__pycache__/__init__.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/training/network_training/__pycache__/network_trainer.cpython-38.pyc and nnunet/training/network_training/__pycache__/network_trainer.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/training/network_training/__pycache__/nnUNetTrainerCascadeFullRes.cpython-38.pyc and nnunet/training/network_training/__pycache__/nnUNetTrainerCascadeFullRes.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/training/network_training/__pycache__/nnUNetTrainer.cpython-38.pyc and nnunet/training/network_training/__pycache__/nnUNetTrainer.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/training/network_training/__pycache__/nnUNetTrainer_DA.cpython-38.pyc and nnunet/training/network_training/__pycache__/nnUNetTrainer_DA.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/training/network_training/__pycache__/nnUNetTrainer_DA_V2.cpython-38.pyc and nnunet/training/network_training/__pycache__/nnUNetTrainer_DA_V2.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/training/network_training/__pycache__/nnUNetTrainerV2_CascadeFullRes.cpython-38.pyc and nnunet/training/network_training/__pycache__/nnUNetTrainerV2_CascadeFullRes.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/training/network_training/__pycache__/nnUNetTrainerV2.cpython-38.pyc and nnunet/training/network_training/__pycache__/nnUNetTrainerV2.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/training/network_training/__pycache__/nnUNetTrainerV2_DDP.cpython-38.pyc and nnunet/training/network_training/__pycache__/nnUNetTrainerV2_DDP.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/training/network_training/__pycache__/nnUNetTrainerV2_DP.cpython-38.pyc and nnunet/training/network_training/__pycache__/nnUNetTrainerV2_DP.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/training/network_training/__pycache__/nnUNetTrainerV2_fp32.cpython-38.pyc and nnunet/training/network_training/__pycache__/nnUNetTrainerV2_fp32.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/training/__pycache__/__init__.cpython-38.pyc and nnunet/training/__pycache__/__init__.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/training/__pycache__/model_restore.cpython-38.pyc and nnunet/training/__pycache__/model_restore.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/utilities/__pycache__/distributed.cpython-38.pyc and nnunet/utilities/__pycache__/distributed.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/utilities/__pycache__/file_endings.cpython-38.pyc and nnunet/utilities/__pycache__/file_endings.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/utilities/__pycache__/__init__.cpython-38.pyc and nnunet/utilities/__pycache__/__init__.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/utilities/__pycache__/nd_softmax.cpython-38.pyc and nnunet/utilities/__pycache__/nd_softmax.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/utilities/__pycache__/one_hot_encoding.cpython-38.pyc and nnunet/utilities/__pycache__/one_hot_encoding.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/utilities/__pycache__/random_stuff.cpython-38.pyc and nnunet/utilities/__pycache__/random_stuff.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/utilities/__pycache__/sitk_stuff.cpython-38.pyc and nnunet/utilities/__pycache__/sitk_stuff.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/utilities/__pycache__/task_name_id_conversion.cpython-38.pyc and nnunet/utilities/__pycache__/task_name_id_conversion.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/utilities/__pycache__/tensor_utilities.cpython-38.pyc and nnunet/utilities/__pycache__/tensor_utilities.cpython-38.pyc differ
+Binary files third_party/nnUNet/nnunet/utilities/__pycache__/to_torch.cpython-38.pyc and nnunet/utilities/__pycache__/to_torch.cpython-38.pyc differ

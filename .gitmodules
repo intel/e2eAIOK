@@ -28,3 +28,6 @@
 [submodule "modelzoo/third_party/IntelAI_models"]
 	path = modelzoo/third_party/IntelAI_models
 	url = https://github.com/IntelAI/models.git
+[submodule "AIDK/TransferLearningKit/src/task/medical_segmentation/third_party/nnUNet"]
+	path = AIDK/TransferLearningKit/src/task/medical_segmentation/third_party/nnUNet
+	url = https://github.com/MIC-DKFZ/nnUNet.git

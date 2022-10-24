@@ -22,6 +22,13 @@ RUN python -m pip install beautifulsoup4 lxml pillow tabulate yacs timm intel_ex
 SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
 RUN python -m pip install --no-cache-dir --ignore-installed sigopt pytest
 
+RUN pip install thop wandb
+RUN git clone https://github.com/thuml/Transfer-Learning-Library.git /tmp/tllib
+RUN cd /tmp/tllib/ && \
+    pip install -r requirements.txt && \
+    python setup.py install && \
+    rm -rf /tmp/tllib
+
 SHELL ["/bin/bash", "-c"]
 RUN sed -i 's/#Port 22/Port 12345/g' /etc/ssh/sshd_config
 RUN sed -i 's/#   Port 22/    Port 12345/g' /etc/ssh/ssh_config
