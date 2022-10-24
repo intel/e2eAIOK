@@ -92,7 +92,7 @@ class TestMakeTransferrable:
     '''
     def setup(self):
         self.label_map = {item.split('\t')[0]: int(item.split('\t')[1]) for item in
-                     open("../datasets/office31/label_map.txt").readlines()}
+                     open("/home/vmagent/app/data/dataset/office31/label_map.txt").readlines()}
         self.batch_size = 16
 
     def _create_kwargs(self):
@@ -113,13 +113,13 @@ class TestMakeTransferrable:
             'distiller_feature_layer_name': 'x',
             'adapter_feature_size': 1000,
             'adapter_feature_layer_name': adapter_layer_name,
-            'finetunner':BasicFinetunner(torchvision.models.resnet18(pretrained=True),-1,True),
+            'finetunner':BasicFinetunner(torchvision.models.resnet18(pretrained=True),True),
             'distiller': BasicDistiller(new_teacher_model, True),
             'adapter': DANNAdapter(512, 8, 0.0, 5.0, 1.0, 100),
             'training_dataloader': torch.utils.data.DataLoader(
-                Office31("../datasets/office31/amazon", self.label_map, None, 'RGB'),
+                Office31("/home/vmagent/app/data/dataset/office31/amazon", self.label_map, None, 'RGB'),
                 batch_size=self.batch_size, shuffle=True, num_workers=1, drop_last=True),
-            'adaption_source_domain_training_dataset': Office31("../datasets/office31/webcam", self.label_map, None, 'RGB'),
+            'adaption_source_domain_training_dataset': Office31("/home/vmagent/app/data/dataset/office31/webcam", self.label_map, None, 'RGB'),
             'transfer_strategy': TransferStrategy.DistillationAndDomainAdaptionStrategy,
             'enable_target_training_label': True,
             'backbone_loss_weight': 1.0,
@@ -402,13 +402,13 @@ class TestTransferrableModel:
             'distiller_feature_layer_name': 'x',
             'adapter_feature_size': 1000,
             'adapter_feature_layer_name': adapter_layer_name,
-            'finetunner': BasicFinetunner(torchvision.models.resnet18(pretrained=True), -1, True),
+            'finetunner': BasicFinetunner(torchvision.models.resnet18(pretrained=True), True),
             'distiller': BasicDistiller(new_teacher_model, True),
             'adapter': DANNAdapter(512, 8, 0.0, 5.0, 1.0, 100),
             'training_dataloader': torch.utils.data.DataLoader(
-                Office31("../datasets/office31/amazon", self.label_map, None, 'RGB'),
+                Office31("/home/vmagent/app/data/dataset/office31/amazon", self.label_map, None, 'RGB'),
                 batch_size=self.batch_size, shuffle=True, num_workers=1, drop_last=True),
-            'adaption_source_domain_training_dataset': Office31("../datasets/office31/webcam", self.label_map, None,
+            'adaption_source_domain_training_dataset': Office31("/home/vmagent/app/data/dataset/office31/webcam", self.label_map, None,
                                                                 'RGB'),
             'transfer_strategy': TransferStrategy.OnlyDistillationStrategy,
             'enable_target_training_label': True,
@@ -419,7 +419,7 @@ class TestTransferrableModel:
 
     def setup(self):
         self.label_map = {item.split('\t')[0]: int(item.split('\t')[1]) for item in
-                     open("../datasets/office31/label_map.txt").readlines()}
+                     open("/home/vmagent/app/data/dataset/office31/label_map.txt").readlines()}
         self.batch_size = 16
         self.input = torch.randn([self.batch_size, 3, 224, 224])
         self.num_class = 1000
@@ -430,7 +430,7 @@ class TestTransferrableModel:
         :return:
         '''
         model = torchvision.models.resnet18(pretrained=False)
-        finetunner = BasicFinetunner( torchvision.models.resnet18(pretrained=True),-1,True)
+        finetunner = BasicFinetunner( torchvision.models.resnet18(pretrained=True),True)
         adapter = DANNAdapter(512, 8, 0.0, 5.0, 1.0, 100)
         distiller = BasicDistiller(torchvision.models.resnet18(pretrained=True), True)
 
@@ -936,8 +936,7 @@ class TestTransferrableModel:
 
         for strategy in ALL_STRATEGIES:
             kwargs = self._create_kwargs()
-            basic_weights = {item[0]: item[1] for item in
-                             kwargs['finetunner']._pretrained_network.named_parameters()}
+            basic_weights = kwargs['finetunner']._pretrained_params
             kwargs['transfer_strategy'] = strategy
             model = _make_transferrable(**kwargs)
             for (name,weight) in model.backbone.named_parameters():

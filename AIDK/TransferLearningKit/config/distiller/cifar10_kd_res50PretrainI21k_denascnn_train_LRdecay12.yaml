@@ -2,14 +2,14 @@ experiment:
   project: "distiller"
   tag: "cifar10_kd_res50_pretrainI21k_denascnn_tolerance12"
   strategy: "OnlyDistillationStrategy"
-  model_save: "/home/vmagent/app/dataset/model"
+  model_save: "/home/vmagent/app/data/model"
   loss:
     backbone: 0.1
     distiller: 0.9
 dataset:
   type: "cifar10"
   num_workers: 10
-  path: "/home/vmagent/app/dataset/dataset/cifar"
+  path: "/home/vmagent/app/data/dataset"
   ###For save
   # train_transform: "pretrain112"
   # test_transform: "pretrain112"
@@ -21,11 +21,11 @@ distiller:
   type: "kd"
   teacher: 
       type: "resnet50_timm"
-      pretrain: "/home/vmagent/app/dataset/model/baselines/cifar10_res50_pretrainI21k/pretrain_resnet50_cifar10.pth_epoch_15"
+      pretrain: "/home/vmagent/app/data/model/baselines/cifar10_res50_pretrainI21k/pretrain_resnet50_cifar10.pth_epoch_15"
   # save_logits: True
   use_saved_logits: True
   # check_logits: True
-  logits_path: "/home/vmagent/app/dataset/model/distiller/cifar10_kd_res50_pretrainI21k_denascnn/logits"
+  logits_path: "/home/vmagent/app/data/model/distiller/cifar10_kd_res50_pretrainI21k_denascnn/logits"
   logits_topk: 0
 solver:
   batch_size: 128

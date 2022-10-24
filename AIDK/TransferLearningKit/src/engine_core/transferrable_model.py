@@ -364,7 +364,7 @@ def extract_distiller_adapter_features(model,intermediate_layer_name_for_distill
     :return: modified model
     '''
     gm: torch.fx.GraphModule = torch.fx.symbolic_trace(model)
-    print("GraphModule")
+    # print("GraphModule")
     # gm.graph.print_tabular()
 
     def find_node(graph,node_name):
@@ -395,7 +395,7 @@ def extract_distiller_adapter_features(model,intermediate_layer_name_for_distill
     gm.graph.erase_node(output_node) # Remove the old node from the graph
 
     gm.recompile()   # Recompile the forward() method of `gm` from its Graph
-    print("After recompile")
+    # print("After recompile")
     gm.graph.lint()  # Does some checks to make sure the Graph is well-formed.
 
     return gm

@@ -2,7 +2,7 @@ experiment:
   project: "distiller"
   tag: "cifar100_kd_vitPretrainI21k_res18"
   strategy: "OnlyDistillationStrategy"
-  model_save:  "/home/vmagent/app/dataset/model"
+  model_save:  "/home/vmagent/app/data/model"
   seed: 0
   loss:
     backbone: 0.1
@@ -10,7 +10,7 @@ experiment:
 dataset:
   type: "cifar100"
   num_workers: 4
-  path:  "/home/vmagent/app/dataset/dataset/cifar"
+  path:  "/home/vmagent/app/data/dataset"
   ### save_logits
   train_transform: "vit_hg"
   test_transform: "vit_hg"
@@ -27,7 +27,7 @@ distiller:
   save_logits: True
   # use_saved_logits: True
   # check_logits: True
-  logits_path:  "/home/vmagent/app/dataset/model/distiller/cifar100_kd_vit_hg_pretrainI21k_res18/logits"
+  logits_path:  "/home/vmagent/app/data/model/distiller/cifar100_kd_vit_hg_pretrainI21k_res18/logits"
   logits_topk: 0
   save_logits_STATT_EPOCH: 1
 solver:

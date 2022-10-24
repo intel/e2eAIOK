@@ -4,6 +4,8 @@
 # @Time   : 7/28/2022 8:39 AM
 
 import logging
+
+from attr import has
 import torch
 import datetime, time
 import torch.nn
@@ -11,6 +13,7 @@ from torch.nn.parallel import DistributedDataParallel
 import contextlib
 import os
 import numpy as np
+from collections.abc import Iterable
 
 def unwrap_DDP(model):
     ''' unwarp a DDP model
@@ -80,11 +83,13 @@ def trainEpoch(model, metric_fn_map, optimizer, train_dataloader,
             if isinstance(data, torch.Tensor):
                 data = data.to(device)
                 label = label.to(device)
+            elif isinstance(data, Iterable):
+                assert len(data) == len(label), "data len[%s] must equal label len[%s]"%(len(data),len(label))
+                for i in range(0,len(data)):
+                    data[i] = data[i].to(device)
+                    label[i] = label[i].to(device)
             else:
-                data[0] = data[0].to(device)
-                data[1] = data[1].to(device)
-                label[0] = label[0].to(device)
-                label[1] = label[1].to(device)
+                raise RuntimeError("Known data type:%s"%type(data))
             optimizer.zero_grad()
             output = model(data)
             loss_value = unwrapped_model.loss(output, label)
@@ -98,6 +103,12 @@ def trainEpoch(model, metric_fn_map, optimizer, train_dataloader,
                         metric_value = metric_fn(output, label)
                         metric_values[metric_name] = metric_value
                 add_tensorboard_metric(tensorboard_writer, 'Train', metric_values, cur_epoch, cur_step, epoch_steps, rank)
+
+            if cur_step in [0, epoch_steps - 1] or  cur_step % (cfg.experiment.log_interval_step * 10) == 0: # first iter, last iter and several middle iter.
+                for (name, parameter) in model.named_parameters():
+                    tensorboard_writer.add_histogram(name, parameter, cur_epoch * epoch_steps + cur_step)
+                    if parameter.requires_grad:
+                        tensorboard_writer.add_histogram("%s_Grad"%name, parameter.grad, cur_epoch * epoch_steps + cur_step)
 
             optimizer.step()
             if cur_epoch <= cfg.solver.warmup:
@@ -137,8 +148,12 @@ def evaluateEpoch(model, metric_fn_map, dataloader,
                 label = label.to(device)
                 output = model(data)
                 output = output.logits if cfg.model.type == "vit_base_224_in21k_ft_cifar100" else output
-                output = output[0] if isinstance(output,tuple) else output
-                
+                if isinstance(output, Iterable):
+                    if not isinstance(output, torch.Tensor): # Tensor is Iterable
+                        output = output[0]
+                else:
+                    raise RuntimeError("Known data type:%s"%type(data))
+
                 batch_size = data.size(0)
                 sample_num += batch_size
                 loss_value += model.loss(output, label).item() * batch_size
@@ -191,7 +206,7 @@ def saveLogitsEpoch(model, dataloader, cur_epoch, epoch_steps, cfg,
                 values = output.detach().to(device='cpu', dtype=torch.float32)
 
                 seeds = seeds.numpy()
-                values = values.numpy()
+                values = values.numpy() 
                 assert seeds.dtype == np.int32, seeds.dtype
                 assert values.dtype == np.float32, values.dtype
 
@@ -330,6 +345,12 @@ def trainEpochwithLogits(model, metric_fn_map, optimizer, train_dataloader, num_
             if cur_step % cfg.experiment.log_interval_step == 0:
                 metric_values = unwrapped_model.get_training_metrics(output, label, loss_value, metric_fn_map)
                 add_tensorboard_metric(tensorboard_writer, 'Train', metric_values, cur_epoch,cur_step,epoch_steps,rank)
+        
+            if cur_step in [0, epoch_steps - 1] or  cur_step % (cfg.experiment.log_interval_step * 10) == 0: # first iter, last iter and several middle iter.
+                for (name, parameter) in model.named_parameters():
+                    tensorboard_writer.add_histogram(name, parameter, cur_epoch * epoch_steps + cur_step)
+                    if parameter.requires_grad:
+                        tensorboard_writer.add_histogram("%s_Grad"%name, parameter.grad, cur_epoch * epoch_steps + cur_step)
 
             optimizer.step()
             if cur_epoch <= cfg.solver.warmup:
@@ -446,6 +467,13 @@ class Trainer:
                                     self._tensorboard_writer, self._cfg, self._device, self._rank)
                 continue
 
+            if type(self._scheduler) is  torch.optim.lr_scheduler.ReduceLROnPlateau:
+                last_lr = [item['lr'] for item in self._scheduler.optimizer.state_dict()['param_groups']]
+            else:
+                last_lr = self._scheduler.get_last_lr()
+
+            print("Epoch [%s] lr: %s" % (epoch, last_lr))
+            logging.info("Epoch [%s] lr: %s" % (epoch, last_lr))
             ###### train and evaluate for on epoch
             if self._cfg.distiller.use_saved_logits:
                 trainEpochwithLogits(self._model, self._validate_metric_fn_map, self._optimizer, train_dataloader, num_classes,
@@ -466,14 +494,6 @@ class Trainer:
                     self._scheduler.step(metrics_map[self._best_metric])
                 else:
                     self._scheduler.step()
-            try:
-                print("Epoch [%s] lr: %s" % (epoch, self._scheduler.get_last_lr()))
-                logging.info("Epoch [%s] lr: %s" % (epoch, self._scheduler.get_last_lr()))
-            except:
-                for param_group in self._optimizer.param_groups:
-                    logging.info(f"Epoch {epoch}, learning rate: {param_group['lr']}")
-                    print(f"Epoch {epoch}, learning rate: {param_group['lr']}")
-
             ###### save checkpoint
             state = {
                 "epoch": epoch,

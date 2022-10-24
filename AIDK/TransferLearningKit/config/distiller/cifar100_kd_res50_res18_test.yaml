@@ -2,14 +2,14 @@ experiment:
   project: "test"
   tag: "cifar100_kd_res50_res18"
   strategy: "OnlyDistillationStrategy"
-  model_save: "../model"
+  model_save: "/home/vmagent/app/data/model"
   loss:
     backbone: 0.1
     distiller: 0.9
 dataset:
   type: "cifar100"
   num_workers: 4
-  path: "../datasets/cifar"
+  path: "/home/vmagent/app/data/dataset"
 model:
   type: "resnet18_cifar"
 distiller:

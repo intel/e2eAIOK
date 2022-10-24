@@ -2,17 +2,17 @@ experiment:
   project: "adapter"
   tag: "usps_vs_mnist_CDAN"
   strategy: "OnlyDomainAdaptionStrategy"
-  model_save: '../model/'
+  model_save: '/home/vmagent/app/data/model'
   loss:
     backbone: 1.0
     adapter: 1.0
 dataset:
   type: "USPS_vs_MNIST"
-  path: "../datasets/USPS_vs_MNIST"
+  path: "/home/vmagent/app/data/dataset/USPS_vs_MNIST"
   num_workers: 1
 source_dataset:
   type: "USPS_vs_MNIST"
-  path: "../datasets/USPS_vs_MNIST"
+  path: "/home/vmagent/app/data/dataset/USPS_vs_MNIST"
 model:
   type: "LeNet"
 adapter:

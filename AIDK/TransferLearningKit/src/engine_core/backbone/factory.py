@@ -1,7 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 from .lenet import LeNet
-from torchvision.models import resnet18,resnet50
 from .resnet_imagenet import resnet18 as resnet18_imagenet
 from .resnet_imagenet import resnet50 as resnet50_imagenet
 from .resnetv2 import ResNet18 as resnet18_v2
@@ -30,10 +29,6 @@ def createBackbone(backbone_name, num_classes, pretrain = None, **kwargs):
 
     if backbone_name == 'lenet':
         model = LeNet(num_classes)#.cuda()
-    elif backbone_name == 'resnet18':
-        model = resnet18(num_classes=num_classes)
-    elif backbone_name == 'resnet50':
-        model = resnet50(num_classes=num_classes)
     elif backbone_name == 'resnet18_imagenet':
         model = resnet18_imagenet(pretrained=pretrained_flag)
     elif backbone_name == 'resnet50_imagenet':
@@ -48,8 +43,12 @@ def createBackbone(backbone_name, num_classes, pretrain = None, **kwargs):
         model = resnet18_cifar(num_classes=num_classes)
     elif backbone_name == "resnet50_cifar":
         model = resnet50_cifar(num_classes=num_classes)
-    elif backbone_name == 'resnet50_timm':
-        model = timm.create_model('resnet50', pretrained=False, num_classes=num_classes)
+    elif backbone_name == 'resnet50':
+        model = timm.create_model('resnet50', pretrained=pretrained_flag, num_classes=num_classes)
+    elif backbone_name == 'mobilenet_v3':
+        model = timm.create_model('mobilenetv3_large_100', pretrained=pretrained_flag, num_classes=num_classes)
+    elif backbone_name == 'vit_base':
+        model = timm.create_model('vit_base_patch16_224_miil', pretrained=pretrained_flag, num_classes=num_classes)
     elif backbone_name == "denas_cnn":
         curdir = os.path.abspath(os.path.dirname(__file__))
         sys.path.append(os.path.join(curdir,"DeNas"))
@@ -69,6 +68,15 @@ def createBackbone(backbone_name, num_classes, pretrain = None, **kwargs):
     else:
         logging.error("[%s] is not supported"%backbone_name)
         raise NotImplementedError("[%s] is not supported"%backbone_name)
+
     if not pretrained_flag:
-        initWeights(model, pretrain)
+        model.apply(initWeights)
+        if pretrain:
+            if not os.path.exists(pretrain):
+                raise RuntimeError(f"Can not find {pretrain}!")
+            print(f"load pretrained model at {pretrain}")
+            logging.info(f"load pretrained model at {pretrain}")
+            state_dict = torch.load(pretrain,map_location=torch.device('cpu'))
+            state_dict = state_dict["state_dict"] if "state_dict" in state_dict else state_dict
+            model.load_state_dict(state_dict, strict=True)
     return model

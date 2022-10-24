@@ -1,5 +1,5 @@
 experiment:
-  project: "test"
+  project: "demo"
   tag: "cifar100_kd_res50_res18"
   strategy: "OnlyDistillationStrategy"
   model_save: "/home/vmagent/app/data/model"
@@ -10,17 +10,16 @@ dataset:
   type: "cifar100"
   num_workers: 4
   path: "/home/vmagent/app/data/dataset"
+  train_transform: "denascnn"
 model:
   type: "resnet18_cifar"
 distiller:
   type: "kd"
   teacher: 
-      type: "resnet50_cifar"
-      pretrain: "/home/vmagent/app/data/model/baselines/cifar100_res50/resnet50-196-best.pth"
-  # save_logits: True
-  # use_saved_logits: True
-  # check_logits: True
-  logits_path: "/home/vmagent/app/data/model/distiller/cifar100_kd_res50_res18/logits"
+      type: "resnet50_timm"
+      pretrain: "/home/vmagent/app/data/model/demo/cifar100_res50/cifar100_res50_pretrain_imagenet21k.pth"
+  use_saved_logits: True
+  logits_path: "/home/vmagent/app/data/model/demo/cifar100_res50/logits"
   logits_topk: 0
 solver:
   batch_size: 128
@@ -31,9 +30,10 @@ solver:
     weight_decay: 5e-4
     momentum: 0.9
   scheduler:
-    type: "ReducelrOnPlateau"
+    type: "ReduceLROnPlateau"
     lr_decay_rate: 0.2
-    patience: 10
+    ReduceLROnPlateau:
+      patience: 10
   early_stop:
     flag: True
     tolerance_epoch: 15

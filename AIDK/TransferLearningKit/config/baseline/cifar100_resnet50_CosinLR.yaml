@@ -1,7 +1,6 @@
 experiment:
   project: "finetuner"
   tag: "cifar100_res50_PretrainI21k"
-  strategy: "OnlyFinetuneStrategy"
   model_save: "/home/vmagent/app/data/model"
 optimize:
   enable_ipex: True
@@ -14,12 +13,6 @@ dataset:
   data_drop_last: False
 model:
   type: "resnet50"
-finetuner:
-  type: "Basic"
-  pretrain: '/home/vmagent/app/data/pretrained/resnet50_miil_21k.pth'
-  pretrained_num_classes: 11221
-  finetuned_lr: 0.00445
-  frozen: False
 solver:
   batch_size: 128
   epochs: 1

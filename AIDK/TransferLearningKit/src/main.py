@@ -38,59 +38,73 @@ def main(args, trial):
     :param trial: Optuna Trial. If None, then training without automl.
     :return: validation metric. If has Earlystopping, using the best metric; Else, using the last metric.
     '''
-    #################### configuration ################
+    #################### merge cfg ################
     world_size = args.world_size
     rank = args.rank
     if world_size <= 1:
         world_size = 1
         rank = -1
     is_distributed = (world_size > 1) # distributed flag
-
-    cfg.merge_from_file(args.cfg)
-    cfg.merge_from_list(args.opts)
+    if args.cfg:
+        cfg.merge_from_file(args.cfg)
+    if args.opts:
+        cfg.merge_from_list(args.opts)
     torch.manual_seed(cfg.experiment.seed)
     # cfg.profiler.activities = torch.device('cuda' if torch.cuda.is_available() and args.gpu else 'cpu')
-    cfg.distiller.feature_layer_name = None if cfg.distiller.feature_layer_name == "" else cfg.distiller.feature_layer_name
-    cfg.adapter.feature_layer_name = None if cfg.adapter.feature_layer_name == "" else cfg.adapter.feature_layer_name
 
-    ## save dir setting ##
-    model_dir = os.path.join(cfg.experiment.model_save, cfg.experiment.project,cfg.experiment.tag)
-    LOG_DIR = os.path.join(model_dir,"log")                      # to save training log
-    PROFILE_DIR = os.path.join(model_dir,"profile")              # to save profiling result
-    cfg.experiment.tensorboard_dir = os.path.join(model_dir,"tensorboard_log")  # to save tensorboard log
+    print("Model Name:%s\nData Name:%s\nTransfer Learning Strategy:%s\nEnable DDP:%s%s\nTraining epochs:%s"%(
+            cfg.model.type, 
+            cfg.dataset.type,
+            cfg.experiment.strategy, 
+            (world_size > 1),
+            "" if (world_size <= 1) else "(rank = %s)"%rank ,
+           cfg.solver.epochs)
+    )
+    #################### dir conguration ################
+    prefix = "%s%s%s%s_%s"%(cfg.model.type,
+                     "_%s"%cfg.experiment.strategy if cfg.experiment.strategy else "",
+                     "_trial%s" % trial.number if trial is not None else "",
+                     "_rank%s" % rank if is_distributed else "",
+                     int(time.time())
+                    )
+    root_dir = os.path.join(cfg.experiment.model_save, cfg.experiment.project,cfg.experiment.tag)
+    LOG_DIR = os.path.join(root_dir,"log")                      # to save training log
+    PROFILE_DIR = os.path.join(root_dir,"profile")              # to save profiling result
+    model_save_path = os.path.join(root_dir,"%s%s%s%s%s"%(
+        cfg.model.type,
+        "_%s"%cfg.experiment.strategy if cfg.experiment.strategy else "",
+        "_%s"%cfg.dataset.type,
+        "_trial%s" % trial.number if trial is not None else "",
+        "_rank%s" % rank if is_distributed else "",
+    ))
+    cfg.experiment.tensorboard_dir = os.path.join(root_dir,"tensorboard_log","run_%s"%prefix)  # to save tensorboard log
     os.makedirs(LOG_DIR,exist_ok=True)
     os.makedirs(PROFILE_DIR,exist_ok=True) 
     os.makedirs(cfg.experiment.tensorboard_dir,exist_ok=True)
- 
-    if is_distributed:
-        dist.init_process_group("gloo", rank=rank, world_size=world_size, timeout=datetime.timedelta(seconds=300))
-
-    log_filename = "%s/%s%s%s.txt" % (LOG_DIR, int(time.time()),
-                                      "" if trial is None else "_trial%s" % trial.number,
-                                      "" if not is_distributed else "_rank%s" % rank)
-    cfg.experiment.tensorboard_filename_suffix = "" if not is_distributed else "_rank%s" % (rank)
-    cfg.profiler.trace_file_training = "%s/training_profile%s%s_" % (PROFILE_DIR,
-                                                                "" if trial is None else "_trial%s" % trial.number,
-                                                                "" if not is_distributed else "_rank%s" % rank)
-    cfg.profiler.trace_file_inference = '%s/test_profile%s%s_' % (PROFILE_DIR,
-                                                             "" if trial is None else "_trial%s" % trial.number,
-                                                             "" if not is_distributed else "_rank%s" % rank)
-    model_save_path = "%s/pretrain_resnet50_cifar10%s%s" % (model_dir,
-                                                                "" if trial is None else "_trial%s" % trial.number,
-                                                                "" if not is_distributed else "_rank%s" % rank)
     os.makedirs(model_save_path,exist_ok=True)
-
+ 
+    cfg.profiler.trace_file_training = os.path.join(PROFILE_DIR,"training_profile_%s"%prefix)
+    cfg.profiler.trace_file_inference = os.path.join(PROFILE_DIR,"test_profile_%s"%prefix)
+    
+    #################### logging conguration ################
+    # Remove all handlers associated with the root logger object.
+    for handler in logging.root.handlers[:]: 
+        logging.root.removeHandler(handler)
+    
+    log_filename = os.path.join(LOG_DIR, "%s.txt"%prefix)
     logging.basicConfig(filename=log_filename, level=logging.INFO,
                         format='%(asctime)s %(levelname)s [%(filename)s %(funcName)s %(lineno)d]: %(message)s',
                         datefmt='%m/%d/%Y %I:%M:%S %p',
                         filemode='w')
-
-    ### optimizer setting update for Optuna
-    cfg.solver.optimizer.lr = trial.suggest_float("lr", 0.001, 0.1, log=True) if trial is not None else 0.02
-    cfg.finetuner.learning_rate = trial.suggest_float("lr_finetuned", 0.001, 0.1, log=True) if trial is not None else 0.02  # finetunning
-    cfg.solver.optimizer.weight_decay = trial.suggest_float("weight_decay", 0.0001, 0.1,log=True) if trial is not None else 0.0005  # L2 penalty
-
-    ## deal with save logits for distiller
+    ################ init dist ################
+    if is_distributed:
+        dist.init_process_group("gloo", rank=rank, world_size=world_size, timeout=datetime.timedelta(seconds=300))
+    ##################### Optuna hyper params ################
+    if trial is not None:
+        cfg.solver.optimizer.lr = trial.suggest_float("lr", 0.001, 0.1, log=True)
+        cfg.finetuner.learning_rate = trial.suggest_float("lr_finetuned", 0.001, 0.1, log=True) 
+        cfg.solver.optimizer.weight_decay = trial.suggest_float("weight_decay", 0.0001, 0.1,log=True)
+    ##################### distiller logits conguration ################
     if cfg.distiller.save_logits:
         cfg.experiment.strategy = ""
         cfg.distiller.type = ""
@@ -103,20 +117,19 @@ def main(args, trial):
     if cfg.distiller.use_saved_logits or cfg.distiller.check_logits:
         if not os.path.exists(cfg.distiller.logits_path):
             raise RuntimeError("Need teacher saved logits!")
-
-    ## fix congurations
+    ##################### show conguration ################
     # cfg.freeze()
     show_cfg(cfg)
-    ##################### parameters ##############
+    ##################### functions ##############
     validate_metric_fn_map = {'acc': accuracy}
     model_loss = nn.CrossEntropyLoss(reduction='mean')
-    ###################### task ###############
+    ###################### create task ###############
     task = Task(cfg, model_save_path, model_loss, is_distributed)
     if trial is not None:
         logging.info("[%s]: Begin trial %s" % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), trial.number))
         print("[%s]: Begin trial %s" % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), trial.number))
     metric = task.run(validate_metric_fn_map, rank, eval=args.eval, resume=args.resume)
-    ########### destroy dist #########
+    ############### destroy dist ###############
     if is_distributed:
         dist.destroy_process_group()
     if trial is not None:
@@ -125,6 +138,7 @@ def main(args, trial):
     return metric
 
 if __name__ == '__main__':
+    # usage: python main.py --cfg ../config/demo/cifar100_kd_vit_res18.yaml --opts solver.epochs 1 dataset.path /xxx/yyy
     start_time = time.time()
     parser = argparse.ArgumentParser()
     parser.description = 'Must set world_size.'
@@ -135,7 +149,7 @@ if __name__ == '__main__':
     parser.add_argument('-s',"--world_size",default=1, help="The worker num. World_size <= 0 means no parallel.", type=int)
     parser.add_argument('-r', "--rank", default=0, help="The current rank. Begins from 0.", type=int)
     parser.add_argument('-R', "--trial_round", default=0,help="The hyper-param tunning round. trial_round <= 0 means no tunning.", type=int)
-    parser.add_argument("opts", default=None, nargs=argparse.REMAINDER)
+    parser.add_argument("--opts", default=None, nargs=argparse.REMAINDER)
     args = parser.parse_args()
 
     trial_round = parser.parse_args().trial_round

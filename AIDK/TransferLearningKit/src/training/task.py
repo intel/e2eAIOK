@@ -4,6 +4,7 @@
 # @Time   : 8/19/2022 10:08 AM
 import torch
 import torchvision.models
+import datetime
 from torch.utils.tensorboard import SummaryWriter
 from engine_core.backbone.factory import createBackbone
 from engine_core.adapter.factory import createAdapter
@@ -57,13 +58,13 @@ class Task:
         ''' create backbone model
 
         :return: a backbone model
-        '''     
+        '''    
         backbone = createBackbone(self._cfg.model.type, num_classes = self._num_classes, pretrain = self._cfg.model.pretrain)
         set_attribute("model", backbone, "loss", self._loss)
         num_params = sum(param.numel() for param in backbone.parameters())
         self._backbone = backbone # may be use by other component
         logging.info('backbone:%s' % backbone)
-        logging.info("Model params: ", num_params)
+        logging.info("Model params: %s" % num_params)
         print("Model params: ", num_params)
         return backbone
     def _create_finetuner(self):
@@ -75,7 +76,7 @@ class Task:
             finetuner = None
         elif self._cfg.finetuner.type == "Basic":
             pretrained_model = createBackbone(self._cfg.model.type, num_classes=self._cfg.finetuner.pretrained_num_classes, pretrain=self._cfg.finetuner.pretrain)
-            finetuner = BasicFinetunner(pretrained_model, top_finetuned_layer=self._cfg.finetuner.top_finetuned_layer, is_frozen=self._cfg.finetuner.is_frozen)
+            finetuner = BasicFinetunner(pretrained_model, is_frozen=self._cfg.finetuner.frozen)
         else:
             logging.error("[%s] is not supported"%self._cfg.finetuner.type)
             raise NotImplementedError("[%s] is not supported"%self._cfg.finetuner.type)    
@@ -168,10 +169,10 @@ class Task:
         if self._cfg.experiment.strategy == "OnlyFinetuneStrategy":
             finetuned_state_keys = ["backbone.%s"%name for name in self._finetuner.finetuned_state_keys] # add component prefix
             finetuner_params = {'params':[p for (name, p) in self._model.named_parameters() if p.requires_grad and name in finetuned_state_keys],
-                                'lr': self._cfg.finetuner.learning_rate}
+                                'lr': self._cfg.finetuner.finetuned_lr}
             remain_params = {'params':[p for (name, p) in self._model.named_parameters() if p.requires_grad and name not in finetuned_state_keys],
                                 'lr': self._cfg.solver.optimizer.lr}
-            logging.info("[%s] params set finetuner learning rate[%s]" % (len(finetuner_params['params']), self._cfg.finetuner.learning_rate))
+            logging.info("[%s] params set finetuner finetuned learning rate[%s]" % (len(finetuner_params['params']), self._cfg.finetuner.finetuned_lr))
             logging.info("[%s] params set common learning rate [%s]" % (len(remain_params['params']), self._cfg.solver.optimizer.lr))
             assert len(finetuner_params) > 0,"Empty finetuner_params"
             parameters = [finetuner_params,remain_params]
@@ -233,7 +234,7 @@ class Task:
 
         :return: a tensorboard_writer
         '''
-        tensorboard_writer = SummaryWriter(self._cfg.experiment.tensorboard_dir, filename_suffix=self._cfg.experiment.tensorboard_filename_suffix)
+        tensorboard_writer = SummaryWriter(self._cfg.experiment.tensorboard_dir)
         logging.info('tensorboard_writer :%s' % tensorboard_writer)
         return tensorboard_writer
     def _create_early_stopping(self):
@@ -315,7 +316,6 @@ class Task:
         tensorboard_writer = self._create_tensorboard_writer()
         early_stopping = self._create_early_stopping()
         training_profiler, inference_profiler = self._create_profiler()
-
         ######################### Evaluate #########################
         evaluator = Evaluator(validate_metric_fn_map, tensorboard_writer, self._cfg, inference_profiler, self._cfg.profiler.activities)
         logging.info("evaluator:%s" % evaluator)
@@ -324,8 +324,8 @@ class Task:
                 start = datetime.datetime.now()
                 metric_values = evaluator.evaluate(model, test_loader)
                 total_seconds = datetime.datetime.now() - start
-                test_data = num_data["test"]
-                print(f"test data: {test_data}, throughput: {test_data/total_seconds} samples/second")
+                test_num = num_data["test"]
+                print(f"test data: {test_num}, throughput: {test_num/total_seconds} samples/second")
                 print(metric_values)
             return metric_values
         #################################### train and evaluate ###################
@@ -339,6 +339,7 @@ class Task:
                 with Join([model, optimizer]):
                     val_metric = trainer.train(train_loader, validate_loader, self._epoch_steps, self._model_dir, self._num_classes, resume)
             else:
+                
                 val_metric = trainer.train(train_loader, validate_loader, self._epoch_steps, self._model_dir, self._num_classes, resume)
         ################################### test ###################################
         if test_loader is not None:

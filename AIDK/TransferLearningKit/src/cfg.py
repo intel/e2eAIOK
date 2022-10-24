@@ -22,7 +22,7 @@ cfg.experiment.project = "TLK"
 cfg.experiment.tag = "default"
 cfg.experiment.strategy = ""
 cfg.experiment.seed = 0
-cfg.experiment.model_save = "/home/vmagent/app/dataset/model/"
+cfg.experiment.model_save = "/home/vmagent/app/data/model/"
 cfg.experiment.model_save_interval = 40
 cfg.experiment.log_interval_step = 10
 cfg.experiment.tensorboard_dir = ""
@@ -80,9 +80,8 @@ cfg.finetuner = CN()
 cfg.finetuner.type = ""
 cfg.finetuner.pretrain = ""
 cfg.finetuner.pretrained_num_classes = 10
-cfg.finetuner.learning_rate = 0.01
-cfg.finetuner.top_finetuned_layer = ""
-cfg.finetuner.is_frozen = False
+cfg.finetuner.finetuned_lr= 0.01
+cfg.finetuner.frozen = False
 
 # Distiller
 cfg.distiller = CN()

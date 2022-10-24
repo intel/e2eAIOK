@@ -2,11 +2,11 @@ experiment:
   project: "baselines"
   strategy: ""
   tag: "cifar100_vit_hg_pretrain21k"
-  model_save: "/home/vmagent/app/dataset/model"
+  model_save: "/home/vmagent/app/data/model"
 dataset:
   type: "cifar100"
   num_workers: 4
-  path: "/home/vmagent/app/dataset/dataset/cifar"
+  path: "/home/vmagent/app/data/dataset"
   train_transform: "vit"
   test_transform: "vit"
 model:

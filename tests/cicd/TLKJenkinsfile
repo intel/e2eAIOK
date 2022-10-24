@@ -27,7 +27,7 @@ pipeline {
                 label 'sr613'
             }
             steps {
-                sh 'docker run --rm --name test-tlk-singlenode --privileged --network host --device=/dev/dri --shm-size="2g" -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /root/transfer_learning_logs:/home/vmagent/app/AIDK/TransferLearningKit/log -v /root/transfer_learning_model:/home/vmagent/app/AIDK/TransferLearningKit/model -v /root/transfer_learning_tensorboard_log:/home/vmagent/app/AIDK/TransferLearningKit/tensorboard_log -v /root/transfer_learning_pretrained:/home/vmagent/app/AIDK/TransferLearningKit/pretrained -v /mnt/DP_disk1/dataset:/home/vmagent/app/AIDK/TransferLearningKit/datasets -v `pwd`:/home/vmagent/app -w /home/vmagent/app/test/cicd aidk-pytorch110 /bin/bash -c ". /home/vmagent/app/tests/cicd/jenkins_transfer_learning_unittest.sh"'
+                sh 'docker run --rm --name test-tlk-singlenode --privileged --network host --device=/dev/dri --shm-size="2g"  -v  /home/root/model_output:/home/vmagent/app/data/model   -v /home/root/model_zoo:/home/vmagent/app/data/pretrained -v /mnt/DP_disk1/dataset:/home/vmagent/app/data/dataset -v `pwd`:/home/vmagent/app -w /home/vmagent/app/test/cicd aidk-pytorch110 /bin/bash -c ". /home/vmagent/app/tests/cicd/jenkins_transfer_learning_unittest.sh"'
             }
         }
         // stage('Run transfer_learning_DDP_test') {
@@ -35,8 +35,8 @@ pipeline {
         //        label 'sr613'
         //    }
         //    steps {
-        //        sh 'docker run -t -d --name test-tlk-multinode-r1 --privileged --network host --device=/dev/dri -v /root/transfer_learning_logs:/home/vmagent/app/AIDK/TransferLearningKit/log -v /root/transfer_learning_model:/home/vmagent/app/AIDK/TransferLearningKit/model -v /root/transfer_learning_tensorboard_log:/home/vmagent/app/AIDK/TransferLearningKit/tensorboard_log -v /root/transfer_learning_pretrained:/home/vmagent/app/AIDK/TransferLearningKit/pretrained -v /mnt/DP_disk1/dataset:/home/vmagent/app/AIDK/TransferLearningKit/datasets -v `pwd`:/home/vmagent/app -w /home/vmagent/app/AIDK/TransferLearningKit/src aidk-pytorch110 /opt/intel/oneapi/intelpython/latest/envs/pytorch-1.10.0/bin/python main.py -s2 -r1'
-        //        sh 'docker run --rm --name test-tlk-multinode-r0 --privileged --network host --device=/dev/dri -v /root/transfer_learning_logs:/home/vmagent/app/AIDK/TransferLearningKit/log -v /root/transfer_learning_model:/home/vmagent/app/AIDK/TransferLearningKit/model -v /root/transfer_learning_tensorboard_log:/home/vmagent/app/AIDK/TransferLearningKit/tensorboard_log -v /root/transfer_learning_pretrained:/home/vmagent/app/AIDK/TransferLearningKit/pretrained -v /mnt/DP_disk1/dataset:/home/vmagent/app/AIDK/TransferLearningKit/datasets -v `pwd`:/home/vmagent/app -w /home/vmagent/app/AIDK/TransferLearningKit/src aidk-pytorch110 /opt/intel/oneapi/intelpython/latest/envs/pytorch-1.10.0/bin/python main.py -s2 -r0'
+        //        sh 'docker run -t -d --name test-tlk-multinode-r1 --privileged --network host --device=/dev/dri -v  /home/root/model_output:/home/vmagent/app/data/model   -v /home/root/model_zoo:/home/vmagent/app/data/pretrained -v /mnt/DP_disk1/dataset:/home/vmagent/app/data/dataset -v `pwd`:/home/vmagent/app -w /home/vmagent/app/AIDK/TransferLearningKit/src aidk-pytorch110 /opt/intel/oneapi/intelpython/latest/envs/pytorch-1.10.0/bin/python main.py -s2 -r1'
+        //        sh 'docker run --rm --name test-tlk-multinode-r0 --privileged --network host --device=/dev/dri -v  /home/root/model_output:/home/vmagent/app/data/model   -v /home/root/model_zoo:/home/vmagent/app/data/pretrained -v /mnt/DP_disk1/dataset:/home/vmagent/app/data/dataset -v `pwd`:/home/vmagent/app -w /home/vmagent/app/AIDK/TransferLearningKit/src aidk-pytorch110 /opt/intel/oneapi/intelpython/latest/envs/pytorch-1.10.0/bin/python main.py -s2 -r0'
         //    }
         // }
         stage('Run TLK_baseline_none_DDP_test') {
@@ -44,7 +44,7 @@ pipeline {
                 label 'sr613'
             }
             steps {
-                sh 'docker run --rm --name test-tlk-singlenode --privileged --network host --device=/dev/dri --shm-size="2g" -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /root/transfer_learning_logs:/home/vmagent/app/AIDK/TransferLearningKit/log -v /root/transfer_learning_model:/home/vmagent/app/AIDK/TransferLearningKit/model -v /root/transfer_learning_tensorboard_log:/home/vmagent/app/AIDK/TransferLearningKit/tensorboard_log -v /root/transfer_learning_pretrained:/home/vmagent/app/AIDK/TransferLearningKit/pretrained -v /mnt/DP_disk1/dataset:/home/vmagent/app/AIDK/TransferLearningKit/datasets -v `pwd`:/home/vmagent/app -w /home/vmagent/app/test/cicd aidk-pytorch110 /bin/bash -c ". /home/vmagent/app/tests/cicd/jenkins_transfer_learning_basic_test.sh"'
+                sh 'docker run --rm --name test-tlk-singlenode --privileged --network host --device=/dev/dri --shm-size="2g"  -v  /home/root/model_output:/home/vmagent/app/data/model   -v /home/root/model_zoo:/home/vmagent/app/data/pretrained -v /mnt/DP_disk1/dataset:/home/vmagent/app/data/dataset -v `pwd`:/home/vmagent/app -w /home/vmagent/app/test/cicd aidk-pytorch110 /bin/bash -c ". /home/vmagent/app/tests/cicd/jenkins_transfer_learning_basic_test.sh"'
             }
         }
         stage('Run TLK_finetuner_none_DDP_test') {
@@ -52,7 +52,7 @@ pipeline {
                 label 'sr613'
             }
             steps {
-                sh 'docker run --rm --name test-tlk-singlenode --privileged --network host --device=/dev/dri --shm-size="2g" -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /root/transfer_learning_logs:/home/vmagent/app/AIDK/TransferLearningKit/log -v /root/transfer_learning_model:/home/vmagent/app/AIDK/TransferLearningKit/model -v /root/transfer_learning_tensorboard_log:/home/vmagent/app/AIDK/TransferLearningKit/tensorboard_log -v /root/transfer_learning_pretrained:/home/vmagent/app/AIDK/TransferLearningKit/pretrained -v /mnt/DP_disk1/dataset:/home/vmagent/app/AIDK/TransferLearningKit/datasets -v `pwd`:/home/vmagent/app -w /home/vmagent/app/test/cicd aidk-pytorch110 /bin/bash -c ". /home/vmagent/app/tests/cicd/jenkins_transfer_learning_finetuner_test.sh"'
+                sh 'docker run --rm --name test-tlk-singlenode --privileged --network host --device=/dev/dri --shm-size="2g"  -v  /home/root/model_output:/home/vmagent/app/data/model   -v /home/root/model_zoo:/home/vmagent/app/data/pretrained -v /mnt/DP_disk1/dataset:/home/vmagent/app/data/dataset -v `pwd`:/home/vmagent/app -w /home/vmagent/app/test/cicd aidk-pytorch110 /bin/bash -c ". /home/vmagent/app/tests/cicd/jenkins_transfer_learning_finetuner_test.sh"'
             }
         }
         stage('Run TLK_distiller_none_DDP_test') {
@@ -60,7 +60,7 @@ pipeline {
                 label 'sr613'
             }
             steps {
-                sh 'docker run --rm --name test-tlk-singlenode --privileged --network host --device=/dev/dri --shm-size="2g" -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /root/transfer_learning_logs:/home/vmagent/app/AIDK/TransferLearningKit/log -v /root/transfer_learning_model:/home/vmagent/app/AIDK/TransferLearningKit/model -v /root/transfer_learning_tensorboard_log:/home/vmagent/app/AIDK/TransferLearningKit/tensorboard_log -v /root/transfer_learning_pretrained:/home/vmagent/app/AIDK/TransferLearningKit/pretrained -v /mnt/DP_disk1/dataset:/home/vmagent/app/AIDK/TransferLearningKit/datasets -v `pwd`:/home/vmagent/app -w /home/vmagent/app/test/cicd aidk-pytorch110 /bin/bash -c ". /home/vmagent/app/tests/cicd/jenkins_transfer_learning_distiller_test.sh"'
+                sh 'docker run --rm --name test-tlk-singlenode --privileged --network host --device=/dev/dri --shm-size="2g"  -v  /home/root/model_output:/home/vmagent/app/data/model   -v /home/root/model_zoo:/home/vmagent/app/data/pretrained -v /mnt/DP_disk1/dataset:/home/vmagent/app/data/dataset -v `pwd`:/home/vmagent/app -w /home/vmagent/app/test/cicd aidk-pytorch110 /bin/bash -c ". /home/vmagent/app/tests/cicd/jenkins_transfer_learning_distiller_test.sh"'
             }
         }
         stage('Run TLK_finetuner_auto_tunning_test') {
@@ -68,7 +68,7 @@ pipeline {
                 label 'sr613'
             }
             steps {
-                sh 'docker run --rm --name test-tlk-singlenode --privileged --network host --device=/dev/dri --shm-size="2g" -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /root/transfer_learning_logs:/home/vmagent/app/AIDK/TransferLearningKit/log -v /root/transfer_learning_model:/home/vmagent/app/AIDK/TransferLearningKit/model -v /root/transfer_learning_tensorboard_log:/home/vmagent/app/AIDK/TransferLearningKit/tensorboard_log -v /root/transfer_learning_pretrained:/home/vmagent/app/AIDK/TransferLearningKit/pretrained -v /mnt/DP_disk1/dataset:/home/vmagent/app/AIDK/TransferLearningKit/datasets -v `pwd`:/home/vmagent/app -w /home/vmagent/app/test/cicd aidk-pytorch110 /bin/bash -c ". /home/vmagent/app/tests/cicd/jenkins_transfer_learning_finetuner_autotuning_test.sh"'   
+                sh 'docker run --rm --name test-tlk-singlenode --privileged --network host --device=/dev/dri --shm-size="2g"  -v  /home/root/model_output:/home/vmagent/app/data/model   -v /home/root/model_zoo:/home/vmagent/app/data/pretrained -v /mnt/DP_disk1/dataset:/home/vmagent/app/data/dataset -v `pwd`:/home/vmagent/app -w /home/vmagent/app/test/cicd aidk-pytorch110 /bin/bash -c ". /home/vmagent/app/tests/cicd/jenkins_transfer_learning_finetuner_autotuning_test.sh"'   
             }
         }
     }

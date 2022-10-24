@@ -1,16 +1,15 @@
 experiment:
   project: "baselines"
   tag: "cifar10_res50_pretrainI21k"
-  model_save: "/home/vmagent/app/dataset/model"
+  model_save: "/home/vmagent/app/data/model"
 dataset:
   type: "cifar10"
   num_workers: 10
-  path: "/home/vmagent/app/dataset/dataset/cifar"
+  path: "/home/vmagent/app/data/dataset"
   train_transform: "pretrain112"
   test_transform: "pretrain112"
 model:
-  type: "resnet50_timm"
-  pretrain: "/home/vmagent/app/dataset/model/baselines/cifar10_res50PretrainI21k/pretrained/resnet50_miil_21k.pth"
+  type: "resnet50"
 solver:
   batch_size: 128
   epochs: 200

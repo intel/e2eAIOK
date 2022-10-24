@@ -1,11 +1,11 @@
 experiment:
   project: "baselines"
   tag: "cifar100_denascnn_bin"
-  model_save: "/home/vmagent/app/dataset/model"
+  model_save: "/home/vmagent/app/data/model"
 dataset:
   type: "cifar100"
   num_workers: 4
-  path: "/home/vmagent/app/dataset/dataset/cifar"
+  path: "/home/vmagent/app/data/dataset"
   train_transform: "denascnn"
 model:
   type: "denas_cnn"

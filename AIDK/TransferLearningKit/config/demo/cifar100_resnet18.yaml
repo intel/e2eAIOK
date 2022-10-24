@@ -1,6 +1,5 @@
 experiment:
-  project: "test"
-  strategy: ""
+  project: "demo"
   tag: "cifar100_res18"
   model_save: "/home/vmagent/app/data/model"
 dataset:
@@ -18,8 +17,10 @@ solver:
     weight_decay: 5e-4
     momentum: 0.9
   scheduler:
-    type: "MultiSteplr"
+    type: "ReduceLROnPlateau"
     lr_decay_rate: 0.2
-    lr_decay_stages: [60, 120, 160]
+    ReduceLROnPlateau:
+      patience: 10
   early_stop:
-    flag: False
+    flag: True
+    tolerance_epoch: 15

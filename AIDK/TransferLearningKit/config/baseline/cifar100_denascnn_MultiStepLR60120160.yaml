@@ -1,14 +1,14 @@
 experiment:
   project: "baselines"
   tag: "cifar100_denascnn"
-  model_save: "/home/vmagent/app/dataset/model"
+  model_save: "/home/vmagent/app/data/model"
 dataset:
   type: "cifar100"
   num_workers: 4
-  path: "/home/vmagent/app/dataset/dataset/cifar"
+  path: "/home/vmagent/app/data/dataset"
 model:
   type: "denas_cnn"
-  # pretrain: "/home/vmagent/app/dataset/model/baselines/cifar100_denascnn/backbone_best.pth"
+  # pretrain: "/home/vmagent/app/data/model/baselines/cifar100_denascnn/backbone_best.pth"
 solver:
   batch_size: 128
   epochs: 200
