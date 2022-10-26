@@ -132,7 +132,7 @@ class EvolutionarySearchEngine(BaseSearchEngine):
             self.candidates = mutation + crossover
         self.update_population_pool()
         with open("best_model_structure.txt", 'w') as f:
-            f.write(self.top_candidates[0])
+            f.write(str(self.top_candidates[0]))
 
     '''
     Unified API to get best searched structure
