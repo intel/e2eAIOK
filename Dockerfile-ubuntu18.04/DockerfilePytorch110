@@ -25,4 +25,5 @@ SHELL ["/bin/bash", "-c"]
 RUN sed -i 's/#Port 22/Port 12345/g' /etc/ssh/sshd_config
 RUN sed -i 's/#   Port 22/    Port 12345/g' /etc/ssh/ssh_config
 RUN conda init bash
+RUN echo "source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force" >> /etc/bash.bashrc
 ENTRYPOINT [""]

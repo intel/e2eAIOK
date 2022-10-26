@@ -49,4 +49,5 @@ ENV SPARK_HOME /home/spark-3.2.1-bin-hadoop3.2
 ENV PYTHONPATH $SPARK_HOME/python/:$PYTHONPATH
 ENV PYTHONPATH $SPARK_HOME/python/lib/py4j-0.10.9.3-src.zip:$PYTHONPATH
 RUN conda init bash
+RUN echo "source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force" >> /etc/bash.bashrc
 ENTRYPOINT [""]

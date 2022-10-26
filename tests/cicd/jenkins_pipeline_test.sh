@@ -14,7 +14,7 @@ mkdir -p $tmp_dir
 
 # set default options
 CODE_STYLE_FORMAT="${CODE_STYLE_FORMAT:=0}"
-CODE_STYLE_CHECK="${CODE_STYLE_CHECK:=1}"
+CODE_STYLE_CHECK="${CODE_STYLE_CHECK:=0}"
 # static codestyle format
 if [ $CODE_STYLE_FORMAT == 1 ]
 then
