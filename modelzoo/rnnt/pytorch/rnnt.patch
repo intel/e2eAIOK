@@ -1461,14 +1461,6 @@ index 0000000..e2f7644
 +        if backend == 'ccl':
 +            print(f"Using CCL_ATL_TRANSPORT={os.environ.get('CCL_ATL_TRANSPORT', '(default)')}")
 +            print(f"Using CCL_ATL_SHM={os.environ.get('CCL_ATL_SHM', '(default)')}")
-diff --git a/modelzoo/rnnt/pytorch/hosts b/modelzoo/rnnt/pytorch/hosts
-new file mode 100644
-index 0000000..1fc6480
---- /dev/null
-+++ b/modelzoo/rnnt/pytorch/hosts
-@@ -0,0 +1,2 @@
-+10.1.0.13
-+10.1.0.12
 diff --git a/modelzoo/rnnt/pytorch/hyperparameters_2048.sh b/modelzoo/rnnt/pytorch/hyperparameters_2048.sh
 deleted file mode 100644
 index 9bec453..0000000
@@ -3684,10 +3676,10 @@ index e9ac375..0aaab68 100755
 +python scripts/tokenize_transcripts.py --output_dir /metadata/ --model /sentencepieces/librispeech1023.model ${DATA_DIR}/librispeech-*.json
 diff --git a/modelzoo/rnnt/pytorch/scripts/train.sh b/modelzoo/rnnt/pytorch/scripts/train.sh
 new file mode 100644
-index 0000000..298b4cc
+index 0000000..758849c
 --- /dev/null
 +++ b/modelzoo/rnnt/pytorch/scripts/train.sh
-@@ -0,0 +1,210 @@
+@@ -0,0 +1,211 @@
 +#!/bin/bash
 +
 +# Copyright (c) 2018-2021, NVIDIA CORPORATION. All rights reserved.
@@ -3866,15 +3858,16 @@ index 0000000..298b4cc
 +[ "${JIT_TENSOR_FORMATION}" = true ] && ARGS+=" --jit_tensor_formation"
 +[ "${DALI_DONT_USE_MMAP}" = true ] && ARGS+=" --dali_dont_use_mmap"
 +
-+CONDA_PREFIX=/opt/intel/oneapi/intelpython/latest/envs/pytorch_1.10
++CONDA_PREFIX=/opt/intel/oneapi/intelpython/latest/envs/pytorch-1.10.0
 +if [ "$DIST" = true ]; then
 +  echo "Distributed training"
 +  if [ "$SET_AFFINITY" = true ]; then
-+    ${CONDA_PREFIX}/bin/python -m intel_extension_for_pytorch.cpu.launch --distributed --nproc_per_node=4 --nnodes=2 --hostfile hosts \
++    ${CONDA_PREFIX}/bin/python -m intel_extension_for_pytorch.cpu.launch --distributed --nproc_per_node=2 --nnodes=1 --hostfile hosts \
 +      ${ARGS} 2>&1 | tee dist_train.log
 +  else
 +    echo "disable thread affinity"
-+    ${CONDA_PREFIX}/bin/python -m launch --distributed --nproc_per_node=4 --nnodes=2 --hostfile hosts ${ARGS} 2>&1 | tee dist_train.log
++    ${CONDA_PREFIX}/bin/python -m launch --distributed --nproc_per_node=2 --nnodes=1 --hostfile hosts ${ARGS} 2>&1 | tee dist_train.log
++  fi
 +  ret_code=$?
 +
 +else
