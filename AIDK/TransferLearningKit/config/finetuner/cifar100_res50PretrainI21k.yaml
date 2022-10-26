@@ -30,7 +30,8 @@ solver:
     momentum: 0.9
   scheduler:
     type: "CosineAnnealingLR"
-    T_max: 200
+    CosineAnnealingLR:
+      T_max: 200
   early_stop:
     flag: True
     tolerance_epoch: 200

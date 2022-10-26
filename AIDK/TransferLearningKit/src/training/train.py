@@ -80,16 +80,18 @@ def trainEpoch(model, metric_fn_map, optimizer, train_dataloader,
     unwrapped_model = unwrap_DDP(model)
     with context:
         for (cur_step,(data, label)) in enumerate(train_dataloader):
+            '''
+            Four cases of data
+            Case 1 - basic: input
+            Case 2 - distiller with logits: (input, logits)
+            Case 3 - adapter: (input1, input2)  - to be supported
+            Case 4 - distiller with logits and adapter: ((input1, logits1),(input2, logits2)) - to be supported
+            '''
             if isinstance(data, torch.Tensor):
                 data = data.to(device)
-                label = label.to(device)
-            elif isinstance(data, Iterable):
-                assert len(data) == len(label), "data len[%s] must equal label len[%s]"%(len(data),len(label))
-                for i in range(0,len(data)):
-                    data[i] = data[i].to(device)
-                    label[i] = label[i].to(device)
             else:
-                raise RuntimeError("Known data type:%s"%type(data))
+                data[0] = data[0].to(device)
+            label = label.to(device)
             optimizer.zero_grad()
             output = model(data)
             loss_value = unwrapped_model.loss(output, label)
@@ -177,187 +179,6 @@ def evaluateEpoch(model, metric_fn_map, dataloader,
                                    epoch_steps=epoch_steps,rank=rank)
         return metric_values
 
-def saveLogitsEpoch(model, dataloader, cur_epoch, epoch_steps, cfg,
-                    device="cpu",rank=-1):
-    ''' save teacher logits for distiller
-
-    :param model: the pretrained teacher model
-    :param dataloader: dataloader
-    :param cur_epoch: current epoch
-    :param epoch_steps: steps per step
-    :param cfg: configurations
-    :param device: running on cpu or gpu
-    :param rank: rank for distributed training (-1 for non-distributed training)
-    '''
-    start_time = time.time()
-    topk = cfg.distiller.logits_topk
-    with torch.no_grad():
-        model.eval()
-        logits_manager = dataloader.dataset.get_manager()
-
-        #################### iterate on dataset ##############
-        for idx, ((data, label), (keys, seeds)) in enumerate(dataloader):
-            data = data.to(device)
-            label = label.to(device)
-            output = model(data)
-            output = output.logits if cfg.model.type == "vit_base_224_in21k_ft_cifar100" else output
-            
-            if topk == 0: # save all logits
-                values = output.detach().to(device='cpu', dtype=torch.float32)
-
-                seeds = seeds.numpy()
-                values = values.numpy() 
-                assert seeds.dtype == np.int32, seeds.dtype
-                assert values.dtype == np.float32, values.dtype
-
-                for key, seed, value in zip(keys, seeds, values):
-                    bstr = seed.tobytes() + value.tobytes()
-                    logits_manager.write(key, bstr)
-            elif topk > 0: # only save topk logits
-                softmax_prob = torch.softmax(output, -1)
-                values, indices = softmax_prob.topk(k=topk, dim=-1, largest=True, sorted=True)
-                values = values.detach().to(device='cpu', dtype=torch.float16)
-                indices = indices.detach().to(device='cpu', dtype=torch.int16)
-
-                seeds = seeds.numpy()
-                values = values.numpy()
-                indices = indices.numpy()
-                assert seeds.dtype == np.int32, seeds.dtype
-                assert indices.dtype == np.int16, indices.dtype
-                assert values.dtype == np.float16, values.dtype
-
-                for key, seed, indice, value in zip(keys, seeds, indices, values):
-                    bstr = seed.tobytes() + value.tobytes() + indice.tobytes()
-                    logits_manager.write(key, bstr)
-            if idx % cfg.experiment.log_interval_step == 0:
-                dt = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') # date time
-                print(f"{dt} Epoch:{cur_epoch}, save {idx}/{epoch_steps}")
-                logging.info(f"{dt} Epoch:{cur_epoch}, save {idx}/{epoch_steps}")
-    print(f"Epoch {cur_epoch} took {time.time()-start_time} seconds")
-    logging.info(f"Epoch {cur_epoch} took {time.time()-start_time} seconds")
-
-def checkLogitsEpoch(model, dataloader, cur_epoch, epoch_steps, num_classes,
-                        tensorboard_writer, cfg, device="cpu",rank=-1):
-    ''' check saved teacher logits for distiller
-
-    :param model: the evaluated model
-    :param dataloader: dataloader
-    :param cur_epoch : current epoch
-    :param epoch_steps: steps per step
-    :param num_classes: number of prediction classes
-    :param tensorboard_writer: tensorboard writer
-    :param cfg: configurations
-    :param device: running on cpu or gpu
-    :param rank: rank for distributed training (-1 for non-distributed training)
-    '''
-    start_time = time.time()
-    topk = cfg.distiller.logits_topk
-    with torch.no_grad():
-        model.eval()  # set evaluating flag
-        logits_manager = dataloader.dataset.get_manager()
-
-        loss_value = 0
-        metric_values = {}
-        #################### iterate on dataset ##############
-        for idx, ((data, label), save_values) in enumerate(dataloader):
-            data = data.to(device)
-            label = label.to(device)
-            output = model(data)
-            batch_size = data.size(0)
-            output = output.logits if cfg.model.type == "vit_base_224_in21k_ft_cifar100" else output
-
-            logits_value = output.detach().to(device='cpu', dtype=torch.float32)
-            if topk == 0: 
-                save_logits_value, _ = save_values
-                save_logits_value = save_logits_value.float()
-            elif topk > 0: 
-                save_logits_value_topk, save_logits_index_topk, _ = save_values
-
-                ### compare 1
-                softmax_prob = torch.softmax(output, -1)
-                logits_value_topk, logits_indices_topk = softmax_prob.topk(k=topk, dim=-1, largest=True, sorted=True)
-                logits_value_topk = logits_value_topk.detach().to(device='cpu', dtype=torch.float16)
-                logits_indices_topk = logits_indices_topk.detach().to(device='cpu', dtype=torch.int16)
-                metric_values["indices_diff"] = torch.count_nonzero((logits_indices_topk != save_logits_index_topk)).item() / batch_size
-                metric_values["value_topk_diff"] = (logits_value_topk - save_logits_value_topk).abs().sum().item() / batch_size
-
-                ### compare 2
-                save_logits_index_topk = save_logits_index_topk.long()
-                save_logits_value_topk = save_logits_value_topk.float()
-                minor_value = (1.0 - save_logits_value_topk.sum(-1, keepdim=True)
-                            ) / (num_classes - topk)
-                minor_value = minor_value.repeat_interleave(num_classes, dim=-1)
-                save_logits_value = minor_value.scatter_(-1, save_logits_index_topk, save_logits_value_topk)
-            metric_values["value_diff"] = (logits_value - save_logits_value).abs().sum().item() / batch_size
-
-            add_tensorboard_metric(tensorboard_writer,'Train',metric_values,cur_epoch,idx,epoch_steps=epoch_steps)
-    print(f"Epoch {cur_epoch} took {time.time()-start_time} seconds")
-    logging.info(f"Epoch {cur_epoch} took {time.time()-start_time} seconds")
-
-def trainEpochwithLogits(model, metric_fn_map, optimizer, train_dataloader, num_classes,  
-               tensorboard_writer,cur_epoch,epoch_steps,cfg,
-               profiler=None, warmup_scheduler=None,device='cpu',rank=-1,is_transferrable=False):
-    ''' train one epoch for distiller with loading teacher logits
-
-    :param model: the training model
-    :param metric_fn_map:  metric function map, which map metric name to metric function
-    :param optimizer: the optimizer
-    :param train_dataloader: train dataloader
-    :param num_classes: number of prediction classes
-    :param tensorboard_writer: tensorboard writer
-    :param cur_epoch: current epoch
-    :param epoch_steps: how many steps of an epoch
-    :param cfg: configurations
-    :param profiler: profiler
-    :param warmup_scheduler: the scheduler for warmup
-    :param device: running on cpu or gpu
-    :param rank: rank for distributed training (-1 for non-distributed training)
-    :param is_transferrable: is model transferrable
-    :return:
-    '''
-    topk = cfg.distiller.logits_topk
-    model.train()  # set training flag
-    context = profiler if profiler is not None else contextlib.nullcontext()
-    unwrapped_model = unwrap_DDP(model)
-    with context:
-        for cur_step, ((data, label), save_values) in enumerate(train_dataloader):
-            data = data.to(device)
-            label = label.to(device)
-            optimizer.zero_grad()
-            output = model(data)
-
-            if topk == 0:
-                logits_value, _ = save_values
-                outputs_teacher = logits_value.float()
-            elif topk > 0:
-                logits_value, logits_index, _ = save_values
-                logits_index = logits_index.long()
-                logits_value = logits_value.float()
-                minor_value = (1.0 - logits_value.sum(-1, keepdim=True)
-                            ) / (num_classes - topk)
-                minor_value = minor_value.repeat_interleave(num_classes, dim=-1)
-                outputs_teacher = minor_value.scatter_(-1, logits_index, logits_value)
-            output.distiller_output = outputs_teacher
-
-            loss_value = unwrapped_model.loss(output, label)
-            loss_value.backward()
-
-            if cur_step % cfg.experiment.log_interval_step == 0:
-                metric_values = unwrapped_model.get_training_metrics(output, label, loss_value, metric_fn_map)
-                add_tensorboard_metric(tensorboard_writer, 'Train', metric_values, cur_epoch,cur_step,epoch_steps,rank)
-        
-            if cur_step in [0, epoch_steps - 1] or  cur_step % (cfg.experiment.log_interval_step * 10) == 0: # first iter, last iter and several middle iter.
-                for (name, parameter) in model.named_parameters():
-                    tensorboard_writer.add_histogram(name, parameter, cur_epoch * epoch_steps + cur_step)
-                    if parameter.requires_grad:
-                        tensorboard_writer.add_histogram("%s_Grad"%name, parameter.grad, cur_epoch * epoch_steps + cur_step)
-
-            optimizer.step()
-            if cur_epoch <= cfg.solver.warmup:
-                warmup_scheduler.step()
-            if context is profiler:
-                    context.step()
-
 class Trainer:
     ''' Trainer
 
@@ -431,7 +252,6 @@ class Trainer:
         :param num_classes: number of prediction classes
         :param resume: flag for whether resume pretrained model
         :return: validation metric. If has Earlystopping, using the best metric; Else, using the last metric.
-        :return: validation metric. If has Earlystopping, using the best metric; Else, using the last metric.
         '''
         unwrapped_model = unwrap_DDP(self._model)
         backbone = unwrapped_model.backbone if self._is_transferrable else unwrapped_model
@@ -445,9 +265,6 @@ class Trainer:
             if self._rank < 0:
                 self._optimizer.load_state_dict(state["optimizer"])
                 self._scheduler.load_state_dict(state["scheduler"])
-        if self._cfg.distiller.save_logits:
-            initial_epoch = self._cfg.distiller.save_logits_start_epoch
-
         train_dataset = train_dataloader.dataset
         for epoch in range(initial_epoch, self._cfg.solver.epochs + 1):
             start_time = time.time()
@@ -455,32 +272,8 @@ class Trainer:
             if hasattr(train_dataset, 'set_epoch'):
                 train_dataset.set_epoch(epoch)
 
-            ###### save teacher logits for distiller
-            if self._cfg.distiller.save_logits: 
-                saveLogitsEpoch(self._model, train_dataloader, epoch, epoch_steps, self._cfg,
-                                 self._device,self._rank)
-                continue
-
-            ###### check teacher logits for distiller
-            if self._cfg.distiller.check_logits: 
-                checkLogitsEpoch(self._model, train_dataloader, epoch, epoch_steps, num_classes,
-                                    self._tensorboard_writer, self._cfg, self._device, self._rank)
-                continue
-
-            if type(self._scheduler) is  torch.optim.lr_scheduler.ReduceLROnPlateau:
-                last_lr = [item['lr'] for item in self._scheduler.optimizer.state_dict()['param_groups']]
-            else:
-                last_lr = self._scheduler.get_last_lr()
-
-            print("Epoch [%s] lr: %s" % (epoch, last_lr))
-            logging.info("Epoch [%s] lr: %s" % (epoch, last_lr))
             ###### train and evaluate for on epoch
-            if self._cfg.distiller.use_saved_logits:
-                trainEpochwithLogits(self._model, self._validate_metric_fn_map, self._optimizer, train_dataloader, num_classes,
-                            self._tensorboard_writer, epoch, epoch_steps, self._cfg,
-                            self._training_profiler, self._warmup_scheduler, self._device,self._rank, self._is_transferrable)
-            else:
-                trainEpoch(self._model, self._validate_metric_fn_map, self._optimizer, train_dataloader,
+            trainEpoch(self._model, self._validate_metric_fn_map, self._optimizer, train_dataloader,
                             self._tensorboard_writer, epoch, epoch_steps, self._cfg,
                             self._training_profiler, self._warmup_scheduler, self._device,self._rank, self._is_transferrable)
             metrics_map = evaluateEpoch(backbone, self._validate_metric_fn_map, valid_dataloader,

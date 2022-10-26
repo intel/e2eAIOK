@@ -1,17 +1,16 @@
 experiment:
   project: "baselines"
-  strategy: ""
-  tag: "cifar100_vit_hg_pretrain21k"
-  model_save: "/home/vmagent/app/data/model"
+  tag: "cifar100_res50PretrainI21k"
+  model_save: "/home/vmagent/app/dataset/model"
 dataset:
   type: "cifar100"
   num_workers: 4
-  path: "/home/vmagent/app/data/dataset"
-  train_transform: "vit"
-  test_transform: "vit"
+  path: "/home/vmagent/app/dataset/dataset/cifar"
+  train_transform: "pretrainI21k"
+  test_transform: "pretrainI21k"
 model:
-  type: "vit_base_224_in21k_ft_cifar100"
-  pretrain: True
+  type: "resnet50_timm"
+  pretrain: "/home/vmagent/app/dataset/model/baselines/cifar100_res50PretrainI21k/cifar100_res50_pretrain_imagenet21k.pth"
 solver:
   batch_size: 128
   epochs: 200

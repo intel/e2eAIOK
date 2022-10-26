@@ -5,6 +5,7 @@
 import logging
 import re
 import torch
+import torch.nn as nn
 import os
 import torch.nn as nn
 

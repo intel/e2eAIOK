@@ -9,10 +9,11 @@ from torch.utils.tensorboard import SummaryWriter
 from engine_core.backbone.factory import createBackbone
 from engine_core.adapter.factory import createAdapter
 from engine_core.distiller import KD, DKD
+from engine_core.distiller.utils import logits_wrap_dataset
 from engine_core.finetunner.basic_finetunner import BasicFinetunner
 from engine_core.transferrable_model import *
 from .train import Trainer,Evaluator
-from dataset import get_dataloader
+from dataset import get_dataset, get_dataloader
 import torch.optim as optim
 from .utils import EarlyStopping,Timer, WarmUpLR
 import logging
@@ -46,14 +47,19 @@ class Task:
     def _create_dataloader(self):
         ''' create dataloader
 
-        :return: (train_loader,validate_loader,test_loader, num_data)
+        :return: (train_loader,validate_loader,test_loader, num_classes, num_data)
         '''
-        train_loader, validate_loader, test_loader, num_data, num_classes = get_dataloader(self._cfg, self._is_distributed, self._cfg.optimize.enable_ipex)
+        train_dataset, valid_dataset, test_dataset, num_classes, num_data = get_dataset(self._cfg)
+        if self._cfg.distiller.save_logits or self._cfg.distiller.use_saved_logits or self._cfg.distiller.check_logits:
+            train_dataset = logits_wrap_dataset(train_dataset, logits_path=self._cfg.distiller.logits_path, num_classes=num_classes, \
+                                            save_logits=self._cfg.distiller.save_logits, topk=self._cfg.distiller.logits_topk)
+        train_loader, validate_loader, test_loader = get_dataloader(self._cfg, \
+                            train_dataset, valid_dataset, test_dataset, self._is_distributed, self._cfg.optimize.enable_ipex)
         self._train_loader = train_loader     # may be use by other component
         self._epoch_steps = len(train_loader) # may be use by other component
         self._num_classes = num_classes 
         logging.info("epoch_steps:%s" % self._epoch_steps)
-        return train_loader, validate_loader, test_loader, num_data
+        return train_loader, validate_loader, test_loader, num_classes, num_data
     def _create_backbone(self):
         ''' create backbone model
 
@@ -97,15 +103,19 @@ class Task:
             if self._cfg.distiller.type == "kd":
                 distiller = KD(pretrained_model = teacher_model, 
                                 temperature = self._cfg.kd.temperature,
-                                is_frozen = self._cfg.distiller.teacher.is_frozen, 
-                                teacher_forward = not self._cfg.distiller.use_saved_logits,
+                                is_frozen = self._cfg.distiller.teacher.frozen, 
+                                use_saved_logits = self._cfg.distiller.use_saved_logits,
+                                topk=self._cfg.distiller.logits_topk, 
+                                num_classes=self._num_classes, 
                                 teacher_type = self._cfg.distiller.teacher.type)
             elif self._cfg.distiller.type == "DKD":
                 distiller = DKD(pretrained_model = teacher_model, 
                                 alpha = self._cfg.dkd.alpha, beta = self._cfg.dkd.beta,
                                 temperature = self._cfg.kd.temperature, warmup = self._cfg.dkd.warmup,
-                                is_frozen = self._cfg.distiller.teacher.is_frozen, 
-                                teacher_forward = not self._cfg.distiller.use_saved_logits,
+                                is_frozen = self._cfg.distiller.teacher.frozen, 
+                                use_saved_logits = self._cfg.distiller.use_saved_logits,
+                                topk=self._cfg.distiller.logits_topk, 
+                                num_classes=self._num_classes, 
                                 teacher_type = self._cfg.distiller.teacher.type)
             else:
                 logging.error("[%s] is not supported"%self._cfg.distiller.type)
@@ -207,11 +217,11 @@ class Task:
         elif self._cfg.solver.scheduler.type == "ExponentialLR":
             scheduler = optim.lr_scheduler.ExponentialLR(self._optimizer, gamma=self._cfg.solver.scheduler.lr_decay_rate)
         elif self._cfg.solver.scheduler.type == "MultiStepLR":
-            scheduler = optim.lr_scheduler.MultiStepLR(self._optimizer, milestones=self._cfg.solver.scheduler.lr_decay_states, gamma=self._cfg.solver.scheduler.lr_decay_rate)
+            scheduler = optim.lr_scheduler.MultiStepLR(self._optimizer, milestones=self._cfg.solver.scheduler.MultiStepLR.lr_decay_stages, gamma=self._cfg.solver.scheduler.lr_decay_rate)
         elif self._cfg.solver.scheduler.type == "CosineAnnealingLR":
-            scheduler = optim.lr_scheduler.CosineAnnealingLR(self._optimizer, T_max=self._cfg.solver.scheduler.T_max)
+            scheduler = optim.lr_scheduler.CosineAnnealingLR(self._optimizer, T_max=self._cfg.solver.scheduler.CosineAnnealingLR.T_max)
         elif self._cfg.solver.scheduler.type == "ReduceLROnPlateau":
-            scheduler = optim.lr_scheduler.ReduceLROnPlateau(self._optimizer, mode="max",factor=self._cfg.solver.scheduler.lr_decay_rate, patience=self._cfg.solver.scheduler.patience, \
+            scheduler = optim.lr_scheduler.ReduceLROnPlateau(self._optimizer, mode="max",factor=self._cfg.solver.scheduler.lr_decay_rate, patience=self._cfg.solver.scheduler.ReduceLROnPlateau.patience, \
                                                             verbose=True, threshold_mode='abs')
         else:
             logging.error("[%s] is not supported"%self._cfg.solver.scheduler.type)
@@ -297,10 +307,17 @@ class Task:
         Returns: validation metric. If has Earlystopping, using the best metric; Else, using the last metric.
         '''
         ######################### create components #########################
-        (train_loader, validate_loader, test_loader, num_data) = self._create_dataloader()
+        (train_loader, validate_loader, test_loader, num_classes, num_data) = self._create_dataloader()
+        distiller = self._create_distiller()
+        if distiller is not None and (self._cfg.distiller.save_logits or self._cfg.distiller.check_logits):
+            distiller.prepare_logits(train_loader, self._cfg.solver.epochs,
+                                        start_epoch=self._cfg.distiller.save_logits_start_epoch,
+                                        device = self._cfg.profiler.activities,
+                                        save_flag=self._cfg.distiller.save_logits,
+                                        check_flag=self._cfg.distiller.check_logits)
+            return
         backbone = self._create_backbone()
         finetuner = self._create_finetuner()
-        distiller = self._create_distiller()
         adapter = self._create_adapter()
         model,strategy = self._create_transfer_model(backbone, finetuner, distiller, adapter)
         is_transferrable = strategy != None 
@@ -339,7 +356,6 @@ class Task:
                 with Join([model, optimizer]):
                     val_metric = trainer.train(train_loader, validate_loader, self._epoch_steps, self._model_dir, self._num_classes, resume)
             else:
-                
                 val_metric = trainer.train(train_loader, validate_loader, self._epoch_steps, self._model_dir, self._num_classes, resume)
         ################################### test ###################################
         if test_loader is not None:

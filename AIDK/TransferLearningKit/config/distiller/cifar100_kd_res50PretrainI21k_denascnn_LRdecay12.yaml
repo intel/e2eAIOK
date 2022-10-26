@@ -10,7 +10,7 @@ dataset:
   type: "cifar100"
   num_workers: 4
   path:  "/home/vmagent/app/data/dataset"
-  train_transform: "bin"
+  train_transform: "denascnn"
 model:
   type: "denas_cnn"
 distiller:
@@ -32,9 +32,10 @@ solver:
     weight_decay: 5e-4
     momentum: 0.9
   scheduler:
-    type: "ReducelrOnPlateau"
+    type: "ReduceLROnPlateau"
     lr_decay_rate: 0.2
-    patience: 12
+    ReduceLROnPlateau:
+      patience: 12
   early_stop:
     flag: True
     tolerance_epoch: 20

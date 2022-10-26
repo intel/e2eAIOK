@@ -25,7 +25,9 @@ def createBackbone(backbone_name, num_classes, pretrain = None, **kwargs):
     :return: a backbone model
     '''
     backbone_name = backbone_name.lower()
-    pretrained_flag = isinstance(pretrain,bool) and pretrain == True
+    # pretrained_flag = isinstance(pretrain,bool) and pretrain == True
+    pretrain = None if pretrain == "" else pretrain
+    pretrained_flag = (pretrain is not None) and (pretrain.lower() == "true")
 
     if backbone_name == 'lenet':
         model = LeNet(num_classes)#.cuda()
@@ -70,8 +72,9 @@ def createBackbone(backbone_name, num_classes, pretrain = None, **kwargs):
         raise NotImplementedError("[%s] is not supported"%backbone_name)
 
     if not pretrained_flag:
-        model.apply(initWeights)
-        if pretrain:
+        if pretrain is None:
+            model.apply(initWeights)
+        else:
             if not os.path.exists(pretrain):
                 raise RuntimeError(f"Can not find {pretrain}!")
             print(f"load pretrained model at {pretrain}")

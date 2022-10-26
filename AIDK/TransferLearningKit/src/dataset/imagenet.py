@@ -3,7 +3,6 @@ import numpy as np
 import torch
 from torchvision.datasets import ImageFolder
 import torchvision.transforms as transforms
-from .utils.dataset_wrapper import DatasetWrapper
 
 mean=[0.485, 0.456, 0.406]
 std=[0.229, 0.224, 0.225]
@@ -43,14 +42,6 @@ def get_imagenet_dataset(cfg):
     test_set, test_loader = get_imagenet_val_loader(cfg)
 
     num_classes = 1000
-
-    if cfg.distiller.save_logits or cfg.distiller.use_saved_logits or cfg.distiller.check_logits:
-        train_set = DatasetWrapper(train_set,
-                                    logits_path=cfg.distiller.logits_path,
-                                    num_classes = num_classes,
-                                    topk=cfg.distiller.logits_topk,
-                                    write=cfg.distiller.save_logits,
-                                    )
     
     return train_set, test_set, test_set, num_classes
 

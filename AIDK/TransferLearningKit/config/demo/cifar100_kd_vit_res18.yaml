@@ -9,7 +9,7 @@ experiment:
 dataset:
   type: "cifar100"
   num_workers: 4
-  path: "/home/vmagent/app/data/dataset"
+  path: "/home/vmagent/app/data/dataset/cifar"
   train_transform: "vit_train"
   test_transform: "vit_train"
 model:
@@ -18,7 +18,7 @@ distiller:
   type: "kd"
   teacher: 
       type: "vit_base_224_in21k_ft_cifar100"
-      pretrain: "pretrain"
+      pretrain: "true"
   use_saved_logits: True
   logits_path: "/home/vmagent/app/data/model/demo/cifar100_vit/logits"
   logits_topk: 0

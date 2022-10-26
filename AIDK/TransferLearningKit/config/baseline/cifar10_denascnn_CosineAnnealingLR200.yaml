@@ -18,7 +18,8 @@ solver:
     weight_decay: 5e-4
     momentum: 0.9
   scheduler:
-    type: "CosineAnnealinglr"
-    T_max: 200
+    type: "CosineAnnealingLR"
+    CosineAnnealingLR:
+      T_max: 200
   early_stop:
     flag: False

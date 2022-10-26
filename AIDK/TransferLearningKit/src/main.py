@@ -61,37 +61,31 @@ def main(args, trial):
            cfg.solver.epochs)
     )
     #################### dir conguration ################
-    prefix = "%s%s%s%s_%s"%(cfg.model.type,
+    prefix = "%s%s%s%s%s"%(cfg.model.type,
                      "_%s"%cfg.experiment.strategy if cfg.experiment.strategy else "",
+                     "_%s"%cfg.dataset.type,
                      "_trial%s" % trial.number if trial is not None else "",
-                     "_rank%s" % rank if is_distributed else "",
-                     int(time.time())
-                    )
+                     "_rank%s" % rank if is_distributed else "")
+    prefix_time = "%s_%s"%(prefix,int(time.time()))
     root_dir = os.path.join(cfg.experiment.model_save, cfg.experiment.project,cfg.experiment.tag)
     LOG_DIR = os.path.join(root_dir,"log")                      # to save training log
     PROFILE_DIR = os.path.join(root_dir,"profile")              # to save profiling result
-    model_save_path = os.path.join(root_dir,"%s%s%s%s%s"%(
-        cfg.model.type,
-        "_%s"%cfg.experiment.strategy if cfg.experiment.strategy else "",
-        "_%s"%cfg.dataset.type,
-        "_trial%s" % trial.number if trial is not None else "",
-        "_rank%s" % rank if is_distributed else "",
-    ))
-    cfg.experiment.tensorboard_dir = os.path.join(root_dir,"tensorboard_log","run_%s"%prefix)  # to save tensorboard log
+    model_save_path = os.path.join(root_dir, prefix)
+    cfg.experiment.tensorboard_dir = os.path.join(cfg.experiment.tensorboard_dir,"%s%s"%(cfg.experiment.tag,prefix))  # to save tensorboard log
     os.makedirs(LOG_DIR,exist_ok=True)
     os.makedirs(PROFILE_DIR,exist_ok=True) 
     os.makedirs(cfg.experiment.tensorboard_dir,exist_ok=True)
     os.makedirs(model_save_path,exist_ok=True)
  
-    cfg.profiler.trace_file_training = os.path.join(PROFILE_DIR,"training_profile_%s"%prefix)
-    cfg.profiler.trace_file_inference = os.path.join(PROFILE_DIR,"test_profile_%s"%prefix)
+    cfg.profiler.trace_file_training = os.path.join(PROFILE_DIR,"training_profile_%s"%prefix_time)
+    cfg.profiler.trace_file_inference = os.path.join(PROFILE_DIR,"test_profile_%s"%prefix_time)
     
     #################### logging conguration ################
     # Remove all handlers associated with the root logger object.
     for handler in logging.root.handlers[:]: 
         logging.root.removeHandler(handler)
     
-    log_filename = os.path.join(LOG_DIR, "%s.txt"%prefix)
+    log_filename = os.path.join(LOG_DIR, "%s.txt"%prefix_time)
     logging.basicConfig(filename=log_filename, level=logging.INFO,
                         format='%(asctime)s %(levelname)s [%(filename)s %(funcName)s %(lineno)d]: %(message)s',
                         datefmt='%m/%d/%Y %I:%M:%S %p',
@@ -104,12 +98,6 @@ def main(args, trial):
         cfg.solver.optimizer.lr = trial.suggest_float("lr", 0.001, 0.1, log=True)
         cfg.finetuner.learning_rate = trial.suggest_float("lr_finetuned", 0.001, 0.1, log=True) 
         cfg.solver.optimizer.weight_decay = trial.suggest_float("weight_decay", 0.0001, 0.1,log=True)
-    ##################### distiller logits conguration ################
-    if cfg.distiller.save_logits:
-        cfg.experiment.strategy = ""
-        cfg.distiller.type = ""
-        cfg.model.type = cfg.distiller.teacher.type
-        cfg.model.pretrain = cfg.distiller.teacher.pretrain
     if int(cfg.distiller.save_logits) + int(cfg.distiller.use_saved_logits) + int(cfg.distiller.check_logits) >=2:
         raise RuntimeError("Can not save teacher logits, train students with logits or check logits together!")
     if cfg.distiller.save_logits:

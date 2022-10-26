@@ -18,8 +18,9 @@ solver:
     weight_decay: 5e-4
     momentum: 0.9
   scheduler:
-    type: "MultiSteplr"
+    type: "MultiStepLR"
     lr_decay_rate: 0.2
-    lr_decay_stages: [60, 120, 160]
+    MultiStepLR:
+      lr_decay_stages: [60, 120, 160]
   early_stop:
     flag: False

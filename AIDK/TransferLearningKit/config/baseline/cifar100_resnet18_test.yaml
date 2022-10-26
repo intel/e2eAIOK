@@ -19,7 +19,8 @@ solver:
   scheduler:
     type: "ReduceLROnPlateau"
     lr_decay_rate: 0.2
-    patience: 10
+    ReduceLROnPlateau:
+      patience: 10
   early_stop:
     flag: True
     tolerance_epoch: 15

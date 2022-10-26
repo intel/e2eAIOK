@@ -24,7 +24,7 @@ def channels_last_collate(batch):
     
     return data, target
 
-def get_dataloader(cfg,is_distributed=False,enable_ipex=False):
+def get_dataset(cfg):
     if cfg.dataset.type == "USPS_vs_MNIST":
         train_dataset, valid_dataset, test_dataset, num_classes = get_usps_vs_minist_dataset(cfg=cfg)
     elif cfg.dataset.type == "cifar100":
@@ -45,7 +45,9 @@ def get_dataloader(cfg,is_distributed=False,enable_ipex=False):
     logging.info("test_dataset:" + str(test_dataset))
     logging.info("num_classes:" + str(num_classes))
     logging.info("num_data:" + str(num_data))
+    return train_dataset, valid_dataset, test_dataset, num_classes, num_data
 
+def get_dataloader(cfg,train_dataset, valid_dataset, test_dataset, is_distributed=False,enable_ipex=False):
     train_loader_kwargs = {
         'dataset' : train_dataset,
         'batch_size' : cfg.solver.batch_size,
@@ -81,6 +83,6 @@ def get_dataloader(cfg,is_distributed=False,enable_ipex=False):
     validate_loader = DataLoader(**validate_loader_kwargs)
     test_loader = DataLoader(**test_loader_kwargs)
 
-    return train_loader, validate_loader, test_loader, num_data, num_classes
+    return train_loader, validate_loader, test_loader
 
 

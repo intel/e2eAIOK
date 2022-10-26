@@ -2,7 +2,6 @@ import os
 import numpy as np
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
-from .utils.dataset_wrapper import DatasetWrapper
 
 CIFAR10_TRAIN_MEAN = (0.4914, 0.4822, 0.4465)
 CIFAR10_TRAIN_STD = (0.2023, 0.1994, 0.2010)
@@ -70,14 +69,6 @@ def get_cifar10_dataset(cfg):
     test_set = datasets.CIFAR10(root=data_folder, train=False, download=True, transform=test_transform)
 
     num_classes = 10
-
-    if cfg.distiller.save_logits or cfg.distiller.use_saved_logits or cfg.distiller.check_logits:
-        train_set = DatasetWrapper(train_set,
-                                    logits_path=cfg.distiller.logits_path,
-                                    num_classes = num_classes,
-                                    topk=cfg.distiller.logits_topk,
-                                    write=cfg.distiller.save_logits,
-                                    )
 
     return train_set, test_set, test_set, num_classes
 

@@ -21,11 +21,11 @@ distiller:
   type: "kd"
   teacher: 
       type: "resnet50_timm"
-      pretrain: "/home/vmagent/app/data/model/baselines/cifar10_res50_pretrainI21k/pretrain_resnet50_cifar10.pth_epoch_15"
+      pretrain: "/home/vmagent/app/data/model/baselines/cifar10_res50PretrainI21k/pretrain_resnet50_cifar10.pth_epoch_15"
   # save_logits: True
   use_saved_logits: True
   # check_logits: True
-  logits_path: "/home/vmagent/app/data/model/distiller/cifar10_kd_res50_pretrainI21k_denascnn/logits"
+  logits_path: "/home/vmagent/app/data/model/distiller/cifar10_kd_res50PretrainI21k_denascnn/logits"
   logits_topk: 0
 solver:
   batch_size: 128
@@ -36,9 +36,10 @@ solver:
     weight_decay: 5e-4
     momentum: 0.9
   scheduler:
-    type: "ReducelrOnPlateau"
+    type: "ReduceLROnPlateau"
     lr_decay_rate: 0.2
-    patience: 10
+    ReduceLROnPlateau:
+      patience: 10
   early_stop:
     flag: True
     tolerance_epoch: 15

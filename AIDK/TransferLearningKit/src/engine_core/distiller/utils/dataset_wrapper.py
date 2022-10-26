@@ -88,9 +88,9 @@ class DatasetWrapper(torch.utils.data.Dataset):
             item = self.dataset[index]
 
         if self.topk == 0:
-            return (item, (values[1], np.int32(seed)))
+            return ((item[0], (values[1], np.int32(seed))), item[1])
         elif self.topk > 0:
-            return (item, (values[1], values[2], np.int32(seed)))
+            return ((item[0], (values[1], values[2], np.int32(seed))), item[1])
         
     def _get_saved_logits(self, key: str):
         manager = self.get_manager()

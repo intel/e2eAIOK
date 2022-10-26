@@ -9,7 +9,7 @@ experiment:
 dataset:
   type: "cifar100"
   num_workers: 4
-  path: "/home/vmagent/app/data/dataset"
+  path: "/home/vmagent/app/data/dataset/cifar"
 model:
   type: "resnet18_cifar"
 distiller:
@@ -27,7 +27,8 @@ solver:
   scheduler:
     type: "ReduceLROnPlateau"
     lr_decay_rate: 0.2
-    patience: 10
+    ReduceLROnPlateau:
+      patience: 10
   early_stop:
     flag: True
     tolerance_epoch: 15

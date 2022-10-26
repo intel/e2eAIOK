@@ -707,12 +707,12 @@ class TestTransferrableModel:
         assert output.distiller_output is not None
         assert output.adapter_output is None
         ########### double input ############
-        _input = (self.input, torch.ones_like(self.input))
-        output = model(_input)
-        assert type(output) == TransferrableModelOutput
-        assert tensor_near_equal(output.backbone_output, kwargs['model'](_input[0]))
-        assert output.distiller_output is not None
-        assert output.adapter_output is None
+        # _input = (self.input, torch.ones_like(self.input))
+        # output = model(_input)
+        # assert type(output) == TransferrableModelOutput
+        # assert tensor_near_equal(output.backbone_output, kwargs['model'](_input[0]))
+        # assert output.distiller_output is not None
+        # assert output.adapter_output is None
     def test_forward_OnlyDomainAdaptionStrategy(self):
         ''' test forward with OnlyDomainAdaptionStrategy
 
@@ -951,3 +951,8 @@ class TestTransferrableModel:
                             TransferStrategy.DistillationAndDomainAdaptionStrategy]:
                 for (name,weight) in model.distiller.pretrained_model.named_parameters():
                     assert tensor_near_equal(weight,basic_weights[name])
+
+# if __name__ == "__main__":
+#     test = TestTransferrableModel()
+#     test.setup()
+#     test.test_forward_OnlyDistillationStrategy()

@@ -6,10 +6,17 @@ def show_cfg(cfg):
     dump_cfg.optimize = cfg.optimize
     dump_cfg.profiler = cfg.profiler
     dump_cfg.dataset = cfg.dataset
-    dump_cfg.source_dataset = cfg.source_dataset
-    dump_cfg.finetuner = cfg.finetuner
-    dump_cfg.distiller = cfg.distiller
-    dump_cfg.adapter = cfg.adapter
+    if cfg.finetuner.type != "":
+        dump_cfg.finetuner = cfg.finetuner
+    if cfg.distiller.type != "":
+        dump_cfg.distiller = cfg.distiller
+        if cfg.distiller.type == "kd":
+            dump_cfg.kd = cfg.kd
+        elif cfg.distiller.type == "dkd":
+            dump_cfg.type == cfg.dkd
+    if cfg.adapter.type != "":
+        dump_cfg.source_dataset = cfg.source_dataset
+        dump_cfg.adapter = cfg.adapter
     dump_cfg.solver = cfg.solver
     print(dump_cfg.dump())
 
@@ -21,12 +28,14 @@ cfg.experiment = CN()
 cfg.experiment.project = "TLK"
 cfg.experiment.tag = "default"
 cfg.experiment.strategy = ""
+
 cfg.experiment.seed = 0
 cfg.experiment.model_save = "/home/vmagent/app/data/model/"
 cfg.experiment.model_save_interval = 40
 cfg.experiment.log_interval_step = 10
-cfg.experiment.tensorboard_dir = ""
+cfg.experiment.tensorboard_dir = "/home/vmagent/app/data/tensorboard"
 cfg.experiment.tensorboard_filename_suffix = ""
+
 cfg.experiment.loss = CN()
 cfg.experiment.loss.backbone = 1.0
 cfg.experiment.loss.distiller = 0.0
@@ -51,7 +60,7 @@ cfg.profiler.trace_file_inference = ""
 cfg.dataset = CN()
 cfg.dataset.type = ""
 cfg.dataset.path = ""
-cfg.dataset.num_workers = 2
+cfg.dataset.num_workers = 1
 cfg.dataset.data_drop_last = False
 cfg.dataset.train_transform = "default"
 cfg.dataset.test_transform = "default"
@@ -64,7 +73,7 @@ cfg.dataset.test.batch_size = 128
 cfg.source_dataset = CN()
 cfg.source_dataset.type = ""
 cfg.source_dataset.path = ""
-cfg.source_dataset.num_workers = 2
+cfg.source_dataset.num_workers = 1
 cfg.source_dataset.val = CN()
 cfg.source_dataset.val.batch_size = 128
 cfg.source_dataset.test = CN()
@@ -72,8 +81,8 @@ cfg.source_dataset.test.batch_size = 128
 
 # Model
 cfg.model = CN()
-cfg.model.type = "resnet18_v2"
-cfg.model.pretrain = ""   # "", True - default pretrain model, path
+cfg.model.type = ""
+cfg.model.pretrain = ""   # "", "True" - default pretrain model, path
  
 # Finetune
 cfg.finetuner = CN()
@@ -89,9 +98,9 @@ cfg.distiller.type = ""  # Vanilla as default
 cfg.distiller.feature_size = ""
 cfg.distiller.feature_layer_name = "x"
 cfg.distiller.teacher = CN()
-cfg.distiller.teacher.type = "resnet50_v2"
+cfg.distiller.teacher.type = ""
 cfg.distiller.teacher.pretrain = ""
-cfg.distiller.teacher.is_frozen = True
+cfg.distiller.teacher.frozen = True
 cfg.distiller.save_logits = False
 cfg.distiller.use_saved_logits = False
 cfg.distiller.check_logits = False
@@ -102,14 +111,14 @@ cfg.distiller.save_logits_start_epoch = 1
 # Transfer
 cfg.adapter = CN()
 cfg.adapter.type = ""
-cfg.adapter.feature_size = 500
+cfg.adapter.feature_size = 1
 cfg.adapter.feature_layer_name = "x"
 
 # Solver
 cfg.solver = CN()
-cfg.solver.batch_size = 64
+cfg.solver.batch_size = 128
 cfg.solver.start_epoch = 1
-cfg.solver.epochs = 240
+cfg.solver.epochs = 1
 cfg.solver.warmup = 0
 
 cfg.solver.optimizer = CN()
@@ -120,10 +129,13 @@ cfg.solver.optimizer.momentum = 0.9
 
 cfg.solver.scheduler = CN()
 cfg.solver.scheduler.type = ""
-cfg.solver.scheduler.lr_decay_stages = [150, 180, 210]
 cfg.solver.scheduler.lr_decay_rate = 0.1
-cfg.solver.scheduler.T_max = 200
-cfg.solver.scheduler.patience = 10
+cfg.solver.scheduler.ReduceLROnPlateau = CN()
+cfg.solver.scheduler.ReduceLROnPlateau.patience = 10
+cfg.solver.scheduler.MultiStepLR = CN()
+cfg.solver.scheduler.MultiStepLR.lr_decay_stages = []
+cfg.solver.scheduler.CosineAnnealingLR = CN()
+cfg.solver.scheduler.CosineAnnealingLR.T_max = 10
 
 cfg.solver.early_stop = CN()
 cfg.solver.early_stop.metric = "acc"

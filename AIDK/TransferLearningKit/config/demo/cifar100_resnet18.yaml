@@ -5,7 +5,7 @@ experiment:
 dataset:
   type: "cifar100"
   num_workers: 4
-  path: "/home/vmagent/app/data/dataset"
+  path: "/home/vmagent/app/data/dataset/cifar"
 model:
   type: "resnet18_cifar"
 solver:

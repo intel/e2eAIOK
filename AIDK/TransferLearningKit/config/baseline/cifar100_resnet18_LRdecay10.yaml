@@ -1,6 +1,6 @@
 experiment:
   project: "baselines"
-  tag: "cifar100_res18_ReducelrOnPlateau"
+  tag: "cifar100_res18_ReduceLROnPlateau"
   model_save:  "/home/vmagent/app/data/model"
 dataset:
   type: "cifar100"
@@ -17,9 +17,10 @@ solver:
     weight_decay: 5e-4
     momentum: 0.9
   scheduler:
-    type: "ReducelrOnPlateau"
+    type: "ReduceLROnPlateau"
     lr_decay_rate: 0.2
-    patience: 10
+    ReduceLROnPlateau:
+      patience: 10
   early_stop:
     flag: True
     tolerance_epoch: 15

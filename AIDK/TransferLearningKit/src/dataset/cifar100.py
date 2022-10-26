@@ -2,8 +2,7 @@ import os
 import numpy as np
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
-from .utils.dataset_wrapper import DatasetWrapper
-from transformers import ViTFeatureExtractor
+# from transformers import ViTFeatureExtractor
 
 CIFAR100_TRAIN_MEAN = (0.5070751592371323, 0.48654887331495095, 0.4409178433670343)
 CIFAR100_TRAIN_STD = (0.2673342858792401, 0.2564384629170883, 0.27615047132568404)
@@ -116,14 +115,6 @@ def get_cifar100_dataset(cfg):
     test_set = datasets.CIFAR100(root=data_folder, train=False, download=True, transform=test_transform)
 
     num_classes = 100
-
-    if cfg.distiller.save_logits or cfg.distiller.use_saved_logits or cfg.distiller.check_logits:
-        train_set = DatasetWrapper(train_set,
-                                    logits_path=cfg.distiller.logits_path,
-                                    num_classes = num_classes,
-                                    topk=cfg.distiller.logits_topk,
-                                    write=cfg.distiller.save_logits,
-                                    )
 
     return train_set, test_set, test_set, num_classes
 

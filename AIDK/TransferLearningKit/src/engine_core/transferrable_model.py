@@ -129,12 +129,13 @@ class TransferrableModel(nn.Module):
     def _distillation_forward(self,x):
         ''' forward for OnlyDistillationStrategy
 
-        :param x: backbone input
+        :param x: input if not distiller.use_saved_logits; (input, save_values) if distiller.use_saved_logits
         :return: TransferrableModelOutput
         '''
-        backbone_output,others = self.backbone(x)
-        distiller_input = others[0]
-        distiller_output,distiller_others = self.distiller(distiller_input)
+        x_input = x[0] if self.distiller.use_saved_logits else x
+        backbone_output,others = self.backbone(x_input)
+        # distiller_input = others[0]
+        distiller_output,distiller_others = self.distiller(x)
         return TransferrableModelOutput(backbone_output, distiller_output,None)
 
     def _distillation_loss(self,student_output,teacher_output,student_label):
@@ -213,12 +214,14 @@ class TransferrableModel(nn.Module):
         :param x_src: source domain data
         :return:  (TransferrableModelOutput for x_tgt, TransferrableModelOutput for x_src)
         '''
-        backbone_output_src,others_src= self.backbone(x_src)
-        distiller_output_src,distiller_output_src_others = self.distiller(others_src[0])
+        x_src_input = x_src[0] if self.distiller.use_saved_logits else x_src
+        backbone_output_src,others_src= self.backbone(x_src_input)
+        distiller_output_src,distiller_output_src_others = self.distiller(x_src)
         adapter_output_src = self.adapter(others_src[1])
 
-        backbone_output_tgt,others_tgt = self.backbone(x_tgt)
-        distiller_output_tgt,distiller_output_tgt_others = self.distiller(others_tgt[0])
+        x_tgt_input = x_tgt[0] if self.distiller.use_saved_logits else x_tgt
+        backbone_output_tgt,others_tgt = self.backbone(x_tgt_input)
+        distiller_output_tgt,distiller_output_tgt_others = self.distiller(x_tgt)
         adapter_output_tgt = self.adapter(others_tgt[1])
 
         return TransferrableModelOutput(backbone_output_tgt,distiller_output_tgt,adapter_output_tgt), \
@@ -273,7 +276,6 @@ class TransferrableModel(nn.Module):
             x = x if isinstance(x,torch.Tensor) else x[0] # x may be a tuple
             return self._finetune_forward(x)
         elif self.transfer_strategy == TransferStrategy.OnlyDistillationStrategy:
-            x = x if isinstance(x, torch.Tensor) else x[0] # x may be a tuple
             return self._distillation_forward(x)
         elif self.transfer_strategy == TransferStrategy.OnlyDomainAdaptionStrategy:
             if isinstance(x,torch.Tensor):

@@ -9,14 +9,14 @@ experiment:
 dataset:
   type: "cifar100"
   num_workers: 4
-  path: "/home/vmagent/app/data/dataset"
+  path: "/home/vmagent/app/data/dataset/cifar"
   train_transform: "denascnn"
 model:
   type: "resnet18_cifar"
 distiller:
   type: "kd"
   teacher: 
-      type: "resnet50_timm"
+      type: "resnet50"
       pretrain: "/home/vmagent/app/data/model/demo/cifar100_res50/cifar100_res50_pretrain_imagenet21k.pth"
   use_saved_logits: True
   logits_path: "/home/vmagent/app/data/model/demo/cifar100_res50/logits"
