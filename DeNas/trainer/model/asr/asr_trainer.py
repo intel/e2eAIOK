@@ -9,8 +9,9 @@ import logging
 import time
 import yaml
 import sentencepiece as sp
+import torch.distributed as dist
 
-from asr.data.dataio.dataloader import make_dataloader
+from asr.data.dataio.dataloader import get_dataloader, make_dataloader
 from asr.data.dataio.dataset import dataio_prepare
 from asr.utils.utils import check_gradients, update_average, create_experiment_directory, init_log
 from asr.utils.parameter_transfer import load_torch_model, load_spm
@@ -23,6 +24,7 @@ from asr.utils.metric_stats import ErrorRateStats
 from trainer.TorchTrainer import BaseTrainer
 from trainer.model.asr.asr_model_builder import ASRModelBuilder
 from trainer.model.asr.init_asr_parser import parse_args
+import extend_distributed as ext_dist
 
 class ASRTrainer(BaseTrainer):
     def __init__(self, args):
@@ -31,6 +33,11 @@ class ASRTrainer(BaseTrainer):
             self.hparams = yaml.safe_load(f)
         print(F"ASR args:{self.args}")
         torch.manual_seed(self.args.seed)
+        if self.args.distributed_launch or (int(os.environ.get('WORLD_SIZE', 1)) > 1):
+            ext_dist.init_distributed(backend=self.args.distributed_backend)
+            world_size = dist.get_world_size()
+        else:
+            world_size = 1
         init_log(self.args.distributed_launch)
         self.model_builder = ASRModelBuilder(self.args)
 
@@ -151,8 +158,10 @@ class ASRTrainer(BaseTrainer):
         model = self.model_builder.create_model(self.hparams)
         train_dataloader_opts = hparams["train_dataloader_opts"]
         valid_dataloader_opts = hparams["valid_dataloader_opts"]
-        train_dataloader = make_dataloader(train_data, 'train', self.args.distributed_launch, **hparams["train_dataloader_opts"])   # remove checkpoint with dataloader
-        valid_dataloader = make_dataloader(valid_data, 'valid', self.args.distributed_launch, **hparams["valid_dataloader_opts"])
+        # train_dataloader = make_dataloader(train_data, 'train', self.args.distributed_launch, **hparams["train_dataloader_opts"])
+        # valid_dataloader = make_dataloader(valid_data, 'valid', self.args.distributed_launch, **hparams["valid_dataloader_opts"])
+        train_dataloader = get_dataloader(train_data, hparams["train_dataloader_opts"]["batch_size"], self.args.distributed_launch)
+        valid_dataloader = get_dataloader(valid_data, hparams["valid_dataloader_opts"]["batch_size"], False)
         optimizer = torch.optim.Adam(model.parameters(), lr=hparams["lr_adam"], betas=(0.9, 0.98), eps=0.000000001)
 
         scheduler = NoamScheduler(lr_initial=hparams["lr_adam"], n_warmup_steps=hparams["n_warmup_steps"])

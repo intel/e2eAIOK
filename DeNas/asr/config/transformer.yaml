@@ -4,7 +4,7 @@ ckpt_interval_minutes: 30 # save checkpoint every N min
 epochs: 60
 batch_size: &batch_size 32
 ctc_weight: 0.3
-grad_accumulation_factor: 2
+grad_accumulation_factor: 1
 max_grad_norm: 5.0
 loss_reduction: 'batchmean'
 sorting: random

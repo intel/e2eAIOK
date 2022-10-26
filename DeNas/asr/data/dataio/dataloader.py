@@ -3,6 +3,7 @@ from torch.utils.data import DataLoader
 from torch.utils.data import IterableDataset
 import logging
 from torch.utils.data import DistributedSampler
+import torch.distributed as dist
 
 from asr.data.dataio.batch import PaddedBatch
 from asr.data.dataio.dataset import DynamicItemDataset
@@ -14,6 +15,14 @@ from asr.utils.checkpoints import (
 
 
 logger = logging.getLogger(__name__)
+
+def get_dataloader(dataset, batch_size, distributed):
+    if distributed:
+        sampler = DistributedSampler(dataset, num_replicas=dist.get_world_size(), rank=dist.get_rank())
+    else:
+        sampler = None
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=(not distributed), collate_fn=PaddedBatch, drop_last=True, sampler=sampler)
+    return dataloader
 
 def make_dataloader(dataset, stage, dist, **loader_kwargs):
     if stage == 'train':
@@ -79,7 +88,7 @@ def train_loader_specifics(dataset, distributed_launch, loader_kwargs):
         elif loader_kwargs.get("batch_sampler") is None:
             # no sampler and batch-sampler
             train_sampler = DistributedSampler(
-                dataset, rank=rank, shuffle=False, drop_last=drop_last
+                dataset, num_replicas=dist.get_world_size(), rank=rank, shuffle=False, drop_last=drop_last
             )
             # with DistributedSamplerWrapper, one must disable shuffling for dataloader
             loader_kwargs["shuffle"] = False

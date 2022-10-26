@@ -19,7 +19,7 @@ def parse_args(args):
     )
     parser.add_argument(
         "--distributed_backend", type=str, default="gloo",
-        help="One of {nccl, gloo, mpi}",
+        help="One of {ccl, gloo, mpi}",
     )
     parser.add_argument(
         "--find_unused_parameters", default=False, action="store_true",

@@ -3,6 +3,9 @@ import sys
 # sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 import ast
 import torch
+import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.nn import SyncBatchNorm
 
 from asr.lib.convolution import ConvolutionFrontEnd
 from module.asr.linear import Linear
@@ -61,6 +64,12 @@ class ASRModelBuilder(BaseModelBuilder):
 
     def create_model(self, hparams):
         model = self.init_model(hparams)
+        if dist.get_world_size() > 1:
+            for name, module in model.items():
+                if any(p.requires_grad for p in module.parameters()):
+                    module = SyncBatchNorm.convert_sync_batchnorm(module)
+                    module = DDP(module)
+                    model[name] = module
         return model
 
 
