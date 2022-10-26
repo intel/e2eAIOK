@@ -976,9 +976,9 @@ index 0000000..e345dc8
 +MODEL_DIR="./resnet_imagenet_${RANDOM_SEED}"
 +
 +# train
-+horovodrun -n 2 HOROVOD_CPU_OPERATIONS=CCL CCL_ATL_TRANSPORT=mpi python imagenet_main.py 1623291220 --train_mode -data_dir /home/vmagent/app/dataset/resnet/ --model_dir $MODEL_DIR --train_epochs 1 --stop_threshold $QUALITY --batch_size 1632 --version 1 --resnet_size 50 --epochs_between_evals 1 --inter_op_parallelism_threads 2 --intra_op_parallelism_threads 2 --use_bfloat16  --enable_lars --label_smoothing=0.1 --weight_decay=0.00005  2>&1 |tee lars-1epochs_eval_every_0_epochs_global_batch_size_3264_${RANDOM_SEED}.log
++horovodrun -n 2 HOROVOD_CPU_OPERATIONS=CCL CCL_ATL_TRANSPORT=mpi python imagenet_main.py 1623291220 --train_mode -data_dir /home/vmagent/app/dataset/resnet/ --model_dir $MODEL_DIR --train_epochs 1 --stop_threshold $QUALITY --batch_size 1632 --version 1 --resnet_size 50 --epochs_between_evals 1 --inter_op_parallelism_threads 2 --intra_op_parallelism_threads 2 --enable_lars --label_smoothing=0.1 --weight_decay=0.00005  2>&1 |tee lars-1epochs_eval_every_0_epochs_global_batch_size_3264_${RANDOM_SEED}.log
 +# inference
-+horovodrun -n 2 HOROVOD_CPU_OPERATIONS=CCL CCL_ATL_TRANSPORT=mpi python imagenet_main.py 1623291220 --data_dir /home/vmagent/app/dataset/resnet/ --model_dir $MODEL_DIR --train_epochs 1 --stop_threshold $QUALITY --batch_size 1632 --version 1 --resnet_size 50 --epochs_between_evals 1 --inter_op_parallelism_threads 2 --intra_op_parallelism_threads 2 --use_bfloat16  --enable_lars --label_smoothing=0.1 --weight_decay=0.00005  2>&1 |tee lars-1epochs_eval_every_0_epochs_global_batch_size_3264_${RANDOM_SEED}.log
++horovodrun -n 2 HOROVOD_CPU_OPERATIONS=CCL CCL_ATL_TRANSPORT=mpi python imagenet_main.py 1623291220 --data_dir /home/vmagent/app/dataset/resnet/ --model_dir $MODEL_DIR --train_epochs 1 --stop_threshold $QUALITY --batch_size 1632 --version 1 --resnet_size 50 --epochs_between_evals 1 --inter_op_parallelism_threads 2 --intra_op_parallelism_threads 2 --enable_lars --label_smoothing=0.1 --weight_decay=0.00005  2>&1 |tee lars-1epochs_eval_every_0_epochs_global_batch_size_3264_${RANDOM_SEED}.log
 +
 diff --git a/Intel/benchmarks/resnet/2-nodes-16s-8376H-tensorflow/mlperf_utils/arg_parsers/parsers.py b/Intel/benchmarks/resnet/2-nodes-16s-8376H-tensorflow/mlperf_utils/arg_parsers/parsers.py
 index 4747ceb..9e3c9e0 100644
