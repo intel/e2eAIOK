@@ -4,27 +4,13 @@
 # @Time   : 7/28/2022 8:39 AM
 
 import logging
-
-from attr import has
 import torch
 import datetime, time
 import torch.nn
-from torch.nn.parallel import DistributedDataParallel
 import contextlib
 import os
 import numpy as np
 from collections.abc import Iterable
-
-def unwrap_DDP(model):
-    ''' unwarp a DDP model
-
-    :param model: a model
-    :return: the unwrapped model
-    '''
-    if type(model) is DistributedDataParallel:
-        return model.module
-    else:
-        return model
 
 def add_tensorboard_metric(tensorboard_writer,dataset_name,metric_values,cur_epoch=0,cur_step=0,epoch_steps=0,rank=-1):
     ''' add metric to tensorboard
@@ -77,7 +63,6 @@ def trainEpoch(model, metric_fn_map, optimizer, train_dataloader,
     '''
     model.train()  # set training flag
     context = profiler if profiler is not None else contextlib.nullcontext()
-    unwrapped_model = unwrap_DDP(model)
     with context:
         for (cur_step,(data, label)) in enumerate(train_dataloader):
             '''
@@ -89,16 +74,21 @@ def trainEpoch(model, metric_fn_map, optimizer, train_dataloader,
             '''
             if isinstance(data, torch.Tensor):
                 data = data.to(device)
+                label = label.to(device)
+            elif isinstance(data, Iterable):
+                assert len(data) == len(label), "data len[%s] must equal label len[%s]"%(len(data),len(label))
+                for i in range(0,len(data)):
+                    data[i] = data[i].to(device)
+                    label[i] = label[i].to(device)
             else:
-                data[0] = data[0].to(device)
-            label = label.to(device)
+                raise RuntimeError("Known data type:%s"%type(data))
             optimizer.zero_grad()
             output = model(data)
-            loss_value = unwrapped_model.loss(output, label)
+            loss_value = model.loss(output, label)
             loss_value.backward()
             if cur_step % cfg.experiment.log_interval_step == 0:
                 if is_transferrable: 
-                    metric_values = unwrapped_model.get_training_metrics(output, label, loss_value, metric_fn_map)
+                    metric_values = model.get_training_metrics(output, label, loss_value, metric_fn_map)
                 else:
                     metric_values = {"loss": loss_value}
                     for (metric_name, metric_fn) in sorted(metric_fn_map.items()):
@@ -252,16 +242,16 @@ class Trainer:
         :param num_classes: number of prediction classes
         :param resume: flag for whether resume pretrained model
         :return: validation metric. If has Earlystopping, using the best metric; Else, using the last metric.
+        :return: validation metric. If has Earlystopping, using the best metric; Else, using the last metric.
         '''
-        unwrapped_model = unwrap_DDP(self._model)
-        backbone = unwrapped_model.backbone if self._is_transferrable else unwrapped_model
+        backbone = self._model.get_backbone() if self._is_transferrable else self._model
 
         initial_epoch = self._cfg.solver.start_epoch
         if resume:
             state = torch.load(os.path.join(model_dir,"latest.pth"), map_location=self._device)
             initial_epoch = state["epoch"] + 1
             self._best_metrics_value = state["best_metric"]
-            unwrapped_model.load_state_dict(state["model"])
+            self._model.load_state_dict(state["model"])
             if self._rank < 0:
                 self._optimizer.load_state_dict(state["optimizer"])
                 self._scheduler.load_state_dict(state["scheduler"])
@@ -287,30 +277,32 @@ class Trainer:
                     self._scheduler.step(metrics_map[self._best_metric])
                 else:
                     self._scheduler.step()
-            ###### save checkpoint
-            state = {
-                "epoch": epoch,
-                "best_metric": self._best_metrics_value,
-                "model": unwrapped_model.state_dict(),
-                "optimizer": self._optimizer.state_dict() if self._rank < 0 else None,
-                "scheduler": self._scheduler.state_dict() if self._rank < 0 else None}
-            torch.save(state, os.path.join(model_dir, "latest.pth"))
-            torch.save(backbone.state_dict(), os.path.join(model_dir, "backbone_latest.pth"))
-            if epoch % self._cfg.experiment.model_save_interval == 0:
-                torch.save(state, os.path.join(model_dir, f"epoch_{epoch}.pth"))
-                torch.save(backbone.state_dict(), os.path.join(model_dir, f"backbone_epoch_{epoch}.pth"))
-            if metrics_map[self._best_metric] >= self._best_metrics_value:
-                torch.save(state, os.path.join(model_dir,"best.pth"))
-                torch.save(backbone.state_dict(), os.path.join(model_dir,"backbone_best.pth"))
-                self._best_metrics_value = metrics_map[self._best_metric]
-                print(f"Best Epoch: {epoch}")
-                logging.info(f"Best Epoch: {epoch}")
+           
+            if self._rank <= 0: # non distributed training, or rank 0  in distributed training
+                ###### save checkpoint
+                state = {
+                    "epoch": epoch,
+                    "best_metric": self._best_metrics_value,
+                    "model": self._model.state_dict(),
+                    "optimizer": self._optimizer.state_dict() if self._rank < 0 else None,
+                    "scheduler": self._scheduler.state_dict() if self._rank < 0 else None}
+                torch.save(state, os.path.join(model_dir, "latest.pth"))
+                torch.save(backbone.state_dict(), os.path.join(model_dir, "backbone_latest.pth"))
+                if epoch % self._cfg.experiment.model_save_interval == 0:
+                    torch.save(state, os.path.join(model_dir, f"epoch_{epoch}.pth"))
+                    torch.save(backbone.state_dict(), os.path.join(model_dir, f"backbone_epoch_{epoch}.pth"))
+                if metrics_map[self._best_metric] >= self._best_metrics_value:
+                    torch.save(state, os.path.join(model_dir,"best.pth"))
+                    torch.save(backbone.state_dict(), os.path.join(model_dir,"backbone_best.pth"))
+                    self._best_metrics_value = metrics_map[self._best_metric]
+                    print(f"Best Epoch: {epoch}")
+                    logging.info(f"Best Epoch: {epoch}")
 
             print(f"Epoch {epoch} took {time.time()-start_time} seconds")
             logging.info(f"Epoch {epoch} took {time.time()-start_time} seconds")
             
             ###### check early stop
-            if self._early_stopping is not None:
+            if self._rank <= 0 and self._early_stopping is not None: # non distributed training, or rank 0  in distributed training
                 self._early_stopping(metrics_map[self._best_metric], self._best_metrics_value)
                 if self._early_stopping.early_stop:
                     logging.warning("Early stop after epoch:%s, the best acc is %s" % (epoch,self._best_metrics_value))

@@ -3,7 +3,6 @@
 # @Author : Hua XiaoZhuan          
 # @Time   : 8/19/2022 10:08 AM
 import torch
-import torchvision.models
 import datetime
 from torch.utils.tensorboard import SummaryWriter
 from engine_core.backbone.factory import createBackbone
@@ -19,10 +18,9 @@ from .utils import EarlyStopping,Timer, WarmUpLR
 import logging
 from functools import partial
 from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.distributed.optim.zero_redundancy_optimizer import ZeroRedundancyOptimizer as ZeRO
-from torch.distributed.algorithms.join import Join
 from torch.profiler import profile, ProfilerActivity
 import intel_extension_for_pytorch as ipex
+from types import MethodType
 import os
 
 def trace_handler(trace_file,p):
@@ -66,7 +64,8 @@ class Task:
         :return: a backbone model
         '''    
         backbone = createBackbone(self._cfg.model.type, num_classes = self._num_classes, pretrain = self._cfg.model.pretrain)
-        set_attribute("model", backbone, "loss", self._loss)
+        # set_attribute("model", backbone, "loss", self._loss)
+        backbone.loss = MethodType(lambda obj,*args: self._loss(*args) ,backbone) # obj stands for backbone
         num_params = sum(param.numel() for param in backbone.parameters())
         self._backbone = backbone # may be use by other component
         logging.info('backbone:%s' % backbone)
@@ -165,10 +164,6 @@ class Task:
         else:
             raise NotImplementedError("[%s] is not supported"%self._cfg.experiment.strategy)
         
-        if self._is_distributed:
-            logging.info("training with DistributedDataParallel")
-            model = DDP(model)
-        logging.info("model:%s"%model)
         self._model = model # may be use by other component
         return model, strategy
     def _create_optimizer(self):
@@ -191,19 +186,12 @@ class Task:
                              'lr': self._cfg.solver.optimizer.lr}
             logging.info("[%s] params set common learning rate [%s]" % (len(remain_params), self._cfg.solver.optimizer.lr))
             parameters = [remain_params]
-        if self._is_distributed:
-            logging.info("training with DistributedDataParallel")
-            if self._cfg.solver.optimizer.type == "SGD":
-                optimizer = ZeRO(parameters, optim.SGD, weight_decay=self._cfg.solver.optimizer.weight_decay,momentum=self._cfg.solver.optimizer.momentum)
-            else:
-                logging.error("[%s] is not supported"%self._cfg.solver.optimizer.type)
-                raise NotImplementedError("[%s] is not supported"%self._cfg.solver.optimizer.type)
+     
+        if self._cfg.solver.optimizer.type == "SGD":
+            optimizer = optim.SGD(parameters,lr=self._cfg.solver.optimizer.lr, weight_decay=self._cfg.solver.optimizer.weight_decay,momentum=self._cfg.solver.optimizer.momentum)
         else:
-            if self._cfg.solver.optimizer.type == "SGD":
-                optimizer = optim.SGD(parameters,lr=self._cfg.solver.optimizer.lr, weight_decay=self._cfg.solver.optimizer.weight_decay,momentum=self._cfg.solver.optimizer.momentum)
-            else:
-                logging.error("[%s] is not supported"%self._cfg.solver.optimizer.type)
-                raise NotImplementedError("[%s] is not supported"%self._cfg.solver.optimizer.type)
+            logging.error("[%s] is not supported"%self._cfg.solver.optimizer.type)
+            raise NotImplementedError("[%s] is not supported"%self._cfg.solver.optimizer.type)
         logging.info("optimizer:%s"%optimizer)
         self._optimizer = optimizer # may be use by other component
         return optimizer
@@ -292,11 +280,14 @@ class Task:
         model_saved_path = os.path.join(self._model_dir, "backbone_best.pth")
         if os.path.exists(model_saved_path):
             logging.info("load the best trained model")
-            trained_model.load_state_dict(torch.load(model_saved_path,map_location="cpu"),strict=True)
+            state_dict = torch.load(model_saved_path,map_location="cpu")
+            torch.nn.modules.utils.consume_prefix_in_state_dict_if_present(state_dict, "module.") # remove DDP prefix
+            trained_model.load_state_dict(state_dict,strict=True)
         else:
             raise RuntimeError("Can not find [%s]"%(model_saved_path))
 
-        set_attribute("trained_model", trained_model, "loss",self._loss)
+        # set_attribute("trained_model", trained_model, "loss",self._loss)
+        trained_model.loss = MethodType(lambda obj,*args: self._loss(*args) ,trained_model) # #  obj stands for trained_model
         return trained_model
     def run(self, validate_metric_fn_map, rank, eval=False, resume=False):
         ''' Run task
@@ -322,12 +313,22 @@ class Task:
         model,strategy = self._create_transfer_model(backbone, finetuner, distiller, adapter)
         is_transferrable = strategy != None 
         optimizer = self._create_optimizer()
+        ############ ipex wrapper ##############
         if self._cfg.optimize.enable_ipex:
             model = model.to(memory_format = torch.channels_last)
             model, optimizer = ipex.optimize(model, optimizer=optimizer)
-            if is_transferrable:
-                set_attribute("backbone",model.backbone, "loss", self._loss)
-        
+            if is_transferrable: # ipex bug: some attribute is lost 
+                setattr(model.backbone, "loss", self._loss)
+        #############  DDP wrapper  ##############             
+        if self._is_distributed:
+            logging.info("training with DistributedDataParallel")
+            model = DDP(model)
+            model.loss = MethodType(lambda obj,*args: obj.module.loss(*args) ,model) #  obj stands for model, both original model and transferrable model
+            if strategy != None: # dispatch method to model.module
+                model.get_backbone = MethodType(lambda obj: obj.module.get_backbone() ,model) # obj stands for model
+                model.get_training_metrics = MethodType(lambda obj,*args: obj.module.get_training_metrics(*args) ,model) #  obj stands for model
+
+        logging.info("model:%s"%model)
         lr_scheduler = self._create_lr_scheduler()
         warmup_scheduler = self._create_warmup_lr_scheduler()
         tensorboard_writer = self._create_tensorboard_writer()
@@ -336,7 +337,7 @@ class Task:
         ######################### Evaluate #########################
         evaluator = Evaluator(validate_metric_fn_map, tensorboard_writer, self._cfg, inference_profiler, self._cfg.profiler.activities)
         logging.info("evaluator:%s" % evaluator)
-        if eval:
+        if rank <= 0 and eval: # only non-distributed training, or rank 0 in distributed training
             with Timer():
                 start = datetime.datetime.now()
                 metric_values = evaluator.evaluate(model, test_loader)
@@ -353,12 +354,11 @@ class Task:
         logging.info("trainer:%s" % trainer)
         with Timer():
             if self._is_distributed:
-                with Join([model, optimizer]):
-                    val_metric = trainer.train(train_loader, validate_loader, self._epoch_steps, self._model_dir, self._num_classes, resume)
+                val_metric = trainer.train(train_loader, validate_loader, self._epoch_steps, self._model_dir, self._num_classes, resume)
             else:
                 val_metric = trainer.train(train_loader, validate_loader, self._epoch_steps, self._model_dir, self._num_classes, resume)
         ################################### test ###################################
-        if test_loader is not None:
+        if rank <= 0 and test_loader is not None: # only non-distributed training, or rank 0 in distributed training
             if (not (self._cfg.distiller.save_logits or self._cfg.distiller.check_logits)) and ((not self._is_distributed) or (self._is_distributed and rank == 0)): # only test once
                 trained_model = self._load_trained_model()
                 with Timer():

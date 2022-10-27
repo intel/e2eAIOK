@@ -7,10 +7,7 @@ import torch.nn as nn
 import torch
 import logging
 from .adapter.adversarial.adversarial_adapter import AdversarialAdapter
-from collections import namedtuple
 import torch.fx
-from functools import partial
-
 from dataset.composed_dataset import ComposedDataset
 
 from enum import Enum
@@ -98,6 +95,12 @@ class TransferrableModel(nn.Module):
         if self.transfer_strategy == TransferStrategy.OnlyFinetuneStrategy:
             if not self.enable_target_training_label:
                 raise RuntimeError("Must enable target training label when only finetune.")
+    def get_backbone(self):
+        ''' Get backbone
+
+        :return: backbone
+        '''
+        return self.backbone
 
     def __str__(self):
         _str = 'TransferrableModel:transfer_strategy = %s, enable_target_training_label = %s\n'%(
@@ -402,20 +405,20 @@ def extract_distiller_adapter_features(model,intermediate_layer_name_for_distill
 
     return gm
 
-def set_attribute(obj_name,obj,attr_name,attr):
-    ''' set attribute for obj
+# def set_attribute(obj_name,obj,attr_name,attr):
+#     ''' set attribute for obj
 
-    :param obj_name: obj name
-    :param obj: obj
-    :param attr_name: attribute name
-    :param attr: attribute
-    :return:
-    '''
-    if not hasattr(obj, attr_name):
-        setattr(obj, attr_name, attr)
-        logging.info("Set %s for %s"%(attr_name,obj_name))
-    else:
-        logging.info("Use %s.%s"%(obj_name,attr_name))
+#     :param obj_name: obj name
+#     :param obj: obj
+#     :param attr_name: attribute name
+#     :param attr: attribute
+#     :return:
+#     '''
+#     if not hasattr(obj, attr_name):
+#         setattr(obj, attr_name, attr)
+#         logging.info("Set %s for %s"%(attr_name,obj_name))
+#     else:
+#         logging.info("Use %s.%s"%(obj_name,attr_name))
 
 def _make_transferrable(model, loss,
                         finetunner, distiller, adapter,
@@ -477,9 +480,10 @@ def _make_transferrable(model, loss,
     #################### modify output #######################
     new_model = extract_distiller_adapter_features(model,distiller_feature_layer_name,adapter_feature_layer_name)
     #################### set attribute  #################
-    set_attribute("new_model", new_model, "loss", loss)
-    set_attribute("new_model", new_model, "distiller_feature_size", distiller_feature_size)
-    set_attribute("new_model", new_model, "adapter_feature_size", adapter_feature_size)
+    # new_model.loss = MethodType(lambda obj,*args: loss(*args) ,new_model) # obj stands for new_model, conflict with IPEX(using deepcopy)
+    setattr(new_model,'loss',loss) 
+    setattr(new_model, "distiller_feature_size", distiller_feature_size)
+    setattr(new_model, "adapter_feature_size", adapter_feature_size)
     ###################### set dataset ##################
     if transfer_strategy in  [TransferStrategy.OnlyDomainAdaptionStrategy,
                               TransferStrategy.FinetuneAndDomainAdaptionStrategy,

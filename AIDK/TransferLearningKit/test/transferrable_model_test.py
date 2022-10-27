@@ -12,7 +12,7 @@ import torch
 import torchvision
 from engine_core.transferrable_model import TransferrableModel,\
     TransferStrategy,TransferrableModelOutput,TransferrableModelLoss,\
-    extract_distiller_adapter_features,set_attribute,_make_transferrable,_transferrable,ALL_STRATEGIES,\
+    extract_distiller_adapter_features,_make_transferrable,_transferrable,ALL_STRATEGIES,\
     make_transferrable_with_finetune, make_transferrable_with_knowledge_distillation,\
     make_transferrable_with_domain_adaption,make_transferrable_with_finetune_and_domain_adaption,\
     make_transferrable_with_knowledge_distillation_and_domain_adaption

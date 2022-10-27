@@ -30,9 +30,9 @@ class TestBasicDistiller:
                     transforms.ToTensor(),
                     transforms.Normalize(mean=(0.5,0.5,0.5), std=(0.5,0.5,0.5))])
         
-        dataset = datasets.CIFAR100(root="../datasets", train=False, transform=trans, download=True)
+        dataset = datasets.CIFAR100(root="/home/vmagent/app/data/dataset", train=False, transform=trans, download=True)
         dataset = Subset(dataset, torch.Tensor([i for i in range(200)]).int())
-        dataset = logits_wrap_dataset(dataset, logits_path="../datasets", num_classes=100, save_logits=save_logits, topk=0)
+        dataset = logits_wrap_dataset(dataset, logits_path="/home/vmagent/app/data/dataset", num_classes=100, save_logits=save_logits, topk=0)
         dataloader = torch.utils.data.DataLoader(dataset=dataset,batch_size=32,shuffle=False)
         return dataloader
 
