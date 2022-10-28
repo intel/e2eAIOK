@@ -145,6 +145,7 @@ class BERTAdvisor(BaseModelAdvisor):
         + f"test_file=$DATASET_DIR/test-v1.1.json " \
         + f"data_dir=$DATASET_DIR " \
         + f"num_to_evaluate=50 " \
+        + f"step_threshold={args['step_threshold']} " \
         + f"f1_threshold=90.87 " \
         + f"num_train_epochs=2 " \
         + f"max_seq_length=384 " \
@@ -195,6 +196,7 @@ class BERTAdvisor(BaseModelAdvisor):
         + f"test_file=$DATASET_DIR/test-v1.1.json " \
         + f"data_dir=$DATASET_DIR " \
         + f"num_to_evaluate=50 " \
+        + f"step_threshold={args['step_threshold']} " \
         + f"f1_threshold=90.87 " \
         + f"num_train_epochs=2 " \
         + f"max_seq_length=384 " \
