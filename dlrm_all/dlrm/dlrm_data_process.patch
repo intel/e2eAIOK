@@ -1,0 +1,820 @@
+diff --git a/dlrm_all/dlrm/data_processing/config.yaml b/dlrm_all/dlrm/data_processing/config.yaml
+new file mode 100644
+index 0000000..292ddf7
+--- /dev/null
++++ b/dlrm_all/dlrm/data_processing/config.yaml
+@@ -0,0 +1,97 @@
++
++data_preprocess:
++  hdfs_node: "10.1.8.4"
++  train_days: "0-22"
++  train_input_folder: "hdfs://10.1.8.4:9000/DLRM_DATA/"
++  test_input_folder: "hdfs://10.1.8.4:9000/DLRM_DATA/"
++  output_folder: "/mnt/DP_disk3/output"
++  spark_config:
++    app_name: "dlrm"
++    num_executors: 8
++    executor_cores: 64
++    executor_memory: 100GB
++    scala_udf_jars: "/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/python3.7/site-packages/ScalaProcessUtils/built/31/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
++    configs:
++      spark.local.dir: '/mnt/DP_disk2/pipeline/spark,/mnt/DP_disk3/pipeline/spark'
++      spark.driver.memory: '20G'
++      spark.driver.memoryOverhead: '10G'
++      spark.executor.memoryOverhead: '20G'
++      spark.driver.extraClassPath: ${data_preprocess.spark_config.scala_udf_jars}
++      spark.executor.extraClassPath: ${data_preprocess.spark_config.scala_udf_jars}
++      # spark.sql.shuffle.partitions: 40
++
++model_arguments:
++  arch_sparse_feature_size: 64
++  arch_dense_feature_size: 13
++  arch_embedding_size: "4-3-2"
++  arch_mlp_bot: "13-128-64"
++  arch_mlp_top: "256-128-1"
++  arch_interaction_op: "dot"
++  arch_interaction_itself: False
++  md_flag: False
++  md_threshold: 200
++  md_temperature: 0.3
++  md_round_dims: False
++  qr_flag: False
++  qr_threshold: 200
++  qr_operation: "mult"
++  qr_collisions: 4
++  activation_function: "relu"
++  loss_function: "bce"
++  loss_weights: "1.0-1.0"
++  loss_threshold: 0.0
++  round_targets: True
++  data_size: 1
++  num_batches: 0
++  data_generation: "dataset"
++  data_trace_file: "./input/dist_emb_j.log"
++  data_set: "terabyte"
++  raw_data_file: "$DATA_PATH/day"
++  processed_data_file: "$DATA_PATH/terabyte_processed.npz"
++  data_randomize: "total"
++  data_trace_enable_padding: False
++  max_ind_range: 40000000
++  data_sub_sample_rate: 0.0
++  num_indices_per_lookup: 10
++  num_indices_per_lookup_fixed: False
++  num_workers: 0
++  memory_map: True
++  mini_batch_size: 262144
++  nepochs: 1
++  learning_rate: 16
++  print_precision: 5
++  numpy_rand_seed: 12345
++  sync_dense_params: True
++  inference_only: False
++  save_onnx: False
++  use_gpu: False
++  dist_backend: ccl
++  print_freq: 16
++  test_freq: 800
++  test_mini_batch_size: 131072
++  test_num_workers: 0
++  print_time: True
++  debug_mode: False
++  enable_profiling: False
++  plot_compute_graph: False
++  profiling_start_iter: 50
++  profiling_num_iters: 100
++  out_dir: "."
++  save_model: "./result/"
++  load_model: ""
++  mlperf_logging: True
++  mlperf_acc_threshold: 0.0
++  mlperf_auc_threshold: 0.8025
++  mlperf_bin_loader: True
++  mlperf_bin_shuffle: True
++  lr_num_warmup_steps: 4000
++  lr_decay_start_step: 5760
++  lr_num_decay_steps: 27000
++  sparse_dense_boundary: 403346
++  bf16: True
++  use_ipex: True
++  optimizer: 1
++  lamblr: 30
++  train_data_path: /home/vmagent/app/dataset/train_data.bin
++  eval_data_path: /home/vmagent/app/dataset/test_data.bin
++  day_feature_count: /home/vmagent/app/dataset/day_fea_count.npz
+\ No newline at end of file
+diff --git a/dlrm_all/dlrm/data_processing/config_infer.yaml b/dlrm_all/dlrm/data_processing/config_infer.yaml
+new file mode 100644
+index 0000000..996e643
+--- /dev/null
++++ b/dlrm_all/dlrm/data_processing/config_infer.yaml
+@@ -0,0 +1,97 @@
++
++data_preprocess:
++  hdfs_node: "10.1.8.4"
++  train_days: "0-22"
++  train_input_folder: "hdfs://10.1.8.4:9000/DLRM_DATA/"
++  test_input_folder: "hdfs://10.1.8.4:9000/DLRM_DATA/"
++  output_folder: "/mnt/DP_disk3/output"
++  spark_config:
++    app_name: "dlrm"
++    num_executors: 8
++    executor_cores: 64
++    executor_memory: 100GB
++    scala_udf_jars: "/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/python3.7/site-packages/ScalaProcessUtils/built/31/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
++    configs:
++      spark.local.dir: '/mnt/DP_disk2/pipeline/spark,/mnt/DP_disk3/pipeline/spark'
++      spark.driver.memory: '20G'
++      spark.driver.memoryOverhead: '10G'
++      spark.executor.memoryOverhead: '20G'
++      spark.driver.extraClassPath: ${data_preprocess.spark_config.scala_udf_jars}
++      spark.executor.extraClassPath: ${data_preprocess.spark_config.scala_udf_jars}
++      # spark.sql.shuffle.partitions: 40
++
++model_arguments:
++  arch_sparse_feature_size: 64
++  arch_dense_feature_size: 13
++  arch_embedding_size: "4-3-2"
++  arch_mlp_bot: "13-128-64"
++  arch_mlp_top: "256-128-1"
++  arch_interaction_op: "dot"
++  arch_interaction_itself: False
++  md_flag: False
++  md_threshold: 200
++  md_temperature: 0.3
++  md_round_dims: False
++  qr_flag: False
++  qr_threshold: 200
++  qr_operation: "mult"
++  qr_collisions: 4
++  activation_function: "relu"
++  loss_function: "bce"
++  loss_weights: "1.0-1.0"
++  loss_threshold: 0.0
++  round_targets: True
++  data_size: 1
++  num_batches: 0
++  data_generation: "dataset"
++  data_trace_file: "./input/dist_emb_j.log"
++  data_set: "terabyte"
++  raw_data_file: "$DATA_PATH/day"
++  processed_data_file: "$DATA_PATH/terabyte_processed.npz"
++  data_randomize: "total"
++  data_trace_enable_padding: False
++  max_ind_range: 40000000
++  data_sub_sample_rate: 0.0
++  num_indices_per_lookup: 10
++  num_indices_per_lookup_fixed: False
++  num_workers: 0
++  memory_map: True
++  mini_batch_size: 262144
++  nepochs: 1
++  learning_rate: 16
++  print_precision: 5
++  numpy_rand_seed: 12345
++  sync_dense_params: True
++  inference_only: False
++  save_onnx: False
++  use_gpu: False
++  dist_backend: ccl
++  print_freq: 16
++  test_freq: 800
++  test_mini_batch_size: 131072
++  test_num_workers: 0
++  print_time: True
++  debug_mode: False
++  enable_profiling: False
++  plot_compute_graph: False
++  profiling_start_iter: 50
++  profiling_num_iters: 100
++  out_dir: "."
++  save_model: ""
++  load_model: "./result/"
++  mlperf_logging: True
++  mlperf_acc_threshold: 0.0
++  mlperf_auc_threshold: 0.8025
++  mlperf_bin_loader: True
++  mlperf_bin_shuffle: True
++  lr_num_warmup_steps: 4000
++  lr_decay_start_step: 5760
++  lr_num_decay_steps: 27000
++  sparse_dense_boundary: 403346
++  bf16: True
++  use_ipex: True
++  optimizer: 1
++  lamblr: 30
++  train_data_path: /home/vmagent/app/dataset/train_data.bin
++  eval_data_path: /home/vmagent/app/dataset/test_data.bin
++  day_feature_count: /home/vmagent/app/dataset/day_fea_count.npz
+\ No newline at end of file
+diff --git a/dlrm_all/dlrm/data_processing/convert_to_binary.py b/dlrm_all/dlrm/data_processing/convert_to_binary.py
+deleted file mode 100644
+index 66462ac..0000000
+--- a/dlrm_all/dlrm/data_processing/convert_to_binary.py
++++ /dev/null
+@@ -1,222 +0,0 @@
+-import logging
+-from timeit import default_timer as timer
+-import os, sys
+-import numpy as np
+-import pandas as pd
+-import subprocess
+-import argparse
+-from math import ceil
+-import shutil
+-
+-###############################################
+-# !!!put HDFS NODE here, empty won't proceed!!!
+-HDFS_NODE = ""
+-###############################################
+-
+-LABEL_COL = f"_c0"
+-INT_COLS = [f"_c{i}" for i in list(range(1, 14))]
+-CAT_COLS = [f"_c{i}" for i in list(range(14, 40))]
+-sorted_column_name = [f"_c{i}" for i in list(range(0, 40))]
+-path_prefix = f"hdfs://{HDFS_NODE}:9000"
+-output_folder = "/home/vmagent/app/dataset/criteo/output"
+-current_path = "/home/vmagent/app/dataset/criteo/output"
+-
+-def process(files, output_name):
+-    os.makedirs(output_folder, exist_ok=True)
+-    output_name = f"{output_folder}/{output_name}"
+-    if os.path.exists(output_name):
+-        print(f"{output_name} exists, skip this process")
+-        return
+-    with open(output_name, "wb") as wfd:
+-        for filename in files:
+-            t11 = timer()
+-            if path_prefix.startswith("hdfs://"):
+-                local_folder = os.getcwd()
+-                if not os.path.exists(f"{local_folder}/{filename}"):
+-                    print(f"Start to Download {filename} from HDFS to {local_folder}")
+-                    process = subprocess.Popen(["/home/hadoop-3.3.1/bin/hdfs", "dfs", "-get", f"{path_prefix}/{current_path}/{filename}"])
+-                    process.wait()
+-            else:
+-                local_folder = current_path
+-            print(f"Start to convert parquet files to numpy binary")
+-            pdf = pd.read_parquet(f"{local_folder}/{filename}")
+-            pdf[LABEL_COL] = pdf[LABEL_COL].astype(np.int32)
+-            pdf[INT_COLS] = pdf[INT_COLS].astype(np.int32)
+-            pdf[CAT_COLS] = pdf[CAT_COLS].astype(np.int32)
+-            # pdf[LABEL_COL] = pdf[LABEL_COL].fillna(0).astype(np.int32)
+-            # pdf[INT_COLS] = pdf[INT_COLS].fillna(0).astype(np.int32)
+-            # pdf[CAT_COLS] = pdf[CAT_COLS].fillna(0).astype(np.int32)
+-            pdf = pdf[sorted_column_name]
+-            pdf= pdf.to_records(index=False)
+-            pdf= pdf.tobytes()
+-            print(f"Start to write binary to {output_name}")
+-            wfd.write(pdf)
+-            if path_prefix.startswith("hdfs://"):
+-                print(f"Remove downloaded {local_folder}/{filename}")
+-                shutil.rmtree(f"{local_folder}/{filename}")
+-            t12 = timer()
+-            print(f"Convert {filename} to binary completed, took {(t12 - t11)} secs")
+-
+-def concat_days(input_name, output_name, idx):
+-    print(f"Start Final Merge for {output_name}")
+-    #input_name = f"{current_path}/bin/train_data.bin"
+-    with open(output_name, "wb") as wfd:
+-        for part_i in range(idx):
+-            t1 = timer()
+-            with open(f"{input_name}.{part_i}", 'rb') as fd:
+-                shutil.copyfileobj(fd, wfd)
+-            #os.remove(f"{output_name}.{part_i}")
+-            t2 = timer()
+-            print(f"Done copy {input_name}.{part_i} file, took " + "%.3f secs" % (t2 - t1))
+-
+-def merge_days(input_name, output_name, idx):
+-    print(f"Start Final Merge for {output_name}")
+-    # we will randomly choose one row from each file to merge
+-    # use round robin
+-    bytes_per_feature = 4
+-    tot_fea = 40
+-    bytes_per_row = (bytes_per_feature * tot_fea)
+-    cache_num_row = 262144 * 40
+-    cur_row = 0
+-    
+-    sizes = [int(int(os.stat(f"{input_name}.{part_i}").st_size)/bytes_per_row) for part_i in range(idx)]
+-    print(sizes)
+-    max_len = np.max(sizes)
+-    opened_fd = [open(f"{input_name}.{part_i}", 'rb') for part_i in range(idx)]
+-    target_row = max_len
+-    total_round = ceil(target_row / cache_num_row)
+-    stop = False
+-
+-    def ranout(cache):
+-        for c in cache:
+-            if c != None:
+-                return False
+-        return True
+-
+-    with open(output_name, "wb") as wfd:
+-        cache = [None for _ in range(idx)]
+-        round_i = 0
+-        while not stop:
+-            t1 = timer()
+-            print("Loading cache ...")
+-            max_to_read_row = 0
+-            for part_i in range(idx):
+-                to_read_row = min(cache_num_row, sizes[part_i] - cur_row)
+-                max_to_read_row = max(max_to_read_row, to_read_row)
+-                if to_read_row > 0:
+-                    print(f"day_{part_i} to_read_row is {to_read_row}")
+-                    cache[part_i] = opened_fd[part_i].read(bytes_per_row * to_read_row)
+-                else:
+-                    cache[part_i] = None
+-            if ranout(cache):
+-                stop = True
+-                break
+-            max_to_read_row = min(max_to_read_row, cache_num_row)
+-            if max_to_read_row < cache_num_row:
+-                print("Last round of copy")
+-            end_cache_row = cur_row + max_to_read_row
+-            print(f"Writing to {output_name} {idx*cur_row/262144} to {idx*end_cache_row/262144} ...")
+-            for i in range(cur_row, end_cache_row):
+-                start = (i - cur_row) * bytes_per_row
+-                end = start + bytes_per_row
+-                for part_i in range(idx):
+-                    if cache[part_i] == None:
+-                        continue
+-                    if i >= sizes[part_i]:
+-                        continue
+-                    wfd.write(cache[part_i][start:end])
+-            t2 = timer()
+-            round_i += 1
+-            cur_row = end_cache_row
+-            print(f"Done copy {round_i}/{total_round} from all file, took " + "%.3f secs" % (t2 - t1))
+-            if end_cache_row >= target_row:
+-                stop = True
+-
+-def post_process(process_type, mp):
+-    print(f"multi process is {mp}")
+-    t0 = timer()
+-    if process_type == "train":
+-        # 1 merge partial output
+-        num_part = 23
+-        # 3.1 create partial output
+-        start = 0
+-        end = start
+-        step = 1
+-        idx = start
+-        pool = []
+-        train_files = [f"dlrm_categorified_day_{i}" for i in range(0, (num_part + 1))]
+-        output_name = "train_data.bin"
+-        while end != num_part:
+-            end = start + step
+-            print(f"Create subprocess {idx} for {output_name}[{start}:{end}], total {num_part}")
+-            src_files_list = train_files[start:end]
+-            p_output_name = f"{output_name}.{idx}"
+-            pool.append(subprocess.Popen(["python", "convert_to_binary.py", "-p", f"{src_files_list}", "-o", f"{p_output_name}"]))
+-            idx += 1
+-            start = end
+-            if len(pool) >= mp or end == num_part:
+-                for p in pool:
+-                    p.wait()
+-                pool = []
+-        t1 = timer()
+-        print(f"All subprocess for {output_name} completed, took " +  "%.3f secs" % (t1 - t0))
+-      
+-    elif process_type == "test":
+-        p_files = ['dlrm_categorified_test']
+-        output_name = "test_data.bin"
+-        process(p_files, output_name)
+-    else:
+-        p_files = ["dlrm_categorified_valid"]
+-        output_name = "valid_data.bin"
+-        process(p_files, output_name)
+-
+-    t_end = timer()
+-    print(f"Completed for {output_name}, took " +  "%.3f secs" % (t_end - t0))
+-
+-def process_dicts():
+-    print("Start to generate day_fea_count.npz")
+-    if path_prefix.startswith("hdfs://"):
+-        local_folder = os.getcwd()
+-        filename = f"dicts"
+-        print(f"Start to Download {filename} from HDFS to {local_folder}")
+-        process = subprocess.Popen(["/home/hadoop-3.3.1/bin/hdfs", "dfs", "-get", f"{path_prefix}/{current_path}/{filename}"])
+-        process.wait()
+-    feat_dim_final = []
+-    for name in CAT_COLS:
+-        print(f"Get dimension of {name}")
+-        c = pd.read_parquet(f"{local_folder}/dicts/{name}")
+-        feat_dim_final.append(c.shape[0])
+-    print(feat_dim_final)
+-    np.savez(open(f"{output_folder}/day_fea_count.npz", "wb"), counts=np.array(feat_dim_final))
+-    
+-def main(settings):
+-    if settings.partitioned_file:
+-        p_files = eval(settings.partitioned_file)
+-        process(p_files, settings.output_name)
+-    else:
+-        t1 = timer()
+-        process_dicts()
+-
+-        print("Start to convert train/valid/test")
+-        post_process("train", int(settings.multi_process))
+-        post_process("test", 1)
+-        post_process("valid", 1)
+-
+-        input_name = f"{output_folder}/train_data.bin"
+-        output_name = f"{current_path}/train_data.bin"
+-        merge_days(input_name, output_name, 23)
+-    
+-        t3 = timer()
+-        print(f"Total process time is {(t3 - t1)} secs")
+-
+-def parse_args(args):
+-    parser = argparse.ArgumentParser()
+-    parser.add_argument('-o', '--output_name')
+-    parser.add_argument('-p', '--partitioned_file')
+-    parser.add_argument('-mp', '--multi_process', default=6)
+-    return parser.parse_args(args)
+-    
+-if __name__ == "__main__":
+-    input_args = parse_args(sys.argv[1:])
+-    main(input_args)
+-    
+diff --git a/dlrm_all/dlrm/data_processing/convert_to_parquet.py b/dlrm_all/dlrm/data_processing/convert_to_parquet.py
+index c14cd7a..a018c2b 100644
+--- a/dlrm_all/dlrm/data_processing/convert_to_parquet.py
++++ b/dlrm_all/dlrm/data_processing/convert_to_parquet.py
+@@ -8,13 +8,9 @@ from pyspark import *
+ from pyspark.sql import *
+ from pyspark.sql.functions import *
+ from pyspark.sql.types import *
+-import numpy as np
+-import pandas as pd
+-
+-###############################################
+-# !!!put HDFS NODE here, empty won't proceed!!!
+-HDFS_NODE = ""
+-###############################################
++import raydp
++import yaml
++import argparse
+ 
+ # Define Schema
+ LABEL_COL = 0
+@@ -25,48 +21,50 @@ int_fields = [StructField('_c%d' % i, IntegerType()) for i in INT_COLS]
+ str_fields = [StructField('_c%d' % i, StringType()) for i in CAT_COLS]
+ schema = StructType(label_fields + int_fields + str_fields)
+ 
+-
+-def main(hdfs_node):
++def main(data_config):
+     import os
+     host_name = os.uname()[1]
+     print(host_name)
++    hdfs_node = data_config["hdfs_node"]
+     path_prefix = f"hdfs://{hdfs_node}:9000"
+-    current_path = "/home/vmagent/app/dataset/criteo/output/"
+-    csv_folder = "/home/vmagent/app/dataset/criteo/raw_data/"
+-
+-    scala_udf_jars = "/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/python3.7/site-packages/ScalaProcessUtils/built/31/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
++    train_input_folder = data_config["train_input_folder"]
++    test_input_folder = data_config["test_input_folder"]
++    output_folder = data_config["output_folder"]
++    spark_config = data_config["spark_config"]
++    train_days = data_config["train_days"]
+ 
+     ##### 2. Start spark and initialize data processor #####
+     t1 = timer()
+-    spark = SparkSession.builder.master(f'spark://{host_name}:7077')\
+-        .appName("DLRM")\
+-        .config("spark.driver.memory", "20G")\
+-        .config("spark.driver.memoryOverhead", "10G")\
+-        .config("spark.executor.instances", "4")\
+-        .config("spark.executor.cores", "16")\
+-        .config("spark.executor.memory", "100G")\
+-        .config("spark.executor.memoryOverhead", "20G")\
+-        .config("spark.driver.extraClassPath", f"{scala_udf_jars}")\
+-        .config("spark.executor.extraClassPath", f"{scala_udf_jars}")\
+-        .getOrCreate()
++    import ray
++    ray.init(address="auto")
++    spark = raydp.init_spark(
++            app_name=spark_config["app_name"],
++            num_executors=spark_config["num_executors"],
++            executor_cores=spark_config["executor_cores"],
++            executor_memory=spark_config["executor_memory"],
++            placement_group_strategy="SPREAD",
++            configs=spark_config["configs"])
+     spark.sparkContext.setLogLevel("ERROR")
+-    proc = DataProcessor(spark, path_prefix, current_path=current_path, shuffle_disk_capacity="800GB", spark_mode='standalone')
++    proc = DataProcessor(spark, path_prefix, current_path=output_folder, shuffle_disk_capacity="800GB", spark_mode='standalone')
+ 
+     #############################
+     # 1. convert csv to parquet
+     #############################
+-    train_files = ["day_%d" % i for i in range(0, 23)]
++    start, end = train_days.split("-")
++    train_range = list(range(int(start), int(end) + 1))
++    train_files = ["day_"+str(i) for i in train_range]
+     for filename in train_files:
+         t11 = timer()
+-        file_name = f"file://{csv_folder}{filename}"
++        file_name = f"{train_input_folder}{filename}"
+         train_df = spark.read.schema(schema).option('sep', '\t').csv(file_name)
+         train_df = train_df.withColumn("monotonically_increasing_id", monotonically_increasing_id())
+         train_df = proc.transform(train_df, name=f"dlrm_parquet_train_{filename}")
+         t12 = timer()
+         print(f"Convert {filename} to parquet completed, took {(t12 - t11)} secs")
++    
+ 
+     import subprocess
+-    process = subprocess.Popen(["sh", "raw_test_split.sh", csv_folder])
++    process = subprocess.Popen(["bash", "../data_processing/raw_test_split.sh", test_input_folder])
+     t11 = timer()
+     process.wait()
+     t12 = timer()
+@@ -74,7 +72,7 @@ def main(hdfs_node):
+ 
+     t11 = timer()
+     test_files = ["test/day_23"]
+-    test_file_names = [f"file://{csv_folder}{filename}" for filename in test_files]
++    test_file_names = [f"{test_input_folder}{filename}" for filename in test_files]
+     test_df = spark.read.schema(schema).option('sep', '\t').csv(test_file_names)
+     test_df = test_df.withColumn("monotonically_increasing_id", monotonically_increasing_id())
+     test_df = proc.transform(test_df, name="dlrm_parquet_test")
+@@ -83,7 +81,7 @@ def main(hdfs_node):
+ 
+     t11 = timer()
+     valid_files = ["validation/day_23"]
+-    valid_file_names = [f"file://{csv_folder}{filename}" for filename in valid_files]
++    valid_file_names = [f"{test_input_folder}{filename}" for filename in valid_files]
+     valid_df = spark.read.schema(schema).option('sep', '\t').csv(valid_file_names)
+     valid_df = valid_df.withColumn("monotonically_increasing_id", monotonically_increasing_id())
+     valid_df = proc.transform(valid_df, name="dlrm_parquet_valid")
+@@ -95,8 +93,12 @@ def main(hdfs_node):
+ 
+ 
+ if __name__ == "__main__":
+-    if HDFS_NODE == "":
+-        print("Please add correct HDFS_NODE name in this file, or this script won't be able to process")
+-    else:
+-        main(HDFS_NODE)
++    parser = argparse.ArgumentParser(description='manual to this script')
++    parser.add_argument('--config_path', type=str, default = None)
++    args = parser.parse_args()
++
++    with open(args.config_path, "r") as f:
++        config = yaml.safe_load(f)
++        data_config = config["data_preprocess"]
++        main(data_config)
+     
+diff --git a/dlrm_all/dlrm/data_processing/data_info.txt b/dlrm_all/dlrm/data_processing/data_info.txt
+new file mode 100644
+index 0000000..24fbce4
+--- /dev/null
++++ b/dlrm_all/dlrm/data_processing/data_info.txt
+@@ -0,0 +1 @@
++{"train_data": "hdfs://10.1.8.4:9000/mnt/DP_disk3/output/train", "test_data": "hdfs://10.1.8.4:9000/mnt/DP_disk3/output/dlrm_categorified_test", "val_data": "hdfs://10.1.8.4:9000/mnt/DP_disk3/output/dlrm_categorified_valid", "model_size": {"_c14": 39884406, "_c15": 39043, "_c16": 17289, "_c17": 7420, "_c18": 20263, "_c19": 3, "_c20": 7120, "_c21": 1543, "_c22": 63, "_c23": 38532951, "_c24": 2953546, "_c25": 403346, "_c26": 10, "_c27": 2208, "_c28": 11938, "_c29": 155, "_c30": 4, "_c31": 976, "_c32": 14, "_c33": 39979771, "_c34": 25641295, "_c35": 39664984, "_c36": 585935, "_c37": 12972, "_c38": 108, "_c39": 36}}
+\ No newline at end of file
+diff --git a/dlrm_all/dlrm/data_processing/preprocessing.py b/dlrm_all/dlrm/data_processing/preprocessing.py
+index ae49617..4bf3ac3 100644
+--- a/dlrm_all/dlrm/data_processing/preprocessing.py
++++ b/dlrm_all/dlrm/data_processing/preprocessing.py
+@@ -10,11 +10,11 @@ from pyspark.sql.functions import *
+ from pyspark.sql.types import *
+ import numpy as np
+ import pandas as pd
++import raydp
++import argparse
++import yaml
++from json import dumps
+ 
+-###############################################
+-# !!!put HDFS NODE here, empty won't proceed!!!
+-HDFS_NODE = ""
+-###############################################
+ 
+ # Define Schema
+ LABEL_COL = 0
+@@ -61,36 +61,49 @@ def generate_dicts(spark, path_list, proc):
+     dict_dfs = proc.generate_dicts(df)
+     t2 = timer()
+     print("Generate Dictionary took %.3f" % (t2 - t1))
+-    
+     print([i['dict'].count() for i in dict_dfs])
++    model_size = [i['dict'].count() for i in dict_dfs]
++    return model_size
+ 
+-def main(hdfs_node):
++def save_info(output_path, save_path, model_size):
++    CAT_COLS = list(range(14, 40))
++    to_categorify_cols = ['_c%d' % i for i in CAT_COLS]
++    model_size = dict(zip(to_categorify_cols, model_size))
++    data_info = {"train_data": os.path.join(output_path, 'train'),
++                "test_data": os.path.join(output_path, 'dlrm_categorified_test'),
++                "val_data": os.path.join(output_path, 'dlrm_categorified_valid'),
++                "model_size": model_size}
++    with open(save_path, "w") as f:
++        f.write(dumps(data_info))
++
++def main(data_config, save_path):
+     import os
+     host_name = os.uname()[1]
+     print(host_name)
++    hdfs_node = data_config["hdfs_node"]
+     path_prefix = f"hdfs://{hdfs_node}:9000"
+-    current_path = "/home/vmagent/app/dataset/criteo/output/"
+-
+-    scala_udf_jars = "/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/python3.7/site-packages/ScalaProcessUtils/built/31/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
++    output_folder = data_config["output_folder"]
++    spark_config = data_config["spark_config"]
++    train_days = data_config["train_days"]
+ 
+     ##### 2. Start spark and initialize data processor #####
+     t1 = timer()
+-    spark = SparkSession.builder.master(f'spark://{host_name}:7077')\
+-        .appName("DLRM")\
+-        .config("spark.driver.memory", "20G")\
+-        .config("spark.driver.memoryOverhead", "10G")\
+-        .config("spark.executor.instances", "4")\
+-        .config("spark.executor.cores", "16")\
+-        .config("spark.executor.memory", "100G")\
+-        .config("spark.executor.memoryOverhead", "20G")\
+-        .config("spark.driver.extraClassPath", f"{scala_udf_jars}")\
+-        .config("spark.executor.extraClassPath", f"{scala_udf_jars}")\
+-        .getOrCreate()
++    import ray
++    ray.init(address="auto")
++    spark = raydp.init_spark(
++            app_name=spark_config["app_name"],
++            num_executors=spark_config["num_executors"],
++            executor_cores=spark_config["executor_cores"],
++            executor_memory=spark_config["executor_memory"],
++            placement_group_strategy="SPREAD",
++            configs=spark_config["configs"])
+     spark.sparkContext.setLogLevel("ERROR")
+-    proc = DataProcessor(spark, path_prefix, current_path=current_path, shuffle_disk_capacity="800GB", spark_mode='standalone')
++    proc = DataProcessor(spark, path_prefix, current_path=output_folder, shuffle_disk_capacity="800GB", spark_mode='standalone')
+ 
+     
+-    train_files = ["day_%d" % i for i in range(0, 23)]
++    start, end = train_days.split("-")
++    train_range = list(range(int(start), int(end) + 1))
++    train_files = ["day_"+str(i) for i in train_range]
+ 
+     #############################
+     # 1. Process category columns
+@@ -107,21 +120,21 @@ def main(hdfs_node):
+     for filename in train_files:
+         t11 = timer()
+         proc.reset_ops([op_mod, op_fillna_for_categorified, op_fillna_for_label, op_fillna_for_int, op_fillnegative_for_int])
+-        train_df = spark.read.parquet(f"{path_prefix}{current_path}/dlrm_parquet_train_{filename}")
++        train_df = spark.read.parquet(f"{path_prefix}{output_folder}/dlrm_parquet_train_{filename}")
+         train_df = proc.transform(train_df, name=f"dlrm_parquet_train_proc_{filename}")
+         t12 = timer()
+         print(f"Process {filename} categorified columns completed, took {(t12 - t11)} secs")
+ 
+     t11 = timer()
+     proc.reset_ops([op_mod, op_fillna_for_categorified, op_fillna_for_label, op_fillna_for_int, op_fillnegative_for_int])
+-    test_df = spark.read.parquet(f"{path_prefix}{current_path}/dlrm_parquet_test")
++    test_df = spark.read.parquet(f"{path_prefix}{output_folder}/dlrm_parquet_test")
+     test_df = proc.transform(test_df, name="dlrm_parquet_test_proc")
+     t12 = timer()
+     print(f"Process test categorified columns completed, took {(t12 - t11)} secs")
+ 
+     t11 = timer()
+     proc.reset_ops([op_mod, op_fillna_for_categorified, op_fillna_for_label, op_fillna_for_int, op_fillnegative_for_int])
+-    valid_df = spark.read.parquet(f"{path_prefix}{current_path}/dlrm_parquet_valid")
++    valid_df = spark.read.parquet(f"{path_prefix}{output_folder}/dlrm_parquet_valid")
+     valid_df = proc.transform(valid_df, name="dlrm_parquet_valid_proc")
+     t12 = timer()
+     print(f"Process valid categorified columns completed, took {(t12 - t11)} secs")
+@@ -129,27 +142,32 @@ def main(hdfs_node):
+     #############################
+     # 2. generate dict
+     #############################
+-    path_list = [f"{path_prefix}{current_path}/dlrm_parquet_train_proc_{filename}" for filename in train_files]
+-    path_list += [f"{path_prefix}{current_path}/dlrm_parquet_test_proc", f"{path_prefix}{current_path}/dlrm_parquet_valid_proc"]
+-    generate_dicts(spark, path_list, proc)
++    path_list = [f"{path_prefix}{output_folder}/dlrm_parquet_train_proc_{filename}" for filename in train_files]
++    path_list += [f"{path_prefix}{output_folder}/dlrm_parquet_test_proc", f"{path_prefix}{output_folder}/dlrm_parquet_valid_proc"]
++    model_size = generate_dicts(spark, path_list, proc)
+ 
+     #############################
+-    # 3. Apply dicts to all days
++    # 3. save data info to file
++    #############################
++    save_info(f"{path_prefix}{output_folder}", save_path, model_size)
++
++    #############################
++    # 4. Apply dicts to all days
+     #############################
+     for filename in train_files:
+         t11 = timer()
+-        train_df = spark.read.parquet(f"{path_prefix}{current_path}/dlrm_parquet_train_proc_{filename}")
++        train_df = spark.read.parquet(f"{path_prefix}{output_folder}/dlrm_parquet_train_proc_{filename}")
+         categorifyAllFeatures(train_df, proc, output_name=f"dlrm_categorified_{filename}")
+         t12 = timer()
+         print(f"Apply dicts to {filename} completed, took {(t12 - t11)} secs")
+     
+     t11 = timer()
+-    train_df = spark.read.parquet(f"{path_prefix}{current_path}/dlrm_parquet_test_proc")
++    train_df = spark.read.parquet(f"{path_prefix}{output_folder}/dlrm_parquet_test_proc")
+     categorifyAllFeatures(train_df, proc, output_name=f"dlrm_categorified_test")
+     t12 = timer()
+     print(f"Apply dicts to test completed, took {(t12 - t11)} secs")
+     t11 = timer()
+-    train_df = spark.read.parquet(f"{path_prefix}{current_path}/dlrm_parquet_valid_proc")
++    train_df = spark.read.parquet(f"{path_prefix}{output_folder}/dlrm_parquet_valid_proc")
+     categorifyAllFeatures(train_df, proc, output_name=f"dlrm_categorified_valid")
+     t12 = timer()
+     print(f"Apply dicts to valid completed, took {(t12 - t11)} secs")
+@@ -157,10 +175,17 @@ def main(hdfs_node):
+     t3 = timer()
+     print(f"Total process time is {(t3 - t1)} secs")
+ 
++    raydp.stop_spark()
++
+ 
+ if __name__ == "__main__":
+-    if HDFS_NODE == "":
+-        print("Please add correct HDFS_NODE name in this file, or this script won't be able to process")
+-    else:
+-        main(HDFS_NODE)
++    parser = argparse.ArgumentParser(description='manual to this script')
++    parser.add_argument('--config_path', type=str, default=None)
++    parser.add_argument('--save_path', type=str, default=None)
++    args = parser.parse_args()
++
++    with open(args.config_path, "r") as f:
++        config = yaml.safe_load(f)
++        data_config = config["data_preprocess"]
++        main(data_config, args.save_path)
+     
+diff --git a/dlrm_all/dlrm/data_processing/raw_test_split.sh b/dlrm_all/dlrm/data_processing/raw_test_split.sh
+index 00ff9aa..7f36da5 100644
+--- a/dlrm_all/dlrm/data_processing/raw_test_split.sh
++++ b/dlrm_all/dlrm/data_processing/raw_test_split.sh
+@@ -1,11 +1,29 @@
++#!/bin/bash
+ echo "Splitting the last day into 2 parts of test and validation..."
+-
++HADOOP_PATH="/home/hadoop-3.3.1"
+ last_day=$1/day_23
+ temp_test=$1/test
+ temp_validation=$1/validation
+-mkdir -p $temp_test $temp_validation
+ 
+ former=89137319
+ latter=89137318
+-head -n $former $last_day > $temp_test/day_23
+-tail -n $latter $last_day > $temp_validation/day_23
++
++if [[ "$last_day" =~ ^hdfs.* ]]
++then
++    echo "write to hdfs"
++    $HADOOP_PATH/bin/hdfs dfs -test -e $temp_test
++    if [ $? -eq 0 ] ;then
++        $HADOOP_PATH/bin/hdfs dfs -rm -r $temp_test
++    fi
++    $HADOOP_PATH/bin/hdfs dfs -test -e $temp_validation
++    if [ $? -eq 0 ] ;then
++        $HADOOP_PATH/bin/hdfs dfs -rm -r $temp_validation
++    fi
++    $HADOOP_PATH/bin/hdfs dfs -cat $last_day | head -$former | $HADOOP_PATH/bin/hdfs dfs -appendToFile - $temp_test/day_23
++    $HADOOP_PATH/bin/hdfs dfs -cat $last_day | tail -$latter | $HADOOP_PATH/bin/hdfs dfs -appendToFile - $temp_validation/day_23
++else
++    echo "write to local"
++    mkdir -p $temp_test $temp_validation
++    head -n $former $last_day > $temp_test/day_23
++    tail -n $latter $last_day > $temp_validation/day_23
++fi
+\ No newline at end of file
+diff --git a/dlrm_all/dlrm/data_processing/start_spark_service.sh b/dlrm_all/dlrm/data_processing/start_spark_service.sh
+deleted file mode 100644
+index de551f9..0000000
+--- a/dlrm_all/dlrm/data_processing/start_spark_service.sh
++++ /dev/null
+@@ -1,4 +0,0 @@
+-master_hostname=`hostname`
+-${SPARK_HOME}/sbin/start-master.sh
+-${SPARK_HOME}/sbin/start-worker.sh spark://${master_hostname}:7077
+-${SPARK_HOME}/sbin/start-history-server.sh
+diff --git a/dlrm_all/dlrm/data_processing/view_data.py b/dlrm_all/dlrm/data_processing/view_data.py
+deleted file mode 100644
+index bec7fd6..0000000
+--- a/dlrm_all/dlrm/data_processing/view_data.py
++++ /dev/null
+@@ -1,18 +0,0 @@
+-import numpy as np
+-import pandas as pd
+-import sys
+-
+-file_name = sys.argv[1]
+-print(file_name)
+-bytes_per_feature = 4
+-tot_fea = 40
+-num_batch = 748
+-batch_size = 256
+-bytes_per_batch = (bytes_per_feature * tot_fea * batch_size)
+-with open(file_name, "rb") as f:
+-     raw_data = f.read(bytes_per_batch * num_batch)
+-     array = np.frombuffer(raw_data, dtype=np.int32)
+-     array = array.reshape(-1,40)
+-     df = pd.DataFrame(array, columns= [f"_c{i}" for i in range(40)])
+-     print(df[[f"_c{i}" for i in [0, 1, 2, 3, 4, 5, 6, 7, 8] + [14, 15, 16, 17, 18, 19, 20, 21, 22]]])
+-     #df.to_parquet(f"{file_name}.parquet")

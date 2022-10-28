@@ -23,22 +23,48 @@ docker build -t e2eaiok-pytorch . -f DockerfilePytorch
 ## Activate docker and conda
 ```
 cd ${path_to_e2eaiok}
-docker run --shm-size=100g -it --privileged --network host --device=/dev/dri -v ${path_to_e2eaiok_dataset}:/home/vmagent/app/dataset -v `pwd`/:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch /bin/bash
+docker run --shm-size=300g -it --privileged --network host --device=/dev/dri -v ${path_to_e2eaiok_dataset}:/home/vmagent/app/dataset -v `pwd`/:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch /bin/bash
 
 source /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/.local/env/setvars.sh
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/python3.7/site-packages/torch_ipex-0.1-py3.7-linux-x86_64.egg/
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/python3.7/site-packages/torch/lib/
 conda activate pytorch_mlperf
 
-cd /home/vmagent/app/e2eaiok/
-python setup.py install
-
 ```
+
+## Docker environment setup
+```
+# passwordless config
+cd /home/vmagent/app/e2eaiok/scripts
+sudo service ssh start
+bash config_passwdless_ssh.sh ${other_train_node}
+
+# config node ip
+vim /home/vmagent/app/e2eaiok/dlrm_all/dlrm/hosts
+    # head node ip
+    # worker nodes ip
+
+# Optional: If dataset is loaded from other hdfs during training
+vim $HADOOP_HOME/etc/hadoop/core-site.xml
+    # set 'fs.defaultFS'
+```
+
+## Start Ray cluster
+```
+# install raydp ray
+pip install raydp-nightly
+
+# head node
+OMP_NUM_THREADS=** && ray start --head --port 5678 --dashboard-host 0.0.0.0 --object-store-memory 268435456000 --system-config='{"object_spilling_threshold":0.98}'
+
+# worker node
+OMP_NUM_THREADS=** && ray start --address='10.112.228.4:5678' --object-store-memory 268435456000
+```
+
 
 ## Download Dataset
 ```
 Download the raw data files day_0.gz, ...,day_23.gz from https://labs.criteo.com/2013/12/download-terabyte-click-logs/ and unzip them
-
 ```
 
 ## RecDP Data Process
@@ -48,40 +74,24 @@ ls /home/vmagent/app/dataset/criteo/raw_data
 day_0  day_10  day_12  day_14  day_16  day_18  day_2   day_21  day_23  day_4  day_6  day_8
 day_1  day_11  day_13  day_15  day_17  day_19  day_20  day_22  day_3   day_5  day_7  day_9
 
-# enter data process folder
-cd /home/vmagent/app/e2eaiok/dlrm_all/dlrm/data_processing/
+# install recdp
+pip install pyrecdp
 
-# install recdp and pyarrow
-pip install pyrecdp pyarrow
-
-# start spark service
-cd /home/vmagent/app/e2eaiok/conf/spark/
+# spark config
+cd /home/vmagent/app/e2eaiok/config/
 cp spark-defaults.conf /home/spark-3.2.1-bin-hadoop3.2/conf/
-mkdir -p /home/vmagent/app/e2eaiok/spark_local_dir
+mkdir -p /home/vmagent/app/e2eaiok/spark_data_processing/spark_local_dir
 mkdir -p /home/mnt/applicationHistory
-sh ./start_spark_service.sh
 
-# add your HDFS master node in below files
-convert_to_parquet.py
-preprocessing.py
-convert_to_binary.py
+# set parameters
+/home/vmagent/app/e2eaiok/dlrm_all/dlrm/data_processing/config.yaml
 
-# upload and trsnform downloaded data as parquet to HDFS, may take 30 mins
-python convert_to_parquet.py
-# process data, may take about 1 hour
-python preprocessing.py
-# download processed data and convert to binary
-python convert_to_binary.py
+# perform data process workflow
+cd /home/vmagent/app/e2eaiok/dlrm_all/dlrm
+bash run_data_process.sh
 
 # check result
-(pytorch_mlperf) ll /home/vmagent/app/dataset/criteo/output/
-total 683357412
-         4096  ./
-         4096  ../
-          474  day_fea_count.npz
-  14261971040  test_data.bin
- 671231630720  train_data.bin
-  14261970880  valid_data.bin
+cat data_processing/data_info.txt
 ```
 
 ## Training

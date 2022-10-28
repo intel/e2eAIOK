@@ -39,14 +39,20 @@ SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
 RUN python -m pip install --no-cache-dir --ignore-installed sigopt==7.5.0 pandas pytest
 
 SHELL ["/bin/bash", "-c"]
-RUN apt-get update -y && apt-get install -y openssh-server
+RUN apt-get update -y && apt-get install -y openssh-server pssh sshpass vim
 RUN sed -i 's/#Port 22/Port 12346/g' /etc/ssh/sshd_config
 RUN sed -i 's/#   Port 22/    Port 12346/g' /etc/ssh/ssh_config
+RUN echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config
 # install spark
 RUN wget -qO- https://archive.apache.org/dist/spark/spark-3.2.1/spark-3.2.1-bin-hadoop3.2.tgz | tar xvz -C /home/
 ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64
 ENV SPARK_HOME /home/spark-3.2.1-bin-hadoop3.2
 ENV PYTHONPATH $SPARK_HOME/python/:$PYTHONPATH
 ENV PYTHONPATH $SPARK_HOME/python/lib/py4j-0.10.9.3-src.zip:$PYTHONPATH
+RUN wget -qO- https://archive.apache.org/dist/hadoop/common/hadoop-3.3.1/hadoop-3.3.1.tar.gz | tar xvz -C /home/
+ENV HADOOP_HOME=/home/hadoop-3.3.1
+ENV HADOOP_CONF_DIR=/home/hadoop-3.3.1/etc/hadoop/
+ENV CLASSPATH=$CLASSPATH:`$HADOOP_HOME/bin/hdfs classpath --glob`
 RUN conda init bash
+RUN echo "root:docker" | chpasswd
 ENTRYPOINT [""]

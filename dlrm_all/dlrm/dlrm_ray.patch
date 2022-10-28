@@ -1,0 +1,2139 @@
+diff --git a/__init__.py b/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/dlrm_data_pytorch.py b/dlrm_data_pytorch.py
+index 2f188a2..15dac1d 100644
+--- a/dlrm_data_pytorch.py
++++ b/dlrm_data_pytorch.py
+@@ -524,76 +524,6 @@ def make_criteo_data_and_loaders(args):
+     return train_data, train_loader, test_data, test_loader
+ 
+ 
+-def make_criteo_data_and_loaders_test(args):
+-
+-    if args.mlperf_logging and args.memory_map and args.data_set == "terabyte":
+-        if args.mlperf_bin_loader:
+-            test_file = args.eval_data_path
+-            counts_file = args.day_feature_count
+-            test_data = data_loader_terabyte.CriteoBinDataset(
+-                data_file=test_file,
+-                counts_file=counts_file,
+-                batch_size=args.test_mini_batch_size,
+-                max_ind_range=args.max_ind_range
+-            )
+-
+-            mlperf_logger.log_event(key=mlperf_logger.constants.EVAL_SAMPLES,
+-                                    value=test_data.num_samples)
+-
+-            test_loader = DataLoaderX(
+-                test_data,
+-                batch_size=None,
+-                batch_sampler=None,
+-                shuffle=False,
+-                num_workers=0,
+-                collate_fn=None,
+-                pin_memory=False,
+-                drop_last=False,
+-            )
+-        else:
+-            data_filename = args.raw_data_file.split("/")[-1]
+-            test_data = CriteoDataset(
+-                args.data_set,
+-                args.max_ind_range,
+-                args.data_sub_sample_rate,
+-                args.data_randomize,
+-                "test",
+-                args.raw_data_file,
+-                args.processed_data_file,
+-                args.memory_map
+-            )
+-            test_loader = data_loader_terabyte.DataLoader(
+-                data_directory=data_directory,
+-                data_filename=data_filename,
+-                days=[23],
+-                batch_size=args.test_mini_batch_size,
+-                max_ind_range=args.max_ind_range,
+-                split="test"
+-            )
+-    else:
+-
+-        test_data = CriteoDataset(
+-            args.data_set,
+-            args.max_ind_range,
+-            args.data_sub_sample_rate,
+-            args.data_randomize,
+-            "test",
+-            args.raw_data_file,
+-            args.processed_data_file,
+-            args.memory_map
+-        )
+-        test_loader = torch.utils.data.DataLoader(
+-            test_data,
+-            batch_size=args.test_mini_batch_size,
+-            shuffle=False,
+-            num_workers=args.test_num_workers,
+-            collate_fn=collate_wrapper_criteo,
+-            pin_memory=False,
+-            drop_last=False,  # True
+-        )
+-
+-    return test_data, test_loader
+-
+ # uniform ditribution (input data)
+ class RandomDataset(Dataset):
+ 
+diff --git a/dlrm_s_pytorch.py b/dlrm_s_pytorch.py
+index db5f5c7..efa4400 100644
+--- a/dlrm_s_pytorch.py
++++ b/dlrm_s_pytorch.py
+@@ -59,6 +59,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
+ 
+ # miscellaneous
+ import builtins
++from dis import dis
+ import functools
+ # import bisect
+ # import shutil
+@@ -109,6 +110,8 @@ import mlperf_logger
+ 
+ from torch.optim.lr_scheduler import _LRScheduler
+ import os
++import ray
++from collections import OrderedDict
+ 
+ 
+ class LRPolicyScheduler(_LRScheduler):
+@@ -262,7 +265,10 @@ class DLRM_Net(nn.Module):
+                 # approach 1
+                 if n >= self.sparse_dense_boundary:
+                     #n = 39979771
+-                    m_sparse = int(m/4)
++                    if ext_dist.my_size > 1:
++                        m_sparse = int(m/4)
++                    else:
++                        m_sparse = m
+                     W = np.random.uniform(
+                         low=-np.sqrt(1 / n), high=np.sqrt(1 / n), size=(n, m_sparse)
+                     ).astype(np.float32)
+@@ -498,6 +504,7 @@ class DLRM_Net(nn.Module):
+ 
+         lS_i_sparse = ext_dist.shuffle_data(lS_i_sparse)
+         g_i_sparse = [lS_i_sparse[:, i * batch_size:(i + 1) * batch_size].reshape(-1) for i in range(len(self.local_ln_emb_sparse))]
++        device = 'dpcpp'
+         offset = torch.arange(batch_size * ext_dist.my_size).to(device)
+         g_o_sparse = [offset for i in range(self.n_local_emb_sparse)]
+ 
+@@ -639,8 +646,188 @@ class DLRM_Net(nn.Module):
+ 
+         return z0
+ 
++class ModelArguments:
++    def __init__(self,
++                 arch_sparse_feature_size: int = 64,
++                 arch_dense_feature_size: int = 13,
++                 arch_embedding_size: str = "4-3-2",
++                 arch_mlp_bot: str = "13-128-64",
++                 arch_mlp_top: str = "256-128-1",
++                 arch_interaction_op: str = "dot",
++                 arch_interaction_itself: bool = False,
++                 md_flag: bool = False,
++                 md_threshold: int = 200,
++                 md_temperature: float = 0.3,
++                 md_round_dims: bool = False,
++                 qr_flag: bool = False,
++                 qr_threshold: int = 200,
++                 qr_operation: str = "mult",
++                 qr_collisions: int = 4,
++                 activation_function: str = "relu",
++                 loss_function: str = "bce",
++                 loss_weights: str = "1.0-1.0",
++                 loss_threshold: float = 0.0,
++                 round_targets: bool = True,
++                 data_size: int = 1,
++                 num_batches: int = 0,
++                 data_generation: str = "dataset",
++                 data_trace_file: str = "",
++                 data_set: str = "terabyte",
++                 raw_data_file: str = "",
++                 processed_data_file: str = "",
++                 data_randomize: str = "total",
++                 data_trace_enable_padding: bool = False,
++                 max_ind_range: int = 40000000,
++                 data_sub_sample_rate: float = 0.0,
++                 num_indices_per_lookup: int = 10,
++                 num_indices_per_lookup_fixed: bool = False,
++                 num_workers: int = 0,
++                 memory_map: bool = True,
++                 mini_batch_size: int = 262144,
++                 nepochs: int = 1,
++                 learning_rate: float = 16,
++                 print_precision: int = 5,
++                 numpy_rand_seed: int = 12345,
++                 sync_dense_params: bool = True,
++                 inference_only: bool = False,
++                 save_onnx: bool = False,
++                 use_gpu: bool = False,
++                 dist_backend: str = "ccl",
++                 print_freq: int = 16,
++                 test_freq: int = 800,
++                 test_mini_batch_size: int = 131072,
++                 test_num_workers: int = 0,
++                 print_time: bool = True,
++                 debug_mode: bool = False,
++                 enable_profiling: bool = False,
++                 plot_compute_graph: bool = False,
++                 profiling_start_iter: int = 50,
++                 profiling_num_iters: int = 100,
++                 out_dir: str = "",
++                 save_model: str = "",
++                 load_model: str = "",
++                 mlperf_logging: bool = True,
++                 mlperf_acc_threshold: float = 0.0,
++                 mlperf_auc_threshold: float = 0.8025,
++                 mlperf_bin_loader: bool = True,
++                 mlperf_bin_shuffle: float = True,
++                 lr_num_warmup_steps: int = 4000,
++                 lr_decay_start_step: int = 5760,
++                 lr_num_decay_steps: int = 27000,
++                 sparse_dense_boundary: int = 245828,
++                 bf16: bool = True,
++                 use_ipex: bool = True,
++                 optimizer: int = 1,
++                 lamblr: float = 30,
++                 train_data_path: str = "",
++                 eval_data_path: str = "",
++                 day_feature_count: str = "",
++                 ):
++        self.arch_sparse_feature_size = arch_sparse_feature_size
++        self.arch_dense_feature_size = arch_dense_feature_size
++        self.arch_embedding_size = arch_embedding_size
++        self.arch_mlp_bot = arch_mlp_bot
++        self.arch_mlp_top = arch_mlp_top
++        self.arch_interaction_op = arch_interaction_op
++        self.arch_interaction_itself = arch_interaction_itself
++        self.md_flag = md_flag
++        self.md_threshold = md_threshold
++        self.md_temperature = md_temperature
++        self.md_round_dims = md_round_dims
++        self.qr_flag = qr_flag
++        self.qr_threshold = qr_threshold
++        self.qr_operation = qr_operation
++        self.qr_collisions = qr_collisions
++        self.activation_function = activation_function
++        self.loss_function = loss_function
++        self.loss_weights = loss_weights
++        self.loss_threshold = loss_threshold
++        self.round_targets = round_targets
++        self.data_size = data_size
++        self.num_batches = num_batches
++        self.data_generation = data_generation
++        self.data_trace_file = data_trace_file
++        self.data_set = data_set
++        self.raw_data_file = raw_data_file
++        self.processed_data_file = processed_data_file
++        self.data_randomize = data_randomize
++        self.data_trace_enable_padding = data_trace_enable_padding
++        self.max_ind_range = max_ind_range
++        self.data_sub_sample_rate = data_sub_sample_rate
++        self.num_indices_per_lookup = num_indices_per_lookup
++        self.num_indices_per_lookup_fixed = num_indices_per_lookup_fixed
++        self.num_workers = num_workers
++        self.memory_map = memory_map
++        self.mini_batch_size = mini_batch_size
++        self.nepochs = nepochs
++        self.learning_rate = learning_rate
++        self.print_precision = print_precision
++        self.numpy_rand_seed = numpy_rand_seed
++        self.sync_dense_params = sync_dense_params
++        self.inference_only = inference_only
++        self.save_onnx = save_onnx
++        self.use_gpu = use_gpu
++        self.dist_backend = dist_backend
++        self.print_freq = print_freq
++        self.test_freq = test_freq
++        self.test_mini_batch_size = test_mini_batch_size
++        self.test_num_workers = test_num_workers
++        self.print_time = print_time
++        self.debug_mode = debug_mode
++        self.enable_profiling = enable_profiling
++        self.plot_compute_graph = plot_compute_graph
++        self.profiling_start_iter = profiling_start_iter
++        self.profiling_num_iters = profiling_num_iters
++        self.out_dir = out_dir
++        self.save_model = save_model
++        self.load_model = load_model
++        self.mlperf_logging = mlperf_logging
++        self.mlperf_acc_threshold = mlperf_acc_threshold
++        self.mlperf_auc_threshold = mlperf_auc_threshold
++        self.mlperf_bin_loader = mlperf_bin_loader
++        self.mlperf_bin_shuffle = mlperf_bin_shuffle
++        self.lr_num_warmup_steps = lr_num_warmup_steps
++        self.lr_decay_start_step = lr_decay_start_step
++        self.lr_num_decay_steps = lr_num_decay_steps
++        self.sparse_dense_boundary = sparse_dense_boundary
++        self.bf16 = bf16
++        self.use_ipex = use_ipex
++        self.optimizer = optimizer
++        self.lamblr = lamblr
++        self.train_data_path = train_data_path
++        self.eval_data_path = eval_data_path
++        self.day_feature_count = day_feature_count
++
++def get_data_feature(X_data, Y_data, num_numerical_features, max_ind_range, flag_input_torch_tensor=False):
++    # print("X_data=", X_data)
++    # print("Y_data=", Y_data)
++    # print("pass convert")
++    x_int_batch = X_data[:, 0:num_numerical_features]
++    # print("x_int_batch", x_int_batch)
++    x_cat_batch = X_data[:, num_numerical_features:]
++    # print("x_cat_batch=", x_cat_batch)
++    y_batch = Y_data
++
++    if max_ind_range > 0:
++        x_cat_batch = x_cat_batch % max_ind_range
++
++    if flag_input_torch_tensor:
++        # remove gradient
++        x_int_batch = torch.log(x_int_batch.clone().detach().type(torch.float) + 1)
++        x_cat_batch = x_cat_batch.clone().detach().type(torch.long)
++        y_batch = y_batch.clone().detach().type(torch.float32).view(-1, 1)
++    else:
++        x_int_batch = torch.log(torch.tensor(x_int_batch, dtype=torch.float) + 1)
++        x_cat_batch = torch.tensor(x_cat_batch, dtype=torch.long)
++        y_batch = torch.tensor(y_batch, dtype=torch.float32).view(-1, 1)
++
++    batch_size = x_cat_batch.shape[0]
++    feature_count = x_cat_batch.shape[1]
++    lS_o = torch.arange(batch_size).reshape(1, -1).repeat(feature_count, 1)
++    # print("before return x_int_batch: ", x_int_batch)
++    return x_int_batch, lS_o, x_cat_batch.t(), y_batch.view(-1, 1)
+ 
+-if __name__ == "__main__":
++def train_func(args:ModelArguments, train_ds=None, test_ds=None, model_size=None):
+     # the reference implementation doesn't clear the cache currently
+     # but the submissions are required to do that
+     mlperf_logger.log_event(key=mlperf_logger.constants.CACHE_CLEAR, value=True)
+@@ -650,109 +837,7 @@ if __name__ == "__main__":
+     ### import packages ###
+     import sys
+     import os
+-    import argparse
+-
+-    ### parse arguments ###
+-    parser = argparse.ArgumentParser(
+-        description="Train Deep Learning Recommendation Model (DLRM)"
+-    )
+-    # model related parameters
+-    parser.add_argument("--arch-sparse-feature-size", type=int, default=2)
+-    parser.add_argument("--arch-embedding-size", type=str, default="4-3-2")
+-    # j will be replaced with the table number
+-    parser.add_argument("--arch-mlp-bot", type=str, default="4-3-2")
+-    parser.add_argument("--arch-mlp-top", type=str, default="4-2-1")
+-    parser.add_argument("--arch-interaction-op", type=str, default="dot")
+-    parser.add_argument("--arch-interaction-itself", action="store_true", default=False)
+-    # embedding table options
+-    parser.add_argument("--md-flag", action="store_true", default=False)
+-    parser.add_argument("--md-threshold", type=int, default=200)
+-    parser.add_argument("--md-temperature", type=float, default=0.3)
+-    parser.add_argument("--md-round-dims", action="store_true", default=False)
+-    parser.add_argument("--qr-flag", action="store_true", default=False)
+-    parser.add_argument("--qr-threshold", type=int, default=200)
+-    parser.add_argument("--qr-operation", type=str, default="mult")
+-    parser.add_argument("--qr-collisions", type=int, default=4)
+-    # activations and loss
+-    parser.add_argument("--activation-function", type=str, default="relu")
+-    parser.add_argument("--loss-function", type=str, default="mse")  # or bce or wbce
+-    parser.add_argument("--loss-weights", type=str, default="1.0-1.0")  # for wbce
+-    parser.add_argument("--loss-threshold", type=float, default=0.0)  # 1.0e-7
+-    parser.add_argument("--round-targets", type=bool, default=False)
+-    # data
+-    parser.add_argument("--data-size", type=int, default=1)
+-    parser.add_argument("--num-batches", type=int, default=0)
+-    parser.add_argument(
+-        "--data-generation", type=str, default="random"
+-    )  # synthetic or dataset
+-    parser.add_argument("--data-trace-file", type=str, default="./input/dist_emb_j.log")
+-    parser.add_argument("--data-set", type=str, default="kaggle")  # or terabyte
+-    parser.add_argument("--raw-data-file", type=str, default="")
+-    parser.add_argument("--processed-data-file", type=str, default="")
+-    parser.add_argument("--data-randomize", type=str, default="total")  # or day or none
+-    parser.add_argument("--data-trace-enable-padding", type=bool, default=False)
+-    parser.add_argument("--max-ind-range", type=int, default=-1)
+-    parser.add_argument("--data-sub-sample-rate", type=float, default=0.0)  # in [0, 1]
+-    parser.add_argument("--num-indices-per-lookup", type=int, default=10)
+-    parser.add_argument("--num-indices-per-lookup-fixed", type=bool, default=False)
+-    parser.add_argument("--num-workers", type=int, default=0)
+-    parser.add_argument("--memory-map", action="store_true", default=False)
+-    # training
+-    parser.add_argument("--mini-batch-size", type=int, default=1)
+-    parser.add_argument("--nepochs", type=int, default=1)
+-    parser.add_argument("--learning-rate", type=float, default=0.01)
+-    parser.add_argument("--print-precision", type=int, default=5)
+-    parser.add_argument("--numpy-rand-seed", type=int, default=123)
+-    parser.add_argument("--sync-dense-params", type=bool, default=True)
+-    # inference
+-    parser.add_argument("--inference-only", action="store_true", default=False)
+-    # onnx
+-    parser.add_argument("--save-onnx", action="store_true", default=False)
+-    # gpu
+-    parser.add_argument("--use-gpu", action="store_true", default=False)
+-    # distributed run
+-    parser.add_argument("--dist-backend", type=str, default="")
+-    # debugging and profiling
+-    parser.add_argument("--print-freq", type=int, default=1)
+-    parser.add_argument("--test-freq", type=int, default=-1)
+-    parser.add_argument("--test-mini-batch-size", type=int, default=-1)
+-    parser.add_argument("--test-num-workers", type=int, default=-1)
+-    parser.add_argument("--print-time", action="store_true", default=False)
+-    parser.add_argument("--debug-mode", action="store_true", default=False)
+-    parser.add_argument("--enable-profiling", action="store_true", default=False)
+-    parser.add_argument("--plot-compute-graph", action="store_true", default=False)
+-    parser.add_argument("--profiling-start-iter", type=int, default=50)
+-    parser.add_argument("--profiling-num-iters", type=int, default=100)
+-    # store/load model
+-    parser.add_argument("--out-dir", type=str, default=".")
+-    parser.add_argument("--save-model", type=str, default="")
+-    parser.add_argument("--load-model", type=str, default="")
+-    # mlperf logging (disables other output and stops early)
+-    parser.add_argument("--mlperf-logging", action="store_true", default=False)
+-    # stop at target accuracy Kaggle 0.789, Terabyte (sub-sampled=0.875) 0.8107
+-    parser.add_argument("--mlperf-acc-threshold", type=float, default=0.0)
+-    # stop at target AUC Terabyte (no subsampling) 0.8025
+-    parser.add_argument("--mlperf-auc-threshold", type=float, default=0.0)
+-    parser.add_argument("--mlperf-bin-loader", action='store_true', default=False)
+-    parser.add_argument("--mlperf-bin-shuffle", action='store_true', default=False)
+-    # LR policy
+-    parser.add_argument("--lr-num-warmup-steps", type=int, default=0)
+-    parser.add_argument("--lr-decay-start-step", type=int, default=0)
+-    parser.add_argument("--lr-num-decay-steps", type=int, default=0)
+-    # embedding table is sparse table only if sparse_dense_boundary >= 2048
+-    parser.add_argument("--sparse-dense-boundary", type=int, default=2048)
+-    # bf16 option
+-    parser.add_argument("--bf16", action='store_true', default=False)
+-    # ipex option
+-    parser.add_argument("--use-ipex", action="store_true", default=False)
+-    # lamb
+-    parser.add_argument("--optimizer", type=int, default=0, help='optimizer:[0:sgd, 1:lamb/sgd, 2:adagrad, 3:sparseadam]')
+-    parser.add_argument("--lamblr", type=float, default=0.01, help='lr for lamb')
+-    parser.add_argument("--train-data-path", type=str, default="./data/train.bin")
+-    parser.add_argument("--eval-data-path", type=str, default="./data/valid.bin")
+-    parser.add_argument("--day-feature-count", type=str, default="./data/day_fea_count.npz")
+-    args = parser.parse_args()
+-
++    
+     ext_dist.init_distributed(backend=args.dist_backend)
+ 
+     if args.mlperf_logging:
+@@ -796,7 +881,7 @@ if __name__ == "__main__":
+     else:
+         device = torch.device("cpu")
+         print("Using CPU...")
+-
++    
+     ### prepare training data ###
+     ln_bot = np.fromstring(args.arch_mlp_bot, dtype=int, sep="-")
+     # input data
+@@ -807,7 +892,39 @@ if __name__ == "__main__":
+     mlperf_logger.log_start(key=mlperf_logger.constants.RUN_START)
+     mlperf_logger.barrier()
+ 
+-    if (args.data_generation == "dataset"):
++    if train_ds is not None:
++        features = [f"_c{i+1}" for i in range(39)] 
++        train_batch_size = args.mini_batch_size // ext_dist.my_size
++        train_ld = train_ds.to_torch(
++                            label_column='_c0',
++                            feature_columns=features,
++                            label_column_dtype=torch.float,
++                            feature_column_dtypes=torch.float,
++                            batch_size=train_batch_size)
++        test_batch_size = args.test_mini_batch_size // ext_dist.my_size
++        test_ld = test_ds.to_torch(
++                        label_column='_c0',
++                        feature_columns=features,
++                        label_column_dtype=torch.float,
++                        feature_column_dtypes=torch.float,
++                        batch_size=test_batch_size)
++        import collections
++        ln_emb = list(model_size.values())
++        # enforce maximum limit on number of vectors per embedding
++        if args.max_ind_range > 0:
++            ln_emb = np.array(list(map(
++                lambda x: x if x < args.max_ind_range else args.max_ind_range, ln_emb)))
++
++        m_den = args.arch_dense_feature_size
++        ln_bot[0] = m_den
++        # todo: set the right nbatches values
++        if args.num_batches >0:
++            nbatches = args.num_batches
++        else:
++            nbatches = (train_ds.count() + train_batch_size - 1) // train_batch_size
++        nbatches_test = (test_ds.count() + test_batch_size - 1) // test_batch_size
++
++    elif (args.data_generation == "dataset"):
+         train_data, train_ld, test_data, test_ld = \
+             dp.make_criteo_data_and_loaders(args)
+         nbatches = args.num_batches if args.num_batches > 0 else len(train_ld)
+@@ -935,7 +1052,12 @@ if __name__ == "__main__":
+         print(ln_emb)
+ 
+         print("data (inputs and targets):")
+-        for j, (X, lS_o, lS_i, T) in enumerate(train_ld):
++        for j, (X, Y) in enumerate(train_ld):
++            X, lS_o, lS_i, T = get_data_feature(X,
++                                                Y,
++                                                num_numerical_features=args.arch_dense_feature_size,
++                                                max_ind_range=args.max_ind_range,
++                                                flag_input_torch_tensor=True)
+             # early exit if nbatches was set by the user and has been exceeded
+             if nbatches > 0 and j >= nbatches:
+                 break
+@@ -1123,6 +1245,7 @@ if __name__ == "__main__":
+     total_iter = 0
+     total_samp = 0
+     k = 0
++    dlrm_best = None
+ 
+     mlperf_logger.mlperf_submission_log('dlrm')
+     mlperf_logger.log_event(key=mlperf_logger.constants.SEED, value=args.numpy_rand_seed)
+@@ -1230,8 +1353,12 @@ if __name__ == "__main__":
+ 
+             if args.mlperf_logging:
+                 previous_iteration_time = None
+-
+-            for j, (X, lS_o, lS_i, T) in enumerate(train_ld):
++            for j, (X, Y) in enumerate(train_ld):
++                X, lS_o, lS_i, T = get_data_feature(X,
++                                                    Y,
++                                                    num_numerical_features=args.arch_dense_feature_size,
++                                                    max_ind_range=args.max_ind_range,
++                                                    flag_input_torch_tensor=False)
+                 if j == 0 and args.save_onnx:
+                     (X_onnx, lS_o_onnx, lS_i_onnx) = (X, lS_o, lS_i)
+ 
+@@ -1264,9 +1391,8 @@ if __name__ == "__main__":
+                 print([S_i.detach().cpu().numpy().tolist() for S_i in lS_i])
+                 print(T.detach().cpu().numpy())
+                 '''
+-
+                 # forward pass
+-                Z = dlrm_wrap(X, lS_o, lS_i, use_gpu, use_ipex, device)
++                Z = dlrm_wrap(X, lS_o, lS_i, use_gpu, use_ipex, device)     
+ 
+                 # loss
+                 E = loss_fn_wrap(Z, T, use_gpu, use_ipex, device)
+@@ -1350,7 +1476,7 @@ if __name__ == "__main__":
+                 # testing
+                 if should_test and not args.inference_only:
+                     test_start = time.time()
+-                    epoch_num_float = (j + 1) / len(train_ld) + k + 1
++                    epoch_num_float = (j + 1) / train_ds.count() + k + 1
+                     mlperf_logger.barrier()
+                     mlperf_logger.log_start(key=mlperf_logger.constants.EVAL_START,
+                                             metadata={mlperf_logger.constants.EPOCH_NUM: epoch_num_float})
+@@ -1368,7 +1494,12 @@ if __name__ == "__main__":
+                         scores = []
+                         targets = []
+ 
+-                    for i, (X_test, lS_o_test, lS_i_test, T_test) in enumerate(test_ld):
++                    for i, (X_test, Y_test) in enumerate(test_ld):
++                        X_test, lS_o_test, lS_i_test, T_test = get_data_feature(X_test,
++                                                                        Y_test,
++                                                                        num_numerical_features=args.arch_dense_feature_size,
++                                                                        max_ind_range=args.max_ind_range,
++                                                                        flag_input_torch_tensor=True)
+                         # early exit if nbatches was set by the user and was exceeded
+                         if nbatches > 0 and i >= nbatches:
+                             break
+@@ -1468,6 +1599,7 @@ if __name__ == "__main__":
+                         is_best = validation_results['roc_auc'] > best_auc_test
+                         if is_best:
+                             best_auc_test = validation_results['roc_auc']
++                            dlrm_best = OrderedDict({k: v.clone().cpu() for k,v in dlrm.state_dict().items()})
+ 
+                         mlperf_logger.log_event(key=mlperf_logger.constants.EVAL_ACCURACY,
+                                                 value=float(validation_results['roc_auc']),
+@@ -1532,8 +1664,10 @@ if __name__ == "__main__":
+                     test_end = time.time()
+                     print(F"Test time:{test_end - test_start}")
+                     ext_dist.barrier()
+-                
+-                
++                    # if (j>1) and (j+1)%13600 ==0:
++                    #     print(F"Fineshed 13600 steps training")
++                    #     break
++
+             mlperf_logger.barrier()
+             mlperf_logger.log_end(key=mlperf_logger.constants.EPOCH_STOP,
+                                   metadata={mlperf_logger.constants.EPOCH_NUM: k + 1})
+@@ -1544,9 +1678,16 @@ if __name__ == "__main__":
+     train_end = time.time()
+     total_time = train_end - train_start
+     print(F"Total Time:{total_time}")
++    # if args.enable_profiling:
++    #     with open("dlrm_s_pytorch.prof", "w") as prof_f:
++    #         prof_f.write(prof.key_averages().table(sort_by="cpu_time_total"))
++    #         prof.export_chrome_trace("./dlrm_s_pytorch.json")
++
+     if not (args.save_model == ""):
+         save_start = time.time()
+-        print("Saving model to {}".format(args.save_model))
++        print("Saving best model to {}".format(args.save_model))
++        if dlrm_best is None:
++            dlrm_best = OrderedDict({k: v.clone().cpu() for k,v in dlrm.state_dict().items()})
+         dlrm.to(torch.device("cpu"))
+         torch.save(
+             {
+@@ -1555,8 +1696,15 @@ if __name__ == "__main__":
+                 "nbatches": nbatches,
+                 "nbatches_test": nbatches_test,
+                 "iter": j + 1,
+-                "state_dict": dlrm.state_dict()
++                "state_dict": dlrm_best,
++                "train_acc": gA,
++                "train_loss": gL,
++                "test_acc": gA_test,
++                "test_loss": gL_test,
++                "total_loss": total_loss,
++                "total_accu": total_accu
+             },
+-            os.path.join(args.save_model, "dlrm_s_pytorch_" + str(dlrm.rank) + "_.pkl"),
++            os.path.join(args.save_model, "dlrm_s_pytorch_" + str(dlrm.rank) + "_best.pkl"),
+         )
+-        print("Saved model to {}".format(args.save_model))
+\ No newline at end of file
++        save_end = time.time()
++        print("Saved beat model to {}, cost {}s".format(args.save_model, save_end-save_start))
+\ No newline at end of file
+diff --git a/dlrm_s_pytorch_inference.py b/dlrm_s_pytorch_inference.py
+index 575dabd..4b133c2 100644
+--- a/dlrm_s_pytorch_inference.py
++++ b/dlrm_s_pytorch_inference.py
+@@ -51,10 +51,15 @@
+ # Misha Smelyanskiy, "Deep Learning Recommendation Model for Personalization and
+ # Recommendation Systems", CoRR, arXiv:1906.00091, 2019
+ 
++
+ from __future__ import absolute_import, division, print_function, unicode_literals
+ 
++
++
++
+ # miscellaneous
+ import builtins
++from dis import dis
+ import functools
+ # import bisect
+ # import shutil
+@@ -104,8 +109,10 @@ import mlperf_logger
+ # from torch.nn.parameter import Parameter
+ 
+ from torch.optim.lr_scheduler import _LRScheduler
++import os
++import ray
++
+ 
+-exc = getattr(builtins, "IOError", "FileNotFoundError")
+ 
+ 
+ class Cast(nn.Module):
+@@ -218,7 +225,10 @@ class DLRM_Net(nn.Module):
+                 # approach 1
+                 if n >= self.sparse_dense_boundary:
+                     #n = 39979771
+-                    m_sparse = 16
++                    if ext_dist.my_size > 1:
++                        m_sparse = int(m/4)
++                    else:
++                        m_sparse = m
+                     W = np.random.uniform(
+                         low=-np.sqrt(1 / n), high=np.sqrt(1 / n), size=(n, m_sparse)
+                     ).astype(np.float32)
+@@ -454,6 +464,7 @@ class DLRM_Net(nn.Module):
+ 
+         lS_i_sparse = ext_dist.shuffle_data(lS_i_sparse)
+         g_i_sparse = [lS_i_sparse[:, i * batch_size:(i + 1) * batch_size].reshape(-1) for i in range(len(self.local_ln_emb_sparse))]
++        device = 'dpcpp'
+         offset = torch.arange(batch_size * ext_dist.my_size).to(device)
+         g_o_sparse = [offset for i in range(self.n_local_emb_sparse)]
+ 
+@@ -595,8 +606,188 @@ class DLRM_Net(nn.Module):
+ 
+         return z0
+ 
++class ModelArguments:
++    def __init__(self,
++                 arch_sparse_feature_size: int = 64,
++                 arch_dense_feature_size: int = 13,
++                 arch_embedding_size: str = "4-3-2",
++                 arch_mlp_bot: str = "13-128-64",
++                 arch_mlp_top: str = "256-128-1",
++                 arch_interaction_op: str = "dot",
++                 arch_interaction_itself: bool = False,
++                 md_flag: bool = False,
++                 md_threshold: int = 200,
++                 md_temperature: float = 0.3,
++                 md_round_dims: bool = False,
++                 qr_flag: bool = False,
++                 qr_threshold: int = 200,
++                 qr_operation: str = "mult",
++                 qr_collisions: int = 4,
++                 activation_function: str = "relu",
++                 loss_function: str = "bce",
++                 loss_weights: str = "1.0-1.0",
++                 loss_threshold: float = 0.0,
++                 round_targets: bool = True,
++                 data_size: int = 1,
++                 num_batches: int = 0,
++                 data_generation: str = "dataset",
++                 data_trace_file: str = "",
++                 data_set: str = "terabyte",
++                 raw_data_file: str = "",
++                 processed_data_file: str = "",
++                 data_randomize: str = "total",
++                 data_trace_enable_padding: bool = False,
++                 max_ind_range: int = 40000000,
++                 data_sub_sample_rate: float = 0.0,
++                 num_indices_per_lookup: int = 10,
++                 num_indices_per_lookup_fixed: bool = False,
++                 num_workers: int = 0,
++                 memory_map: bool = True,
++                 mini_batch_size: int = 262144,
++                 nepochs: int = 1,
++                 learning_rate: float = 16,
++                 print_precision: int = 5,
++                 numpy_rand_seed: int = 12345,
++                 sync_dense_params: bool = True,
++                 inference_only: bool = False,
++                 save_onnx: bool = False,
++                 use_gpu: bool = False,
++                 dist_backend: str = "ccl",
++                 print_freq: int = 16,
++                 test_freq: int = 800,
++                 test_mini_batch_size: int = 131072,
++                 test_num_workers: int = 0,
++                 print_time: bool = True,
++                 debug_mode: bool = False,
++                 enable_profiling: bool = False,
++                 plot_compute_graph: bool = False,
++                 profiling_start_iter: int = 50,
++                 profiling_num_iters: int = 100,
++                 out_dir: str = "",
++                 save_model: str = "",
++                 load_model: str = "",
++                 mlperf_logging: bool = True,
++                 mlperf_acc_threshold: float = 0.0,
++                 mlperf_auc_threshold: float = 0.8025,
++                 mlperf_bin_loader: bool = True,
++                 mlperf_bin_shuffle: float = True,
++                 lr_num_warmup_steps: int = 4000,
++                 lr_decay_start_step: int = 5760,
++                 lr_num_decay_steps: int = 27000,
++                 sparse_dense_boundary: int = 245828,
++                 bf16: bool = True,
++                 use_ipex: bool = True,
++                 optimizer: int = 1,
++                 lamblr: float = 30,
++                 train_data_path: str = "",
++                 eval_data_path: str = "",
++                 day_feature_count: str = "",
++                 ):
++        self.arch_sparse_feature_size = arch_sparse_feature_size
++        self.arch_dense_feature_size = arch_dense_feature_size
++        self.arch_embedding_size = arch_embedding_size
++        self.arch_mlp_bot = arch_mlp_bot
++        self.arch_mlp_top = arch_mlp_top
++        self.arch_interaction_op = arch_interaction_op
++        self.arch_interaction_itself = arch_interaction_itself
++        self.md_flag = md_flag
++        self.md_threshold = md_threshold
++        self.md_temperature = md_temperature
++        self.md_round_dims = md_round_dims
++        self.qr_flag = qr_flag
++        self.qr_threshold = qr_threshold
++        self.qr_operation = qr_operation
++        self.qr_collisions = qr_collisions
++        self.activation_function = activation_function
++        self.loss_function = loss_function
++        self.loss_weights = loss_weights
++        self.loss_threshold = loss_threshold
++        self.round_targets = round_targets
++        self.data_size = data_size
++        self.num_batches = num_batches
++        self.data_generation = data_generation
++        self.data_trace_file = data_trace_file
++        self.data_set = data_set
++        self.raw_data_file = raw_data_file
++        self.processed_data_file = processed_data_file
++        self.data_randomize = data_randomize
++        self.data_trace_enable_padding = data_trace_enable_padding
++        self.max_ind_range = max_ind_range
++        self.data_sub_sample_rate = data_sub_sample_rate
++        self.num_indices_per_lookup = num_indices_per_lookup
++        self.num_indices_per_lookup_fixed = num_indices_per_lookup_fixed
++        self.num_workers = num_workers
++        self.memory_map = memory_map
++        self.mini_batch_size = mini_batch_size
++        self.nepochs = nepochs
++        self.learning_rate = learning_rate
++        self.print_precision = print_precision
++        self.numpy_rand_seed = numpy_rand_seed
++        self.sync_dense_params = sync_dense_params
++        self.inference_only = inference_only
++        self.save_onnx = save_onnx
++        self.use_gpu = use_gpu
++        self.dist_backend = dist_backend
++        self.print_freq = print_freq
++        self.test_freq = test_freq
++        self.test_mini_batch_size = test_mini_batch_size
++        self.test_num_workers = test_num_workers
++        self.print_time = print_time
++        self.debug_mode = debug_mode
++        self.enable_profiling = enable_profiling
++        self.plot_compute_graph = plot_compute_graph
++        self.profiling_start_iter = profiling_start_iter
++        self.profiling_num_iters = profiling_num_iters
++        self.out_dir = out_dir
++        self.save_model = save_model
++        self.load_model = load_model
++        self.mlperf_logging = mlperf_logging
++        self.mlperf_acc_threshold = mlperf_acc_threshold
++        self.mlperf_auc_threshold = mlperf_auc_threshold
++        self.mlperf_bin_loader = mlperf_bin_loader
++        self.mlperf_bin_shuffle = mlperf_bin_shuffle
++        self.lr_num_warmup_steps = lr_num_warmup_steps
++        self.lr_decay_start_step = lr_decay_start_step
++        self.lr_num_decay_steps = lr_num_decay_steps
++        self.sparse_dense_boundary = sparse_dense_boundary
++        self.bf16 = bf16
++        self.use_ipex = use_ipex
++        self.optimizer = optimizer
++        self.lamblr = lamblr
++        self.train_data_path = train_data_path
++        self.eval_data_path = eval_data_path
++        self.day_feature_count = day_feature_count
++
++def get_data_feature(X_data, Y_data, num_numerical_features, max_ind_range, flag_input_torch_tensor=False):
++    # print("X_data=", X_data)
++    # print("Y_data=", Y_data)
++    # print("pass convert")
++    x_int_batch = X_data[:, 0:num_numerical_features]
++    # print("x_int_batch", x_int_batch)
++    x_cat_batch = X_data[:, num_numerical_features:]
++    # print("x_cat_batch=", x_cat_batch)
++    y_batch = Y_data
++
++    if max_ind_range > 0:
++        x_cat_batch = x_cat_batch % max_ind_range
++
++    if flag_input_torch_tensor:
++        # remove gradient
++        x_int_batch = torch.log(x_int_batch.clone().detach().type(torch.float) + 1)
++        x_cat_batch = x_cat_batch.clone().detach().type(torch.long)
++        y_batch = y_batch.clone().detach().type(torch.float32).view(-1, 1)
++    else:
++        x_int_batch = torch.log(torch.tensor(x_int_batch, dtype=torch.float) + 1)
++        x_cat_batch = torch.tensor(x_cat_batch, dtype=torch.long)
++        y_batch = torch.tensor(y_batch, dtype=torch.float32).view(-1, 1)
++
++    batch_size = x_cat_batch.shape[0]
++    feature_count = x_cat_batch.shape[1]
++    lS_o = torch.arange(batch_size).reshape(1, -1).repeat(feature_count, 1)
++    # print("before return x_int_batch: ", x_int_batch)
++    return x_int_batch, lS_o, x_cat_batch.t(), y_batch.view(-1, 1)
+ 
+-if __name__ == "__main__":
++def train_func(args:ModelArguments, test_ds=None, model_size=None):
+     # the reference implementation doesn't clear the cache currently
+     # but the submissions are required to do that
+     mlperf_logger.log_event(key=mlperf_logger.constants.CACHE_CLEAR, value=True)
+@@ -606,108 +797,7 @@ if __name__ == "__main__":
+     ### import packages ###
+     import sys
+     import os
+-    import argparse
+-
+-    ### parse arguments ###
+-    parser = argparse.ArgumentParser(
+-        description="Train Deep Learning Recommendation Model (DLRM)"
+-    )
+-    # model related parameters
+-    parser.add_argument("--arch-sparse-feature-size", type=int, default=2)
+-    parser.add_argument("--arch-embedding-size", type=str, default="4-3-2")
+-    # j will be replaced with the table number
+-    parser.add_argument("--arch-mlp-bot", type=str, default="4-3-2")
+-    parser.add_argument("--arch-mlp-top", type=str, default="4-2-1")
+-    parser.add_argument("--arch-interaction-op", type=str, default="dot")
+-    parser.add_argument("--arch-interaction-itself", action="store_true", default=False)
+-    # embedding table options
+-    parser.add_argument("--md-flag", action="store_true", default=False)
+-    parser.add_argument("--md-threshold", type=int, default=200)
+-    parser.add_argument("--md-temperature", type=float, default=0.3)
+-    parser.add_argument("--md-round-dims", action="store_true", default=False)
+-    parser.add_argument("--qr-flag", action="store_true", default=False)
+-    parser.add_argument("--qr-threshold", type=int, default=200)
+-    parser.add_argument("--qr-operation", type=str, default="mult")
+-    parser.add_argument("--qr-collisions", type=int, default=4)
+-    # activations and loss
+-    parser.add_argument("--activation-function", type=str, default="relu")
+-    parser.add_argument("--loss-function", type=str, default="mse")  # or bce or wbce
+-    parser.add_argument("--loss-weights", type=str, default="1.0-1.0")  # for wbce
+-    parser.add_argument("--loss-threshold", type=float, default=0.0)  # 1.0e-7
+-    parser.add_argument("--round-targets", type=bool, default=False)
+-    # data
+-    parser.add_argument("--data-size", type=int, default=1)
+-    parser.add_argument("--num-batches", type=int, default=0)
+-    parser.add_argument(
+-        "--data-generation", type=str, default="random"
+-    )  # synthetic or dataset
+-    parser.add_argument("--data-trace-file", type=str, default="./input/dist_emb_j.log")
+-    parser.add_argument("--data-set", type=str, default="kaggle")  # or terabyte
+-    parser.add_argument("--raw-data-file", type=str, default="")
+-    parser.add_argument("--processed-data-file", type=str, default="")
+-    parser.add_argument("--data-randomize", type=str, default="total")  # or day or none
+-    parser.add_argument("--data-trace-enable-padding", type=bool, default=False)
+-    parser.add_argument("--max-ind-range", type=int, default=-1)
+-    parser.add_argument("--data-sub-sample-rate", type=float, default=0.0)  # in [0, 1]
+-    parser.add_argument("--num-indices-per-lookup", type=int, default=10)
+-    parser.add_argument("--num-indices-per-lookup-fixed", type=bool, default=False)
+-    parser.add_argument("--num-workers", type=int, default=0)
+-    parser.add_argument("--memory-map", action="store_true", default=False)
+-    # training
+-    parser.add_argument("--mini-batch-size", type=int, default=1)
+-    parser.add_argument("--nepochs", type=int, default=1)
+-    parser.add_argument("--learning-rate", type=float, default=0.01)
+-    parser.add_argument("--print-precision", type=int, default=5)
+-    parser.add_argument("--numpy-rand-seed", type=int, default=123)
+-    parser.add_argument("--sync-dense-params", type=bool, default=True)
+-    # inference
+-    parser.add_argument("--inference-only", action="store_true", default=False)
+-    # onnx
+-    parser.add_argument("--save-onnx", action="store_true", default=False)
+-    # gpu
+-    parser.add_argument("--use-gpu", action="store_true", default=False)
+-    # distributed run
+-    parser.add_argument("--dist-backend", type=str, default="")
+-    # debugging and profiling
+-    parser.add_argument("--print-freq", type=int, default=1)
+-    parser.add_argument("--test-freq", type=int, default=-1)
+-    parser.add_argument("--test-mini-batch-size", type=int, default=-1)
+-    parser.add_argument("--test-num-workers", type=int, default=-1)
+-    parser.add_argument("--print-time", action="store_true", default=False)
+-    parser.add_argument("--debug-mode", action="store_true", default=False)
+-    parser.add_argument("--enable-profiling", action="store_true", default=False)
+-    parser.add_argument("--plot-compute-graph", action="store_true", default=False)
+-    parser.add_argument("--profiling-start-iter", type=int, default=50)
+-    parser.add_argument("--profiling-num-iters", type=int, default=100)
+-    # store/load model
+-    parser.add_argument("--out-dir", type=str, default=".")
+-    parser.add_argument("--save-model", type=str, default="")
+-    parser.add_argument("--load-model", type=str, default="")
+-    # mlperf logging (disables other output and stops early)
+-    parser.add_argument("--mlperf-logging", action="store_true", default=False)
+-    # stop at target accuracy Kaggle 0.789, Terabyte (sub-sampled=0.875) 0.8107
+-    parser.add_argument("--mlperf-acc-threshold", type=float, default=0.0)
+-    # stop at target AUC Terabyte (no subsampling) 0.8025
+-    parser.add_argument("--mlperf-auc-threshold", type=float, default=0.0)
+-    parser.add_argument("--mlperf-bin-loader", action='store_true', default=False)
+-    parser.add_argument("--mlperf-bin-shuffle", action='store_true', default=False)
+-    # LR policy
+-    parser.add_argument("--lr-num-warmup-steps", type=int, default=0)
+-    parser.add_argument("--lr-decay-start-step", type=int, default=0)
+-    parser.add_argument("--lr-num-decay-steps", type=int, default=0)
+-    # embedding table is sparse table only if sparse_dense_boundary >= 2048
+-    parser.add_argument("--sparse-dense-boundary", type=int, default=2048)
+-    # bf16 option
+-    parser.add_argument("--bf16", action='store_true', default=False)
+-    # ipex option
+-    parser.add_argument("--use-ipex", action="store_true", default=False)
+-    # lamb
+-    parser.add_argument("--optimizer", type=int, default=0, help='optimizer:[0:sgd, 1:lamb/sgd, 2:adagrad, 3:sparseadam]')
+-    parser.add_argument("--lamblr", type=float, default=0.01, help='lr for lamb')
+-    parser.add_argument("--eval-data-path", type=str, default="./data/valid.bin")
+-    parser.add_argument("--day-feature-count", type=str, default="./data/day_fea_count.npz")
+-    args = parser.parse_args()
+-
++    
+     ext_dist.init_distributed(backend=args.dist_backend)
+ 
+     if args.mlperf_logging:
+@@ -751,7 +841,7 @@ if __name__ == "__main__":
+     else:
+         device = torch.device("cpu")
+         print("Using CPU...")
+-
++    
+     ### prepare training data ###
+     ln_bot = np.fromstring(args.arch_mlp_bot, dtype=int, sep="-")
+     # input data
+@@ -762,7 +852,27 @@ if __name__ == "__main__":
+     mlperf_logger.log_start(key=mlperf_logger.constants.RUN_START)
+     mlperf_logger.barrier()
+ 
+-    if (args.data_generation == "dataset"):
++    if test_ds is not None:
++        features = [f"_c{i+1}" for i in range(39)] 
++        test_batch_size = args.test_mini_batch_size // ext_dist.my_size
++        test_ld = test_ds.to_torch(
++                        label_column='_c0',
++                        feature_columns=features,
++                        label_column_dtype=torch.float,
++                        feature_column_dtypes=torch.float,
++                        batch_size=test_batch_size)
++        import collections
++        ln_emb = list(model_size.values())
++        # enforce maximum limit on number of vectors per embedding
++        if args.max_ind_range > 0:
++            ln_emb = np.array(list(map(
++                lambda x: x if x < args.max_ind_range else args.max_ind_range, ln_emb)))
++
++        m_den = args.arch_dense_feature_size
++        ln_bot[0] = m_den
++        nbatches_test = (test_ds.count() + test_batch_size - 1) // test_batch_size
++
++    elif (args.data_generation == "dataset"):
+         test_data, test_ld = \
+             dp.make_criteo_data_and_loaders_test(args)
+         nbatches_test = len(test_ld)
+@@ -854,7 +964,7 @@ if __name__ == "__main__":
+             d0=m_spa,
+             round_dim=args.md_round_dims
+         ).tolist()
+-   
++
+     ndevices = min(ngpus, args.mini_batch_size, num_fea - 1) if use_gpu else -1
+ 
+     ### construct the neural network specified above ###
+@@ -982,8 +1092,24 @@ if __name__ == "__main__":
+ 
+     # Load model is specified
+     if not (args.load_model == ""):
+-        print("Loading trained model {}".format(args.load_model))
+-        ld_model = torch.load(os.path.join(args.load_model, "dlrm_s_pytorch_" + str(dlrm.rank) + "_.pkl"), map_location=torch.device('cpu'))
++        print("Loading saved model {}".format(args.load_model))
++        if use_gpu:
++            if dlrm.ndevices > 1:
++                # NOTE: when targeting inference on multiple GPUs,
++                # load the model as is on CPU or GPU, with the move
++                # to multiple GPUs to be done in parallel_forward
++                ld_model = torch.load(args.load_model)
++            else:
++                # NOTE: when targeting inference on single GPU,
++                # note that the call to .to(device) has already happened
++                ld_model = torch.load(
++                    args.load_model,
++                    map_location=torch.device('cuda')
++                    # map_location=lambda storage, loc: storage.cuda(0)
++                )
++        else:
++            # when targeting inference on CPU
++            ld_model = torch.load(os.path.join(args.load_model, "dlrm_s_pytorch_" + str(dlrm.rank) + "_best.pkl"), map_location=torch.device('cpu'))
+         dlrm.load_state_dict(ld_model["state_dict"])
+ 
+     if args.use_ipex:
+@@ -991,14 +1117,19 @@ if __name__ == "__main__":
+        print(dlrm, device, args.use_ipex)
+     ext_dist.barrier()
+     print("Start inference==========================:")
+-
++    
+     test_start = time.time()
+ 
+     if args.mlperf_logging:
+         scores = []
+         targets = []
+ 
+-    for i, (X_test, lS_o_test, lS_i_test, T_test) in enumerate(test_ld):
++    for i, (X_test, Y_test) in enumerate(test_ld):
++        X_test, lS_o_test, lS_i_test, T_test = get_data_feature(X_test,
++                                                        Y_test,
++                                                        num_numerical_features=args.arch_dense_feature_size,
++                                                        max_ind_range=args.max_ind_range,
++                                                        flag_input_torch_tensor=True)
+ 
+         # forward pass
+         Z_test = dlrm_wrap(
+@@ -1103,5 +1234,6 @@ if __name__ == "__main__":
+             )
+         )
+     test_end = time.time()
+-    print(F"Inference completed, time:{test_end - test_start}")
++    print(F"Test time:{test_end - test_start}")
++    print(F"Total results length:{len(scores)}")
+     ext_dist.barrier()
+diff --git a/launch.py b/launch.py
+index a7241d0..7379d0f 100644
+--- a/launch.py
++++ b/launch.py
+@@ -11,6 +11,20 @@ from argparse import ArgumentParser, REMAINDER
+ from argparse import RawTextHelpFormatter
+ import logging
+ import psutil
++import json
++import collections
++
++import ray
++import ray._private.services
++from ray.util import placement_group, remove_placement_group
++
++from raydp.mpi import create_mpi_job, MPIJobContext, WorkerContext
++import os
++from dlrm_s_pytorch import train_func
++import functools
++
++from dlrm_s_pytorch import ModelArguments
++import yaml
+ 
+ logging.basicConfig(level = logging.INFO,format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ logger = logging.getLogger(__name__)
+@@ -359,31 +373,6 @@ def launch(args):
+ 
+     os.environ["LAUNCH_CMD"] = "#"
+     set_multi_thread_and_allcator(args)
+-    for i in range(args.ninstances):
+-       cmd = []
+-       cur_process_cores = ""
+-       if not args.disable_numactl:
+-           cmd = ["numactl"]
+-           for core in cores[i * args.ncore_per_instance:(i + 1) * args.ncore_per_instance]:
+-               cur_process_cores = cur_process_cores + str(core) + ","
+-           numa_params = "-C {} ".format(cur_process_cores[:-1])
+-           cmd.extend(numa_params.split())
+-       with_python = not args.no_python
+-       if with_python:
+-           cmd.append(sys.executable)
+-       if args.module:
+-           cmd.append("-m")
+-       cmd.append(args.program)
+-       cmd.extend(args.program_args)
+-       os.environ["LAUNCH_CMD"] += " ".join(cmd) + ",#"
+-       process = subprocess.Popen(cmd, env=os.environ)
+-       processes.append(process)
+-    os.environ["LAUNCH_CMD"] = os.environ["LAUNCH_CMD"][:-2]
+-    for process in processes:
+-        process.wait()
+-        if process.returncode != 0:
+-            raise subprocess.CalledProcessError(returncode=process.returncode,
+-                                                cmd=cmd) 
+     
+ def mpi_dist_launch(args):
+     '''
+@@ -481,17 +470,7 @@ def mpi_dist_launch(args):
+         mpi_config += " -hostfile {}".format(args.hostfile)
+     cmd.extend(mpi_config.split())
+     with_python = not args.no_python
+-    if with_python:
+-        cmd.append(sys.executable)
+-        cmd.append("-u")
+-    if args.module:
+-        cmd.append("-m")
+-    cmd.append(args.program)
+-    cmd.extend(args.program_args)
+-    process = subprocess.Popen(cmd, env=os.environ)
+-    process.wait()
+-    os.environ["LAUNCH_CMD"] += " ".join(cmd) + ",#"
+-    os.environ["LAUNCH_CMD"] = os.environ["LAUNCH_CMD"][:-2]
++    return cmd
+ 
+ def add_distributed_training_params(parser):
+     
+@@ -504,6 +483,11 @@ def add_distributed_training_params(parser):
+                              "training")
+     group.add_argument("--nproc_per_node", metavar='\b', type=int, default=socket_nums,
+                         help="The number of processes to launch on each node")
++    group.add_argument("--ncpu_per_proc", metavar='\b', type=int, default=1,
++                        help="The number of cpus per process, "
++                             "this used to request resource from Ray")
++    group.add_argument("--world_size", metavar='\b', type=int, default=socket_nums,
++                        help="The world size")
+     #ccl control 
+     group.add_argument("--ccl_worker_count", metavar='\b', default=4, type=int,
+                         help="Core numbers per rank used for ccl communication")
+@@ -606,20 +590,111 @@ def parse_args():
+     parser.add_argument("--no_python", default=False, action="store_true",
+                         help="Do not prepend the --program script with \"python\" - just exec "
+                              "it directly. Useful when the script is not a Python script.")
++    
++    parser.add_argument("--config-path", default=None, help="Parameters of model training.")
++    parser.add_argument("--save-path", default=None, help="Info of dataset.")
++    parser.add_argument("--job_name", default="dlrm", help="The name of job.")
++    parser.add_argument("--timeout", default=5, help="The timeout used to wait for job creation.")
++    parser.add_argument("--mpi_type", default="intel_mpi", help="The mpi type, now only support "
++                                              "openmpi, intel_mpi and MPICH.")
+     add_memory_allocator_params(parser)
+     add_kmp_iomp_params(parser)
+      
+     add_distributed_training_params(parser)
+     add_multi_instance_params(parser)
+     # positional
+-    parser.add_argument("program", type=str,
+-                        help="The full path to the proram/script to be launched. "
+-                             "followed by all the arguments for the script")
++    # parser.add_argument("program", type=str,
++    #                     help="The full path to the proram/script to be launched. "
++    #                          "followed by all the arguments for the script")
+ 
+-    # rest from the training program
+-    parser.add_argument('program_args', nargs=REMAINDER)
++    # # rest from the training program
++    # parser.add_argument('program_args', nargs=REMAINDER)
+     return parser.parse_args()
+ 
++class Test_cls:
++    def get_node_ip(self):
++        return ray._private.services.get_node_ip_address()
++
++def get_model_args(config_path):
++    with open(config_path, "r") as f:
++        config = yaml.safe_load(f)
++    model_config = config["model_arguments"]
++    model_args = ModelArguments(arch_sparse_feature_size=model_config["arch_sparse_feature_size"],
++                                arch_dense_feature_size=model_config["arch_dense_feature_size"],
++                                arch_embedding_size=model_config["arch_embedding_size"],
++                                arch_mlp_bot=model_config["arch_mlp_bot"],
++                                arch_mlp_top=model_config["arch_mlp_top"],
++                                arch_interaction_op=model_config["arch_interaction_op"],
++                                arch_interaction_itself=model_config["arch_interaction_itself"],
++                                md_flag=model_config["md_flag"],
++                                md_threshold=model_config["md_threshold"],
++                                md_temperature=model_config["md_temperature"],
++                                md_round_dims=model_config["md_round_dims"],
++                                qr_flag=model_config["qr_flag"],
++                                qr_threshold=model_config["qr_threshold"],
++                                qr_operation=model_config["qr_operation"],
++                                qr_collisions=model_config["qr_collisions"],
++                                activation_function=model_config["activation_function"],
++                                loss_function=model_config["loss_function"],
++                                loss_weights=model_config["loss_weights"],
++                                loss_threshold=model_config["loss_threshold"],
++                                round_targets=model_config["round_targets"],
++                                data_size=model_config["data_size"],
++                                num_batches=model_config["num_batches"],
++                                data_generation=model_config["data_generation"],
++                                data_trace_file=model_config["data_trace_file"],
++                                data_set=model_config["data_set"],
++                                raw_data_file=model_config["raw_data_file"],
++                                processed_data_file=model_config["processed_data_file"],
++                                data_randomize=model_config["data_randomize"],
++                                data_trace_enable_padding=model_config["data_trace_enable_padding"],
++                                max_ind_range=model_config["max_ind_range"],
++                                data_sub_sample_rate=model_config["data_sub_sample_rate"],
++                                num_indices_per_lookup=model_config["num_indices_per_lookup"],
++                                num_indices_per_lookup_fixed=model_config["num_indices_per_lookup_fixed"],
++                                num_workers=model_config["num_workers"],
++                                memory_map=model_config["memory_map"],
++                                mini_batch_size=model_config["mini_batch_size"],
++                                nepochs=model_config["nepochs"],
++                                learning_rate=model_config["learning_rate"],
++                                print_precision=model_config["print_precision"],
++                                numpy_rand_seed=model_config["numpy_rand_seed"],
++                                sync_dense_params=model_config["sync_dense_params"],
++                                inference_only=model_config["inference_only"],
++                                save_onnx=model_config["save_onnx"],
++                                use_gpu=model_config["use_gpu"],
++                                dist_backend=model_config["dist_backend"],
++                                print_freq=model_config["print_freq"],
++                                test_freq=model_config["test_freq"],
++                                test_mini_batch_size=model_config["test_mini_batch_size"],
++                                test_num_workers=model_config["test_num_workers"],
++                                print_time=model_config["print_time"],
++                                debug_mode=model_config["debug_mode"],
++                                enable_profiling=model_config["enable_profiling"],
++                                plot_compute_graph=model_config["plot_compute_graph"],
++                                profiling_start_iter=model_config["profiling_start_iter"],
++                                profiling_num_iters=model_config["profiling_num_iters"],
++                                out_dir=model_config["out_dir"],
++                                save_model=model_config["save_model"],
++                                load_model=model_config["load_model"],
++                                mlperf_logging=model_config["mlperf_logging"],
++                                mlperf_acc_threshold=model_config["mlperf_acc_threshold"],
++                                mlperf_auc_threshold=model_config["mlperf_auc_threshold"],
++                                mlperf_bin_loader=model_config["mlperf_bin_loader"],
++                                mlperf_bin_shuffle=model_config["mlperf_bin_shuffle"],
++                                lr_num_warmup_steps=model_config["lr_num_warmup_steps"],
++                                lr_decay_start_step=model_config["lr_decay_start_step"],
++                                lr_num_decay_steps=model_config["lr_num_decay_steps"],
++                                sparse_dense_boundary=model_config["sparse_dense_boundary"],
++                                bf16=model_config["bf16"],
++                                use_ipex=model_config["use_ipex"],
++                                optimizer=model_config["optimizer"],
++                                lamblr=model_config["lamblr"],
++                                train_data_path=model_config["train_data_path"],
++                                eval_data_path=model_config["eval_data_path"],
++                                day_feature_count=model_config["day_feature_count"])
++    return model_args
++
+ def main():
+ 
+     env_before = set(os.environ.keys())
+@@ -637,10 +712,76 @@ def main():
+     if args.nnodes > 1:
+         args.distributed = True
+ 
++    ray.init(address="auto")
++    world_size = args.world_size
++
++    with open(args.save_path, "r") as f:
++        data_info = f.readline()
++    data_info = json.loads(data_info)
++
++    train_file_folder = data_info["train_data"]
++    test_file_folder = data_info["test_data"]
++    model_size = collections.OrderedDict(data_info["model_size"])
++    model_args = get_model_args(args.config_path)
++
+     if args.distributed:
+-        mpi_dist_launch(args)
++        cmd = mpi_dist_launch(args)
++        def mpi_with_script_prepare_fn(context: MPIJobContext):
++            return cmd
++        job = create_mpi_job(job_name=args.job_name,
++                        world_size=world_size,
++                        num_cpus_per_process=args.ncpu_per_proc,
++                        num_processes_per_node=args.nproc_per_node,
++                        timeout=args.timeout,
++                        mpi_type = args.mpi_type,
++                        mpi_script_prepare_fn=mpi_with_script_prepare_fn)
++        job.start()
++
++        bundles = [{"CPU": 1}] * world_size
++        pg = ray.util.placement_group(
++            bundles=bundles, strategy="SPREAD", name=f"testt_pg")
++        pg_indexes = list(range(world_size))
++
++        train_ds = ray.data.read_parquet(train_file_folder)
++        test_ds = ray.data.read_parquet(test_file_folder)
++        # create the WorkerPeer actor
++        locality_hints = []
++        test_cls = ray.remote(Test_cls)
++        for pg_index in pg_indexes:
++            locality_hint = test_cls.options(
++                placement_group=pg, placement_group_bundle_index=pg_index
++            ).remote()
++            locality_hints.append(locality_hint)
++        node_addresses = ray.get([peer.get_node_ip.remote() for peer in locality_hints])
++
++        train_shards = train_ds.split(world_size, equal=True, locality_hints=locality_hints)
++        test_shards = test_ds.split(world_size, equal=True, locality_hints=locality_hints)
++
++        print("job start")
++
++        # shards match ray actors
++        data_dict = dict.fromkeys(list(set(node_addresses)), None)
++        for address in node_addresses:
++            data_dict[address]=[]
++        for i, address in enumerate(node_addresses):
++            data_dict[address].append(i)
++        print("data_dict: ", data_dict)
++
++
++        def func(context: WorkerContext): 
++            li = data_dict[context.node_ip]
++            train_func(model_args, train_shards[li[context.local_rank]], test_shards[li[context.local_rank]], model_size)
++        results = job.run(func)
++
++        job.stop()
++        ray.shutdown()
+     else:
+         launch(args)
++        train_ds = ray.data.read_parquet(train_file_folder)
++        test_ds = ray.data.read_parquet(test_file_folder)
++        train_func(model_args, train_ds, test_ds, model_size)
++        ray.shutdown()
++        
+ 
+     for x in sorted(set(os.environ.keys()) - env_before):
+         logger.debug(f'{x}={os.environ[x]}')
+diff --git a/launch_inference.py b/launch_inference.py
+new file mode 100644
+index 0000000..3e6d533
+--- /dev/null
++++ b/launch_inference.py
+@@ -0,0 +1,787 @@
++from __future__ import absolute_import, division, print_function, unicode_literals
++import sys
++import platform
++import subprocess
++import os
++from os.path import expanduser
++import re
++import glob
++import numpy as np
++from argparse import ArgumentParser, REMAINDER
++from argparse import RawTextHelpFormatter
++import logging
++import psutil
++import json
++import collections
++
++import ray
++import ray._private.services
++from ray.util import placement_group, remove_placement_group
++
++from raydp.mpi import create_mpi_job, MPIJobContext, WorkerContext
++import os
++from dlrm_s_pytorch_inference import train_func
++import functools
++
++from dlrm_s_pytorch_inference import ModelArguments
++import yaml
++
++logging.basicConfig(level = logging.INFO,format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
++logger = logging.getLogger(__name__)
++
++r"""
++This is a script for launching PyTorch training and inference on Intel Xeon CPU with optimal configurations.
++Now, single instance inference/training, multi-instance inference/training and distributed training 
++with oneCCL backend is enabled.
++
++To get the peak performance on Intel Xeon CPU, the script optimizes the configuration of thread and memory 
++management. For thread management, the script configures thread affinity and the preload of Intel OMP library. 
++For memory management, it configures NUMA binding and preload optimized memory allocation library (e.g. tcmalloc, jemalloc).
++ 
++**How to use this module:**
++
++*** Single instance inference/training *** 
++
++1. Run single-instance inference or training on a single node with all CPU sockets.
++
++::
++
++   >>> python -m intel_pytorch_extension.launch script.py args
++
++2. Run single-instance inference or training on a single CPU socket.
++
++::
++
++   >>> python -m intel_pytorch_extension.launch --socket_id 1 script.py args
++
++*** Multi-instance inference *** 
++
++1. Multi-instance 
++   By default, one instance per socket. if you want to set the instance numbers and core per instance,  
++   --nintances and  --ncore_per_instance should be set. 
++
++   
++   >>> python -m intel_pytorch_extension.launch --multi_instance python_script args
++
++   eg: on CLX8280 with 14 instance, 4 cores per instance 
++::
++
++   >>> python -m intel_pytorch_extension.launch --multi_instance --nintances 14 --ncore_per_instance 4 python_script args
++
++
++*** Distributed Training ***
++
++spawns up multiple distributed training processes on each of the training nodes. For intel_pytorch_extension, oneCCL 
++is used as the communication backend and MPI used to launch multi-proc. To get the better 
++performance, you should specify the different cores for oneCCL communication and computation 
++process seperately. This tool can automatically set these ENVs(such as I_MPI_PIN_DOMIN) and launch
++multi-proc for you.   
++
++The utility can be used for single-node distributed training, in which one or
++more processes per node will be spawned.  It can also be used in
++multi-node distributed training, by spawning up multiple processes on each node
++for well-improved multi-node distributed training performance as well.
++
++
++1. Single-Node multi-process distributed training
++
++::
++
++    >>> python  -m intel_pytorch_extension.launch --distributed  python_script  --arg1 --arg2 --arg3 and all other
++                arguments of your training script
++
++2. Multi-Node multi-process distributed training: (e.g. two nodes)
++
++
++rank 0: *(IP: 192.168.10.10, and has a free port: 295000)*
++
++::
++
++    >>> python -m intel_pytorch_extension.launch --distributed --nproc_per_node=xxx
++               --nnodes=2 --hostfile hostfile python_sript --arg1 --arg2 --arg3 
++               and all other arguments of your training script)
++
++
++3. To look up what optional arguments this module offers:
++
++::
++
++    >>> python -m intel_pytorch_extension.launch --help
++
++*** Memory allocator  ***
++
++"--enable_tcmalloc" and "--enable_jemalloc" can be used to enable different memory allcator. 
++
++"""
++
++class CPUinfo():
++    def __init__(self):
++
++        self.cpuinfo = []
++        if platform.system() == "Windows":
++            raise RuntimeError("Windows platform is not supported!!!")
++        elif platform.system() == "Linux":
++            args = ["lscpu", "--parse=CPU,Core,Socket,Node"]
++            lscpu_info = subprocess.check_output(args, universal_newlines=True).split("\n")
++
++            # Get information about  cpu, core, socket and node
++            for line in lscpu_info:
++                pattern = r"^([\d]+,[\d]+,[\d]+,[\d]+)"
++                regex_out = re.search(pattern, line)
++                if regex_out:
++                    self.cpuinfo.append(regex_out.group(1).strip().split(","))
++            self._get_socket_info()
++
++    def _get_socket_info(self):
++
++        self.socket_physical_cores = [] #socket_id is index
++        self.socket_logical_cores = []  #socket_id is index
++        self.sockets =  int(max([line[2] for line in self.cpuinfo])) + 1
++        for socket_id in range(self.sockets):
++            cur_socket_physical_core = []
++            cur_socket_logical_core = []
++            for line in self.cpuinfo:
++                if socket_id == int(line[2]):
++                    if line[1] not in cur_socket_physical_core:
++                        cur_socket_physical_core.append(line[1])
++                    cur_socket_logical_core.append(line[0])
++            self.socket_physical_cores.append(cur_socket_physical_core)
++            self.socket_logical_cores.append(cur_socket_logical_core)
++
++
++    def socket_nums(self):
++        return self.sockets
++
++    def physical_core_nums(self):
++        return len(self.socket_physical_cores) * len(self.socket_physical_cores[0])
++
++    def logical_core_nums(self):
++        return len(self.socket_logical_cores) * len(self.socket_logical_cores[0])
++    
++    def get_socket_physical_cores(self, socket_id):
++        if socket_id < 0 or socket_id > self.sockets - 1:
++            logger.error("Invalid socket id")
++        return self.socket_physical_cores[socket_id]
++
++    def get_socket_logical_cores(self, socket_id):
++        if socket_id < 0 or socket_id > self.sockets - 1:
++            logger.error("Invalid socket id")
++        return self.socket_logical_cores[socket_id]
++
++    def get_all_physical_cores(self):
++        return np.array(self.socket_physical_cores).flatten().tolist()
++    
++    def get_all_logical_cores(self):
++        return np.array(self.socket_logical_cores).flatten().tolist()
++              
++
++def set_mpi_pin_domain(args):
++    '''
++    I_MPI_PIN_DOMAIN specify the cores used for every MPI process. 
++    The first ccl_worker_count cores of every rank for ccl communication
++    and the other cores will be used to do computation.
++    For example: on CascadeLake 8280 CPU, 2 ranks on one node. ccl_worker_count=4
++    CCL_WORKER_COUNT=4
++    CCL_WORKER_AFFINITY="0,1,2,3,28,29,30,31"
++    I_MPI_PIN_DOMAIN=[0xffffff0,0xffffff0000000]
++    '''
++    cpuinfo = CPUinfo()
++    ppn = args.nproc_per_node
++    total_cores = cpuinfo.physical_core_nums()
++    if args.use_logical_core:
++        total_cores = cpuinfo.logcal_core_nums()
++    cores_per_rank = total_cores // ppn
++    pin_domain = "["
++    for proc in range(ppn):
++        domain_binary = 0
++        begin = proc * cores_per_rank + args.ccl_worker_count
++        end = proc * cores_per_rank + cores_per_rank -1 
++        for i in range(begin, end + 1):
++            domain_binary |= (1 << i)
++        pin_domain += hex(domain_binary) + ","
++    return pin_domain + "]"
++
++def set_ccl_worker_affinity(args):
++    '''
++    computation and communication use different cores when using oneCCL
++    backend for distributed training. we use first ccl_worker_count cores of 
++    every rank for ccl communication
++    '''
++    cpuinfo = CPUinfo()
++    ppn = args.nproc_per_node
++    total_cores = cpuinfo.physical_core_nums()
++    if args.use_logical_core:
++        total_cores = cpuinfo.logcal_core_nums()
++    cores_per_rank = total_cores // ppn
++    affinity = ''
++    for proc in range(ppn):
++        for ccl_worker in range(args.ccl_worker_count):
++            affinity += str(proc * cores_per_rank + ccl_worker)+ "," 
++    os.environ["CCL_WORKER_AFFINITY"] = affinity
++
++
++def add_lib_preload(lib_type=None):
++    '''
++    Enale TCMalloc/JeMalloc/iomp 
++    '''
++    library_paths = []
++    if "CONDA_PREFIX" in os.environ:
++        library_paths.append(os.environ["CONDA_PREFIX"] + "/lib/")
++    
++    library_paths += ["{}/.local/lib/".format(expanduser("~")), "/usr/local/lib/",
++                     "/usr/local/lib64/", "/usr/lib/", "/usr/lib64/"]
++    lib_find = False
++    for lib_path in library_paths:
++        library_file = lib_path + "lib" + lib_type + ".so"
++        matches = glob.glob(library_file)
++        if len(matches) > 0:
++            if "LD_PRELOAD" in os.environ:
++                os.environ["LD_PRELOAD"] = matches[0] + ":" + os.environ["LD_PRELOAD"]
++            else:
++                os.environ["LD_PRELOAD"] = matches[0]
++            lib_find = True
++            break
++    return lib_find
++
++def set_memory_allocator(args):
++    if args.enable_tcmalloc and args.enable_jemalloc:
++        logger.error("Unable to enable TCMalloc and JEMalloc at the same time")
++        exit(-1)
++
++    if args.enable_tcmalloc: 
++        find_tc = add_lib_preload(lib_type="tcmalloc")
++        if not find_tc:
++            logger.warning("Unable to find the {} library file lib{}.so in $CONDA_PREFIX/lib or  /.local/lib/"
++               " or /usr/local/lib/ or /usr/local/lib64/ or /usr/lib or /usr/lib64 or "
++               "~/.local/lib/ so the LD_PRELOAD environment variable will not be set."
++               .format("TCmalloc", "tcmalloc", expanduser("~")))
++        else:
++            logger.info("Use TCMalloc memory allocator")
++
++    elif args.enable_jemalloc:
++        find_je = add_lib_preload(lib_type="jemalloc")
++        if not find_je:
++            logger.warning("Unable to find the {} library file lib{}.so in $CONDA_PREFIX/lib or  /.local/lib/"
++               " or /usr/local/lib/ or /usr/local/lib64/ or /usr/lib or /usr/lib64 or "
++               "~/.local/lib/ so the LD_PRELOAD environment variable will not be set."
++               .format("JeMalloc", "jemalloc", expanduser("~")))
++        else:
++            logger.info("Use JeMallocl memory allocator")
++
++    elif args.use_default_allocator:
++        pass
++
++    else:
++        find_tc = add_lib_preload(lib_type="tcmalloc")
++        if find_tc:
++            logger.info("Use TCMalloc memory allocator")
++            return 
++        find_je = add_lib_preload(lib_type="jemalloc")
++        if find_je:
++            logger.info("Use JeMallocl memory allocator")
++            return 
++        logger.warning("Both TCMalloc and JeMalloc are not fount in $CONDA_PREFIX/lib or  /.local/lib/"
++                       " or /usr/local/lib/ or /usr/local/lib64/ or /usr/lib or /usr/lib64 or "
++                       "~/.local/lib/ so the LD_PRELOAD environment variable will not be set. This may drop the performance"
++                       .format(expanduser("~")))
++         
++def set_multi_thread_and_allcator(args):
++    
++    set_memory_allocator(args)
++    if "OMP_NUM_THREADS" not in os.environ:
++        os.environ["OMP_NUM_THREADS"] = str(args.ncore_per_instance)
++    elif "OMP_NUM_THREADS" in os.environ:
++        args.ncore_per_instance = int(os.environ["OMP_NUM_THREADS"])
++    
++    if "KMP_AFFINITY" not in os.environ:
++        os.environ["KMP_AFFINITY"] = args.kmp_affinity
++    
++    if "KMP_BLOCKTIME" not in os.environ:
++        os.environ["KMP_BLOCKTIME"] = "1"
++    
++    if "DNNL_PRIMITIVE_CACHE_CAPACITY" not in os.environ:    
++       os.environ["DNNL_PRIMITIVE_CACHE_CAPACITY"] = '1024'
++
++    logger.info("OMP_NUM_THREADS={} ".format(os.environ["OMP_NUM_THREADS"]))
++    logger.info("KMP_AFFINITY={}".format(os.environ["KMP_AFFINITY"]))
++    logger.info("KMP_BLOCKTIME={}".format(os.environ["KMP_BLOCKTIME"]))
++    logger.info("DNNL_PRIMITIVE_CACHE_CAPACITY={}".format(os.environ["DNNL_PRIMITIVE_CACHE_CAPACITY"]))
++     
++    if args.enable_iomp:
++        find_iomp = add_lib_preload(lib_type="iomp")
++        if not find_iomp:
++            logger.warning("Unable to find the {} library file lib{}.so in $CONDA_PREFIX/lib or  /.local/lib/"
++               " or /usr/local/lib/ or /usr/local/lib64/ or /usr/lib or /usr/lib64 or "
++               "~/.local/lib/ so the LD_PRELOAD environment variable will not be set."
++               .format("iomp", "iomp", expanduser("~")))
++        else:
++            logger.info("User iomp") 
++ 
++def launch(args):
++    '''
++    single-instance / multi-instance launcher  
++    ''' 
++    processes = []
++    cores = []
++ 
++    cpuinfo = CPUinfo()
++    if args.core_list:#user specify what cores will be used by params
++        cores = args.core_list.strip().split(",")
++        if args.ncore_per_instance == -1:
++            logger.error("please specify the '--ncore_per_instance' if you have pass the --core_list params")
++            exit(-1) 
++        elif args.ninstances > 1 and args.ncore_per_instance * args.ninstances < len(cores):
++            logger.warning("only first {} cores will be used, but you specify {} cores in core_list".format
++                  (args.ncore_per_instance * args.ninstances, len(cores)))
++        else:
++            args.ninstances = len(cores) // args.ncore_per_instance
++    else:
++        if args.use_logical_core:
++            if args.socket_id != -1:
++                cores = cpuinfo.get_socket_logical_cores(args.socket_id) 
++            else:
++                cores = cpuinfo.get_all_logical_cores()            
++        else:
++            if args.socket_id != -1:
++                cores = cpuinfo.get_socket_physical_cores(args.socket_id)
++            else:
++                cores = cpuinfo.get_all_physical_cores()      
++        if not args.multi_instance and args.ninstances == -1 and args.ncore_per_instance == -1:
++            args.ninstances = 1;
++            args.ncore_per_instance = len(cores)
++        elif args.multi_instance and args.ninstances == -1 and args.ncore_per_instance == -1:
++            args.throughput_performance = True
++        elif args.ncore_per_instance == -1 and args.ninstances != -1:
++            args.ncore_per_instance = len(cores) // args.ninstances
++        elif args.ncore_per_instance != -1 and args.ninstances == -1:
++            args.ninstances = len(cores) // args.ncore_per_instance
++        else:
++            if args.ninstances * args.ncore_per_instance > len(cores):
++                logger.error("Please make sure ninstances * ncore_per_instance <= total_cores")
++                exit(-1)
++        if args.latency_performance:
++            if args.ncore_per_instance !=4:
++               logger.warning("latency_performance is a specail mode, args.ncore_per_instance can only be set to be 4")
++            args.ncore_per_instance = 4
++            cores = cpuinfo.get_all_physical_cores()
++            args.ninstances = len(cores) // args.ncore_per_instance
++
++        if args.throughput_performance:
++            args.ninstances = cpuinfo.socket_nums()
++            cores = cpuinfo.get_all_physical_cores()
++            args.ncore_per_instance = len(cores) // args.ninstances
++
++    os.environ["LAUNCH_CMD"] = "#"
++    set_multi_thread_and_allcator(args)
++    
++def mpi_dist_launch(args):
++    '''
++    Set ENVs and launch MPI process for distributed training.
++    '''
++    if args.nnodes > 1 and not os.path.exists(args.hostfile):
++        raise ValueError("hostfile is necessary when you use multi-node distributed training,"
++                          "Please create hostfile which include the ip list you used for distributed running")
++    elif args.nnodes > 1:
++        ipv4_addr_pattern = r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
++        ip_list = []
++        with open(args.hostfile) as f:
++             for line in f:
++                 line = line.strip().strip("\n")
++                 is_valid = re.match(ipv4_addr_pattern, line)
++                 if not is_valid:
++                     logger.error("{} is not valid IPV4 address".format(line))
++                     exit(-1)
++                 else:
++                     ip_list.append(line)
++        if len(ip_list) < args.nnodes:
++            logger.error("The number of IP {} should greater than nnodes parameters {}".format(len(ip_list), args.nnodes))
++            exit(-1)
++        master_check = False
++        dic = psutil.net_if_addrs()
++        for adapter in dic:
++            snicList = dic[adapter]
++            for snic in snicList:
++                if snic.address == ip_list[0]:
++                    master_check = True
++        if not master_check:
++           logger.error("MASTER_ADDR is not right. Please make sure the first ip {} in your hostfile is the current node".format(ip_list[0]))
++           exit(-1)
++ 
++        logger.info("Begin to validate the ip connect")
++        args.master_addr = ip_list[0]
++        for ip in ip_list[1:]:
++            completed_process = subprocess.run("ssh -o PasswordAuthentication=no {} ':'".format(ip), shell=True)
++            if completed_process.returncode != 0:
++                logger.error("Passwordless SSH login to {} failed, please make sure you have setup SSH public key right") 
++                exit(-1)
++            else:
++                logger.info("connection from master node {} to slave node {} is OK".format(args.master_addr, ip))
++
++    set_memory_allocator(args)
++    # set distributed related environmental variables
++    os.environ["MASTER_ADDR"] = args.master_addr
++    os.environ["MASTER_PORT"] = str(args.master_port)
++    if "I_MPI_PIN_DOMAIN" not in os.environ:
++         mpi_pin_domain = set_mpi_pin_domain(args)
++    else:
++         mpi_pin_domain = os.environ["I_MPI_PIN_DOMAIN"]
++    
++    cpuinfo = CPUinfo()
++    ppn = args.nproc_per_node 
++    total_cores = len(cpuinfo.get_all_physical_cores())
++    cores_per_rank = total_cores // ppn
++    
++    if "OMP_NUM_THREADS" not in os.environ:
++        opm_num_threads = cores_per_rank - args.ccl_worker_count
++    else:
++        opm_num_threads = os.environ["OMP_NUM_THREADS"]
++
++    os.environ["CCL_WORKER_COUNT"] = str(args.ccl_worker_count)
++
++    if "CCL_WORKER_AFFINITY" not in os.environ:
++        set_ccl_worker_affinity(args)
++
++    if "CCL_ATL_TRANSPORT" not in os.environ:
++        os.environ["CCL_ATL_TRANSPORT"] = "ofi"
++    
++    if args.enable_iomp:
++        find_iomp = add_lib_preload(lib_type="iomp")
++        if not find_iomp:
++            logger.warning("Unable to find the {} library file lib{}.so in $CONDA_PREFIX/lib or  /.local/lib/"
++               " or /usr/local/lib/ or /usr/local/lib64/ or /usr/lib or /usr/lib64 or "
++               "~/.local/lib/ so the LD_PRELOAD environment variable will not be set."
++               .format("iomp", "iomp", expanduser("~")))
++        else:
++             logger.info("Enale iomp by set LD_PRELOAD")
++
++    logger.info("MASTER_ADDR={}".format(args.master_addr))
++    logger.info("MASTER_PORT={}".format(args.master_port))
++    logger.info("I_MPI_PIN_DOMAIN={}".format(mpi_pin_domain))
++    logger.info("OMP_NUM_THREADS={} ".format(opm_num_threads))
++    logger.info("CCL_WORKER_COUNT={}".format(args.ccl_worker_count))
++    logger.info("CCL_WORKER_AFFINITY={}".format(os.environ["CCL_WORKER_AFFINITY"]))
++
++    os.environ["LAUNCH_CMD"] = "#"
++    cmd = ['mpiexec.hydra']
++    mpi_config = "-l -np {} -ppn {} -genv I_MPI_PIN_DOMAIN={} -genv OMP_NUM_THREADS={} ".format(args.nnodes*args.nproc_per_node,
++                  args.nproc_per_node,  mpi_pin_domain, opm_num_threads)
++    mpi_config += args.more_mpi_parms
++    if args.nnodes > 1:
++        mpi_config += " -hostfile {}".format(args.hostfile)
++    cmd.extend(mpi_config.split())
++    with_python = not args.no_python
++    return cmd
++
++def add_distributed_training_params(parser):
++    
++    cpuinfo = CPUinfo()
++    socket_nums = cpuinfo.socket_nums()
++
++    group = parser.add_argument_group("Distributed Training Parameters With oneCCL backend")
++    group.add_argument("--nnodes", metavar='\b', type=int, default=1,
++                        help="The number of nodes to use for distributed "
++                             "training")
++    group.add_argument("--nproc_per_node", metavar='\b', type=int, default=socket_nums,
++                        help="The number of processes to launch on each node")
++    group.add_argument("--ncpu_per_proc", metavar='\b', type=int, default=1,
++                        help="The number of cpus per process, "
++                             "this used to request resource from Ray")
++    group.add_argument("--world_size", metavar='\b', type=int, default=socket_nums,
++                        help="The world size")
++    #ccl control 
++    group.add_argument("--ccl_worker_count", metavar='\b', default=4, type=int,
++                        help="Core numbers per rank used for ccl communication")
++    #mpi control
++    group.add_argument("--master_addr", metavar='\b', default="127.0.0.1", type=str,
++                        help="Master node (rank 0)'s address, should be either "
++                             "the IP address or the hostname of node 0, for "
++                             "single node multi-proc training, the "
++                             "--master_addr can simply be 127.0.0.1")
++    group.add_argument("--master_port", metavar='\b', default=29500, type=int,
++                        help="Master node (rank 0)'s free port that needs to "
++                             "be used for communication during distributed "
++                             "training")
++    group.add_argument("--hostfile", metavar='\b', default="hostfile", type=str,
++                        help="Hostfile is necessary for multi-node multi-proc "
++                              "training. hostfile includes the node address list "
++                              "node address which should be either the IP address"
++                              "or the hostname.")
++    group.add_argument("--more_mpi_parms", metavar='\b', default="", type=str,
++                        help="User can pass more parameters for mpiexec.hydra "
++                              "except for -np -ppn -hostfile and -genv I_MPI_PIN_DOMAIN")
++
++def add_memory_allocator_params(parser):
++
++    group = parser.add_argument_group("Memory Allocator Parameters") 
++        #allocator control
++    group.add_argument("--enable_tcmalloc", action='store_true', default=False,
++                        help="Enable tcmalloc allocator")
++    group.add_argument("--enable_jemalloc", action='store_true', default=False,
++                        help="Enable jemalloc allocator")
++    group.add_argument("--use_default_allocator",  action='store_true', default=False,
++                        help="Use default memory allocator")
++        
++def add_multi_instance_params(parser):
++    
++    group = parser.add_argument_group("Multi-instance Parameters")
++     #multi-instance control
++    group.add_argument("--ncore_per_instance", metavar='\b', default=-1, type=int, 
++                         help="Cores per instance")
++    group.add_argument("--ninstances", metavar='\b', default=-1, type=int,
++                         help="For multi-instance, you should give the cores number you used for per insantance.")
++    group.add_argument("--latency_performance", action='store_true', default=False,
++                         help="By detault 4 core per instance and use all physical cores")
++    group.add_argument("--throughput_performance", action='store_true', default=False,
++                         help="By default one instance per socket and use all physical cores")
++    group.add_argument("--socket_id", metavar='\b', default=-1, type=int,
++                         help="Socket id for multi-instance, by default all sockets will be used")
++    group.add_argument("--use_logical_core", action='store_true', default=False,
++                         help="Whether only use physical cores")
++    group.add_argument("--disable_numactl",  action='store_true', default=False,
++                         help="Disable numactl")
++    group.add_argument("--core_list", metavar='\b', default=None, type=str,
++                         help="Specify the core list as 'core_id, core_id, ....', otherwise, all the cores will be used.")
++ 
++def add_kmp_iomp_params(parser): 
++
++    group = parser.add_argument_group("KMP/IOMP Affinity Parameters") 
++    group.add_argument("--kmp_affinity", metavar='\b', default="granularity=fine,compact,1,0", type=str,
++                        help="KMP_AFFINITY setup, environment variable has higher priority than this args."
++                             "defualt value is : granularity=fine,compact,1,0")
++    group.add_argument("--enable_iomp", action='store_true', default=False,
++                        help="Enable iomp and libiomp.so will be add to LD_PRELOAD") 
++   
++
++def parse_args():
++    """
++    Helper function parsing the command line options
++    @retval ArgumentParser
++    """
++    parser = ArgumentParser(description="This is a script for launching PyTorch training and inference on Intel Xeon CPU "
++                                        "with optimal configurations. Now, single instance inference/training, multi-instance "
++                                        "inference/training and distributed training with oneCCL backend is enabled. "
++                                        "To get the peak performance on Intel Xeon CPU, the script optimizes the configuration "
++                                        "of thread and memory management. For thread management, the script configures thread "
++                                        "affinity and the preload of Intel OMP library. For memory management, it configures " 
++                                        "NUMA binding and preload optimized memory allocation library (e.g. tcmalloc, jemalloc) "
++                                        "\n################################# Basic usage ############################# \n"
++                                        "\n 1. single instance\n" 
++                                         "\n   >>> python -m intel_pytorch_extension.launch python_script args \n"
++                                        "\n2. multi-instance \n"
++                                        "\n    >>> python -m intel_pytorch_extension.launch --multi_instance python_script args\n"
++                                        "\n3. Single-Node multi-process distributed training\n"
++                                        "\n    >>> python  -m intel_pytorch_extension.launch --distributed  python_script args\n"
++                                        "\n4. Multi-Node multi-process distributed training: (e.g. two nodes)\n"
++                                        "\n   rank 0: *(IP: 192.168.10.10, and has a free port: 295000)*\n"
++                                        "\n   >>> python -m intel_pytorch_extension.launch --distributed --nproc_per_node=2\n"
++                                        "\n       --nnodes=2 --hostfile hostfile python_script args\n",
++                                        formatter_class=RawTextHelpFormatter)
++    
++    parser.add_argument("--multi_instance", action='store_true', default=False,
++                        help="Enable multi-instance, by default one instance per socket")  
++
++    parser.add_argument('--distributed', action='store_true', default=False,
++                    help='Enable distributed training.')
++    parser.add_argument("-m", "--module", default=False, action="store_true",
++                        help="Changes each process to interpret the launch script "
++                             "as a python module, executing with the same behavior as"
++                             "'python -m'.")
++
++    parser.add_argument("--no_python", default=False, action="store_true",
++                        help="Do not prepend the --program script with \"python\" - just exec "
++                             "it directly. Useful when the script is not a Python script.")
++    
++    parser.add_argument("--config-path", default=None, help="Parameters of model training.")
++    parser.add_argument("--save-path", default=None, help="Info of dataset.")
++    parser.add_argument("--job_name", default="dlrm", help="The name of job.")
++    parser.add_argument("--timeout", default=5, help="The timeout used to wait for job creation.")
++    parser.add_argument("--mpi_type", default="intel_mpi", help="The mpi type, now only support "
++                                              "openmpi, intel_mpi and MPICH.")
++    add_memory_allocator_params(parser)
++    add_kmp_iomp_params(parser)
++     
++    add_distributed_training_params(parser)
++    add_multi_instance_params(parser)
++    # positional
++    # parser.add_argument("program", type=str,
++    #                     help="The full path to the proram/script to be launched. "
++    #                          "followed by all the arguments for the script")
++
++    # # rest from the training program
++    # parser.add_argument('program_args', nargs=REMAINDER)
++    return parser.parse_args()
++
++class Test_cls:
++    def get_node_ip(self):
++        return ray._private.services.get_node_ip_address()
++
++def get_model_args(config_path):
++    with open(config_path, "r") as f:
++        config = yaml.safe_load(f)
++    model_config = config["model_arguments"]
++    model_args = ModelArguments(arch_sparse_feature_size=model_config["arch_sparse_feature_size"],
++                                arch_dense_feature_size=model_config["arch_dense_feature_size"],
++                                arch_embedding_size=model_config["arch_embedding_size"],
++                                arch_mlp_bot=model_config["arch_mlp_bot"],
++                                arch_mlp_top=model_config["arch_mlp_top"],
++                                arch_interaction_op=model_config["arch_interaction_op"],
++                                arch_interaction_itself=model_config["arch_interaction_itself"],
++                                md_flag=model_config["md_flag"],
++                                md_threshold=model_config["md_threshold"],
++                                md_temperature=model_config["md_temperature"],
++                                md_round_dims=model_config["md_round_dims"],
++                                qr_flag=model_config["qr_flag"],
++                                qr_threshold=model_config["qr_threshold"],
++                                qr_operation=model_config["qr_operation"],
++                                qr_collisions=model_config["qr_collisions"],
++                                activation_function=model_config["activation_function"],
++                                loss_function=model_config["loss_function"],
++                                loss_weights=model_config["loss_weights"],
++                                loss_threshold=model_config["loss_threshold"],
++                                round_targets=model_config["round_targets"],
++                                data_size=model_config["data_size"],
++                                num_batches=model_config["num_batches"],
++                                data_generation=model_config["data_generation"],
++                                data_trace_file=model_config["data_trace_file"],
++                                data_set=model_config["data_set"],
++                                raw_data_file=model_config["raw_data_file"],
++                                processed_data_file=model_config["processed_data_file"],
++                                data_randomize=model_config["data_randomize"],
++                                data_trace_enable_padding=model_config["data_trace_enable_padding"],
++                                max_ind_range=model_config["max_ind_range"],
++                                data_sub_sample_rate=model_config["data_sub_sample_rate"],
++                                num_indices_per_lookup=model_config["num_indices_per_lookup"],
++                                num_indices_per_lookup_fixed=model_config["num_indices_per_lookup_fixed"],
++                                num_workers=model_config["num_workers"],
++                                memory_map=model_config["memory_map"],
++                                mini_batch_size=model_config["mini_batch_size"],
++                                nepochs=model_config["nepochs"],
++                                learning_rate=model_config["learning_rate"],
++                                print_precision=model_config["print_precision"],
++                                numpy_rand_seed=model_config["numpy_rand_seed"],
++                                sync_dense_params=model_config["sync_dense_params"],
++                                inference_only=model_config["inference_only"],
++                                save_onnx=model_config["save_onnx"],
++                                use_gpu=model_config["use_gpu"],
++                                dist_backend=model_config["dist_backend"],
++                                print_freq=model_config["print_freq"],
++                                test_freq=model_config["test_freq"],
++                                test_mini_batch_size=model_config["test_mini_batch_size"],
++                                test_num_workers=model_config["test_num_workers"],
++                                print_time=model_config["print_time"],
++                                debug_mode=model_config["debug_mode"],
++                                enable_profiling=model_config["enable_profiling"],
++                                plot_compute_graph=model_config["plot_compute_graph"],
++                                profiling_start_iter=model_config["profiling_start_iter"],
++                                profiling_num_iters=model_config["profiling_num_iters"],
++                                out_dir=model_config["out_dir"],
++                                save_model=model_config["save_model"],
++                                load_model=model_config["load_model"],
++                                mlperf_logging=model_config["mlperf_logging"],
++                                mlperf_acc_threshold=model_config["mlperf_acc_threshold"],
++                                mlperf_auc_threshold=model_config["mlperf_auc_threshold"],
++                                mlperf_bin_loader=model_config["mlperf_bin_loader"],
++                                mlperf_bin_shuffle=model_config["mlperf_bin_shuffle"],
++                                lr_num_warmup_steps=model_config["lr_num_warmup_steps"],
++                                lr_decay_start_step=model_config["lr_decay_start_step"],
++                                lr_num_decay_steps=model_config["lr_num_decay_steps"],
++                                sparse_dense_boundary=model_config["sparse_dense_boundary"],
++                                bf16=model_config["bf16"],
++                                use_ipex=model_config["use_ipex"],
++                                optimizer=model_config["optimizer"],
++                                lamblr=model_config["lamblr"],
++                                train_data_path=model_config["train_data_path"],
++                                eval_data_path=model_config["eval_data_path"],
++                                day_feature_count=model_config["day_feature_count"])
++    return model_args
++
++def main():
++
++    env_before = set(os.environ.keys())
++    if platform.system() == "Windows":
++        raise RuntimeError("Windows platform is not supported!!!")
++
++    args = parse_args()
++
++    if args.distributed and args.multi_instance:
++        raise RuntimeError("Either args.distributed or args.multi_instance should be set")
++    
++    if args.latency_performance and args.throughput_performance:
++        raise RuntimeError("Either args.latency_performance or args.throughput_performance  should be set")
++
++    if args.nnodes > 1:
++        args.distributed = True
++
++    ray.init(address="auto")
++    world_size = args.world_size
++
++    with open(args.save_path, "r") as f:
++        data_info = f.readline()
++    data_info = json.loads(data_info)
++
++    valid_file_folder = data_info["val_data"]
++    model_size = collections.OrderedDict(data_info["model_size"])
++    model_args = get_model_args(args.config_path)
++
++    if args.distributed:
++        cmd = mpi_dist_launch(args)
++        def mpi_with_script_prepare_fn(context: MPIJobContext):
++            return cmd
++        job = create_mpi_job(job_name=args.job_name,
++                        world_size=world_size,
++                        num_cpus_per_process=args.ncpu_per_proc,
++                        num_processes_per_node=args.nproc_per_node,
++                        timeout=args.timeout,
++                        mpi_type = args.mpi_type,
++                        mpi_script_prepare_fn=mpi_with_script_prepare_fn)
++        job.start()
++
++        bundles = [{"CPU": 1}] * world_size
++        pg = ray.util.placement_group(
++            bundles=bundles, strategy="SPREAD", name=f"testt_pg")
++        pg_indexes = list(range(world_size))
++
++        valid_ds = ray.data.read_parquet(valid_file_folder)
++        # create the WorkerPeer actor
++        locality_hints = []
++        test_cls = ray.remote(Test_cls)
++        for pg_index in pg_indexes:
++            locality_hint = test_cls.options(
++                placement_group=pg, placement_group_bundle_index=pg_index
++            ).remote()
++            locality_hints.append(locality_hint)
++        node_addresses = ray.get([peer.get_node_ip.remote() for peer in locality_hints])
++
++        valid_shards = valid_ds.split(world_size, equal=True, locality_hints=locality_hints)
++
++        print("job start")
++
++        # shards match ray actors
++        data_dict = dict.fromkeys(list(set(node_addresses)), None)
++        for address in node_addresses:
++            data_dict[address]=[]
++        for i, address in enumerate(node_addresses):
++            data_dict[address].append(i)
++        print("data_dict: ", data_dict)
++
++
++        def func(context: WorkerContext): 
++            li = data_dict[context.node_ip]
++            train_func(model_args, valid_shards[li[context.local_rank]], model_size)
++        results = job.run(func)
++
++        job.stop()
++        ray.shutdown()
++    else:
++        launch(args)
++        valid_ds = ray.data.read_parquet(valid_file_folder)
++        train_func(model_args, valid_ds, model_size)
++        ray.shutdown()
++        
++
++    for x in sorted(set(os.environ.keys()) - env_before):
++        logger.debug(f'{x}={os.environ[x]}')
++ 
++if __name__ == "__main__":
++    main()
++
