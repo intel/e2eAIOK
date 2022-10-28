@@ -50,9 +50,9 @@ ENV SPARK_HOME /home/spark-3.2.1-bin-hadoop3.2
 ENV PYTHONPATH $SPARK_HOME/python/:$PYTHONPATH
 ENV PYTHONPATH $SPARK_HOME/python/lib/py4j-0.10.9.3-src.zip:$PYTHONPATH
 RUN wget -qO- https://archive.apache.org/dist/hadoop/common/hadoop-3.3.1/hadoop-3.3.1.tar.gz | tar xvz -C /home/
-ENV HADOOP_HOME=/home/hadoop-3.3.1
-ENV HADOOP_CONF_DIR=/home/hadoop-3.3.1/etc/hadoop/
-ENV CLASSPATH=$CLASSPATH:`$HADOOP_HOME/bin/hdfs classpath --glob`
+ENV HADOOP_HOME /home/hadoop-3.3.1
+ENV HADOOP_CONF_DIR /home/hadoop-3.3.1/etc/hadoop/
+RUN echo "export CLASSPATH=$CLASSPATH:`$HADOOP_HOME/bin/hdfs classpath --glob`" >> /etc/bash.bashrc
 RUN conda init bash
 RUN echo "root:docker" | chpasswd
 ENTRYPOINT [""]
