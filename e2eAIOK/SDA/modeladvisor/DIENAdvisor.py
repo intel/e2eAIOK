@@ -37,7 +37,9 @@ class DIENAdvisor(BaseModelAdvisor):
         self.test_path = eval_path
         self.dataset_meta_path = dataset_meta_path
         # self.saved_path = settings['model_saved_path']
-        self.train_python = "/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python"
+        self.python_path = "/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/"
+        self.train_python = f"{self.python_path}/python"
+        self.horovodrun_path = f"{self.python_path}/horovodrun"
         self.train_script = "/home/vmagent/app/e2eaiok/modelzoo/dien/train/ai-matrix/script/train.py"
 
     def get_cpu_info(self):
@@ -134,7 +136,7 @@ class DIENAdvisor(BaseModelAdvisor):
     def dist_launch(self, args):
         cmd = []
         hosts = [f"{h}:1" for h in args['hosts']]
-        cmd.extend(["/opt/intel/oneapi/tensorflow/2.5.0/bin/horovodrun", "-np", f"{args['ppn']}", "-H",  f"{','.join(hosts)}", "--network-interface", f"{args['iface']}"])
+        cmd.extend([self.horovodrun_path, "-np", f"{args['ppn']}", "-H",  f"{','.join(hosts)}", "--network-interface", f"{args['iface']}"])
         cmd.extend(["--verbose"])
         cmd.extend(self.prepare_cmd(args))
 

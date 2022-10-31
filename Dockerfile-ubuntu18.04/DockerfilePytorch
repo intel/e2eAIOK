@@ -58,6 +58,10 @@ RUN echo "if [ -z \$SPARK_HOME ]; then source /home/spark-env.sh; fi" >> /etc/ba
 RUN mkdir -p /home/vmagent/app/e2eaiok/spark_data_processing/spark_local_dir
 RUN mkdir -p /home/mnt/applicationHistory
 RUN conda init bash
-RUN echo "source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force" >> /etc/bash.bashrc
+RUN echo "source /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/.local/env/setvars.sh" >> /etc/bash.bashrc
+RUN echo "export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/python3.7/site-packages/torch_ipex-0.1-py3.7-linux-x86_64.egg/" >> /etc/bash.bashrc
+RUN echo "export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/python3.7/site-packages/torch/lib/" >> /etc/bash.bashrc
+RUN echo "KMP_BLOCKTIME=1" >> /etc/bash.bashrc
+RUN echo "KMP_AFFINITY=\"granularity=fine,compact,1,0\"" >> /etc/bash.bashrc
 RUN echo "root:docker" | chpasswd
 ENTRYPOINT [""]

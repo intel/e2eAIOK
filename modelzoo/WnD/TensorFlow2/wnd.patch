@@ -20895,8 +20895,8 @@ index 0000000..009d183
 @@ -0,0 +1,15 @@
 +#!/bin/bash
 +
-+source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force
-+conda activate tensorflow
++#source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force
++#conda activate tensorflow
 +
 +#export PYTHONPATH=$SPARK_HOME/python:$SPARK_HOME/python/lib/py4j-0.10.7-src.zip
 +export SPARK_OPTS="--driver-java-options=-Xms1024M --driver-java-options=-Xmx4096M --driver-java-options=-Dlog4j.logLevel=info"
@@ -20907,7 +20907,7 @@ index 0000000..009d183
 +tfrecords=${2:-40}
 +host=`hostname`
 +
-+time /opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python -m data.outbrain.spark.preproc --spark_master "spark://${host}:7077" --dataset_path "file:///home/vmagent/app/dataset/outbrain/orig/" --output_path "file:////home/vmagent/app/dataset/outbrain/"
++/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python -m data.outbrain.spark.preproc --spark_master "spark://${host}:7077" --dataset_path "file:///home/vmagent/app/dataset/outbrain/orig/" --output_path "file:////home/vmagent/app/dataset/outbrain/"
 \ No newline at end of file
 diff --git a/modelzoo/WnD/TensorFlow2/scripts/train.sh b/modelzoo/WnD/TensorFlow2/scripts/train.sh
 new file mode 100644

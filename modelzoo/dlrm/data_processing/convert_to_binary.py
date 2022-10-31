@@ -17,11 +17,8 @@ LABEL_COL = f"_c0"
 INT_COLS = [f"_c{i}" for i in list(range(1, 14))]
 CAT_COLS = [f"_c{i}" for i in list(range(14, 40))]
 sorted_column_name = [f"_c{i}" for i in list(range(0, 40))]
-path_prefix = f"hdfs://{HDFS_NODE}:9000"
-output_folder = "/home/vmagent/app/dataset/criteo/output"
-current_path = "/home/vmagent/app/dataset/criteo/output"
 
-def process(files, output_name):
+def process(files, output_name, path_prefix, output_folder, current_path):
     os.makedirs(output_folder, exist_ok=True)
     output_name = f"{output_folder}/{output_name}"
     if os.path.exists(output_name):
@@ -132,12 +129,12 @@ def merge_days(input_name, output_name, idx):
             if end_cache_row >= target_row:
                 stop = True
 
-def post_process(process_type, mp):
+def post_process(process_type, mp, total_days, path_prefix, output_folder, current_path, settings):
     print(f"multi process is {mp}")
     t0 = timer()
     if process_type == "train":
         # 1 merge partial output
-        num_part = 23
+        num_part = total_days
         # 3.1 create partial output
         start = 0
         end = start
@@ -150,8 +147,14 @@ def post_process(process_type, mp):
             end = start + step
             print(f"Create subprocess {idx} for {output_name}[{start}:{end}], total {num_part}")
             src_files_list = train_files[start:end]
-            p_output_name = f"{output_name}.{idx}"
-            pool.append(subprocess.Popen(["python", "convert_to_binary.py", "-p", f"{src_files_list}", "-o", f"{p_output_name}"]))
+            if settings.local_small:
+                p_output_name = f"{output_name}"
+            else:
+                p_output_name = f"{output_name}.{idx}"
+            cmd = ["python", "convert_to_binary.py", "-p", f"{src_files_list}", "-o", f"{p_output_name}", "--dataset_path", settings.dataset_path]
+            if settings.local_small:
+                cmd += ['--local_small']
+            pool.append(subprocess.Popen(cmd))
             idx += 1
             start = end
             if len(pool) >= mp or end == num_part:
@@ -164,16 +167,16 @@ def post_process(process_type, mp):
     elif process_type == "test":
         p_files = ['dlrm_categorified_test']
         output_name = "test_data.bin"
-        process(p_files, output_name)
+        process(p_files, output_name, path_prefix, output_folder, current_path)
     else:
         p_files = ["dlrm_categorified_valid"]
         output_name = "valid_data.bin"
-        process(p_files, output_name)
+        process(p_files, output_name, path_prefix, output_folder, current_path)
 
     t_end = timer()
     print(f"Completed for {output_name}, took " +  "%.3f secs" % (t_end - t0))
 
-def process_dicts():
+def process_dicts(path_prefix, output_folder, current_path):
     print("Start to generate day_fea_count.npz")
     if path_prefix.startswith("hdfs://"):
         local_folder = os.getcwd()
@@ -181,6 +184,8 @@ def process_dicts():
         print(f"Start to Download {filename} from HDFS to {local_folder}")
         process = subprocess.Popen(["/home/hadoop-3.3.1/bin/hdfs", "dfs", "-get", f"{path_prefix}/{current_path}/{filename}"])
         process.wait()
+    else:
+        local_folder = f"{current_path}"
     feat_dim_final = []
     for name in CAT_COLS:
         print(f"Get dimension of {name}")
@@ -190,21 +195,30 @@ def process_dicts():
     np.savez(open(f"{output_folder}/day_fea_count.npz", "wb"), counts=np.array(feat_dim_final))
     
 def main(settings):
+    if settings.local_small:
+        path_prefix = "file://"
+        total_days = 1
+    else:
+        path_prefix = f"hdfs://{HDFS_NODE}:9000"
+        total_days = 23
+    output_folder = f"{settings.dataset_path}/output"
+    current_path = f"{settings.dataset_path}/output"
     if settings.partitioned_file:
         p_files = eval(settings.partitioned_file)
-        process(p_files, settings.output_name)
+        process(p_files, settings.output_name, path_prefix, output_folder, current_path)
     else:
         t1 = timer()
-        process_dicts()
+        process_dicts(path_prefix, output_folder, current_path)
 
         print("Start to convert train/valid/test")
-        post_process("train", int(settings.multi_process))
-        post_process("test", 1)
-        post_process("valid", 1)
+        post_process("train", int(settings.multi_process), total_days, path_prefix, output_folder, current_path, settings)
+        post_process("test", 1, total_days, path_prefix, output_folder, current_path, settings)
+        post_process("valid", 1, total_days, path_prefix, output_folder, current_path, settings)
 
         input_name = f"{output_folder}/train_data.bin"
         output_name = f"{current_path}/train_data.bin"
-        merge_days(input_name, output_name, 23)
+        if total_days > 1:
+            merge_days(input_name, output_name, total_days)
     
         t3 = timer()
         print(f"Total process time is {(t3 - t1)} secs")
@@ -214,9 +228,10 @@ def parse_args(args):
     parser.add_argument('-o', '--output_name')
     parser.add_argument('-p', '--partitioned_file')
     parser.add_argument('-mp', '--multi_process', default=6)
+    parser.add_argument('-dp', '--dataset_path',type=str,default="/home/vmagent/app/dataset/criteo",help='dataset path for criteo')
+    parser.add_argument('--local_small', action='store_true', help='worker host list')
     return parser.parse_args(args)
     
 if __name__ == "__main__":
     input_args = parse_args(sys.argv[1:])
     main(input_args)
-    

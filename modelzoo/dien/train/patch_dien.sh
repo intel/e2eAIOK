@@ -6,6 +6,9 @@ get_original_model () {
 
 apply_patch () {
     git apply dien.patch
+    cat setvars.sh > tmp
+    cat ai-matrix/script/train.py >> tmp
+    mv tmp ai-matrix/script/train.py
 }
 
 get_original_model

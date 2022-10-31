@@ -13,7 +13,7 @@ import pandas as pd
 
 ###############################################
 # !!!put HDFS NODE here, empty won't proceed!!!
-HDFS_NODE = ""
+HDFS_NODE = "1"
 ###############################################
 
 # Define Schema
@@ -64,14 +64,19 @@ def generate_dicts(spark, path_list, proc):
     
     print([i['dict'].count() for i in dict_dfs])
 
-def main(hdfs_node):
+def main(hdfs_node, dataset_path):
     import os
     host_name = os.uname()[1]
     print(host_name)
-    path_prefix = f"hdfs://{hdfs_node}:9000"
-    current_path = "/home/vmagent/app/dataset/criteo/output/"
+    if hdfs_node == "1":
+        path_prefix = f"file://"
+        total_days = 1
+    else:
+        path_prefix = f"hdfs://{hdfs_node}:9000"
+        total_days = 23
+    current_path = f"{dataset_path}/output/"
 
-    scala_udf_jars = "/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/python3.7/site-packages/ScalaProcessUtils/built/31/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
+    scala_udf_jars = "/opt/intel/oneapi/intelpython/latest/lib/python3.7/site-packages/ScalaProcessUtils/built/31/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
 
     ##### 2. Start spark and initialize data processor #####
     t1 = timer()
@@ -90,7 +95,7 @@ def main(hdfs_node):
     proc = DataProcessor(spark, path_prefix, current_path=current_path, shuffle_disk_capacity="800GB", spark_mode='standalone')
 
     
-    train_files = ["day_%d" % i for i in range(0, 23)]
+    train_files = ["day_%d" % i for i in range(0, total_days)]
 
     #############################
     # 1. Process category columns
@@ -157,10 +162,21 @@ def main(hdfs_node):
     t3 = timer()
     print(f"Total process time is {(t3 - t1)} secs")
 
+def parse_args(args):
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-dp', '--dataset_path',type=str,default="/home/vmagent/app/dataset/criteo/",help='dataset path for criteo')
+    parser.add_argument('--local_small', action='store_true', help='worker host list')
+
+    return parser.parse_args(args)
 
 if __name__ == "__main__":
-    if HDFS_NODE == "":
-        print("Please add correct HDFS_NODE name in this file, or this script won't be able to process")
+    import sys
+    input_args = parse_args(sys.argv[1:])
+    if input_args.local_small:
+        main("1", input_args.dataset_path)
     else:
-        main(HDFS_NODE)
-    
+        if HDFS_NODE == "":
+            print("Please add correct HDFS_NODE name in this file, or this script won't be able to process")
+        else:
+            main(HDFS_NODE, input_args.dataset_path)

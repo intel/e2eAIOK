@@ -367,15 +367,21 @@ def result_rename_or_convert(fpath, opath, output_name):
             idx += 1
 
 
-def main(mode = '--train', option = '--advanced'):
+def main(settings):
     import os
     hname = os.uname()[1]
     print(hname)
     fmt = 'adv_pkl'
+    if settings.train:
+        mode = "--train"
+    if settings.train:
+        mode = "--test"
+    if settings.train:
+        mode = "--infer"
 
     path_prefix = "file://"
-    current_path = "/home/vmagent/app/dataset/amazon_reviews/output/"
-    original_folder = "/home/vmagent/app/dataset/amazon_reviews/"
+    current_path = f"{settings.dataset_path}/output/"
+    original_folder = settings.dataset_path
 
     scala_udf_jars = "/opt/intel/oneapi/intelpython/latest/lib/python3.7/site-packages/pyrecdp/ScalaProcessUtils/target/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
 
@@ -527,10 +533,17 @@ def main(mode = '--train', option = '--advanced'):
     print(f"Total process time is {(t1 - t0)} secs")
 
     ####################################
-    
+
+def parse_args(args):
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-dp', '--dataset_path',type=str,default="/home/vmagent/app/dataset/amazon_reviews/",help='dataset path for criteo')
+    parser.add_argument('--train', action='store_true', help='target data to process')
+    parser.add_argument('--test', action='store_true', help='target data to process')
+    parser.add_argument('--infer', action='store_true', help='target data to process')
+
+    return parser.parse_args(args)
+
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) > 1:
-        main(sys.argv[1])
-    else:
-        main()
+    main(parse_args(sys.argv[1:]))
