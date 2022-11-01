@@ -1,0 +1,1 @@
+docker run -it --net=host -v /mnt/nvme2/chendi/BlueWhale/recdp:/home/vmagent/app/recdp -v /mnt/nvme2/chendi/BlueWhale/applications.ai.appliedml.haystack/:/home/haystack -v /mnt/nvme2/chendi/BlueWhale/applications.ai.appliedml.haystack/haystack/:/home/user/haystack xuechendi/haystack-cpu-recdp /bin/bash
