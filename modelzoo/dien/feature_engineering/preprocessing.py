@@ -383,6 +383,14 @@ def main(settings):
     current_path = f"{settings.dataset_path}/output/"
     original_folder = settings.dataset_path
 
+    # prepare meta
+    meta_info = []
+    meta_info.append(f"uid_voc: {original_folder}/uid_voc.pkl")
+    meta_info.append(f"mid_voc: {original_folder}/mid_voc.pkl")
+    meta_info.append(f"cat_voc: {original_folder}/cat_voc.pkl")
+    with open(f"{original_folder}/meta.ymal", "w") as f:
+        f.write("\n".join(meta_info) + "\n")
+
     scala_udf_jars = "/opt/intel/oneapi/intelpython/latest/lib/python3.7/site-packages/pyrecdp/ScalaProcessUtils/target/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
 
     ##### 1. Start spark and initialize data processor #####
