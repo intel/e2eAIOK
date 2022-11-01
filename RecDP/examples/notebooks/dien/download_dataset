@@ -1,0 +1,17 @@
+#!/usr/bin/bash
+
+mkdir raw_data
+
+if [ ! -f "data.tar.gz" ]; then
+        wget https://zenodo.org/record/3463683/files/data.tar.gz
+fi
+
+tar -jxvf data.tar.gz
+mv data/local_test_splitByUser raw_data/
+rm -r data
+
+wget http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Books.json.gz
+wget http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/meta_Books.json.gz
+gunzip reviews_Books.json.gz
+gunzip meta_Books.json.gz
+mv *json raw_data
