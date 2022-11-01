@@ -6,75 +6,64 @@ Source repo: https://github.com/facebookresearch/dlrm
 
 # Quick Start
 
-## Install
-```
+## Enviroment Setup
+``` bash
+# Setup ENV
 git clone https://github.com/intel/e2eAIOK.git
 git submodule update --init --recursive
-cd ${path_to_e2eaiok}/modelzoo/dlrm
+cd e2eAIOK
+python3 scripts/start_e2eaiok_docker.py -b pytorch_mlperf -w ${host0} ${host1} ${host2} ${host3} --proxy ""
+```
+
+## Enter Docker
+```
+sshpass -p docker ssh ${host0} -p 12346
+```
+## Workflow Prepare
+``` bash
+# prepare model codes
+cd /home/vmagent/app/e2eaiok/modelzoo/dlrm
 sh patch_dlrm.sh
-```
 
-## Environment setup
-```
-cd ${path_to_e2eaiok}/Dockerfile-ubuntu18.04/
-docker build -t e2eaiok-pytorch . -f DockerfilePytorch
-```
-
-## Activate docker and conda
-```
-cd ${path_to_e2eaiok}
-docker run --shm-size=100g -it --privileged --network host --device=/dev/dri -v ${path_to_e2eaiok_dataset}:/home/vmagent/app/dataset -v `pwd`/:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch /bin/bash
-
-source /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/.local/env/setvars.sh
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/python3.7/site-packages/torch_ipex-0.1-py3.7-linux-x86_64.egg/
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/python3.7/site-packages/torch/lib/
-conda activate pytorch_mlperf
-
-cd /home/vmagent/app/e2eaiok/
-python setup.py install
-
-```
-
-## Download Dataset
-```
-Download the raw data files day_0.gz, ...,day_23.gz from https://labs.criteo.com/2013/12/download-terabyte-click-logs/ and unzip them
-
-```
-
-## RecDP Data Process
-```
-# check if raw data has been downloaded
+# Download Dataset
+# Download from https://labs.criteo.com/2013/12/download-terabyte-click-logs/ and unzip them
 ls /home/vmagent/app/dataset/criteo/raw_data
 day_0  day_10  day_12  day_14  day_16  day_18  day_2   day_21  day_23  day_4  day_6  day_8
 day_1  day_11  day_13  day_15  day_17  day_19  day_20  day_22  day_3   day_5  day_7  day_9
 
-# enter data process folder
-cd /home/vmagent/app/e2eaiok/modelzoo/dlrm/data_processing/
+# source spark env
+source /home/spark-env.sh
 
-# install recdp and pyarrow
-pip install pyrecdp pyarrow
+# Start services
+# only if there is no spark service running, may check ${localhost}:8080 to confirm
+sh /home/start_spark_service.sh
+```
 
-# start spark service
-cd /home/vmagent/app/e2eaiok/conf/spark/
-cp spark-defaults.conf /home/spark-3.2.1-bin-hadoop3.2/conf/
-mkdir -p /home/vmagent/app/e2eaiok/spark_local_dir
-mkdir -p /home/mnt/applicationHistory
-sh ./start_spark_service.sh
+## Data Process
 
-# add your HDFS master node in below files
+* suggest to build a HDFS cluster with at least 3 datanodes
+* required ~1T HDFS capacity for raw data and processed data storage
+* required ~1.5T Spark Shuffle capacity total, 500G per node
+
+```
+# 1. add your HDFS master node in below files
 convert_to_parquet.py
 preprocessing.py
 convert_to_binary.py
 
-# upload and trsnform downloaded data as parquet to HDFS, may take 30 mins
+# 2. upload and transform downloaded data as parquet to HDFS, may take 30 mins
+# please only start 1 spark worker co-located with raw data
 python convert_to_parquet.py
-# process data, may take about 1 hour
+
+# 3. process data, may take about 1 hour
+# start spark workers on all three nodes
 python preprocessing.py
-# download processed data and convert to binary
+
+# 4. download processed data and convert to binary, taking about 1 hour
 python convert_to_binary.py
 
-# check result
-(pytorch_mlperf) ll /home/vmagent/app/dataset/criteo/output/
+# 5. check result
+ll /home/vmagent/app/dataset/criteo/output/
 total 683357412
          4096  ./
          4096  ../
@@ -86,15 +75,10 @@ total 683357412
 
 ## Training
 ```
-bash run_train.sh
+cd /home/vmagent/app/e2eaiok/; python -u run_e2eaiok.py --data_path /home/vmagent/app/dataset/criteo --model_name dlrm --no_sigopt
 ```
 
 ## Inference
 ```
-bash run_inference.sh
-```
-
-## All In One
-```
-bash run_all_in_one.sh
+cd /home/vmagent/app/e2eaiok/modelzoo/dlrm/; bash run_inference.sh
 ```
