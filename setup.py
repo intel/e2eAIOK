@@ -1,3 +1,4 @@
+import os
 import setuptools
 from setuptools.command.install import install
 from setuptools import find_packages
