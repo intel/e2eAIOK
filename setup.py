@@ -7,7 +7,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 e2eaiok_home = os.path.abspath(__file__ + "/../")
-VERSION = open(os.path.join(e2eaiok_home, 'version'), 'r').read().strip()
+VERSION = open(os.path.join(e2eaiok_home, 'dev/', 'nbversion'), 'r').read().strip()
 
 setuptools.setup(
     name="e2eAIOK",
@@ -15,12 +15,12 @@ setuptools.setup(
     author="INTEL AIA BDF",
     author_email="chendi.xue@intel.com",
     description=
-    "A smart AI democratization kit",
+    "Intel® End-to-End AI Optimization Kit",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/intel-innersource/frameworks.bigdata.bluewhale",
+    url="https://github.com/intel/e2eAIOK",
     project_urls={
-        "Bug Tracker": "https://github.com/intel-innersource/frameworks.bigdata.bluewhale",
+        "Bug Tracker": "https://github.com/intel/e2eAIOK/issues",
     },
     classifiers=[
         "Programming Language :: Python :: 3",

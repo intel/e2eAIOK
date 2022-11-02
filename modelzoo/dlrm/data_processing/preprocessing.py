@@ -13,7 +13,7 @@ import pandas as pd
 
 ###############################################
 # !!!put HDFS NODE here, empty won't proceed!!!
-HDFS_NODE = "1"
+HDFS_NODE = ""
 ###############################################
 
 # Define Schema
