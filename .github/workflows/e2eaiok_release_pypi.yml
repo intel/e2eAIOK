@@ -1,0 +1,42 @@
+name: Publish E2EAIOK distribution to PyPI
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  e2eaiok-release-python-pypi:
+    runs-on: ubuntu-latest
+    if: ${{ github.actor == 'xuechendi' }}
+    steps:
+    - uses: actions/checkout@main
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.7'
+
+    - name: days since the commit date
+      run: |
+          :
+          timestamp=$(git log --no-walk --date=unix --format=%cd $GITHUB_SHA)
+          days=$(( ( $(date --utc +%s) - $timestamp ) / 86400 ))
+          if [ $days -eq 0 ]; then
+              echo COMMIT_TODAY=true >> $GITHUB_ENV
+          fi
+
+    - name: Build wheel
+      run: |
+        pip install build wheel
+        bash dev/release_default_linux.sh
+
+    - name: Upload
+      if: env.COMMIT_TODAY == 'true'
+      uses: pypa/gh-action-pypi-publish@master
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}
