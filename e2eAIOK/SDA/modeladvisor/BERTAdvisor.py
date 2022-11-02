@@ -16,7 +16,6 @@ class BERTAdvisor(BaseModelAdvisor):
             level=logging.INFO,
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         self.logger = logging.getLogger('sigopt')
-        self.train_script = "/home/vmagent/app/e2eaiok/modelzoo/resnet/mlperf_resnet/imagenet_main.py"
         self.python_path = "/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/"
         self.train_python = f"{self.python_path}/python"
         self.train_script = os.path.join(os.getcwd(),"modelzoo/bert/benchmarks/launch_benchmark.py")
