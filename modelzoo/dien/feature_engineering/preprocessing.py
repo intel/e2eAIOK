@@ -374,9 +374,9 @@ def main(settings):
     fmt = 'adv_pkl'
     if settings.train:
         mode = "--train"
-    if settings.train:
+    if settings.test:
         mode = "--test"
-    if settings.train:
+    if settings.infer:
         mode = "--infer"
 
     path_prefix = "file://"
