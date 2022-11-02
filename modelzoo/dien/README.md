@@ -27,8 +27,8 @@ cd /home/vmagent/app/e2eaiok/modelzoo/dien/train
 sh patch_dien.sh
 
 # Download Dataset
-cd ${path_to_e2eaiok}/modelzoo/dien/feature_engineering/
-./download_dataset ${path_to_e2eaiok_dataset}
+cd /home/vmagent/app/e2eaiok/modelzoo/dien/feature_engineering/
+./download_dataset /home/vmagent/app/dataset/
 
 # source spark env
 source /home/spark-env.sh
