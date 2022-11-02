@@ -1,4 +1,4 @@
-# [e2eAIOK]()
+# [Intel® End-to-End AI Optimization Kit]()
 
 # INTRODUCTION
 
