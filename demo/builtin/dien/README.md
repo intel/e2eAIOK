@@ -1,0 +1,1 @@
+please refer to [e2eaiok_dien_readme](https://github.com/intel/e2eAIOK/blob/main/modelzoo/dien/README.md)
