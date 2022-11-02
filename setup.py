@@ -11,7 +11,7 @@ VERSION = open(os.path.join(e2eaiok_home, 'version'), 'r').read().strip()
 
 setuptools.setup(
     name="e2eAIOK",
-    version="0.0.1",
+    version=VERSION,
     author="INTEL AIA BDF",
     author_email="chendi.xue@intel.com",
     description=
