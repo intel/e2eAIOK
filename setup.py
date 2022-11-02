@@ -1,3 +1,4 @@
+import os
 import setuptools
 from setuptools.command.install import install
 from setuptools import find_packages
@@ -5,9 +6,12 @@ from setuptools import find_packages
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
+e2eaiok_home = os.path.abspath(__file__ + "/../")
+VERSION = open(os.path.join(e2eaiok_home, 'version'), 'r').read().strip()
+
 setuptools.setup(
     name="e2eAIOK",
-    version="0.0.1",
+    version=VERSION,
     author="INTEL AIA BDF",
     author_email="chendi.xue@intel.com",
     description=
