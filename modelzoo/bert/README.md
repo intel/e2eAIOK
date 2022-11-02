@@ -1,5 +1,7 @@
 # Intel® End-to-End AI Optimization Kit for BERT
+
 ## Original source disclose
+
 Stanford Question Answering Dataset (SQuAD) is a reading comprehension dataset, consisting of questions posed by crowdworkers on a set of Wikipedia articles, where the answer to every question is a segment of text, or span, from the corresponding reading passage, or the question might be unanswerable. SQuAD 1.1 contains 100,000+ question-answer pairs on 500+ articles.
 
 original code source: https://github.com/IntelAI/models.git
@@ -9,7 +11,8 @@ original code source: https://github.com/IntelAI/models.git
 # Quick Start
 
 ## Enviroment Setup
-``` bash
+
+```bash
 # Setup ENV
 git clone https://github.com/intel/e2eAIOK.git
 cd e2eAIOK
@@ -18,12 +21,14 @@ python3 scripts/start_e2eaiok_docker.py -b tensorflow -w ${host0} ${host1} ${hos
 ```
 
 ## Enter Docker
+
 ```
 sshpass -p docker ssh ${host0} -p 12344
 ```
 
 ## Workflow Prepare
-``` bash
+
+```bash
 # prepare model codes
 cd /home/vmagent/app/e2eaiok/modelzoo/bert
 sh patch_bert.sh
@@ -45,11 +50,12 @@ sh patch_bert.sh
     "question": "Is this a test?",
     "title": "train test"
 }
-* Download Pre-trained models to /home/vmagent/app/dataset/SQuAD
+* Download Pre-trained models to /home/vmagent/app/dataset/SQuAD/pre-trained-model/bert-large-uncased/
 Download and extract one of BERT large pretrained models from [Google BERT repository](https://github.com/google-research/bert#pre-trained-models) 
 ```
 
 ## Training
+
 ```
 cd /home/vmagent/app/e2eaiok/; python run_e2eaiok.py --data_path /home/vmagent/app/dataset/SQuAD --model_name bert --conf /home/vmagent/app/e2eaiok/conf/e2eaiok_defaults_bert_example.conf --no_sigopt
 ```
