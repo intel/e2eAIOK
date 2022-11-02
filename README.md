@@ -1,53 +1,76 @@
-# [AIDK](https://laughing-waddle-b1e4ead5.pages.github.io/html/)
+# [e2eAIOK]()
 
-AI Democratization Kit (AIDK) is a set of kits for E2E AI democratization on CPU. It is a pipeline framework that streamlines AI democratization technologies in each stage of E2E AI pipeline, including data processing, feature engineering, training, hyper-parameter tunning, and inference. AIDK delivers high performance, lightweight models efficiently on commodity hardware. 
+# INTRODUCTION
 
-# Introduction
+## Problem Statement
 
-Modern end to end machine learning or deep learning system usually includes a lifecycle of data processing, feature engineering, training, inference and serving. Each different stage might has different challenges, for example, the data to be processed might be huge, and thus require a signficant amount of time to process the data and the data ETL and pre-processing time often take much more time than training. For feature engineering phase, usually numerous sets of new features need to be created, and then tested for effectiveness. For model training, one of the entry barrier is the model could be quite complex and usually requires lots of expertise to design, understand, tune and deploy the models. What makes things worse is one usually needs to repeate the experiements of the ETL, feature engineering, training and evaluation gprocess for many times on many models, to get the best model, which requires signficant amount of computational resources and is time-consuming. 
+Modern End to End AI pipeline life cycle is quite complicate with a complex pipeline including data processing, feature engineering, model development, and model deployment & maintenance. The iterative nature for feature engineering, model testing and hyper-parameter optimization makes the process more time-consuming. This complexity creates an entry-barrier for novice and citizen data scientists who might not have such expertise or skills.  Meanwhile, people tend to develop larger and larger models to get better performance, which are quite often over-parameterized.  Those overparameterized models not only poses significant challenges on AI hardware infrastructure as they require expensive computation power for training, but also posed a challenge when try to deploy in resource constraint environment which is a common need. 
 
-# End-to-End AI democratization 
+## Solution with Intel® End-to-End AI Optimization Kit
 
-One approach to resolve those challenges is AI democratization, which trying to make AI accessabile & affordable to every organization and every data scientist. There are a lot of things to be democratized, including: 
-1. Data accessibility & quality, where you make the data access easier and simpler; building a data platform to democratize the data management - simplify data ingestion, data explore, processing and visulaization. 
-2. Storage and compute platforms, instead of running the AI on hi-cost GPU, run it on democratized commodity hardware with auto-scaling. 
-3. Algorithms - Democratize the use, development and sharing of ML & DL algorithms; reduce the engry barrier with automatic model searching, AutoML
-4. Model development - select the most suitalbe models for users, democratize the end to end model development 
-5. Market place - simply how you access, use, exchange and monetization of data, algorithm, models, and outcomes 
+Intel® End-to-End AI Optimization Kit is a composable toolkits for E2E AI optimization to deliver high performance lightweight networks/models efficiently on commodity HW like CPU, intending to make E2E AI pipelines faster, easier and more accessible.
 
+Making AI Faster: It reduces E2E time on CPU to an acceptable range throughput full pipeline optimization and improved scale-up/out capability on Intel platforms with Intel optimized framework and toolkits, delivers popular lighter DL Models with close enough performance and significantly higher inference throughput.
 
-# AIDK 
+Making AI Easier: It automates provides simplified toolkits for data processing, distributed training, and compact neural network construction, automates E2E AI pipeline with click to run workflows and can be easily plugged to third party ML solutions/platforms as an independent composable component. 
 
-AIDK is the project to democratize E2E AI on CPU. The strategy is to bring E2E AI to existing CPU installation base with good-enough performance and zero additional cost, it drives the AI portaion on CPU and drive CPU/GPU balance in E2E AI. The core componements of AIDK are: model advisor and model acclerator. Model acclerator provides build-in intelligence to generate parameterized models, while model acclerator leverages train-free NAS to generate domain-specific models. As a start, AIDK democrated recommender systems on distributed CPU clusters through different optimization of each machine learning life cycle phases. 
+Making AI more accessible:  Through built-in optimized, parameterized models generated by smart democratization advisor and domain-specific, neural architected search (NAS) based network constructure, it brings complex DL to commodity HW, everyone can easily access AI on existing CPU clusters without the need to be an expert on data engineering and data science. 
 
-# Architecture 
+## This solution is intended for…
 
-Below firgure showed the architecture diagram of AIDK. 
+* Citizen Data Scientists will get access to a broad range of models with simplified, click to run E2E AI pipeline workflows. They can construct models using the neural architecture search rather than developing from scratch.
+* Enterprise users can get optimized performance on CPU with simplified click to run workflow covering every stage of AI. 
+* For independent software vendor, the optimized AI workflows can help to expand their AI portfolio and optimized End to End Pipeline reduced time to market. 
+* For cloud service providers, they can use the neural network Constructor’s NAS feature to improve model performance and reduce search cost.
 
-![Architecture](./docs/source/Architecture.jpg "AIDK Architecture")
-
-# Major Componments 
-
-Here are the major componments of Bluewhale: 
-1. RecDP -  scalable data processing and feature engineering kit based on Spark and Modin 
-2. Distributed data connector - a distirbuted data connector based on PetaStorm  supporting training framework to load data from distributed filesystem, and provide enhanced capabilities like data caching, sharing. 
-3. Smart Democratization Advisor - a human intelligence enhanced toolkit to generate sigopt recipes for Sigopt AutoML. It first generate optimized SigOpt recipes based on user choices and built-in intelligence, including optimized model parameters, optimized training framework parameters and set the training cluster environment, training framework parameters, and final target metrcis. Then it kicks off Siopt AutoML for optimization experiments to generate the best model. 
-4. Network Acclerator - A train-free NAS based componment to generate domain-specific compact network. 
-
-# In-Stock-Models
-
-Currently four recommender system workloads were supported: including DLRM, DIEN, WnD and RecSys. The Bluewhale E2E AI democratization kit significantly improved the performance of those models on distributed CPU cluster, reduced the performance gap of CPU to GPU from 100x to < 2x, using the same dataset and the same AUC metrics.  
-
-# Perforamnce 
-![Performance](./docs/source/Performance.jpg "AIDK Performance"). 
+## Papers and Blogs
+* [ICYMI – SigOpt Summit Recap Democratizing End-to-End Recommendation Systems](https://sigopt.com/blog/icymi-sigopt-summit-recap-democratizing-end-to-end-recommendation-systems-with-jian-zhang/)
+* [The SigOpt Intelligent Experimentation Platform](https://www.intel.com/content/www/us/en/developer/articles/technical/sigopt-intelligent-experimentation-platform.html#gs.gz2ls6)
+* [SDC2022 - Data Platform for End-to-end AI Democratization](https://storagedeveloper.org/events/sdc-2022/agenda/session/326)
+* [SIHG4SR: Side Information Heterogeneous Graph for Session Recommender](https://dl.acm.org/doi/abs/10.1145/3556702.3556852)
+* DeNas(link provided later)
 
 
-# How To Use
+# ARCHITECTURE
 
-[QuickStart](docs/source/quickstart.rst)
-[Create New Advisor](docs/source/advanced.rst)
+## Intel® End-to-End AI Optimization Kit
+Intel® End-to-End AI Optimization Kit is a composable toolkits for E2E AI optimization to deliver high performance lightweight networks/models efficiently on commodity HW. It is a pipeline framework that streamlines AI optimization technologies in each stage of E2E AI pipeline, including data processing, feature engineering, training, hyper-parameter tunning, and inference. Intel® End-to-End AI Optimization Kit delivers high performance, lightweight models efficiently on commodity hardware.
 
-# How to Contribute
+## The key components are:
 
-[Documenting Style](docs/source/documentingstyle.rst)
-[Coding Style](docs/source/codingstyle.rst)
+* [RecDP](RecDP/README.md):  A parallel data processing and feature engineering lib on top of Spark, and extensible to other data processing tools. It provides abstraction API to hide Spark programming complexity, delivers optimized performance through adaptive query plan & strategy, supports critical feature engineering functions on Tabular dataset, and can be easily integrated to third party solutions.  
+
+* [Smart Democratization advisor (SDA)](e2eAIOK/SDA/README.md): A user-guided tool to facilitate automation of built-in model democratization via parameterized models, it generates yaml files based on user choice, provided build-in intelligence through parameterized models and leverage SigOpt for HPO. SDA converts the manual model tuning and optimization to assisted autoML and autoHPO. SDA provides a list of build-in optimized models ranging from RecSys, CV, NLP, ASR and RL. 
+
+* [Neural network constructor](#): A neural architecture search technology based on component to build compact neural network models for specific domains directly. It is a multi-model, hardware aware, train-free neural architecture search approach to build models for CV, NLP, ASR directly and leverage transfer learning model adaptor to deploy the models in user’s production environment. 
+
+For more information, you may [read the docs]().
+![Architecture](./docs/source/aiok_workflow.png). 
+
+# Getting Started
+
+## Installing
+
+```
+git clone https://github.com/intel/e2eAIOK.git
+git submodule update --init --recursive
+cd e2eAIOK; python scripts/start_e2eaiok_docker.py --backend [pytorch, tensorflow] --dataset_path ../ --workers host1, host2, host3, host4 --proxy "http://addr:ip"
+```
+
+## Demos 
+* Built-in Models
+    * [DLRM](http://vsr140:8891/notebooks/builtin/dlrm/DLRM_DEMO.ipynb) - [Readme](modelzoo/dlrm/README.md) - recsys, facebook, pytorch_mlperf
+    * [DIEN](http://vsr140:8892/notebooks/builtin/dien/DIEN_DEMO.ipynb) - [Readme](modelzoo/dien/README.md) - recsys, alibaba, tensorflow
+    * [WnD](http://vsr140:8892/notebooks/builtin/wnd/WND_DEMO.ipynb) - [Readme](modelzoo/WnD/README.md) - recsys, google, tensorflow
+    * [RNNT](http://vsr140:8890/notebooks/builtin/rnnt/RNNT_DEMO.ipynb) - [Readme](modelzoo/rnnt/README.md) - speech recognition, pytorch
+    * [RESNET](http://vsr140:8892/notebooks/builtin/resnet/RESNET_DEMO.ipynb) - [Readme](modelzoo/resnet/README.md) - computer vision, tensorflow
+    * [BERT](http://vsr140:8892/notebooks/builtin/bert/BERT_DEMO.ipynb) - [Readme](modelzoo/bert/README.md) - Natual Language Processing, tensorflow
+    * [MiniGO](http://sr141:8888/notebooks/demo/MiniGo_DEMO.ipynb) - [Readme](modelzoo/minigo/README.md) - minimalist engine modeled after AlphaGo Zero, tensorflow
+
+
+## Performance 
+![Performance](./docs/source/Performance.jpg "Intel® End-to-End AI Optimization Kit Performance"). 
+
+
+## Getting Support
+•	Github Issues
