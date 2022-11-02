@@ -12,7 +12,7 @@ permissions:
 jobs:
   e2eaiok-release-python-pypi:
     runs-on: ubuntu-latest
-    if: ${{ github.actor == 'xuechendi' }}
+    if: ${{ github.repository_owner == 'intel' }}
     steps:
     - uses: actions/checkout@main
 
