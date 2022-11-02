@@ -1,138 +1,66 @@
-# Intel® End-to-End AI Optimization Kit - optimized DIEN Workflow
+# Intel® End-to-End AI Optimization Kit for DIEN
 ## Original source disclose
 Source repo: https://github.com/alibaba/ai-matrix
 
 ---
 
-# Prepare Environriment
-
-## set path
-```
-export path_to_e2eaiok_dataset=`pwd`/e2eaiok_dataset
-export path_to_e2eaiok=`pwd`/e2eAIOK
-mkdir -p ${path_to_e2eaiok_dataset}
-```
-
-## Install Intel® End-to-End AI Optimization Kit for DIEN
-```
+# Quick Start
+## Enviroment Setup
+``` bash
+# Setup ENV
 git clone https://github.com/intel/e2eAIOK.git
+cd e2eAIOK
 git submodule update --init --recursive
-cd ${path_to_e2eaiok}/modelzoo/dien/train
+python3 scripts/start_e2eaiok_docker.py -b tensorflow -w ${host0} ${host1} ${host2} ${host3} --proxy ""
+```
+
+## Enter Docker
+```
+sshpass -p docker ssh ${host0} -p 12344
+```
+
+## Workflow Prepare
+
+``` bash
+# prepare model codes
+cd /home/vmagent/app/e2eaiok/modelzoo/dien/train
 sh patch_dien.sh
-```
 
-## Build Docker
-```
-cd ${path_to_e2eaiok}/Dockerfile-ubuntu18.04/
-# case 1: No Proxy required
-docker build -t e2eaiok-tensorflow . -f DockerfileTensorflow
-
-# case 2: proxy is required
-vim ~/.docker/config.json
-{
-        ...
-        "proxies": {
-                "default": {
-                        "httpProxy": "http://${proxy_host}:${proxy_port}",
-                        "httpsProxy": "http://${proxy_host}:${proxy_port}",
-                        "noProxy": "localhost,::1,127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
-                }
-        }
-}
-docker build -t e2eaiok-tensorflow . -f DockerfileTensorflow --build-arg http_proxy --build-arg https_proxy
-```
-
-## Download Dataset (if you would like direct train with processed data, skip this step)
-```
+# Download Dataset
 cd ${path_to_e2eaiok}/modelzoo/dien/feature_engineering/
 ./download_dataset ${path_to_e2eaiok_dataset}
-ls ${path_to_e2eaiok_dataset}/amazon_reviews
-j2c_test  output  raw_data
+
+# source spark env
+source /home/spark-env.sh
+
+# Start services
+# only if there is no spark service running, may check ${localhost}:8080 to confirm
+/home/start_spark_service.sh
 ```
 
-## Run docker and activate conda
+## Data Process
 ```
-cd ${path_to_e2eaiok}
-docker run --shm-size=10g -it --privileged --network host --device=/dev/dri -v ${path_to_e2eaiok_dataset}:/home/vmagent/app/dataset -v `pwd`/:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-tensorflow /bin/bash
-source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force
-cd /home/vmagent/app/e2eaiok/
-python setup.py install
-apt install numactl
+cd /home/vmagent/app/e2eaiok/modelzoo/dien/feature_engineering/;
+python preprocessing.py --train --dataset_path /home/vmagent/app/dataset/amazon_reviews/
+python preprocessing.py --test --dataset_path /home/vmagent/app/dataset/amazon_reviews/
 ```
 
----
-# Evaluate DIEN solution
-
-## Step By Step guide
-
-### Data Process
+## Training
 ```
-# Now you are running inside docker, /home/vmagent/app/
-pip install pyrecdp
-cd /home/vmagent/app/e2eaiok/conf/spark/
-cp spark-defaults.conf /home/spark-3.2.1-bin-hadoop3.2/conf/
-mkdir -p /home/vmagent/app/e2eaiok/spark_data_processing/spark_local_dir
-mkdir -p /home/mnt/applicationHistory
-sh start_spark_service.sh 
-
-cd /home/vmagent/app/e2eaiok/modelzoo/dien/feature_engineering/
-python preprocessing.py --train
-python preprocessing.py --test
-cp /home/vmagent/app/e2eaiok/modelzoo/dien/meta.yaml /home/vmagent/app/dataset/amazon_reviews/
-```
-
-### Training
-```
-conda activate tensorflow
-export KMP_AFFINITY=granularity=fine,verbose,compact,1,0
-export OMP_NUM_THREADS=4
-export HOROVOD_CPU_OPERATIONS=CCL
-# export MKLDNN_VERBOSE=2
-export CCL_WORKER_COUNT=1
-export CCL_WORKER_AFFINITY="0,32"
-export HOROVOD_THREAD_AFFINITY="1,33"
-#export I_MPI_PIN_DOMAIN=socket
-export I_MPI_PIN_PROCESSOR_EXCLUDE_LIST="0,1,32,33"
-
-# test our best parameter
-python -u run_e2eaiok.py --data_path /home/vmagent/app/dataset/amazon_reviews --model_name dien --no_sigopt
-```
-
-### distributed training
-```
-# prepare data
-sh /home/vmagent/app/e2eaiok/modelzoo/dien/feature_engineering/split_for_distribute.sh /home/vmagent/app/dataset/amazon_reviews/train ${num_copy}
-# copy all slices to distributed nodes as below
-# ex: for slice00, do as below and do the same to other nodes
-scp /home/vmagent/app/dataset/amazon_reviews/train/local_train_splitByUser.slice00 ${node}://home/vmagent/app/dataset/amazon_reviews/train/local_train_splitByUser
-scp /home/vmagent/app/dataset/amazon_reviews/*pkl ${node}://home/vmagent/app/dataset/amazon_reviews/
-scp -r /home/vmagent/app/dataset/amazon_reviews/valid/ ${node}://home/vmagent/app/dataset/amazon_reviews/
-scp /home/vmagent/app/dataset/amazon_reviews/meta.yaml ${node}://home/vmagent/app/dataset/amazon_reviews/
-# done to slice00, repeat for slice01, 02, 03
-
-rm /home/vmagent/app/dataset/amazon_reviews/train/local_train_splitByUser.slice0*
+# edit /home/vmagent/app/dataset/amazon_reviews/meta.yaml
+uid_voc: /home/vmagent/app/dataset/amazon_reviews/uid_voc.pkl
+mid_voc: /home/vmagent/app/dataset/amazon_reviews/mid_voc.pkl
+cat_voc: /home/vmagent/app/dataset/amazon_reviews/cat_voc.pkl
 ```
 
 ```
-# prepare nodes env configuration
-# IMPORTANT! make sure source and export also performed on all nodes
-source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force
-conda activate tensorflow
-export KMP_AFFINITY=granularity=fine,verbose,compact,1,0
-export OMP_NUM_THREADS=4
-export HOROVOD_CPU_OPERATIONS=CCL
-# export MKLDNN_VERBOSE=2
-export CCL_WORKER_COUNT=1
-export CCL_WORKER_AFFINITY="0,32"
-export HOROVOD_THREAD_AFFINITY="1,33"
-#export I_MPI_PIN_DOMAIN=socket
-export I_MPI_PIN_PROCESSOR_EXCLUDE_LIST="0,1,32,33"
+cd /home/vmagent/app/e2eaiok/; python -u run_e2eaiok.py --data_path /home/vmagent/app/dataset/amazon_reviews --model_name dien --no_sigopt
 ```
 
+## Distributed Training
 ```
-# ready to run
-# make sure all nodes and correct nic listed in conf
-vim conf/e2eaiok_defaults_dien_example.conf
+# edit below config with correct nic and hosts name
+cat conf/e2eaiok_defaults_dien_example.conf
 ppn: ${num_copy}
 iface: ${nic}
 hosts:
@@ -142,21 +70,8 @@ hosts:
 - ${node4}
 
 # run distributed training
-python -u run_e2eaiok.py --data_path /home/vmagent/app/dataset/amazon_reviews --model_name dien --no_sigopt --conf conf/e2eaiok_defaults_dien_example.conf
-```
-
-### use SDA to search best parameter
-```
-# single node
-SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN python run_e2eaiok.py --data_path /home/vmagent/app/dataset/amazon_reviews --model_name dien
-
-# distributed
-SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN python run_e2eaiok.py --data_path /home/vmagent/app/dataset/amazon_reviews --model_name dien --conf conf/e2eaiok_defaults_dien_example.conf
-```
-
-## Run All in one script
-```
-sh /home/vmagent/app/e2eaiok/run_dien_all_in_one.sh
+cd /home/vmagent/app/e2eaiok/modelzoo/dien/feature_engineering/; sh split_for_distribute.sh
+cd /home/vmagent/app/e2eaiok/; python -u run_e2eaiok.py --data_path /home/vmagent/app/dataset/amazon_reviews_distributed --model_name dien --no_sigopt --conf conf/e2eaiok_defaults_dien_example.conf
 ```
 
 ## Result
