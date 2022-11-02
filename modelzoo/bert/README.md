@@ -12,8 +12,8 @@ original code source: https://github.com/IntelAI/models.git
 ``` bash
 # Setup ENV
 git clone https://github.com/intel/e2eAIOK.git
-git submodule update --init --recursive
 cd e2eAIOK
+git submodule update --init --recursive
 python3 scripts/start_e2eaiok_docker.py -b tensorflow -w ${host0} ${host1} ${host2} ${host3} --proxy ""
 ```
 
@@ -29,7 +29,7 @@ cd /home/vmagent/app/e2eaiok/modelzoo/bert
 sh patch_bert.sh
 
 # Download Dataset
-* Download from below path to /home/vmagent/app/dataset/
+* Download from below path to /home/vmagent/app/dataset/SQuAD
 
     * Train Data: [train-v1.1.json](https://rajpurkar.github.io/SQuAD-explorer/dataset/train-v1.1.json)
     * Test Data: [dev-v1.1.json](https://rajpurkar.github.io/SQuAD-explorer/dataset/dev-v1.1.json)
@@ -45,6 +45,8 @@ sh patch_bert.sh
     "question": "Is this a test?",
     "title": "train test"
 }
+* Download Pre-trained models to /home/vmagent/app/dataset/SQuAD
+Download and extract one of BERT large pretrained models from [Google BERT repository](https://github.com/google-research/bert#pre-trained-models) 
 ```
 
 ## Training

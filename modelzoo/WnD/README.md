@@ -11,8 +11,8 @@ Google's [Wide & Deep Learning for Recommender Systems](https://arxiv.org/abs/16
 ``` bash
 # Setup ENV
 git clone https://github.com/intel/e2eAIOK.git
-git submodule update --init --recursive
 cd e2eAIOK
+git submodule update --init --recursive
 python3 scripts/start_e2eaiok_docker.py -b tensorflow -w ${host0} ${host1} ${host2} ${host3} --proxy ""
 ```
 
