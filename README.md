@@ -73,4 +73,4 @@ cd e2eAIOK; python scripts/start_e2eaiok_docker.py --backend [pytorch, tensorflo
 
 
 ## Getting Support
-•	Github Issues
+* [Github Issues](https://github.com/intel/e2eAIOK/issues)
