@@ -1,6 +1,6 @@
 # AIOK Model Adaptor
-## 1. INTRODUCTION 
-### 1.1	Problem Statement
+## INTRODUCTION 
+### Problem Statement
 With the development of deep learning techniques, the size of advanced models is getting larger and larger. For example, GPT-3 model has 175B parameters, and is trained on 500B dataset. These models, while achieving SOTA results, are only available for head players. There are many challenges to apply these models for most users:
 
 1. Time cost and money cost of training an advanced are extremely high when training from scratch. For example, it costs 4.6M $ and takes 355 GPU-years to train GPT-3 model from scratch.
@@ -9,7 +9,7 @@ With the development of deep learning techniques, the size of advanced models is
    
 3. Hardware with limited resources can't enjoy the benefits of advanced models, because advanced models can't deploy on them, e.g., mobile devices.
 
-### 1.2	 Solution with Intel® AIOK Model Adaptor
+### Solution with Intel® AIOK Model Adaptor
 
 An intuitive idea is: Can we use publicly available resources to reduce the cost of model training and data collection?  
 
@@ -28,7 +28,7 @@ In fact, these technologies can be regarded as regularization strategies:
 
 To combine all these technologies and maximize the capability of transfer learning, we provide a Model Adaptor toolkit. 
 
-### 1.3	Personas the solution is applicable for
+### Personas the solution is applicable for
 
 1. Individual user can use Model Adaptor to take advantage of advanced models efficiently and effectively. 
    
@@ -40,7 +40,7 @@ To combine all these technologies and maximize the capability of transfer learni
 
 5. Users without GPU/TPU use can Model Adaptor to efficiently perform knowledge transferring on CPU.
 
-## 2. ARCHITECTURE 
+## ARCHITECTURE 
 In Model Adaptor, we have implemented all the above three transfer learning technologies with a unified API. Besides, Model Adaptor can be easily integrated with existing pipeline, requiring only a few code changes. Finally, Model Adaptor makes additional efforts on optimization of CPU-training and CPU-inference, both on single-node and multi-node.
 
 Training pipeline with Model Adaptor is shown as following. The colored boxes are Model Adaptor-specific, which is the difference between pipeline with Model Adaptor and the general pipeline. 
@@ -64,8 +64,8 @@ Training pipeline with Model Adaptor is shown as following. The colored boxes ar
 
 <img src="./doc/imgs/arch.png" width="800px" />
 
-## 3. Getting Started 
-### 3.1 Installing
+## Getting Started 
+### Installing
 1. Option 1: install with Docker (expected in v0.4)
    ```bash
    git clone https://github.com/intel/e2eAIOK.git
@@ -81,11 +81,11 @@ Training pipeline with Model Adaptor is shown as following. The colored boxes ar
     pip install e2eAIOK[pytorch]
     ```
  
-### 3.2 Pipeline with Model Adaptor
+### Pipeline with Model Adaptor
 
    The general pipeline trains a resnet50 model on CIFAR100 dataset from scratch. See [【here】](./doc/general_pipeline.py).  The general pipeline can be enpowered transfer learning ability by Model Adaptor.
 
-#### 3.2.1 Finetuning with Model Adaptor
+#### Finetuning with Model Adaptor
 
 Two steps for finetuning with Model Adaptor: 
 
@@ -105,7 +105,7 @@ Two steps for finetuning with Model Adaptor:
 
 The full code see [【here】](./doc/pipeline_with_finetuner.py). 
 
-#### 3.2.2 Distillation with Model Adaptor
+#### Distillation with Model Adaptor
 
 Two steps for distillation with Model Adaptor: 
 
@@ -123,7 +123,7 @@ Two steps for distillation with Model Adaptor:
 
 The full code see [【here】](./doc/pipeline_with_finetuner.py). 
 
-#### 3.2.3 Domain Adaption with Model Adaptor
+#### Domain Adaption with Model Adaptor
 
 We show how to transfer knowledge from MNIST dataset[5] to USPS dataset [6] with Model Adaptor. MNIST dataset is a large collection of handwritten digits, while USPS dataset is a digit dataset automatically scanned from envelopes by the U.S. Postal Service.
 
@@ -153,13 +153,13 @@ Two steps for domain adaption with Model Adaptor:
 
 The full code see [【here】](./doc/pipeline_with_adaption.py).  
 
-### 3.3 Built-in Pipeline
+### Built-in Pipeline
 
 User can create and train a new built-in pipeline with Model Adaptor by a yaml configuration file. The created built-in pipeline is optimized for CPU-training, CPU-inference,  and distributed data parallel training. 
 
 There are [【demo】](./src/Transfer%20Learning%20Kit%20Demo.ipynb) about how to training with built-in pipeline with Model Adaptor. 
 
-## 4. Reference
+## Reference
 [1] He, K., Girshick, R., Doll´ar, P.: Rethinking imagenet pre-training. In: ICCV (2019)
 
 [2] G. Hinton, O. Vinyals, and J. Dean. Distilling the knowledge in a neural network. arXiv preprint arXiv:1503.02531, 2015
