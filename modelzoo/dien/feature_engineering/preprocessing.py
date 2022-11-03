@@ -8,6 +8,7 @@ from timeit import default_timer as timer
 import logging
 from pyrecdp.data_processor import *
 from pyrecdp.utils import *
+import pyrecdp
 
 NUM_INSTS = 1
 
@@ -391,7 +392,7 @@ def main(settings):
     with open(f"{original_folder}/meta.ymal", "w") as f:
         f.write("\n".join(meta_info) + "\n")
 
-    scala_udf_jars = "/opt/intel/oneapi/intelpython/latest/lib/python3.7/site-packages/pyrecdp/ScalaProcessUtils/target/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
+    scala_udf_jars = f"{pyrecdp.__path__[0]}/ScalaProcessUtils/target/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
 
     ##### 1. Start spark and initialize data processor #####
     t0 = timer()
