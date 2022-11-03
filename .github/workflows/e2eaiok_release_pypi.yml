@@ -10,7 +10,8 @@ permissions:
 jobs:
   e2eaiok-release-python-pypi:
     runs-on: ubuntu-latest
-    if: ${{ github.repository_owner == 'intel' || github.repository_owner == 'xuechendi' }}
+    if: ${{ github.repository_owner == 'intel' }}
+
     steps:
     - uses: actions/checkout@main
 
