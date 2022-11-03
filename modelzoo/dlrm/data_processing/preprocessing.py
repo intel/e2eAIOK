@@ -1,5 +1,6 @@
 from pyrecdp.data_processor import *
 from pyrecdp.utils import *
+import pyrecdp
 
 import logging
 from timeit import default_timer as timer
@@ -76,7 +77,7 @@ def main(hdfs_node, dataset_path):
         total_days = 23
     current_path = f"{dataset_path}/output/"
 
-    scala_udf_jars = "/opt/intel/oneapi/intelpython/latest/lib/python3.7/site-packages/ScalaProcessUtils/built/31/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
+    scala_udf_jars = f"{pyrecdp.__path__[0]}/ScalaProcessUtils/target/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
 
     ##### 2. Start spark and initialize data processor #####
     t1 = timer()
