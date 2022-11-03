@@ -12,7 +12,7 @@ current_folder = os.getcwd()
 def parse_args(args):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('-b', '--backend',choices=['pytorch', 'tensorflow', 'pytorch_mlperf'],default='pytorch')
+    parser.add_argument('-b', '--backend',choices=['pytorch', 'tensorflow', 'pytorch_mlperf', 'tensorflow205'],default='pytorch')
     parser.add_argument('-dp', '--dataset_path',type=str,default="../e2eaiok_dataset",help='large capacity folder for dataset storing')
     parser.add_argument('--proxy', type=str, default=None, help='proxy for pip and apt install')
     parser.add_argument('--log_path',type=str,default="./e2eaiok_docker_building.log",help='large capacity folder for dataset storing')
@@ -147,10 +147,13 @@ def build_docker(backend, logger, proxy=None, local="localhost", is_push = False
         docker_file = "DockerfilePytorch110"
     if backend == 'tensorflow':
         docker_name = "e2eaiok-tensorflow"
-        docker_file = "DockerfileTensorflow"
+        docker_file = "DockerfileTensorflow210"
     if backend == 'pytorch_mlperf':
         docker_name = "e2eaiok-pytorch-mlperf"
         docker_file = "DockerfilePytorch"
+    if backend == 'tensorflow205':
+        docker_name = "e2eaiok-tensorflow-205"
+        docker_file = "DockerfileTensorflow"
     if proxy:
         proxy_config.extend(["--build-arg", f"http_proxy={proxy}"])
         proxy_config.extend(["--build-arg", f"https_proxy={proxy}"])
@@ -232,6 +235,9 @@ def run_docker(docker_name, backend, dataset_path, logger, workers=[]):
     if backend == 'pytorch_mlperf':
         docker_nickname = "e2eaiok-pytorch-mlperf"
         port = 12346
+    if backend == 'tensorflow205':
+        docker_nickname = "e2eaiok-tensorflow-205"
+        port = 12347
 
     # prepare dataset path
     cmdline = f"mkdir -p {dataset_path}"
