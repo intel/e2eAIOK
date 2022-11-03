@@ -7,7 +7,10 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 e2eaiok_home = os.path.abspath(__file__ + "/../")
-VERSION = open(os.path.join(e2eaiok_home, 'dev/', 'nbversion'), 'r').read().strip()
+try:
+    VERSION = open(os.path.join(e2eaiok_home, 'e2eAIOK/', 'version'), 'r').read().strip()
+except:
+    VERSION = '0.2.1'
 
 setuptools.setup(
     name="e2eAIOK",
@@ -28,6 +31,7 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     packages=find_packages(exclude=["RecDP", "modelzoo", "example"]),
+    package_data = {'e2eAIOK': ['version']},
     python_requires=">=3.6",
     zip_safe=False,
     install_requires=[])
