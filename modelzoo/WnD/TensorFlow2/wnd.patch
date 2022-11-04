@@ -20889,7 +20889,7 @@ index 6c5d8c6..3492ba7 100755
  echo -e "\n[BENCHMARK] Benchmark finished:\n"
 diff --git a/modelzoo/WnD/TensorFlow2/scripts/spark_preproc.sh b/modelzoo/WnD/TensorFlow2/scripts/spark_preproc.sh
 new file mode 100644
-index 0000000..009d183
+index 0000000..091469e
 --- /dev/null
 +++ b/modelzoo/WnD/TensorFlow2/scripts/spark_preproc.sh
 @@ -0,0 +1,15 @@
@@ -21458,7 +21458,7 @@ index 0000000..db52315
 +
 +    return model
 diff --git a/modelzoo/WnD/TensorFlow2/trainer/run.py b/modelzoo/WnD/TensorFlow2/trainer/run.py
-index aa65807..7ab51be 100644
+index aa65807..4e806f7 100644
 --- a/modelzoo/WnD/TensorFlow2/trainer/run.py
 +++ b/modelzoo/WnD/TensorFlow2/trainer/run.py
 @@ -1,5 +1,5 @@
@@ -21558,7 +21558,7 @@ index aa65807..7ab51be 100644
          sorted_ids = tf.argsort(display_ids)
          display_ids = tf.gather(display_ids, indices=sorted_ids)
          predictions = tf.gather(predictions, indices=sorted_ids)
-@@ -160,12 +168,12 @@ def train(args, model, config):
+@@ -160,21 +168,21 @@ def train(args, model, config):
          shape = tf.cast(tf.shape(indices)[0], tf.float64)
          display_id_counter.assign_add(shape)
          streaming_map.assign_add(ap_sum)
@@ -21571,8 +21571,10 @@ index aa65807..7ab51be 100644
 +        time_metric_start = time.time()
          for epoch in range(1, args.num_epochs + 1):
              for step, (x, y) in enumerate(train_dataset):
-                 current_step = np.asscalar(current_step_var.numpy())
-@@ -174,7 +182,7 @@ def train(args, model, config):
+-                current_step = np.asscalar(current_step_var.numpy())
++                current_step = current_step_var.numpy().item()
+                 schedule(optimizer=deep_optimizer, current_step=current_step)
+ 
                  for metric in metrics:
                      metric.reset_states()
                  loss = train_step(x, y, epoch == 1 and step == 0)
