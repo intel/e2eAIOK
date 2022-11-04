@@ -1,6 +1,6 @@
 import sys
-from AIDK import SDA
-from AIDK.hydroai.hydromodel import HydroModel
+from e2eAIOK import SDA
+from e2eAIOK.utils.hydromodel import HydroModel
 
 
 def main(input_args):
