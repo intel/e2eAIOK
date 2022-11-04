@@ -19,7 +19,7 @@ mkdir -p $tmp_dir
 set -e
 # lauch e2eaiok minigo
 cd modelzoo/minigo
-conda activate minigo_xeon_opt
+conda activate minigo
 yes "" | ./cc/configure_tensorflow.sh
 # make MiniGo CI/CD test process faster
 sed -i '/--winrate=/ s/=.*/=0.003/' ml_perf/flags/19/train_loop.flags

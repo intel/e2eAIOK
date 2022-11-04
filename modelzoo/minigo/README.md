@@ -16,7 +16,7 @@
 
 ``` bash
 source /opt/intel/oneapi/setvars.sh --force
-conda activate minigo_xeon_opt
+conda activate minigo
 ```
 
 ## Training
