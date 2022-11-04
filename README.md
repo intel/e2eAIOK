@@ -28,7 +28,6 @@ Making AI more accessible:  Through built-in optimized, parameterized models gen
 * [The SigOpt Intelligent Experimentation Platform](https://www.intel.com/content/www/us/en/developer/articles/technical/sigopt-intelligent-experimentation-platform.html#gs.gz2ls6)
 * [SDC2022 - Data Platform for End-to-end AI Democratization](https://storagedeveloper.org/events/sdc-2022/agenda/session/326)
 * [SIHG4SR: Side Information Heterogeneous Graph for Session Recommender](https://dl.acm.org/doi/abs/10.1145/3556702.3556852)
-* DeNas(link provided later)
 
 
 # ARCHITECTURE
@@ -42,7 +41,7 @@ Intel® End-to-End AI Optimization Kit is a composable toolkits for E2E AI optim
 
 * [Smart Democratization advisor (SDA)](e2eAIOK/SDA/README.md): A user-guided tool to facilitate automation of built-in model democratization via parameterized models, it generates yaml files based on user choice, provided build-in intelligence through parameterized models and leverage SigOpt for HPO. SDA converts the manual model tuning and optimization to assisted autoML and autoHPO. SDA provides a list of build-in optimized models ranging from RecSys, CV, NLP, ASR and RL. 
 
-* [Neural network constructor](#): A neural architecture search technology based on component to build compact neural network models for specific domains directly. It is a multi-model, hardware aware, train-free neural architecture search approach to build models for CV, NLP, ASR directly and leverage transfer learning model adaptor to deploy the models in user’s production environment. 
+* [Neural network constructor]: A neural architecture search technology based on component to build compact neural network models for specific domains directly. It is a multi-model, hardware aware, train-free neural architecture search approach to build models for CV, NLP, ASR directly and leverage transfer learning model adaptor to deploy the models in user’s production environment. 
 
 For more information, you may [read the docs]().
 ![Architecture](./docs/source/aiok_workflow.png). 
@@ -69,7 +68,7 @@ cd e2eAIOK; python scripts/start_e2eaiok_docker.py --backend [pytorch, tensorflo
 
 
 ## Performance 
-![Performance](./docs/source/Performance.jpg "Intel® End-to-End AI Optimization Kit Performance"). 
+![Performance](./docs/source/Performance.png "Intel® End-to-End AI Optimization Kit Performance"). 
 
 
 ## Getting Support

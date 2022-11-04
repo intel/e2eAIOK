@@ -11,7 +11,7 @@
 # Quick Start
 ## Enviroment Setup
 * Firstly, ensure that intel oneapi-hpckit is installed on server.
-* Secondly, enter AIOK repo directory.
+* Secondly, enter AIDK repo directory.
 * Thirdly, start the jupyter notebook service.
 
 ``` bash
