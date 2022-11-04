@@ -40,7 +40,7 @@ Intel® End-to-End AI Optimization Kit is a composable toolkits for E2E AI optim
 
 * Neural network constructor: A neural architecture search technology based on component to build compact neural network models for specific domains directly. It is a multi-model, hardware aware, train-free neural architecture search approach to build models for CV, NLP, ASR directly and leverage transfer learning model adaptor to deploy the models in user’s production environment. 
 
-For more information, you may [read the docs]().
+For more information, you may [read the docs](https://github.com/intel/e2eAIOK).
 ![Architecture](./docs/source/aiok_workflow.png). 
 
 # Getting Started
