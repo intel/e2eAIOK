@@ -28,6 +28,11 @@ cd /home/vmagent/app/e2eaiok/modelzoo/rnnt/pytorch
 bash patch_rnnt.sh
 
 # Download Dataset
+# Download and unzip dataset from https://www.openslr.org/12 to /home/vmagent/app/dataset/LibriSpeech
+
+# Generate tokenizer and tokenize text
+cd /home/vmagent/app/e2eaiok/modelzoo/rnnt/pytorch
+bash scripts/preprocess_librispeech.sh
 ```
 
 ## Training
