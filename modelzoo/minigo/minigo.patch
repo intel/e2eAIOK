@@ -158,7 +158,7 @@ diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/minigui/unset-
 old mode 100644
 new mode 100755
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/README.md b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/README.md
-index f089e5e..429c86a 100644
+index f089e5e..47b3b71 100644
 --- a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/README.md
 +++ b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/README.md
 @@ -1,95 +1,78 @@
@@ -217,7 +217,7 @@ index f089e5e..429c86a 100644
      # Install anaconda and create an anaconda env (this step is optional but highly recommended).
 -    conda create -n minigo_xeon_opt python=3.6
 -    conda activate minigo_xeon_opt
-+    conda create -n minigo python=3.6
++    conda create -n minigo python=3.10
 +    conda activate minigo
 +    # Also, noted that if your system glibc version < 2.27 (such as CentOS7.9)
 +    # you need to build glibc from source and install it, and then use patchelf to patch your conda env python binaries
