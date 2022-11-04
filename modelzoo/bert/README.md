@@ -19,20 +19,6 @@ cd e2eAIOK
 git submodule update --init --recursive
 python3 scripts/start_e2eaiok_docker.py -b tensorflow -w ${host0} ${host1} ${host2} ${host3} --proxy ""
 ```
-
-## Enter Docker
-
-```
-sshpass -p docker ssh ${host0} -p 12344
-```
-
-## Workflow Prepare
-
-```bash
-# prepare model codes
-cd /home/vmagent/app/e2eaiok/modelzoo/bert
-sh patch_bert.sh
-
 # Download Dataset
 * Download from below path to /home/vmagent/app/dataset/SQuAD
 
@@ -52,6 +38,19 @@ sh patch_bert.sh
 }
 * Download Pre-trained models to /home/vmagent/app/dataset/SQuAD/pre-trained-model/bert-large-uncased/
 Download and extract one of BERT large pretrained models from [Google BERT repository](https://github.com/google-research/bert#pre-trained-models) 
+
+## Enter Docker
+
+```
+sshpass -p docker ssh ${host0} -p 12344
+```
+
+## Workflow Prepare
+
+```bash
+# prepare model codes
+cd /home/vmagent/app/e2eaiok/modelzoo/bert
+sh patch_bert.sh
 ```
 
 ## Training
