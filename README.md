@@ -1,4 +1,12 @@
-# Intel® End-to-End AI Optimization Kit for DLRM
+# Distributed training and inference on Ray and Spark with Intel® End-to-End Optimization Kit 
+
+## Overview
+Modern recommendation systems require a complex pipeline to handle both data processing and feature engineering at a tremendous scale, while promising high service level agreements for complex deep learning models. Usually, this leads to two separate clusters for data processing and training: a data process cluster, usually CPU based to process huge dataset (terabytes or petabytes) stored in distributed storage system, and a training cluster, usually GPU based for training. This separate data processing and training cluster results a complex software stack, heavy data movement cost.
+Meanwhile, Deep learning models were commonly used for recommendation systems, quite often, those models are over-parameterized. It takes up to several days or even weeks to training a heavy model on CPU. 
+This workflow trying to address those pain points: unifies both data processing and training on Ray – the open source project that make it simple to scale any compute-intensive python workloads, and then optimize the E2E process, especially the training part, shorten training time weight lighter models, maintaining same accuracy, and delivers high-throughput models for inference with Intel® End-to-End Optimization Kit.
+## How it works 
+![image](https://github.com/intel-innersource/frameworks.bigdata.AIDK/assets/6396930/fb9ada53-ca84-4158-9562-261b6933dfe0)
+
 ## Original source disclose
 Source repo: https://github.com/facebookresearch/dlrm
 
