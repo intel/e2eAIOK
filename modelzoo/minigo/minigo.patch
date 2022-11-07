@@ -43,15 +43,11 @@ index f1b8a64..3d6eaca 100644
 +```
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/build_gcc.sh b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/build_gcc.sh
 new file mode 100755
-index 0000000..04ba5d7
+index 0000000..0283ccc
 --- /dev/null
 +++ b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/build_gcc.sh
-@@ -0,0 +1,28 @@
+@@ -0,0 +1,24 @@
 +#!/bin/bash
-+
-+export http_proxy="http://proxy-prc.intel.com:912"
-+export https_proxy="http://proxy-prc.intel.com:912"
-+export ftp_proxy="http://proxy-prc.intel.com:912"
 +
 +[ -d "$HOME/src/" ] || mkdir "$HOME/src/"
 +GCC_VERSION="8.4.0"
@@ -158,10 +154,10 @@ diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/minigui/unset-
 old mode 100644
 new mode 100755
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/README.md b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/README.md
-index f089e5e..47b3b71 100644
+index f089e5e..b7c6a38 100644
 --- a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/README.md
 +++ b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/README.md
-@@ -1,95 +1,78 @@
+@@ -1,95 +1,81 @@
 -# MLPerf Training v1.0 Intel Submission
 +# Preliminary
 +This repo is a staging ground for the new [MLPerf](http://mlperf.org) reinforcement model.
@@ -175,7 +171,7 @@ index f089e5e..47b3b71 100644
  # 2. Directions
 -### Steps to run MiniGo
 +### Steps to configure machine
-+Tested OS: Ubuntu18.04LTS, CentOS7.9
++Tested OS: Ubuntu18.04LTS, CentOS7.9, RedHat8.6
  
  ```
 -    # Set WORKSPACE as /path/to/Intel/benchmarks/minigo/<system_desc_id>
@@ -190,8 +186,8 @@ index f089e5e..47b3b71 100644
 -    source /path/to/compilers_and_libraries/linux/mpi/intel64/bin/mpivars.sh intel64
 +    # Install dependencies (for Ubuntu18.04LTS)
 +    apt-get install -y python3 python3-pip rsync git wget pkg-config zip g++ zlib1g-dev unzip numactl flex
-+    # Install dependencies (for CentOS7.9)
-+    yum install zip unzip rsync git wget curl numactl flex zlib-devel pkgconfig gcc-c++ patch bison patchelf
++    # Install dependencies (for CentOS7.9, RedHat8.6)
++    yum install zip unzip rsync git wget curl numactl flex zlib-devel pkgconfig gcc-c++ patch bison make
 +    
 +    # (Ubuntu18.04LTS) change sh default program from dash to bash
 +    dpkg-reconfigure dash
@@ -200,7 +196,7 @@ index f089e5e..47b3b71 100644
 +    https://cloud.google.com/sdk/docs/install#deb
 +    https://cloud.google.com/sdk/docs/install#rpm
 +    
-+    # Install Anaconda
++    # Install Anaconda/Miniconda
 +    
 +    # Install Intel oneAPI HPC toolkit
 +    source /opt/intel/oneapi/setvars.sh
@@ -268,11 +264,11 @@ index f089e5e..47b3b71 100644
 -    pip install ./tensorflow_pkg/tensorflow-2.2.0-cp36-cp36m-linux_x86_64.whl
 -
 -    cd <WORKSPACE>
-+    pip install absl-py autopep8 fire numpy google.cloud.logging google.cloud.bigtable grpcio-tools keras protobuf==3.20 six tqdm pyasn1 sgf==0.5
++    pip install absl-py autopep8 fire numpy google.cloud.logging google.cloud.bigtable grpcio-tools keras numpy protobuf sgf six tqdm pyasn1
  
      # Install Tensorflow-io
 -    pip3 install "tensorflow-io==0.13.0" --no-deps
-+    pip install tensorflow-io==0.13.0
++    pip install tensorflow-io
 +
 +    # Install Python dependencies
 +    pip install --upgrade pip
@@ -297,15 +293,23 @@ index f089e5e..47b3b71 100644
  
 -    # Convert selfplay data format from NCHW to NHWC
 -    ./ml_perf/scripts/convert_data_format.sh
++    # Reinstall protobuf==3.20
++    pip install --force-reinstall --no-cache-dir protobuf==3.20
++
 +    # Install sigopt
 +    pip install sigopt
  
      # Configure nopassword SSH on host machines
      # Launch the following command to run the workload
-@@ -102,157 +85,4 @@ The model plays games against itself and uses these games to improve play.
-     HOSTLIST=hostlist TRAINHOSTLIST=trainhostlist ROOTNODE=rootnode ml_perf/scripts/run_minigo.sh 19
-     # Note, $TRAINHOSTLIST could overlap with $HOSTLIST
+@@ -97,162 +83,4 @@ The model plays games against itself and uses these games to improve play.
+     # rootnode=node0
+     HOSTLIST=hostlist ROOTNODE=rootnode ml_perf/scripts/run_minigo.sh 19
  
+-    # Optionally, set host list use for train stage only (K<=N)
+-    # trainhostlist=node0,node1...nodeK
+-    HOSTLIST=hostlist TRAINHOSTLIST=trainhostlist ROOTNODE=rootnode ml_perf/scripts/run_minigo.sh 19
+-    # Note, $TRAINHOSTLIST could overlap with $HOSTLIST
+-
 -    # Log post-processing
 -    # Running the benchmark creates two log files in <WORKSPACE>: train.log and eval.stdout
 -    # train.log captures MLPerf logging events, and eval.stdout contains std output from ml_perf/eval_models.py
@@ -15083,18 +15087,29 @@ index 98b1952..0000000
 -  "background_color": "#ffffff"
 -}
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/requirements.txt b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/requirements.txt
-index f7b1409..9eb4a35 100644
+index f7b1409..524411b 100644
 --- a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/requirements.txt
 +++ b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/requirements.txt
-@@ -5,7 +5,7 @@ google.cloud.logging
+@@ -1,13 +1,13 @@
+ absl-py
+-autopep8>=1.3
++autopep8
+ fire
+ google.cloud.logging
  google.cloud.bigtable
  grpcio-tools
  keras
 -numpy>=1.14.0
-+numpy==1.18.5
++numpy
  protobuf
- sgf==0.5
+-sgf==0.5
++sgf
  six
+-tqdm>=4.17
+-pyasn1>=0.4.1
++tqdm
++pyasn1
+\ No newline at end of file
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/testing/bootstrap_v2.sh b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/testing/bootstrap_v2.sh
 old mode 100644
 new mode 100755

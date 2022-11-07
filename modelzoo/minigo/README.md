@@ -11,8 +11,8 @@
 # Quick Start
 
 ## Data Processing
+Get processed target model and bootstrap checkpoint (See the freeze target model section and convert selfplay data format section).
 ```
-Get processed bootstrap checkpoint and target model
 Reference https://github.com/mlcommons/training_results_v1.0/tree/master/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf#steps-to-run-minigo
 ```
 
