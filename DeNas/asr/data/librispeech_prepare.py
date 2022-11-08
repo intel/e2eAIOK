@@ -4,8 +4,12 @@ import random
 from collections import Counter
 import logging
 import torchaudio
+import os, sys
+current_dir = os.path.split(os.path.abspath(__file__))[0]
+cls_path = current_dir.rsplit("/", 2)[0]
+sys.path.append(cls_path)
 from asr.utils.data_utils import download_file, get_all_files
-from asr.dataio.dataio import (
+from asr.data.dataio.dataio import (
     load_pkl,
     save_pkl,
     merge_csvs,
@@ -268,7 +272,7 @@ def create_csv(
     msg = "Creating csv lists in  %s..." % (csv_file)
     logger.info(msg)
 
-    csv_lines = [["ID", "duration", "wav", "spk_id", "wrd"]]
+    csv_lines = [["ID", "duration", "wav", "spk_id", "transcript"]]
 
     snt_cnt = 0
     # Processing all the wav files in wav_lst
@@ -401,5 +405,5 @@ if __name__ == "__main__":
     valid_csv = data_folder + "/dev-clean.csv"
     test_csv = [data_folder + "/test-clean.csv", data_folder + "/test-other.csv"]
 
-    prepare_librispeech(data_folder=data_folder, save_folder=data_folder, train_splits=train_splits, 
+    prepare_librispeech(data_folder=data_folder, save_folder=data_folder, tr_splits=train_splits, 
         dev_splits=dev_splits, te_splits=test_splits, merge_lst=train_splits, merge_name="train_csv")
