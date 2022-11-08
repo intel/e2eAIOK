@@ -16,10 +16,10 @@ index 0000000..e544eb5
 +try-import %workspace%/tf_configure.bazelrc
 +try-import %workspace%/tensorflow.bazelrc
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/README.md b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/README.md
-index f1b8a64..3d6eaca 100644
+index f1b8a64..b31f0b1 100644
 --- a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/README.md
 +++ b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/README.md
-@@ -1,3 +1,19 @@
+@@ -1,3 +1,21 @@
 -### Please read ml_perf/README.md for running the benchmark ###
 -This code is adapted from MLPerf reference SW at https://github.com/mlcommons/training/tree/master/reinforcement/tensorflow/minigo/cc
 +## For baremetal env build from scratch, please read ml_perf/README.md ###
@@ -30,8 +30,10 @@ index f1b8a64..3d6eaca 100644
 +# export gcc8.4.0 to PATH and LD_LIBRARY_PATH if not exported
 +export PATH=path/to/gcc8.4.0/bin:$PATH
 +export LD_LIBRARY_PATH=/usr/local/gcc-8.4.0/lib64/${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
-+conda activate minigo_xeon_opt
++conda activate minigo
  
++# Get processed target model and bootstrap checkpoint (See the freeze target model section and convert selfplay data format section).
++# Reference https://github.com/mlcommons/training_results_v1.0/tree/master/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf#steps-to-run-minigo
 +# for quickly do performance validate, you can build env more quickly
 +copy the ml_perf/checkpoints, ml_perf/target dirs, and run ./cc/configure_tensorflow.sh (build options are all defaults) with bazel-0.24.1
 +
@@ -154,7 +156,7 @@ diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/minigui/unset-
 old mode 100644
 new mode 100755
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/README.md b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/README.md
-index f089e5e..b7c6a38 100644
+index f089e5e..52038ed 100644
 --- a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/README.md
 +++ b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/README.md
 @@ -1,95 +1,81 @@
@@ -231,7 +233,8 @@ index f089e5e..b7c6a38 100644
 -    # Download & extract bootstrap checkpoint
 -    gsutil cp gs://minigo-pub/ml_perf/0.7/checkpoint.tar.gz .
 -    tar xfz checkpoint.tar.gz -C ml_perf/
--
++    pip install absl-py autopep8 fire numpy google.cloud.logging google.cloud.bigtable grpcio-tools keras numpy protobuf sgf six tqdm pyasn1
+ 
 -    # Download and freeze the target model
 -    mkdir -p ml_perf/target/
 -    gsutil cp gs://minigo-pub/ml_perf/0.7/target.* ml_perf/target/
@@ -243,7 +246,9 @@ index f089e5e..b7c6a38 100644
 -    wget https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
 -    chmod 755 bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
 -    sh ./bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh --user
--
++    # Install tensorflow-io
++    pip install tensorflow-io
+ 
 -    # Build and install specified Intel-Tensorflow
 -    # NOTE: Requires numpy version < 1.19.0 (verified with 1.18.5)
 -    cd <WORKSPACE>
@@ -264,22 +269,21 @@ index f089e5e..b7c6a38 100644
 -    pip install ./tensorflow_pkg/tensorflow-2.2.0-cp36-cp36m-linux_x86_64.whl
 -
 -    cd <WORKSPACE>
-+    pip install absl-py autopep8 fire numpy google.cloud.logging google.cloud.bigtable grpcio-tools keras numpy protobuf sgf six tqdm pyasn1
- 
-     # Install Tensorflow-io
--    pip3 install "tensorflow-io==0.13.0" --no-deps
-+    pip install tensorflow-io
-+
 +    # Install Python dependencies
 +    pip install --upgrade pip
 +    pip install scikit-build
 +    pip install cmake --upgrade
  
+-    # Install Tensorflow-io
+-    pip3 install "tensorflow-io==0.13.0" --no-deps
++    # Reinstall protobuf==3.20
++    pip install --force-reinstall --no-cache-dir protobuf==3.20
+ 
      # Install horovod
      # Note, please ensure that Intel MPI and GCC have been configured correctly before compling horovod
 -    pip --no-cache-dir install horovod==0.19.1
 -
-+    HOROVOD_WITH_TENSORFLOW=1 pip install --force-reinstall --no-cache-dir horovod[intel-tensorflow]
++    HOROVOD_WITH_TENSORFLOW=1 pip install --no-cache-dir horovod[intel-tensorflow]
 +    
      # Install bazel 0.24.1
      BAZEL_VERSION=0.24.1
@@ -293,9 +297,6 @@ index f089e5e..b7c6a38 100644
  
 -    # Convert selfplay data format from NCHW to NHWC
 -    ./ml_perf/scripts/convert_data_format.sh
-+    # Reinstall protobuf==3.20
-+    pip install --force-reinstall --no-cache-dir protobuf==3.20
-+
 +    # Install sigopt
 +    pip install sigopt
  
