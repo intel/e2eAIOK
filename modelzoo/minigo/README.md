@@ -15,7 +15,7 @@ Get processed target model and bootstrap checkpoint (See the freeze target model
 
 
 ## Enviroment Setup
-* Firstly, ensure that intel oneapi-hpckit and minigo conda runtime is installed on server.
+* Firstly, ensure that intel oneapi-hpckit and minigo conda runtime installed on server.
 * Secondly, enter AIDK repo directory.
 * Thirdly, start the jupyter notebook service.
 
