@@ -2,8 +2,8 @@
 data_preprocess:
   hdfs_node: "10.1.8.4"
   train_days: "0-22"
-  train_input_folder: "hdfs://10.1.8.4:9000/DLRM_DATA/"
-  test_input_folder: "hdfs://10.1.8.4:9000/DLRM_DATA/"
+  train_input_folder: "hdfs://${data_preprocess.hdfs_node}:9000/DLRM_DATA/"
+  test_input_folder: "hdfs://${data_preprocess.hdfs_node}:9000/DLRM_DATA/"
   output_folder: "/mnt/DP_disk3/output"
   spark_config:
     app_name: "dlrm"

@@ -2,7 +2,7 @@ FROM ubuntu:18.04
 
 WORKDIR /root/
 RUN apt-get update -y && apt-get upgrade -y && apt-get install -y openjdk-8-jre build-essential cmake wget git libunwind-dev
-RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-py37_4.12.0-Linux-x86_64.sh -O ~/miniconda.sh && /bin/bash ~/miniconda.sh -b -p /opt/intel/oneapi/intelpython/latest
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-py37_4.12.0-Linux-x86_64.sh -O ~/miniconda.sh && /bin/bash ~/miniconda.sh -b -p /opt/intel/oneapi/intelpython/latest
 ENV PATH /opt/intel/oneapi/intelpython/latest/condabin:$PATH
 RUN yes | conda create -n pytorch_mlperf python=3.7
 SHELL ["conda", "run", "-n", "pytorch_mlperf", "/bin/bash", "-c"]
@@ -54,5 +54,12 @@ ENV HADOOP_HOME /home/hadoop-3.3.1
 ENV HADOOP_CONF_DIR /home/hadoop-3.3.1/etc/hadoop/
 RUN echo "export CLASSPATH=$CLASSPATH:`$HADOOP_HOME/bin/hdfs classpath --glob`" >> /etc/bash.bashrc
 RUN conda init bash
+RUN echo "source /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/.local/env/setvars.sh" >> /etc/bash.bashrc
+RUN echo "export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/python3.7/site-packages/torch_ipex-0.1-py3.7-linux-x86_64.egg/" >> /etc/bash.bashrc
+RUN echo "export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/python3.7/site-packages/torch/lib/" >> /etc/bash.bashrc
+RUN echo "KMP_BLOCKTIME=1" >> /etc/bash.bashrc
+RUN echo "KMP_AFFINITY=\"granularity=fine,compact,1,0\"" >> /etc/bash.bashrc
+SHELL ["conda", "run", "-n", "pytorch_mlperf", "/bin/bash", "-c"]
+RUN pip install raydp-nightly pyrecdp
 RUN echo "root:docker" | chpasswd
 ENTRYPOINT [""]
