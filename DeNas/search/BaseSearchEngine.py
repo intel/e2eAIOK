@@ -120,6 +120,7 @@ class BaseSearchEngine(ABC):
             model = self.super_net
         else:
             raise RuntimeError(f"Domain {self.params.domain} is not supported")
+        
         nas_score, score, latency = do_compute_nas_score(model_type = self.params.model_type, model=model, 
                                                         resolution=self.params.img_size,
                                                         batch_size=self.params.batch_size,

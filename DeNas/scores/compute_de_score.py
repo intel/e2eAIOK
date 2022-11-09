@@ -102,7 +102,7 @@ def do_compute_nas_score(model_type, model, resolution, batch_size, mixup_gamma,
     if model_type == "cnn":
         nas_score, score, latency = do_compute_nas_score_cnn(model_type, model, resolution, batch_size, mixup_gamma, expressivity_weight, complexity_weight, diversity_weight, saliency_weight, latency_weight)
         return nas_score, score, latency
-    elif model_type == "transformer" or model_type == "bert" or model_type == "asr":
+    elif model_type in "transformer" or model_type == "bert" or model_type == "asr" or model_type == "roberta":
         nas_score, score, latency = do_compute_nas_score_transformer(model_type, model, resolution, batch_size, mixup_gamma, subconfig, expressivity_weight, complexity_weight, diversity_weight, saliency_weight, latency_weight)
         return nas_score, score, latency
 
