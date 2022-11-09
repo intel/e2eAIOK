@@ -1,11 +1,13 @@
 from search.RandomSearchEngine import RandomSearchEngine
 from search.EvolutionarySearchEngine import EvolutionarySearchEngine
 from search.SigoptSearchEngine import SigoptSearchEngine
+from search.MOSigoptSearchEngine import MOSigoptSearchEngine
 
 SEARCHER_TYPES = {
         "RandomSearchEngine": RandomSearchEngine,
         "EvolutionarySearchEngine": EvolutionarySearchEngine,
-        "SigoptSearchEngine": SigoptSearchEngine
+        "SigoptSearchEngine": SigoptSearchEngine,
+        "MOSigoptSearchEngine": MOSigoptSearchEngine
 }
 
 class SearchEngineFactory(object):

@@ -14,4 +14,4 @@ train_csv: "/home/vmagent/app/dataset/LibriSpeech/train-clean-100.csv"
 valid_csv: "/home/vmagent/app/dataset/LibriSpeech/dev-clean.csv"
 test_csv: "/home/vmagent/app/dataset/LibriSpeech/test-clean.csv"
 
-tokenizer_ckpt: "asr/results/transformer/74443/save/tokenizer.ckpt"
+tokenizer_ckpt: "/home/vmagent/app/dataset/LibriSpeech/tokenizer.ckpt"

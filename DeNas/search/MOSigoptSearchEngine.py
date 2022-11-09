@@ -4,7 +4,7 @@ import sigopt
 from search.BaseSearchEngine import BaseSearchEngine
 from AIDK.common.utils import timeout_input
 
-class SigoptSearchEngine(BaseSearchEngine):
+class MOSigoptSearchEngine(BaseSearchEngine):
     def __init__(self, params=None, super_net=None, search_space=None):
         super().__init__(params,super_net,search_space)
         self.conn = None
@@ -31,13 +31,13 @@ class SigoptSearchEngine(BaseSearchEngine):
                     num_tried = 0
                 time.sleep(5)
 
-    def _set_sigopt_observation(self, experiment, suggestion_id, nas_score):
+    def _set_sigopt_observation(self, experiment, suggestion_id, metrics):
         num_tried = 0
         while True:
             try:
                 return self.conn.experiments(experiment.id).observations().create(
                     suggestion=suggestion_id,
-                    value=nas_score,
+                    values=metrics
                 )
             except Exception as e:
                 num_tried += 1
@@ -60,7 +60,7 @@ class SigoptSearchEngine(BaseSearchEngine):
             try:
                 return self.conn.experiments(experiment.id).observations().create(
                     suggestion=suggestion_id,
-                    failed=True,
+                    failed=True
                 )
             except Exception as e:
                 num_tried += 1
@@ -87,7 +87,7 @@ class SigoptSearchEngine(BaseSearchEngine):
                 project='denas',
                 type="offline",
                 observation_budget=1000,
-                metrics=[dict(name='DeScore', objective='maximize')],
+                metrics=[dict(name='Score', objective='maximize'),dict(name='Latency', objective='minimize')],
                 parameters=[
                     dict(name="LAYER_NUM", type="int", bounds=dict(min=self.params.cfg["SEARCH_SPACE"]['LAYER_NUM']['bounds']['min'], max=self.params.cfg["SEARCH_SPACE"]['LAYER_NUM']['bounds']['max'])),
                     dict(name="HEAD_NUM", type="int", bounds=dict(min=self.params.cfg["SEARCH_SPACE"]['HEAD_NUM']['bounds']['min'], max=self.params.cfg["SEARCH_SPACE"]['HEAD_NUM']['bounds']['max']-1)),
@@ -112,7 +112,10 @@ class SigoptSearchEngine(BaseSearchEngine):
                     continue
                 nas_score, score, latency = self.cand_evaluate(cand)
                 self.logger.info('epoch = {} structure = {} nas_score = {} params = {}'.format(epoch, cand, self.vis_dict[cand]['score'], self.vis_dict[cand]['params']))
-                self._set_sigopt_observation(experiment, suggestion.id, nas_score.item())
+                metrics = []
+                metrics.append({'name': 'Score', 'value': score.item()})
+                metrics.append({'name': 'Latency', 'value': latency})
+                self._set_sigopt_observation(experiment, suggestion.id, metrics)
             best_assignments = self.conn.experiments(experiment.id).best_assignments().fetch().data[0].assignments
             self.best_struct = (best_assignments['LAYER_NUM'],best_assignments['HEAD_NUM'],64*best_assignments['HEAD_NUM'],best_assignments['HIDDEN_SIZE']*self.params.cfg["SEARCH_SPACE"]['HIDDEN_SIZE']['bounds']['step'],best_assignments['INTERMEDIATE_SIZE']*self.params.cfg["SEARCH_SPACE"]['INTERMEDIATE_SIZE']['bounds']['step'])
         elif self.params.domain == "vit":
@@ -121,7 +124,7 @@ class SigoptSearchEngine(BaseSearchEngine):
                 project='denas',
                 type="offline",
                 observation_budget=1000,
-                metrics=[dict(name='DeScore', objective='maximize')],
+                metrics=[dict(name='Score', objective='maximize'),dict(name='Latency', objective='minimize')],
                 conditionals=[dict(name="DEPTH",values=["12","13","14","15","16"])],
                 parameters=[
                     dict(name="MLP_RATIO_0", type="double", grid=[*self.search_space['mlp_ratio']]),
@@ -180,25 +183,29 @@ class SigoptSearchEngine(BaseSearchEngine):
                     continue
                 nas_score, score, latency = self.cand_evaluate(cand)
                 self.logger.info('epoch = {} structure = {} nas_score = {} params = {}'.format(epoch, cand, self.vis_dict[cand]['score'], self.vis_dict[cand]['params']))
-                self._set_sigopt_observation(experiment, suggestion.id, nas_score.item())
+                metrics = []
+                metrics.append({'name': 'Score', 'value': score.item()})
+                metrics.append({'name': 'Latency', 'value': latency})
+                self._set_sigopt_observation(experiment, suggestion.id, metrics)
             best_assignments = self.conn.experiments(experiment.id).best_assignments().fetch().data[0].assignments  
             depth = int(best_assignments['DEPTH'])
-            cand_tuple.append(depth)
+            best_tuple = list()
+            best_tuple.append(depth)
             for i in range(depth):
                 mlp_ratio_name = f"MLP_RATIO_{i}"
-                cand_tuple.append(float(best_assignments[mlp_ratio_name]))
+                best_tuple.append(float(best_assignments[mlp_ratio_name]))
             for i in range(depth):
                 num_heads_name = f"NUM_HEADS_{i}"
-                cand_tuple.append(int(best_assignments[num_heads_name]))
-            cand_tuple.append(int(best_assignments['EMBED_DIM']))
-            self.best_struct = tuple(cand_tuple)
+                best_tuple.append(int(best_assignments[num_heads_name]))
+            best_tuple.append(int(best_assignments['EMBED_DIM']))
+            self.best_struct = tuple(best_tuple)
         elif self.params.domain == "asr":
             experiment = self.conn.experiments().create(
                 name= 'asr denas',
                 project='denas',
                 type="offline",
                 observation_budget=1000,
-                metrics=[dict(name='DeScore', objective='maximize')],
+                metrics=[dict(name='Score', objective='maximize'),dict(name='Latency', objective='minimize')],
                 conditionals=[dict(name="DEPTH",values=["9","10","11","12"])],
                 parameters=[
                     dict(name="MLP_RATIO_0", type="double", grid=[*self.search_space['mlp_ratio']]),
@@ -246,18 +253,22 @@ class SigoptSearchEngine(BaseSearchEngine):
                     continue
                 nas_score, score, latency = self.cand_evaluate(cand)
                 self.logger.info('epoch = {} nas_score = {} cand = {}'.format(epoch, nas_score, cand))
-                self._set_sigopt_observation(experiment, suggestion.id, nas_score.item())
+                metrics = []
+                metrics.append({'name': 'Score', 'value': score.item()})
+                metrics.append({'name': 'Latency', 'value': latency})
+                self._set_sigopt_observation(experiment, suggestion.id, metrics)
             best_assignments = self.conn.experiments(experiment.id).best_assignments().fetch().data[0].assignments  
             depth = int(best_assignments['DEPTH'])
-            cand_tuple.append(depth)
+            best_tuple = list()
+            best_tuple.append(depth)
             for i in range(depth):
                 mlp_ratio_name = f"MLP_RATIO_{i}"
-                cand_tuple.append(float(best_assignments[mlp_ratio_name]))
+                best_tuple.append(float(best_assignments[mlp_ratio_name]))
             for i in range(depth):
                 num_heads_name = f"NUM_HEADS_{i}"
-                cand_tuple.append(int(best_assignments[num_heads_name]))
-            cand_tuple.append(int(best_assignments['EMBED_DIM']))
-            self.best_struct = tuple(cand_tuple)
+                best_tuple.append(int(best_assignments[num_heads_name]))
+            best_tuple.append(int(best_assignments['EMBED_DIM']))
+            self.best_struct = tuple(best_tuple)
         else:
             raise RuntimeError(f"Domain {self.params.domain} is not supported")
         with open("best_model_structure.txt", 'w') as f:

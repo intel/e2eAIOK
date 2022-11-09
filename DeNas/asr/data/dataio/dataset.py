@@ -387,7 +387,7 @@ def dataio_prepare(args, hparams, tokenizer):
     add_dynamic_item([train_data], audio_pipeline_train)
 
     # Define text pipeline:
-    @utils.data_pipeline.takes("wrd")
+    @utils.data_pipeline.takes("transcript")
     @utils.data_pipeline.provides(
         "wrd", "tokens_list", "tokens_bos", "tokens_eos", "tokens"
     )
