@@ -23,6 +23,9 @@ then
     $HADOOP_PATH/bin/hdfs dfs -cat $last_day | tail -$latter | $HADOOP_PATH/bin/hdfs dfs -appendToFile - $temp_validation/day_23
 else
     echo "write to local"
+    temp_test="${temp_test#file://}"
+    temp_validation="${temp_validation#file://}"
+    last_day="${last_day#file://}"
     mkdir -p $temp_test $temp_validation
     head -n $former $last_day > $temp_test/day_23
     tail -n $latter $last_day > $temp_validation/day_23

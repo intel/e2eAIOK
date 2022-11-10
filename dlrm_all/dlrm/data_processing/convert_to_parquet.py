@@ -25,8 +25,7 @@ def main(data_config):
     import os
     host_name = os.uname()[1]
     print(host_name)
-    hdfs_node = data_config["hdfs_node"]
-    path_prefix = f"hdfs://{hdfs_node}:9000"
+    path_prefix = f"file://"
     train_input_folder = data_config["train_input_folder"]
     test_input_folder = data_config["test_input_folder"]
     output_folder = data_config["output_folder"]
@@ -101,4 +100,4 @@ if __name__ == "__main__":
         config = yaml.safe_load(f)
         data_config = config["data_preprocess"]
         main(data_config)
-    
+

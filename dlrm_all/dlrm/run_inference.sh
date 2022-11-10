@@ -1,14 +1,28 @@
-set -ex
+# bash run_inference.sh local_small node_ip
+# bash run_inference.sh distributed_full head_node_ip worker_node_ip...
+#!/bin/bash
+set -e
 seed_num=$(date +%s)
 
-export KMP_BLOCKTIME=1
-export KMP_AFFINITY="granularity=fine,compact,1,0"
+ncpu_per_proc=1
+nproc_per_node=2
+ccl_worker_count=4
+nnodes=$[ $#-1 ]
+world_size=$[ ${nnodes}*${nproc_per_node} ]
+num_cpus=$(cat /proc/cpuinfo| grep "physical id"| sort| uniq| wc -l)
+per_cpu_cores=$(cat /proc/cpuinfo | grep "cpu cores" | uniq | awk -F: '{print $2}')
+executor_cores=$[ $per_cpu_cores*$num_cpus/$nproc_per_node ]
+omp_num_threads=$[ $executor_cores-$ccl_worker_count ]
+export OMP_NUM_THREADS=${omp_num_threads}
 
-# model inference
+hosts_file="../hosts"
+config_path_infer="../data_processing/config_infer.yaml"
+save_path="../data_processing/data_info.txt"
+
 echo "start model inference"
-infer_start=$(date +%s)
 cd ./dlrm
-/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python -u ./launch_inference.py --distributed --config-path="../data_processing/config_infer.yaml" --save-path="../data_processing/data_info.txt"  --ncpu_per_proc=1 --nproc_per_node=2 --nnodes=4 --world_size=8 --hostfile ../hosts --master_addr="10.112.228.4" $dlrm_extra_option 2>&1 | tee run_inference_${seed_num}.log
+infer_start=$(date +%s)
+/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python -u ./launch_inference.py --distributed --config-path=${config_path_infer} --save-path=${save_path}  --ncpu_per_proc=${ncpu_per_proc} --nproc_per_node=${nproc_per_node} --nnodes=${nnodes} --world_size=${world_size} --hostfile ${hosts_file} --master_addr=${2} $dlrm_extra_option 2>&1 | tee run_inference_${seed_num}.log
 infer_end=$(date +%s)
 infer_spend=$(( infer_end - infer_start ))
 echo inference time is ${infer_spend} seconds.

@@ -80,8 +80,7 @@ def main(data_config, save_path):
     import os
     host_name = os.uname()[1]
     print(host_name)
-    hdfs_node = data_config["hdfs_node"]
-    path_prefix = f"hdfs://{hdfs_node}:9000"
+    path_prefix = f"file://"
     output_folder = data_config["output_folder"]
     spark_config = data_config["spark_config"]
     train_days = data_config["train_days"]
@@ -157,7 +156,7 @@ def main(data_config, save_path):
     for filename in train_files:
         t11 = timer()
         train_df = spark.read.parquet(f"{path_prefix}{output_folder}/dlrm_parquet_train_proc_{filename}")
-        categorifyAllFeatures(train_df, proc, output_name=f"dlrm_categorified_{filename}")
+        categorifyAllFeatures(train_df, proc, output_name=f"train/dlrm_categorified_{filename}")
         t12 = timer()
         print(f"Apply dicts to {filename} completed, took {(t12 - t11)} secs")
     
