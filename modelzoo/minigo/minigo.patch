@@ -501,7 +501,7 @@ index 9d49f1f..a69a642 100644
  --target_pruning=1
 +
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/flags/19/train_loop.flags b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/flags/19/train_loop.flags
-index d469db9..6ae9101 100644
+index d469db9..4f3f978 100644
 --- a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/flags/19/train_loop.flags
 +++ b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/flags/19/train_loop.flags
 @@ -1,4 +1,4 @@
@@ -510,10 +510,12 @@ index d469db9..6ae9101 100644
  
  --window_size=5
  --train_filter=0.3
-@@ -9,3 +9,5 @@
+@@ -8,4 +8,6 @@
+ # --num_games in bootstrap.flags must be >= --min_games_per_iteration.
  --min_games_per_iteration=8192
  
- --use_bfloat16=true
+---use_bfloat16=true
++--use_bfloat16=false
 +--winrate=0.5
 +--eval=0
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/cc_libgen_parallel_selfplay.sh b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/cc_libgen_parallel_selfplay.sh
@@ -721,7 +723,7 @@ index 6a01380..99bd145 100755
      2>&1 | tee "${log_dir}/train_loop.log"
  fi
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/train_loop.py b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/train_loop.py
-index 42fcee3..fc732b5 100644
+index 42fcee3..76e2390 100644
 --- a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/train_loop.py
 +++ b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/train_loop.py
 @@ -82,16 +82,25 @@ flags.DEFINE_integer('numa_cores', None, 'The number of core for each numa '
@@ -752,15 +754,6 @@ index 42fcee3..fc732b5 100644
  
      def _model_name(self, it):
          return '%06d' % it
-@@ -315,7 +324,7 @@ def train(state):
-         '--tpu_name={}'.format(FLAGS.tpu_name),
-         '--training_seed={}'.format(state.iter_num),
-         '--num_examples={}'.format(num_examples),
--        '--use_bfloat16={}'.format(FLAGS.use_bfloat16),
-+        '--use_bfloat16=False',
-         '--selfplay_precision={}'.format(FLAGS.precision),
-         '--num_intra_threads={}'.format(intra_threads),
-         '--num_inter_threads={}'.format(inter_threads),
 @@ -404,9 +413,99 @@ def post_train(state):
           '--input_graph={}'.format(selfplay_pb),
           '--dst={}'.format(dst_minigo_file)]))
