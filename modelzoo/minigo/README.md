@@ -9,17 +9,23 @@
 ---
 
 # Quick Start
+
+## Data Processing
+Get processed target model and bootstrap checkpoint (See the freeze target model section and convert selfplay data format section). Reference https://github.com/mlcommons/training_results_v1.0/tree/master/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf#steps-to-run-minigo
+
+
 ## Enviroment Setup
-* Firstly, ensure that intel oneapi-hpckit is installed on server.
+* Firstly, ensure that intel oneapi-hpckit and minigo conda runtime installed on server.
 * Secondly, enter AIDK repo directory.
 * Thirdly, start the jupyter notebook service.
 
 ``` bash
 source /opt/intel/oneapi/setvars.sh --force
-conda activate minigo_xeon_opt
+conda activate minigo
+cd e2eAIOK
 ```
 
 ## Training
 ```
-cd e2eAIOK; source /opt/intel/oneapi/setvars.sh --force && python run_e2eaiok.py --data_path /root/zheng/dataset/minigo --model_name minigo --conf conf/e2eaiok_defaults_minigo_example.conf
+python run_e2eaiok.py --data_path /root/dataset/minigo --model_name minigo --conf conf/e2eaiok_defaults_minigo_example.conf
 ```
