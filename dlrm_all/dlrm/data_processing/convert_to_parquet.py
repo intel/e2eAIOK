@@ -36,14 +36,16 @@ def main(data_config):
     t1 = timer()
     import ray
     ray.init(address="auto")
+
+    print("init spark on ray")
     spark = raydp.init_spark(
             app_name=spark_config["app_name"],
             num_executors=spark_config["num_executors"],
             executor_cores=spark_config["executor_cores"],
             executor_memory=spark_config["executor_memory"],
-            placement_group_strategy="SPREAD",
             configs=spark_config["configs"])
     spark.sparkContext.setLogLevel("ERROR")
+    print("spark started")
     proc = DataProcessor(spark, path_prefix, current_path=output_folder, shuffle_disk_capacity="800GB", spark_mode='standalone')
 
     #############################

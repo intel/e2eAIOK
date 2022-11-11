@@ -40,7 +40,7 @@ config_path="../data_processing/config.yaml"
 config_path_infer="../data_processing/config_infer.yaml"
 save_path="../data_processing/data_info.txt"
 HADOOP_PATH="/home/hadoop-3.3.1"
-data_path="/mnt/DP_disk3/output"
+data_path="/home/vmagent/app/dataset/criteo"
 model_path="./result/"
 if [ ! -d $model_path ]; then
   mkdir $model_path

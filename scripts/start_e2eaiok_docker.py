@@ -14,6 +14,7 @@ def parse_args(args):
 
     parser.add_argument('-b', '--backend',choices=['pytorch', 'tensorflow', 'pytorch_mlperf', 'tensorflow205'],default='pytorch')
     parser.add_argument('-dp', '--dataset_path',type=str,default="../e2eaiok_dataset",help='large capacity folder for dataset storing')
+    parser.add_argument('--spark_shuffle_dir',type=str,default="../spark_local_dir",help='large capacity folder for spark temporary storage')
     parser.add_argument('--proxy', type=str, default=None, help='proxy for pip and apt install')
     parser.add_argument('--log_path',type=str,default="./e2eaiok_docker_building.log",help='large capacity folder for dataset storing')
     parser.add_argument('-w', '--workers',nargs='+', default=[], help='worker host list')
@@ -94,6 +95,43 @@ def execute_check(cmdline, check_func, logger):
         ret = decode_subprocess_output(process.stdout, logger)
     rc = process.wait()
     return check_func(ret)
+
+def prepare_miniconda(logger):
+    to_download = "https://repo.anaconda.com/miniconda/Miniconda3-py37_4.12.0-Linux-x86_64.sh"
+    to_save = f"{current_folder}/Dockerfile-ubuntu18.04/miniconda.sh"
+    # check if miniconda exsists
+    if os.path.exists(to_save):
+        return True
+    try:
+        import requests
+    except:
+        python_name = f"python{sys.version_info[0]}"
+        cmdline = f"{python_name} -m pip install requests"
+        if not execute(cmdline, logger):
+            logger.error("failed to install requests package, please fix manually")
+            return False
+    try:
+        from tqdm import tqdm
+    except:
+        python_name = f"python{sys.version_info[0]}"
+        cmdline = f"{python_name} -m pip install tqdm"
+        if not execute(cmdline, logger):
+            logger.error("failed to install tqdm package, please fix manually")
+            return False
+
+    import requests
+    from tqdm import tqdm
+    with requests.get(to_download, stream=True) as r:
+        # check header to get content length, in bytes
+        total_length = int(r.headers.get("Content-Length"))
+        
+        # implement progress bar via tqdm
+        with tqdm.wrapattr(r.raw, "read", total=total_length, desc="")as raw: 
+            # save the output to a file
+            with open(f"{to_save}", 'wb')as output:
+                shutil.copyfileobj(raw, output)
+    return True
+
 
 def check_requirements(workers, local, logger):
     if len(workers) == 0:
@@ -188,6 +226,8 @@ def build_docker(backend, logger, proxy=None, local="localhost", is_push = False
     # step 3
     if next_step == 3:
         # start to build
+        if docker_name == "e2eaiok-pytorch-mlperf":
+            prepare_miniconda(logger)
         cmdline = ["docker", "build",  "-t",  docker_name, "Dockerfile-ubuntu18.04", "-f", f"Dockerfile-ubuntu18.04/{docker_file}"] + proxy_config
         if execute(cmdline, logger):
             next_step = 4 if is_push else 6
@@ -225,7 +265,7 @@ def start_docker_registry(logger):
     cmdline = "docker run -d -e REGISTRY_HTTP_ADDR=0.0.0.0:5000 -p 5000:5000 --restart=always --name registry registry:2"
     return execute(cmdline, logger)
 
-def run_docker(docker_name, backend, dataset_path, logger, workers=[]):
+def run_docker(docker_name, backend, dataset_path, spark_shuffle_dir, logger, workers=[]):
     if backend == 'pytorch':
         docker_nickname = "e2eaiok-pytorch"
         port = 12345
@@ -259,7 +299,7 @@ def run_docker(docker_name, backend, dataset_path, logger, workers=[]):
         return True, port
 
     # run
-    cmdline = ["docker", "run",  "--shm-size=100g", "--privileged",  "--network",  "host", "--device=/dev/dri", "-d", "-v", f"{dataset_path}/:/home/vmagent/app/dataset", "-v", f"{current_folder}/:/home/vmagent/app/e2eaiok",  "-w",  "/home/vmagent/app/", "--name", docker_nickname,  docker_name, "/bin/bash", "-c", "service ssh start & sleep infinity"]
+    cmdline = ["docker", "run",  "--shm-size=300g", "--privileged",  "--network",  "host", "--device=/dev/dri", "-d", "-v", f"{dataset_path}/:/home/vmagent/app/dataset", "-v", f"{current_folder}/:/home/vmagent/app/e2eaiok", "-v", f"{current_folder}{spark_shuffle_dir}/:/home/vmagent/app/spark_local_dir", "-w",  "/home/vmagent/app/", "--name", docker_nickname,  docker_name, "/bin/bash", "-c", "service ssh start & sleep infinity"]
 
     return execute(cmdline, logger, workers), port
 
@@ -324,7 +364,7 @@ def main(input_args):
         exit()
 
     # 2. start docker
-    r, port = run_docker(docker_name, input_args.backend, input_args.dataset_path, logger, input_args.workers)
+    r, port = run_docker(docker_name, input_args.backend, input_args.dataset_path, input_args.spark_shuffle_dir, logger, input_args.workers)
     if r:
         cmd = [f"ssh {n} -p {port}" for n in input_args.workers]
         print_success = True
