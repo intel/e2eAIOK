@@ -16,7 +16,7 @@ index 0000000..e544eb5
 +try-import %workspace%/tf_configure.bazelrc
 +try-import %workspace%/tensorflow.bazelrc
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/README.md b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/README.md
-index f1b8a64..b31f0b1 100644
+index f1b8a64..d3b71fe 100644
 --- a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/README.md
 +++ b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/README.md
 @@ -1,3 +1,21 @@
@@ -35,7 +35,7 @@ index f1b8a64..b31f0b1 100644
 +# Get processed target model and bootstrap checkpoint (See the freeze target model section and convert selfplay data format section).
 +# Reference https://github.com/mlcommons/training_results_v1.0/tree/master/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf#steps-to-run-minigo
 +# for quickly do performance validate, you can build env more quickly
-+copy the ml_perf/checkpoints, ml_perf/target dirs, and run ./cc/configure_tensorflow.sh (build options are all defaults) with bazel-0.24.1
++copy the ml_perf/checkpoints, ml_perf/target dirs, and run ./cc/configure_tensorflow.sh (build options are all defaults) ./ml_perf/scripts/cc_libgen_parallel_selfplay.sh with bazel-0.24.1
 +
 +# Please confirm that your passwordless ssh is started before running minigo
 +# Launch the following command to run the minigo workload
@@ -156,10 +156,10 @@ diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/minigui/unset-
 old mode 100644
 new mode 100755
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/README.md b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/README.md
-index f089e5e..52038ed 100644
+index f089e5e..517cc60 100644
 --- a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/README.md
 +++ b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/README.md
-@@ -1,95 +1,81 @@
+@@ -1,95 +1,83 @@
 -# MLPerf Training v1.0 Intel Submission
 +# Preliminary
 +This repo is a staging ground for the new [MLPerf](http://mlperf.org) reinforcement model.
@@ -294,6 +294,8 @@ index f089e5e..52038ed 100644
  
      # Compile TensorFlow C++ libraries (enter to use default config)
      ./cc/configure_tensorflow.sh
++    # Compile parallel selfplay C++ libraries
++    ./ml_perf/scripts/cc_libgen_parallel_selfplay.sh
  
 -    # Convert selfplay data format from NCHW to NHWC
 -    ./ml_perf/scripts/convert_data_format.sh
@@ -302,7 +304,7 @@ index f089e5e..52038ed 100644
  
      # Configure nopassword SSH on host machines
      # Launch the following command to run the workload
-@@ -97,162 +83,4 @@ The model plays games against itself and uses these games to improve play.
+@@ -97,162 +85,4 @@ The model plays games against itself and uses these games to improve play.
      # rootnode=node0
      HOSTLIST=hostlist ROOTNODE=rootnode ml_perf/scripts/run_minigo.sh 19
  
@@ -520,13 +522,12 @@ index d469db9..4f3f978 100644
 +--eval=0
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/cc_libgen_parallel_selfplay.sh b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/cc_libgen_parallel_selfplay.sh
 new file mode 100755
-index 0000000..b8840e0
+index 0000000..27f3d3f
 --- /dev/null
 +++ b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/cc_libgen_parallel_selfplay.sh
-@@ -0,0 +1,8 @@
+@@ -0,0 +1,7 @@
 +#!/bin/bash
 +source ml_perf/scripts/common.sh
-+echo `hostname`
 +bazel build $BAZEL_OPTS \
 +    --copt=-O3 \
 +    --define=board_size="${board_size}" \
@@ -586,27 +587,24 @@ index 523a705..bbee33a 100755
  }
  
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/init_from_checkpoint.sh b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/init_from_checkpoint.sh
-index e89c6de..abcd5d2 100755
+index e89c6de..e1bdf7d 100755
 --- a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/init_from_checkpoint.sh
 +++ b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/init_from_checkpoint.sh
-@@ -25,12 +25,11 @@
+@@ -24,14 +24,6 @@
+ 
  source ml_perf/scripts/common.sh
  
- 
+-
 -# Build the C++ binaries
 -bazel build $BAZEL_OPTS \
 -  --copt=-O3 \
 -  --define=board_size="${board_size}" \
 -  --define=tf=1 \
 -  cc:concurrent_selfplay cc:sample_records cc:eval
-+if [[ -v HOSTLIST ]]
-+then
-+  # Generate cc parallel lib
-+  mpirun -bootstrap ssh -ppn 1 -hosts $HOSTLIST ml_perf/scripts/cc_libgen_parallel_selfplay.sh --base_dir=$base_dir --board_size=$board_size
-+fi
- 
+-
  # Initialize a clean directory structure.
  for var_name in flag_dir golden_chunk_dir golden_chunk_tmp_dir holdout_dir \
+                 log_dir model_dir selfplay_dir sgf_dir work_dir signal_dir; do
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/run_minigo.sh b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/run_minigo.sh
 index 9d841aa..b1b3c12 100755
 --- a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/run_minigo.sh
