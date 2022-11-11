@@ -107,7 +107,7 @@ def compute_diversity_score(model_type, net, *inputs):
         input_dim = list(inputs[0][0, :].shape)
         inputs = torch.ones([1] + input_dim)
         output = net.forward(inputs)
-    elif model_type == "bert" or model_type =='roberta':
+    elif model_type == "bert":
         input_ids, input_masks, input_segments, subconfig = inputs
         output, pooled_output = net.forward(input_ids, subconfig, input_masks, input_segments)
     elif model_type == "asr":
@@ -154,7 +154,7 @@ def compute_saliency_score(model_type, net, *inputs):
         input_dim = list(inputs[0][0, :].shape)
         inputs = torch.ones([1] + input_dim)
         output = net.forward(inputs)
-    elif model_type == "bert" or model_type =='roberta':
+    elif model_type == "bert":
         input_ids, input_masks, input_segments, subconfig = inputs
         output, pooled_output = net.forward(input_ids, subconfig, input_masks, input_segments)
     elif model_type == "asr":
@@ -190,7 +190,7 @@ def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, 
         dtype = torch.float32
         input = torch.randn(size=[batch_size, 3, resolution, resolution],  dtype=dtype)
         disversity_score_list = compute_diversity_score(model_type, model, input)
-    elif model_type == "bert" or model_type == "roberta":
+    elif model_type == "bert":
         
         max_seq_length = resolution
         input_ids = [[9333-id] * max_seq_length for id in range(batch_size)]
@@ -212,7 +212,7 @@ def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, 
 
     if model_type == "transformer":
         grads_abs_list = compute_saliency_score(model_type, model, input)
-    elif model_type == "bert" or model_type == "roberta":
+    elif model_type == "bert":
         grads_abs_list = compute_saliency_score(model_type, model, input_ids, input_masks, input_segments, subconfig)
     elif model_type == "asr":
         grads_abs_list = compute_saliency_score(model_type, model, input)
@@ -230,7 +230,7 @@ def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, 
                                                         resolution=resolution,
                                                         in_channels=3, gpu=None, repeat_times=3,
                                                         fp16=False)    
-    elif model_type == "bert" or model_type == "roberta":
+    elif model_type == "bert":
         latency = get_bert_latency(model=model, subconfig=subconfig, batch_size=batch_size, max_seq_length=resolution, gpu=None, infer_cnt=10.)
     else:
         latency = 0
