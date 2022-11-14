@@ -1,0 +1,4 @@
+#!/usr/bin/bash
+
+python j2c_spark.py
+python dien_data_process_v1.py

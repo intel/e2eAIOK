@@ -1,11 +1,11 @@
-.. Hydro.ai documentation master file, created by
+.. e2eaiok documentation master file, created by
    sphinx-quickstart on Wed Nov 24 23:43:26 2021.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Hydro.ai
+e2eaiok
 ========
-*Hydro.ai* is the project code name to democratize End-to-End AI on CPU. It is initiated by Intel AIA, aiming to provide simple experience for democratized END-TO-END model training leveraging Intel oneAPI aikit, Intel sigopt, and Intel Nerual Compressor.
+*e2eaiok* is the project code name to democratize End-to-End AI on CPU. It is initiated by Intel AIA, aiming to provide simple experience for democratized END-TO-END model training leveraging Intel oneAPI aikit, Intel sigopt, and Intel Nerual Compressor.
 
 .. note::
    This project is under active developing.

@@ -1,3 +1,4 @@
+import os
 import setuptools
 from setuptools.command.install import install
 from setuptools import find_packages
@@ -5,18 +6,24 @@ from setuptools import find_packages
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
+e2eaiok_home = os.path.abspath(__file__ + "/../")
+try:
+    VERSION = open(os.path.join(e2eaiok_home, 'e2eAIOK/', 'version'), 'r').read().strip()
+except:
+    VERSION = '0.2.1'
+
 setuptools.setup(
-    name="AIDK",
-    version="0.0.1",
+    name="e2eAIOK",
+    version=VERSION,
     author="INTEL AIA BDF",
     author_email="chendi.xue@intel.com",
     description=
-    "A smart AI democratization kit",
+    "Intel® End-to-End AI Optimization Kit",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/intel-innersource/frameworks.bigdata.bluewhale",
+    url="https://github.com/intel/e2eAIOK",
     project_urls={
-        "Bug Tracker": "https://github.com/intel-innersource/frameworks.bigdata.bluewhale",
+        "Bug Tracker": "https://github.com/intel/e2eAIOK/issues",
     },
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -24,6 +31,7 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     packages=find_packages(exclude=["RecDP", "modelzoo", "example"]),
+    package_data = {'e2eAIOK': ['version']},
     python_requires=">=3.6",
     zip_safe=False,
     install_requires=[])

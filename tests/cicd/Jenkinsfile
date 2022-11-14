@@ -14,7 +14,7 @@ pipeline {
                             node(label) {
                                 cleanWs()
                                 checkout scm
-                                sh 'cd Dockerfile-ubuntu18.04 && docker build -t aidk-tensorflow . -f DockerfileTensorflow && docker build -t aidk-pytorch . -f DockerfilePytorch && docker build -t aidk-pytorch110 . -f DockerfilePytorch110 && cd .. && yes | docker container prune && yes | docker image prune'
+                                sh 'cd Dockerfile-ubuntu18.04 && docker build -t e2eaiok-tensorflow . -f DockerfileTensorflow && docker build -t e2eaiok-pytorch . -f DockerfilePytorch && docker build -t e2eaiok-pytorch110 . -f DockerfilePytorch110 && cd .. && yes | docker container prune && yes | docker image prune'
                             }
                         }
                     }
@@ -27,9 +27,36 @@ pipeline {
                 label 'sr602'
             }
             steps {
-                sh 'docker run --rm --name test-workload-pipeline --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_pipeline_test.sh"'
-                sh 'docker run --rm --name test-workload-horovod --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/docker_horovod_test.sh"'
-                sh 'docker run --rm --name test-workload-torchccl --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch110 /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/docker_torchccl_test.sh"'
+                sh 'docker run --rm --name test-workload-pipeline --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/e2eaiok/tests/cicd/jenkins_pipeline_test.sh"'
+                sh 'docker run --rm --name test-workload-horovod --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/e2eaiok/tests/cicd/docker_horovod_test.sh"'
+                sh 'docker run --rm --name test-workload-torchccl --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch110 /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/e2eaiok/tests/cicd/docker_torchccl_test.sh"'
+            }
+        }
+        stage('Run resnet') {
+            agent {
+                label 'sr602'
+            }
+            steps {
+                sh 'cd modelzoo/resnet  && bash patch_resnet.sh && cd ../..'
+                sh 'docker run --rm --name test-workload-resnet --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/e2eaiok/tests/cicd/jenkins_resnet_test.sh"'
+            }
+        }
+        stage('Run bert') {
+            agent {
+                label 'sr602'
+            }
+            steps {
+                sh 'cd modelzoo/bert && bash patch_bert.sh && cd ../..'
+                sh 'docker run --rm --name test-workload-bert --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/e2eaiok/tests/cicd/jenkins_bert_test.sh"'
+            }
+        }
+        stage('Run dlrm') {
+            agent {
+                label 'sr602'
+            }
+            steps {
+                sh 'cd modelzoo/dlrm && bash patch_dlrm.sh && cd ../..'
+                sh 'docker run --rm --name test-workload-dlrm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/e2eaiok/tests/cicd/jenkins_dlrm_test.sh"'
             }
         }
         stage('Run minigo') {
@@ -41,31 +68,13 @@ pipeline {
                 sh 'SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT bash tests/cicd/jenkins_minigo_test.sh'
             }
         }
-        stage('Run bert') {
-            agent {
-                label 'sr602'
-            }
-            steps {
-                sh 'cd modelzoo/bert && bash patch_bert.sh && cd ../..'
-                sh 'docker run --rm --name test-workload-bert --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_bert_test.sh"'
-            }
-        }
         stage('Run rnnt') {
             agent {
                 label 'sr602'
             }
             steps {
                 sh 'cd modelzoo/rnnt/pytorch && bash patch_rnnt.sh && cd ../../..'
-                sh 'docker run --rm --name test-workload-rnnt --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch110 /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_rnnt_test.sh"'
-            }
-        }
-        stage('Run resnet') {
-            agent {
-                label 'sr602'
-            }
-            steps {
-                sh 'cd modelzoo/resnet  && bash patch_resnet.sh && cd ../..'
-                sh 'docker run --rm --name test-workload-resnet --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_resnet_test.sh"'
+                sh 'docker run --rm --name test-workload-rnnt --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch110 /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/e2eaiok/tests/cicd/jenkins_rnnt_test.sh"'
             }
         }
         stage('Run wnd') {
@@ -74,7 +83,7 @@ pipeline {
             }
             steps {
                 sh 'cd modelzoo/WnD/TensorFlow2 && bash patch_wnd.sh && cd ../../..'
-                sh 'docker run --rm --name test-workload-wnd --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_wnd_test.sh"'
+                sh 'docker run --rm --name test-workload-wnd --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/e2eaiok/tests/cicd/jenkins_wnd_test.sh"'
             }
         }
         stage('Run dien') {
@@ -83,16 +92,7 @@ pipeline {
             }
             steps {
                 sh 'cd modelzoo/dien/train && bash patch_dien.sh && cd ../../..'
-                sh 'docker run --rm --name test-workload-dien --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_dien_test.sh"'
-            }
-        }
-        stage('Run dlrm') {
-            agent {
-                label 'sr602'
-            }
-            steps {
-                sh 'cd modelzoo/dlrm && bash patch_dlrm.sh && cd ../..'
-                sh 'docker run --rm --name test-workload-dlrm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/hydro.ai -w /home/vmagent/app/ aidk-pytorch /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/hydro.ai/tests/cicd/jenkins_dlrm_test.sh"'
+                sh 'docker run --rm --name test-workload-dien --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-tensorflow /bin/bash -c "SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT . /home/vmagent/app/e2eaiok/tests/cicd/jenkins_dien_test.sh"'
             }
         }
     }

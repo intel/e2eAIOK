@@ -7,14 +7,14 @@
 # ├── train
 # └── valid
 
-# change hosts and eth in conf/hydroai_defaults_wnd_example.conf
+# change hosts and eth in conf/e2eaiok_defaults_wnd_example.conf
 # iface: ${eth0}
 # hosts:
 #   - ${host_name}
 
 
-# Use hydro.ai API
-SIGOPT_API_TOKEN=${TOKEN} python run_hydroai.py --data_path "/home/vmagent/app/dataset/outbrain" --model_name wnd --conf conf/hydroai_defaults_wnd_example.conf
+# Use e2eaiok API
+SIGOPT_API_TOKEN=${TOKEN} python run_e2eaiok.py --data_path "/home/vmagent/app/dataset/outbrain" --model_name wnd --conf conf/e2eaiok_defaults_wnd_example.conf
 
 # Use SDA API
-SIGOPT_API_TOKEN=${TOKEN} python SDA/SDA.py --data_path "/home/vmagent/app/dataset/outbrain" --model_name wnd --conf conf/hydroai_defaults_wnd_example.conf
+SIGOPT_API_TOKEN=${TOKEN} python SDA/SDA.py --data_path "/home/vmagent/app/dataset/outbrain" --model_name wnd --conf conf/e2eaiok_defaults_wnd_example.conf

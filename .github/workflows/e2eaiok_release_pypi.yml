@@ -1,0 +1,33 @@
+name: Publish E2EAIOK distribution to PyPI
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  e2eaiok-release-python-pypi:
+    runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'intel' }}
+
+    steps:
+    - uses: actions/checkout@main
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.7'
+
+    - name: Build wheel
+      run: |
+        pip install build wheel
+        release_version=$(cat version | head -1)
+        echo ${release_version} > e2eAIOK/version
+        python3 setup.py sdist
+
+    - name: Upload
+      uses: pypa/gh-action-pypi-publish@master
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}

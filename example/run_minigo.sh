@@ -12,8 +12,8 @@
 #└── valid
 
 
-# Use hydro.ai API
-SIGOPT_API_TOKEN=${TOKEN} python run_hydroai.py --data_path "/root/dataset/minigo" --model_name minigo --conf conf/hydroai_defaults_minigo_example.conf
+# Use e2eaiok API
+SIGOPT_API_TOKEN=${TOKEN} python run_e2eaiok.py --data_path "/root/dataset/minigo" --model_name minigo --conf conf/e2eaiok_defaults_minigo_example.conf
 
 # Use SDA API
-SIGOPT_API_TOKEN=${TOKEN} python SDA/SDA.py --data_path "/root/dataset/minigo" --model_name minigo --conf conf/hydroai_defaults_minigo_example.conf
+SIGOPT_API_TOKEN=${TOKEN} python SDA/SDA.py --data_path "/root/dataset/minigo" --model_name minigo --conf conf/e2eaiok_defaults_minigo_example.conf
