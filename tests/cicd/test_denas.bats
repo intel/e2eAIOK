@@ -8,6 +8,6 @@ setup() {
     PATH="$DIR/src:$PATH"
 }
 
-@test "Check AIDK DE-NAS Best Structure" {
-    assert_file_exist /home/vmagent/app/hydro.ai/DeNas/best_model_structure.txt
+@test "Check e2eAIOK DE-NAS Best Structure" {
+    assert_file_exist /home/vmagent/app/e2eaiok/DeNas/best_model_structure.txt
 }

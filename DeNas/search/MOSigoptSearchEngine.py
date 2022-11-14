@@ -2,7 +2,7 @@ import time
 import sigopt
 
 from search.BaseSearchEngine import BaseSearchEngine
-from AIDK.common.utils import timeout_input
+from e2eAIOK.common.utils import timeout_input
 
 class MOSigoptSearchEngine(BaseSearchEngine):
     def __init__(self, params=None, super_net=None, search_space=None):

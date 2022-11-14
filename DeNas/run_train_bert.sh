@@ -14,4 +14,4 @@ export OMP_NUM_THREADS=18
 export KMP_BLOCKTIME=1
 export KMP_AFFINITY="granularity=fine,compact,1,0"
 
-python -m intel_extension_for_pytorch.cpu.launch --distributed --nproc_per_node=2 --nnodes=1 ./trainer/train.py --domain bert --conf /home/vmagent/app/hydro.ai/conf/denas/nlp/aidk_denas_train_bert.conf --do_lower_case 2>&1 | tee BERT_distributed_training_${RANDOM_SEED}.log
+python -m intel_extension_for_pytorch.cpu.launch --distributed --nproc_per_node=2 --nnodes=1 ./trainer/train.py --domain bert --conf /home/vmagent/app/hydro.ai/conf/denas/nlp/e2eaiok_denas_train_bert.conf --do_lower_case 2>&1 | tee BERT_distributed_training_${RANDOM_SEED}.log
