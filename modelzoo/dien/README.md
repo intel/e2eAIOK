@@ -112,6 +112,3 @@ Inference eval avg is
 34.5014
 -->
 ```
-cd modelzoo/dien/train
-sh patch_dien.sh
-```

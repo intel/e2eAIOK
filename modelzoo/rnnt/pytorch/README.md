@@ -1,12 +1,20 @@
 # 1. Problem
 Speech recognition accepts raw audio samples and produces a corresponding text transcription.
 
-Get RNN-T model
+## Requirements
+* [PyTorch 21.05-py3 NGC container](https://ngc.nvidia.com/registry/nvidia-pytorch)
+* Slurm with [Pyxis](https://github.com/NVIDIA/pyxis) and [Enroot](https://github.com/NVIDIA/enroot) (multi-node)
+* [nvidia-docker](https://github.com/NVIDIA/nvidia-docker) (single-node)
+
+# 2. Directions
+
+## Steps to download data
+1. Build the container.
+
+Running the following scripts will build and launch the container which contains all the required dependencies for data download and processing as well as training and inference of the model.
 
 ```
-git submodule update --init --recursive #sync third party code
-cd modelzoo/rnnt/pytorch
-bash patch_rnnt.sh
+bash scripts/docker/build.sh
 ```
 
 2. Start an interactive session in the NGC container to run data download/training/inference

@@ -27,11 +27,6 @@ def parse_args(args):
         default=str(pathlib.Path(__file__).parent.absolute()),
         help='custom result path')
     parser.add_argument(
-        '--custom_result_path',
-        type=str,
-        default=str(pathlib.Path(__file__).parent.absolute()),
-        help='custom result path')
-    parser.add_argument(
         '--executable_python',
         type=str,
         default='',
