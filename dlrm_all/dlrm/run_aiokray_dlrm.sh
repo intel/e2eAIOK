@@ -1,13 +1,17 @@
 # bash run_aiokray_dlrm.sh local_small node_ip
 # bash run_aiokray_dlrm.sh distributed_full head_node_ip worker_node_ip...
 #!/bin/bash
-set -e
+set -eo pipefail
 seed_num=$(date +%s)
 cd ./dlrm
 start=$(date +%s)
 
 # check cmd
 echo "check cmd"
+if [ "${2}" = "" ]; then
+    echo "error: node_ip is None"
+fi
+
 if [[ ${1} != "local_small" && ${1} != "distributed_full" ]]; then
     echo "error: need to use 'local_small' or 'distributed_full' mode"
     exit
@@ -58,12 +62,14 @@ echo "set parameters"
 ncpu_per_proc=1
 nproc_per_node=2
 ccl_worker_count=4
+executor_cores=6
+executor_memory=30
 nnodes=$[ $#-1 ]
 world_size=$[ ${nnodes}*${nproc_per_node} ]
 num_cpus=$(cat /proc/cpuinfo| grep "physical id"| sort| uniq| wc -l)
 per_cpu_cores=$(cat /proc/cpuinfo | grep "cpu cores" | uniq | awk -F: '{print $2}')
-executor_cores=$[ $per_cpu_cores*$num_cpus/$nproc_per_node ]
-omp_num_threads=$[ $executor_cores-$ccl_worker_count ]
+omp_num_threads=$[ $per_cpu_cores*$num_cpus/$nproc_per_node-$ccl_worker_count ]
+
 if [ "${1}" = "local_small" ]; then
     echo "set params for local_small mode"
     train_days="0-3"
@@ -74,35 +80,47 @@ if [ "${1}" = "distributed_full" ]; then
     train_days="0-22"
     sparse_dense_boundary=403346
 fi
-sed -i "s/train_days: \".*\"/train_days: \"${train_days}\"/g" ${config_path}
-sed -i "s/train_days: \".*\"/train_days: \"${train_days}\"/g" ${config_path_infer}
-sed -i "s/sparse_dense_boundary: [0-9]*/sparse_dense_boundary: ${sparse_dense_boundary}/g" ${config_path}
-sed -i "s/sparse_dense_boundary: [0-9]*/sparse_dense_boundary: ${sparse_dense_boundary}/g" ${config_path_infer}
-sed -i "s/num_executors: [0-9]*/num_executors: ${world_size}/g" ${config_path}
-sed -i "s/num_executors: [0-9]*/num_executors: ${world_size}/g" ${config_path_infer}
-sed -i "s/executor_cores: [0-9]*/executor_cores: ${executor_cores}/g" ${config_path}
-sed -i "s/executor_cores: [0-9]*/executor_cores: ${executor_cores}/g" ${config_path_infer}
-sed -i "s#save_model: \".*\"#save_model: \"${model_path}\"#g" ${config_path}
-sed -i "s#load_model: \".*\"#load_model: \"${model_path}\"#g" ${config_path_infer}
-sed -i "s#output_folder: \".*\"#output_folder: \"${data_path}\"#g" ${config_path}
-sed -i "s#output_folder: \".*\"#output_folder: \"${data_path}\"#g" ${config_path_infer}
 
 # start ray head node
 set +e
 ray status > /dev/null 2>&1
 if [ $? -eq 0 ]; then
+    echo "OMP_NUM_THREADS: ${omp_num_threads}"
+    export OMP_NUM_THREADS=${omp_num_threads}
     echo "ray has been started"
 else
     echo "start ray"
+    echo "OMP_NUM_THREADS: ${omp_num_threads}"
     echo never  > /sys/kernel/mm/transparent_hugepage/enabled; sleep 1
     echo never  > /sys/kernel/mm/transparent_hugepage/defrag; sleep 1
     echo always > /sys/kernel/mm/transparent_hugepage/enabled; sleep 1
     echo always > /sys/kernel/mm/transparent_hugepage/defrag; sleep 1
     echo 1 > /proc/sys/vm/compact_memory; sleep 1
     echo 3 > /proc/sys/vm/drop_caches; sleep 1
-    export OMP_NUM_THREADS=${omp_num_threads} && ray start --head --port 5678 --dashboard-host 0.0.0.0 --object-store-memory 268435456000 --system-config='{"object_spilling_threshold":0.98}'
+    export OMP_NUM_THREADS=${omp_num_threads} && ray start --node-ip-address="${2}" --head --port 5678 --dashboard-host 0.0.0.0 --object-store-memory 161061273600 --system-config='{"object_spilling_threshold":0.98}'
 fi
+
+memory=$(ray status | grep memory | head -1 | sed "s#[0-9]*.[0-9]*/\([0-9]*\).[0-9]* GiB memory#\1#g")
+echo memory is $memory GB
+memory_executor=$[ $memory / $executor_memory ]
+num_cpus_executor=$[ $per_cpu_cores*$num_cpus/$executor_cores ]
+num_executors=$memory_executor
+if [ $memory_executor -gt $num_cpus_executor ]; then
+    num_executors=$num_cpus_executor
+fi
+echo num_executors is $num_executors
+
 set -e
+sed -i "s/train_days: \".*\"/train_days: \"${train_days}\"/g" ${config_path}
+sed -i "s/train_days: \".*\"/train_days: \"${train_days}\"/g" ${config_path_infer}
+sed -i "s/sparse_dense_boundary: [0-9]*/sparse_dense_boundary: ${sparse_dense_boundary}/g" ${config_path}
+sed -i "s/sparse_dense_boundary: [0-9]*/sparse_dense_boundary: ${sparse_dense_boundary}/g" ${config_path_infer}
+sed -i "s/num_executors: [0-9]*/num_executors: ${num_executors}/g" ${config_path}
+sed -i "s/num_executors: [0-9]*/num_executors: ${num_executors}/g" ${config_path_infer}
+sed -i "s#save_model: \".*\"#save_model: \"${model_path}\"#g" ${config_path}
+sed -i "s#load_model: \".*\"#load_model: \"${model_path}\"#g" ${config_path_infer}
+sed -i "s#output_folder: \".*\"#output_folder: \"${data_path}\"#g" ${config_path}
+sed -i "s#output_folder: \".*\"#output_folder: \"${data_path}\"#g" ${config_path_infer}
 
 # data process, cancel this if dataset has been created
 echo "Start process dataset"
@@ -116,7 +134,7 @@ if [ "${1}" = "distributed_full" ]; then
         if [ $index \> 2 ]; then
             echo $arg >> $hosts_file
             bash /home/vmagent/app/e2eaiok/scripts/config_passwdless_ssh.sh $args
-            ssh $arg export OMP_NUM_THREADS=${executor_cores} && ray start --address="${2}:5678" --object-store-memory 268435456000
+            ssh $arg export OMP_NUM_THREADS=${executor_cores} && ray start --address="${2}:5678" --object-store-memory 161061273600
         fi
         let index+=1
     done

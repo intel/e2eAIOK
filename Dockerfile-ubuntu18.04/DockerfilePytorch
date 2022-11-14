@@ -40,7 +40,7 @@ RUN python -m pip install "git+https://github.com/mlperf/logging.git@1.0.0"
 
 # setup raydp pyrecdp pandas
 SHELL ["conda", "run", "-n", "pytorch_mlperf", "/bin/bash", "-c"]
-RUN pip install raydp-nightly pyrecdp pandas scikit-learn
+RUN pip install ray==2.1.0 raydp-nightly pyrecdp pandas scikit-learn
 
 # setup ssh
 SHELL ["/bin/bash", "-c"]

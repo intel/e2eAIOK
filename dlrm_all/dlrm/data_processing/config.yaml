@@ -6,9 +6,9 @@ data_preprocess:
   output_folder: "/home/vmagent/app/dataset/criteo/"
   spark_config:
     app_name: "dlrm"
-    num_executors: 2
-    executor_cores: 24
-    executor_memory: 100GB
+    num_executors: 10
+    executor_cores: 6
+    executor_memory: 30GB
     scala_udf_jars: "/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/python3.7/site-packages/ScalaProcessUtils/built/31/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
     configs:
       spark.local.dir: '/home/vmagent/app/spark_local_dir'

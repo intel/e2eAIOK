@@ -21,6 +21,15 @@ Source repo: https://github.com/facebookresearch/dlrm
 
 curl -O https://storage.googleapis.com/criteo-cail-datasets/day_{`seq -s "," 0 23`}.gz
 for i in `seq 0 23`;do gzip -d day_${i}.gz;done
+
+Expected dataset structure:
+$dataset_path/
+    criteo/
+        day_0
+        day_1
+        day_2
+        day_3
+        day_23
 ```
 >Note: Make sure the network connections work well for downloading the datasets.
 
