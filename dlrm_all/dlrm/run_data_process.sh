@@ -40,13 +40,17 @@ config_path="../data_processing/config.yaml"
 save_path="../data_processing/data_info.txt"
 
 # set parameters
+nproc_per_node=2
 ccl_worker_count=4
 nnodes=$[ $#-1 ]
 world_size=$[ ${nnodes}*${nproc_per_node} ]
 num_cpus=$(cat /proc/cpuinfo| grep "physical id"| sort| uniq| wc -l)
 per_cpu_cores=$(cat /proc/cpuinfo | grep "cpu cores" | uniq | awk -F: '{print $2}')
-executor_cores=$[ $per_cpu_cores*$num_cpus/$nproc_per_node ]
-omp_num_threads=$[ $executor_cores-$ccl_worker_count ]
+omp_num_threads=$[ $per_cpu_cores*$num_cpus/$nproc_per_node-$ccl_worker_count ]
+nproc=$(ulimit -u -H)
+if [ ${nproc} -le 1048576 ] && [ ${omp_num_threads} -gt 12 ]; then
+    omp_num_threads=12
+fi
 
 # check ray
 set +e
@@ -54,9 +58,9 @@ ray status > /dev/null 2>&1
 if [ $? -eq 0 ]; then
     echo "OMP_NUM_THREADS: ${omp_num_threads}"
     export OMP_NUM_THREADS=${omp_num_threads}
-    echo "ray has been started."
+    echo "ray has been started"
 else
-    echo "start ray."
+    echo "start ray"
     echo "OMP_NUM_THREADS: ${omp_num_threads}"
     echo never  > /sys/kernel/mm/transparent_hugepage/enabled; sleep 1
     echo never  > /sys/kernel/mm/transparent_hugepage/defrag; sleep 1

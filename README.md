@@ -81,3 +81,25 @@ cd /home/vmagent/app/e2eaiok/dlrm_all/dlrm/; bash run_aiokray_dlrm.sh local_smal
 docker rm e2eaiok-pytorch-mlperf -f
 # remove port as 12346 in known_hosts
 ```
+
+------
+## Optional
+
+### Run step by step
+```
+# prepare env
+bash run_prepare_env.sh local_small ${current_node_ip}
+
+# data process
+bash run_data_process.sh local_small ${current_node_ip}
+
+# train
+bash run_train.sh local_small ${current_node_ip}
+
+# inference
+bash run_inference.sh local_small ${current_node_ip}
+```
+
+### Check storage size
+
+> For small scale test, if dataset and spark dir are not same as code, please make sure there are ~300G for dataset and spark dir respectively.

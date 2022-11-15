@@ -37,6 +37,10 @@ for arg in "$@"
         let index+=1
     done 
 
+# check dataset
+echo "check dataset"
+bash ../run_data_check.sh ${1}
+
 # set files path
 echo "set files path"
 hosts_file="../hosts"
