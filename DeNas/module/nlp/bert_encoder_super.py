@@ -36,8 +36,7 @@ class SuperBertOutput(nn.Module):
         #logger.info('ln_numel: {}\n'.format(ln_numel))
         return dense_numel + ln_numel
 
-    def forward(self, hidden_states, input_tensor, intermediate_size=-1, sample_embed_dim=-1):
-        self.set_sample_config(intermediate_size, sample_embed_dim)
+    def forward(self, hidden_states, input_tensor):
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
         hidden_states = self.LayerNorm(hidden_states + input_tensor)
@@ -67,18 +66,13 @@ class SuperBertLayer(nn.Module):
 
         return attention_numel + intermediate_numel + output_numel
 
-    def forward(self, hidden_states, attention_mask, sample_embed_dim=-1,
-                intermediate_size=-1, num_attention_head=-1, qkv_size=-1,
-                in_index=None, out_index=None):
+    def forward(self, hidden_states, attention_mask):
 
-        attention_output = self.attention(hidden_states, attention_mask,
-                                          sample_embed_dim, num_attention_head, qkv_size,
-                                          in_index=in_index, out_index=out_index)
+        attention_output = self.attention(hidden_states, attention_mask)
         attention_output, layer_att = attention_output
 
-        intermediate_output = self.intermediate(attention_output, sample_embed_dim,
-                                                intermediate_size)
-        layer_output = self.output(intermediate_output, attention_output, intermediate_size, sample_embed_dim)
+        intermediate_output = self.intermediate(attention_output)
+        layer_output = self.output(intermediate_output, attention_output)
         return layer_output, layer_att
 
 
@@ -91,15 +85,15 @@ class SuperBertEncoder(nn.Module):
 
     def set_sample_config(self, subbert_config):
         self.sample_layer_num = subbert_config['sample_layer_num']
-        sample_embed_dim = subbert_config['sample_hidden_size']
-        num_attention_heads = subbert_config['sample_num_attention_heads']
-        itermediate_sizes = subbert_config['sample_intermediate_sizes']
-        qkv_sizes = subbert_config['sample_qkv_sizes']
+        self.sample_embed_dim = subbert_config['sample_hidden_size']
+        self.num_attention_heads = subbert_config['sample_num_attention_heads']
+        self.itermediate_sizes = subbert_config['sample_intermediate_sizes']
+        self.qkv_sizes = subbert_config['sample_qkv_sizes']
         for layer, num_attention_head, intermediate_size, qkv_size in zip(self.layers[:self.sample_layer_num],
-                                                                          num_attention_heads,
-                                                                          itermediate_sizes,
-                                                                          qkv_sizes):
-            layer.set_sample_config(sample_embed_dim, intermediate_size, num_attention_head, qkv_size)
+                                                                          self.num_attention_heads,
+                                                                          self.itermediate_sizes,
+                                                                          self.qkv_sizes):
+            layer.set_sample_config(self.sample_embed_dim, intermediate_size, num_attention_head, qkv_size)
 
     def calc_sampled_param_num(self):
         layers_numel = 0
@@ -111,30 +105,17 @@ class SuperBertEncoder(nn.Module):
 
         return layers_numel
 
-    def forward(self, hidden_states, attention_mask, subbert_config=None, kd=False,
-                in_index=None, out_index=None):
+    def forward(self, hidden_states, attention_mask):
         all_encoder_layers = []
         all_encoder_att = []
 
-        sample_embed_dim = subbert_config['sample_hidden_size']
-        num_attention_heads = subbert_config['sample_num_attention_heads']
-        itermediate_sizes = subbert_config['sample_intermediate_sizes']
-        qkv_sizes = subbert_config['sample_qkv_sizes']
-        sample_layer_num = subbert_config['sample_layer_num']
-
-        for i, layer_module in enumerate(self.layers[:sample_layer_num]):
+        for i, layer_module in enumerate(self.layers[:self.sample_layer_num]):
             all_encoder_layers.append(hidden_states)
-            hidden_states = layer_module(all_encoder_layers[i], attention_mask,
-                                         sample_embed_dim, itermediate_sizes[i],
-                                         num_attention_heads[i],
-                                         qkv_sizes[i], in_index=in_index, out_index=out_index)
+            hidden_states = layer_module(all_encoder_layers[i], attention_mask)
             hidden_states, layer_att = hidden_states
             all_encoder_att.append(layer_att)
 
         all_encoder_layers.append(hidden_states)
 
-        if not kd:
-            return all_encoder_layers, all_encoder_att
-        else:
-            return all_encoder_layers[-1], all_encoder_att[-1]
+        return all_encoder_layers, all_encoder_att
 

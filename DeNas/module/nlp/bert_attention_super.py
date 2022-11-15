@@ -81,10 +81,7 @@ class SuperBertSelfAttention(nn.Module):
         x = x.view(*new_x_shape)
         return x.permute(0, 2, 1, 3)
 
-    def forward(self, hidden_states, attention_mask, sample_embed_dim=-1, num_attention_head=-1, qkv_size=-1,
-                in_index=None, out_index=None):
-        self.set_sample_config(sample_embed_dim, num_attention_head, qkv_size,
-                               in_index=in_index, out_index=out_index)
+    def forward(self, hidden_states, attention_mask):
 
         mixed_query_layer = self.query(hidden_states)
         mixed_key_layer = self.key(hidden_states)
@@ -135,8 +132,7 @@ class SuperBertSelfOutput(nn.Module):
 
         return dense_numel + ln_numel
 
-    def forward(self, hidden_states, input_tensor, qkv_size=-1, sample_embed_dim=-1, in_index=None):
-        self.set_sample_config(qkv_size, sample_embed_dim, in_index=in_index)
+    def forward(self, hidden_states, input_tensor):
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
         hidden_states = self.LayerNorm(hidden_states + input_tensor)
@@ -162,13 +158,9 @@ class SuperBertAttention(nn.Module):
 
         return self_numel + output_numel
 
-    def forward(self, input_tensor, attention_mask, sample_embed_dim=-1,
-                num_attention_head=-1, qkv_size=-1,
-                in_index=None, out_index=None):
+    def forward(self, input_tensor, attention_mask):
 
-        self_output = self.self(input_tensor, attention_mask, sample_embed_dim,
-                                num_attention_head, qkv_size, in_index=in_index, out_index=out_index)
+        self_output = self.self(input_tensor, attention_mask)
         self_output, layer_att = self_output
-        attention_output = self.output(self_output, input_tensor, qkv_size,
-                                       sample_embed_dim, in_index=out_index)
+        attention_output = self.output(self_output, input_tensor)
         return attention_output, layer_att

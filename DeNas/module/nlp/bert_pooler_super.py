@@ -28,10 +28,9 @@ class SuperBertPooler(nn.Module):
 
         return dense_numel
 
-    def forward(self, hidden_states, sample_hidden_dim):
+    def forward(self, hidden_states):
         # We "pool" the model by simply taking the hidden state corresponding
         # to the first token.
-        self.set_sample_config(sample_hidden_dim)
         first_token_tensor = hidden_states[:, 0]
         pooled_output = self.dense(first_token_tensor)
         pooled_output = self.activation(pooled_output)

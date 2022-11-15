@@ -347,9 +347,8 @@ class SuperBertModel(BertPreTrainedModel):
         #logger.info('===========================')
         return emb_numel + encoder_numel + pooler_numel
 
-    def forward(self, input_ids, subbert_config,
-                attention_mask=None, token_type_ids=None,
-                kd=False, kd_infer=False):
+    def forward(self, input_ids, 
+                attention_mask=None, token_type_ids=None):
 
         if attention_mask is None:
             attention_mask = torch.ones_like(input_ids)
@@ -358,56 +357,15 @@ class SuperBertModel(BertPreTrainedModel):
         extended_attention_mask = attention_mask.unsqueeze(1).unsqueeze(2)
         extended_attention_mask = extended_attention_mask.to(dtype=next(self.parameters()).dtype)  # fp16 compatibility
         extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0
-
-        head_number = self.head_number
-        qkv_size = self.qkv_size
-        sample_qkv_size = subbert_config['sample_qkv_sizes'][0]
-
-        in_out_index = None
-        if kd:
-            in_dim_per_head = int(qkv_size / head_number)
-            in_sample_per_head = int(sample_qkv_size / head_number)
-
-            in_out_index = []
-            for i in range(head_number):
-                start_ind = in_dim_per_head * i
-                in_out_index.extend(range(start_ind, start_ind + in_sample_per_head))
-
-            in_out_index = torch.tensor(in_out_index)
-            in_out_index.to(input_ids.device)
-
-        embedding_output = self.embeddings(input_ids, subbert_config['sample_hidden_size'],
+        
+        embedding_output = self.embeddings(input_ids,
                                            token_type_ids=token_type_ids)
 
-        if kd:
-            last_rep, last_att = self.encoder(embedding_output, extended_attention_mask, subbert_config,
-                                              kd=True, out_index=in_out_index)
-            self.dense_fit.set_sample_config(subbert_config['sample_hidden_size'], self.fit_size)
-            last_rep = self.dense_fit(last_rep)
-
-            if not kd_infer:
-                return last_rep, last_att
-            else:
-                pooled_output = self.pooler(last_rep, subbert_config['sample_hidden_size'])
-                return last_rep, pooled_output
-        else:
-            all_encoder_layers, all_encoder_att = self.encoder(embedding_output, extended_attention_mask,
-                                                               subbert_config, kd=False, out_index=in_out_index)
-            sequence_output = all_encoder_layers[-1]
-            pooled_output = self.pooler(sequence_output, subbert_config['sample_hidden_size'])
-            return all_encoder_layers[-1], pooled_output
-
-
-class SuperTinyBertForPreTraining(BertPreTrainedModel):
-    def __init__(self, config):
-        super(SuperTinyBertForPreTraining, self).__init__(config)
-        self.bert = SuperBertModel(config)
-        self.apply(self.init_bert_weights)
-        self.config = config
-
-    def forward(self, input_ids, subbert_config, token_type_ids=None, attention_mask=None, kd=True):
-        last_rep, last_att = self.bert(input_ids, subbert_config, token_type_ids, attention_mask, kd=kd)
-        return last_rep, last_att
+        
+        all_encoder_layers, all_encoder_att = self.encoder(embedding_output, extended_attention_mask)
+        sequence_output = all_encoder_layers[-1]
+        pooled_output = self.pooler(sequence_output)
+        return all_encoder_layers[-1], pooled_output
 
 
 class SuperBertForQuestionAnswering(BertPreTrainedModel):
@@ -440,19 +398,14 @@ class SuperBertForQuestionAnswering(BertPreTrainedModel):
         torch.save(model_to_save.state_dict(), output_model_file)
         logger.info("Model weights saved in {}".format(output_model_file))
 
-    def forward(self, input_ids, subbert_config, attention_mask=None, token_type_ids=None,
-                start_positions=None, end_positions=None, kd_infer=False):
+    def forward(self, input_ids, attention_mask=None, token_type_ids=None,
+                start_positions=None, end_positions=None):
 
-        if not kd_infer:
-            encoded_layers, pooled_output = self.bert(input_ids, subbert_config,
-                                                      attention_mask=attention_mask,
-                                                      token_type_ids=token_type_ids,
-                                                      kd=False, kd_infer=False)
-            #last_sequence_output = encoded_layers[-1]
-            last_sequence_output = encoded_layers
-        else:
-            last_sequence_output, pooled_output = self.bert(input_ids, subbert_config, attention_mask=attention_mask,
-                                                            token_type_ids=token_type_ids, kd=True, kd_infer=True)
+        encoded_layers, pooled_output = self.bert(input_ids, 
+                                                    attention_mask=attention_mask,
+                                                    token_type_ids=token_type_ids)
+        last_sequence_output = encoded_layers
+        
         logits = self.qa_outputs(last_sequence_output)
         start_logits, end_logits = logits.split(1, dim=-1)
         start_logits = start_logits.squeeze(-1)
@@ -465,10 +418,7 @@ class SuperBertForQuestionAnswering(BertPreTrainedModel):
                 start_positions = start_positions.squeeze(-1)
             if len(end_positions.size()) > 1:
                 end_positions = end_positions.squeeze(-1)
-            # sometimes the start/end positions are outside our model inputs, we ignore these terms
-            #print("!!!!!",start_logits.size(),"!!!!!")
-            #print("!!!!!",start_positions,"!!!!!")
-            #sys.exit()
+            
             ignored_index = start_logits.size(1)
             start_positions.clamp_(0, ignored_index)
             end_positions.clamp_(0, ignored_index)

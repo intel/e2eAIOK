@@ -477,7 +477,7 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
     return result
 
 def do_qa_eval(args, model, dataloader, features, examples, device,
-               dev_dataset, subbert_config, output_dir):
+               dev_dataset, output_dir):
     all_results = []
     infer_times = []
     for _, batch_ in enumerate(dataloader):
@@ -485,7 +485,7 @@ def do_qa_eval(args, model, dataloader, features, examples, device,
         input_ids, input_mask, segment_ids, example_indices = batch_
         with torch.no_grad():
             start = datetime.now()
-            (batch_start_logits, batch_end_logits) = model(input_ids, subbert_config,
+            (batch_start_logits, batch_end_logits) = model(input_ids,
                                                            input_mask, segment_ids)
             infer_times.append((datetime.now() - start).microseconds / 1000)
         for i, example_index in enumerate(example_indices):

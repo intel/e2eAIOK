@@ -26,8 +26,8 @@ class BertTrainer(BaseTrainer):
         self.task_name = "squad1"
         self.qa_tasks = ["squad1"]
         self.default_params = {
-            "squad1": {"num_train_epochs": 4, "max_seq_length": 384,
-            "learning_rate": 3e-5, "eval_step": 200, "train_batch_size": 12},
+            "squad1": {"num_train_epochs": self.args.num_train_epochs, "max_seq_length": self.args.max_seq_length,
+            "learning_rate": self.args.learning_rate, "eval_step": self.args.eval_step, "train_batch_size": self.args.train_batch_size},
         }
         ext_dist.init_distributed(backend=self.args.dist_backend)
 
@@ -46,9 +46,8 @@ class BertTrainer(BaseTrainer):
                 continue
             
             cls_loss = 0.
-            cls_loss = model(input_ids, self.subbert_config, input_mask,
-                            segment_ids, start_positions, end_positions,
-                            kd_infer=True if self.args.super_model == 'KD' else False)
+            cls_loss = model(input_ids, input_mask,
+                            segment_ids, start_positions, end_positions)
             loss = cls_loss
             tr_cls_loss += cls_loss.item()
             if self.args.gradient_accumulation_steps > 1:
@@ -80,7 +79,7 @@ class BertTrainer(BaseTrainer):
         loss = tr_loss / (step + 1)
         cls_loss = tr_cls_loss / (step + 1)
         
-        result = do_qa_eval(self.args, model, self.eval_dataloader, self.eval_features, self.eval_examples, self.device, self.eval_dataset, self.subbert_config, self.output_dir)
+        result = do_qa_eval(self.args, model, self.eval_dataloader, self.eval_features, self.eval_examples, self.device, self.eval_dataset, self.output_dir)
         self.infer_cnt += result['infer_cnt']
         self.infer_times.append(result['infer_time'])
         

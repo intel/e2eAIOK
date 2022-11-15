@@ -107,6 +107,7 @@ def init_bert_parser():
     parser.add_argument("--init_method", default='', type=str)
 
     parser.add_argument("--data_set", type=str, default="SQuADv1.1")
+    parser.add_argument("--eval_step", type=int, default=200, help="eval step for model evaluation")
     parser.add_argument("--model_dir", type=str, default=None)
     parser.add_argument("--output_dir", type=str, default=None)
     parser.add_argument("--f1_threshold", type=float, default=None, help='Enable early stop using f1 threshold')

@@ -108,8 +108,8 @@ def compute_diversity_score(model_type, net, *inputs):
         inputs = torch.ones([1] + input_dim)
         output = net.forward(inputs)
     elif model_type == "bert":
-        input_ids, input_masks, input_segments, subconfig = inputs
-        output, pooled_output = net.forward(input_ids, subconfig, input_masks, input_segments)
+        input_ids, input_masks, input_segments = inputs
+        output, pooled_output = net.forward(input_ids, input_masks, input_segments)
     elif model_type == "asr":
         output, _ = net.encode(inputs[0])
     torch.sum(output).backward()
@@ -155,8 +155,8 @@ def compute_saliency_score(model_type, net, *inputs):
         inputs = torch.ones([1] + input_dim)
         output = net.forward(inputs)
     elif model_type == "bert":
-        input_ids, input_masks, input_segments, subconfig = inputs
-        output, pooled_output = net.forward(input_ids, subconfig, input_masks, input_segments)
+        input_ids, input_masks, input_segments = inputs
+        output, pooled_output = net.forward(input_ids, input_masks, input_segments)
     elif model_type == "asr":
         output, _ = net.encode(inputs[0])
 
@@ -181,6 +181,9 @@ def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, 
     expressivity_score = 0
     complexity_score = 0
     network_weight_gaussian_init(model,model_type)
+    if subconfig is not None:
+        model.module.set_sample_config(subconfig) if hasattr(model, 'module') \
+            else model.set_sample_config(subconfig)
     model.train()
     model.requires_grad_(True)
     model.zero_grad()
@@ -199,7 +202,7 @@ def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, 
         input_ids = torch.tensor(input_ids, dtype=torch.long)
         input_masks = torch.tensor([input_masks]*batch_size, dtype=torch.long)
         input_segments = torch.tensor([input_segments]*batch_size, dtype=torch.long)
-        disversity_score_list = compute_diversity_score(model_type, model, input_ids, input_masks, input_segments, subconfig)
+        disversity_score_list = compute_diversity_score(model_type, model, input_ids, input_masks, input_segments)
     elif model_type == "asr":
         input = torch.randn(size=[batch_size, 400, 20, 64])
         disversity_score_list = compute_diversity_score(model_type, model, input)
@@ -213,7 +216,7 @@ def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, 
     if model_type == "transformer":
         grads_abs_list = compute_saliency_score(model_type, model, input)
     elif model_type == "bert":
-        grads_abs_list = compute_saliency_score(model_type, model, input_ids, input_masks, input_segments, subconfig)
+        grads_abs_list = compute_saliency_score(model_type, model, input_ids, input_masks, input_segments)
     elif model_type == "asr":
         grads_abs_list = compute_saliency_score(model_type, model, input)
    
@@ -231,7 +234,7 @@ def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, 
                                                         in_channels=3, gpu=None, repeat_times=3,
                                                         fp16=False)    
     elif model_type == "bert":
-        latency = get_bert_latency(model=model, subconfig=subconfig, batch_size=batch_size, max_seq_length=resolution, gpu=None, infer_cnt=10.)
+        latency = get_bert_latency(model=model, batch_size=batch_size, max_seq_length=resolution, gpu=None, infer_cnt=10.)
     else:
         latency = 0
     score = (expressivity_score*expressivity_weight 

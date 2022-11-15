@@ -114,7 +114,7 @@ def bert_crossover_random_func(top_candidates):
             cand.append(random.choice(it))
     return tuple(cand)
 
-def get_bert_latency(model, subconfig, batch_size, max_seq_length, gpu, infer_cnt):
+def get_bert_latency(model, batch_size, max_seq_length, gpu, infer_cnt):
     if gpu is None:
         device = 'cpu'
     else:
@@ -132,7 +132,7 @@ def get_bert_latency(model, subconfig, batch_size, max_seq_length, gpu, infer_cn
     for i in range(int(infer_cnt)):
         start = time.time()
         with torch.no_grad():
-            model.forward(input_ids, subconfig, input_masks, input_segments)
+            model.forward(input_ids, input_masks, input_segments)
 
         end = time.time()
         sep = 1000 * (end - start)

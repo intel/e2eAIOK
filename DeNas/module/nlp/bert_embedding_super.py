@@ -66,8 +66,7 @@ class SuperBertEmbeddings(nn.Module):
 
         return w_emb_numel + p_emb_numel + t_emb_numel + ln_numel
 
-    def forward(self, input_ids, sample_embed_dim=-1, token_type_ids=None):
-        self.set_sample_config(sample_embed_dim)
+    def forward(self, input_ids, token_type_ids=None):
 
         seq_length = input_ids.size(1)
         position_ids = torch.arange(seq_length, dtype=torch.long, device=input_ids.device)

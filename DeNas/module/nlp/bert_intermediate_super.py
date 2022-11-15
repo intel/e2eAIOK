@@ -46,8 +46,7 @@ class SuperBertIntermediate(nn.Module):
         #logger.info('dense_numel: {}\n'.format(dense_numel))
         return dense_numel
 
-    def forward(self, hidden_states, sample_embed_dim=-1, intermediate_size=-1):
-        self.set_sample_config(sample_embed_dim, intermediate_size)
+    def forward(self, hidden_states):
         hidden_states = self.dense(hidden_states)
         hidden_states = self.intermediate_act_fn(hidden_states)
         return hidden_states
