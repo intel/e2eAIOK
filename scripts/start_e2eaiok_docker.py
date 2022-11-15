@@ -299,7 +299,7 @@ def run_docker(docker_name, backend, dataset_path, spark_shuffle_dir, logger, wo
         return True, port
 
     # run
-    cmdline = ["docker", "run",  "--shm-size=300g", "--privileged",  "--network",  "host", "--device=/dev/dri", "-d", "-v", f"{dataset_path}/:/home/vmagent/app/dataset", "-v", f"{current_folder}/:/home/vmagent/app/e2eaiok", "-v", f"{current_folder}{spark_shuffle_dir}/:/home/vmagent/app/spark_local_dir", "-w",  "/home/vmagent/app/", "--name", docker_nickname,  docker_name, "/bin/bash", "-c", "service ssh start & sleep infinity"]
+    cmdline = ["docker", "run",  "--shm-size=300g", "--privileged",  "--network",  "host", "--device=/dev/dri", "-d", "-v", f"{dataset_path}/:/home/vmagent/app/dataset", "-v", f"{current_folder}/:/home/vmagent/app/e2eaiok", "-v", f"{spark_shuffle_dir}/:/home/vmagent/app/spark_local_dir", "-w",  "/home/vmagent/app/", "--name", docker_nickname,  docker_name, "/bin/bash", "-c", "service ssh start & sleep infinity"]
 
     return execute(cmdline, logger, workers), port
 
@@ -308,13 +308,17 @@ def build_cluster(port, workers, logger):
         return True
     file_path = os.path.dirname(os.path.abspath(__file__))
     cmdline = f"sshpass -p docker scp -P {port} -o StrictHostKeyChecking=no {file_path}/config_passwdless_ssh.sh {workers[0]}:~/"
+    sleep(3)
     if not execute(cmdline, logger):
         sleep(3)
-        execute(cmdline, logger)
+        if not execute(cmdline, logger):
+            logger.error(f"please check if sshpass is installed, and is {workers[0]}:{port} has a conflict hot key in known_hosts")
+            return False
     
     for n in workers:
         cmdline = f"sshpass -p docker ssh {workers[0]} -p {port} -o StrictHostKeyChecking=no bash ~/config_passwdless_ssh.sh {n}"
         if not execute(cmdline, logger):
+            logger.error(f"please check if sshpass is installed, and is {workers[0]}:{port} has a conflict hot key in known_hosts")
             return False
     return True 
 
@@ -336,6 +340,8 @@ def main(input_args):
     logger = prepare_logger(input_args.log_path)
     if not os.path.isabs(input_args.dataset_path):
         input_args.dataset_path = f"{current_folder}/{input_args.dataset_path}"
+    if not os.path.isabs(input_args.spark_shuffle_dir):
+        input_args.spark_shuffle_dir = f"{current_folder}/{input_args.spark_shuffle_dir}"
 
     hostname = os.uname()[1]
     print_success = False
