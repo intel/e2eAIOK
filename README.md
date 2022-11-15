@@ -20,23 +20,16 @@ We recommend to use ubuntu20.04 as Host OS, it provides better docker support.
 > Note: Script is verified with Ubuntu and centOS
 
 ## Download Dataset
+> Note: Dataset will be downloaded automatically in run_aiok_dlrm.sh
+
+> Note: If you prefer to download dataset manually, please provide dataset path to start_e2eaiok_docker.py
+
+> Note: For local small criteo run, day_0, day_1, day_2, day_3, day_23 are required.
+
+> Note: For full criteo test, day_0-day_23 are required
 ```
-# Download the raw data files day_0.gz, ...,day_23.gz from https://labs.criteo.com/2013/12/download-terabyte-click-logs/ and unzip them
-
-curl -O https://storage.googleapis.com/criteo-cail-datasets/day_{`seq -s "," 0 23`}.gz
-for i in `seq 0 23`;do gzip -d day_${i}.gz;done
-
-For local small test, please make sure below data are downloaded
-$dataset_path/
-    criteo/
-        day_0
-        day_1
-        day_2
-        day_3
-        day_23
+# Dataset download page: https://labs.criteo.com/2013/12/download-terabyte-click-logs/
 ```
->Note: Make sure the network connections work well for downloading the datasets.
-
 
 ## Prerequisites
 ```
@@ -52,10 +45,13 @@ sh patch_dlrm.sh
 ## Docker
 
 ### Docker Setup
-> Important: default dataset and spark dir is same as code. Please make sure there are ~1000G to run DLRM small scale test. Full Scale need 2.5T.
+> !!!Important: default dataset and spark_shuffle will use the same disk. Required 1000G for local small criteo run.
+
+> !!!Important: Meanwhile, we provided --spark_shuffle_dir and --dataset_path to attach different disk.
 ```
 cd ${path_to_e2eaiok}
 python3 scripts/start_e2eaiok_docker.py -b pytorch_mlperf
+# If you met any network/package not found error, please follow log output to do the fixing and re-run above cmdline.
 
 # To configure spark dir / proxy / dataset using below cmdline
 # python3 scripts/start_e2eaiok_docker.py -b pytorch_mlperf -b ${local_host_name} --proxy "http://ip:port" --spark_shuffle_dir "" --dataset_path ""
@@ -79,13 +75,11 @@ cd /home/vmagent/app/e2eaiok/dlrm_all/dlrm/; bash run_aiokray_dlrm.sh local_smal
 ## How to clean ENV
 ```
 docker rm e2eaiok-pytorch-mlperf -f
-# remove port as 12346 in known_hosts
+# remove port as ${local_host_name}:12346 in known_hosts
 ```
 
 ------
-## Optional
-
-### Run step by step
+## [Optional] Run step by step
 ```
 # prepare env
 bash run_prepare_env.sh local_small ${current_node_ip}
@@ -100,6 +94,9 @@ bash run_train.sh local_small ${current_node_ip}
 bash run_inference.sh local_small ${current_node_ip}
 ```
 
-### Check storage size
+## [NOTICE] Disk capacity requirement for DLRM
 
-> For small scale test, if dataset and spark dir are not same as code, please make sure there are ~300G for dataset and spark dir respectively.
+> For local small criteo run, at lease ~300G is required for spark_shuffle_dir and ~500G is required for dataset
+
+> For distributed full criteo run, at lease ~1500G is required for spark_shuffle_dir(3 nodes, 500G each) and ~1000G is required for dataset on HDFS, another ~2000G is required for dataset on head node local disk.
+
