@@ -15,6 +15,10 @@ Source repo: https://github.com/facebookresearch/dlrm
 
 # Quick Start
 
+## Recommended Host OS
+We recommend to use ubuntu20.04 as Host OS, it provides better docker support.
+> Note: Script is verified with Ubuntu and centOS
+
 ## Download Dataset
 ```
 # Download the raw data files day_0.gz, ...,day_23.gz from https://labs.criteo.com/2013/12/download-terabyte-click-logs/ and unzip them
@@ -22,7 +26,7 @@ Source repo: https://github.com/facebookresearch/dlrm
 curl -O https://storage.googleapis.com/criteo-cail-datasets/day_{`seq -s "," 0 23`}.gz
 for i in `seq 0 23`;do gzip -d day_${i}.gz;done
 
-Expected dataset structure:
+For local small test, please make sure below data are downloaded
 $dataset_path/
     criteo/
         day_0

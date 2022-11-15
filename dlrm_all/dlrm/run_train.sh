@@ -45,6 +45,10 @@ num_cpus=$(cat /proc/cpuinfo| grep "physical id"| sort| uniq| wc -l)
 per_cpu_cores=$(cat /proc/cpuinfo | grep "cpu cores" | uniq | awk -F: '{print $2}')
 executor_cores=$[ $per_cpu_cores*$num_cpus/$nproc_per_node ]
 omp_num_threads=$[ $executor_cores-$ccl_worker_count ]
+nproc=$(ulimit -u -H)
+if [ ${nproc} -le 1048576 ] && [ ${omp_num_threads} -gt 12 ]; then
+    omp_num_threads=12
+fi
 
 hosts_file="../hosts"
 config_path="../data_processing/config.yaml"

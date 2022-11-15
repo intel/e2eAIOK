@@ -69,6 +69,10 @@ world_size=$[ ${nnodes}*${nproc_per_node} ]
 num_cpus=$(cat /proc/cpuinfo| grep "physical id"| sort| uniq| wc -l)
 per_cpu_cores=$(cat /proc/cpuinfo | grep "cpu cores" | uniq | awk -F: '{print $2}')
 omp_num_threads=$[ $per_cpu_cores*$num_cpus/$nproc_per_node-$ccl_worker_count ]
+nproc=$(ulimit -u -H)
+if [ ${nproc} -le 1048576 ] && [ ${omp_num_threads} -gt 12 ]; then
+    omp_num_threads=12
+fi
 
 if [ "${1}" = "local_small" ]; then
     echo "set params for local_small mode"
@@ -100,8 +104,18 @@ else
     export OMP_NUM_THREADS=${omp_num_threads} && ray start --node-ip-address="${2}" --head --port 5678 --dashboard-host 0.0.0.0 --object-store-memory 161061273600 --system-config='{"object_spilling_threshold":0.98}'
 fi
 
-memory=$(ray status | grep memory | head -1 | sed "s#[0-9]*.[0-9]*/\([0-9]*\).[0-9]* GiB memory#\1#g")
-echo memory is $memory GB
+retry=0
+while [ -z "$memory" ]; do
+    if [ $retry -gt 5 ]; then
+        echo "unable to start ray, exit"
+        exit
+    fi
+    echo "wait 3 secs for ray to start"
+    sleep 3
+    memory=`ray status | grep memory | head -1 | sed "s#[0-9]*.[0-9]*/\([0-9]*\).[0-9]* GiB memory#\1#g"`
+    echo memory is $memory GB
+    retry=$[ $retry + 1 ]
+done
 memory_executor=$[ $memory / $executor_memory ]
 num_cpus_executor=$[ $per_cpu_cores*$num_cpus/$executor_cores ]
 num_executors=$memory_executor
