@@ -39,7 +39,7 @@ def get_install_cmd():
     else:
         return "yum install -y "
 
-def fix_cmdline(cmdline, workers):
+def fix_cmdline(cmdline, workers, use_ssh = False):
     if not isinstance(cmdline, list):
         cmdline = cmdline.split()
     local = os.uname()[1]
@@ -48,7 +48,11 @@ def fix_cmdline(cmdline, workers):
         workers.append(local)
     for n in workers:
         if n == local:
-            ret.append(cmdline)
+            if use_ssh:
+                ret.append(["ssh", "localhost"] + cmdline)
+            else:
+                cmdline = [i.replace("\"", "") for i in cmdline] 
+                ret.append(cmdline)
         else:
             ret.append(["ssh", n] + cmdline)
     return ret
@@ -59,11 +63,11 @@ def fix_workers(workers):
         workers.append(local)
     return workers
 
-def execute(cmdline, logger, workers = []):
+def execute(cmdline, logger, workers = [], use_ssh = False):
     if not isinstance(cmdline, list):
         cmdline = cmdline.split()
     logger.info(' '.join(cmdline))
-    cmdline_list = fix_cmdline(cmdline, workers)
+    cmdline_list = fix_cmdline(cmdline, workers, use_ssh)
     process_pool = []
     success = False
     for cmdline in cmdline_list:
@@ -234,8 +238,8 @@ def run_docker(docker_name, docker_nickname, port, dataset_path, logger, workers
     
     def is_docker_exists(ret):
         for line in ret[1:]:
-            in_dickerhub_name = line.split()[1]
-            if in_dickerhub_name == f"{docker_name}":
+            container_name = line.split()[-1]
+            if container_name == f"{docker_nickname}":
                 return True
         return False
 
