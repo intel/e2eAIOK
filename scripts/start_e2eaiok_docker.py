@@ -12,7 +12,7 @@ current_folder = os.getcwd()
 def parse_args(args):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('-b', '--backend',choices=['pytorch', 'tensorflow', 'pytorch_mlperf', 'tensorflow205'],default='pytorch')
+    parser.add_argument('-b', '--backend',choices=['pytorch_mlperf'],default='pytorch_mlperf')
     parser.add_argument('-dp', '--dataset_path',type=str,default="../e2eaiok_dataset",help='large capacity folder for dataset storing')
     parser.add_argument('--spark_shuffle_dir',type=str,default="../spark_local_dir",help='large capacity folder for spark temporary storage')
     parser.add_argument('--proxy', type=str, default=None, help='proxy for pip and apt install')
@@ -40,7 +40,7 @@ def get_install_cmd():
     else:
         return "yum install -y "
 
-def fix_cmdline(cmdline, workers):
+def fix_cmdline(cmdline, workers, use_ssh = False):
     if not isinstance(cmdline, list):
         cmdline = cmdline.split()
     local = os.uname()[1]
@@ -49,6 +49,10 @@ def fix_cmdline(cmdline, workers):
         workers.append(local)
     for n in workers:
         if n == local:
+            if use_ssh:
+                ret.append(["ssh", "localhost"] + cmdline)
+            else:
+                cmdline = [i.replace("\"", "") for i in cmdline] 
             ret.append(cmdline)
         else:
             ret.append(["ssh", n] + cmdline)
@@ -60,11 +64,11 @@ def fix_workers(workers):
         workers.append(local)
     return workers
 
-def execute(cmdline, logger, workers = []):
+def execute(cmdline, logger, workers = [], use_ssh = False):
     if not isinstance(cmdline, list):
         cmdline = cmdline.split()
     logger.info(' '.join(cmdline))
-    cmdline_list = fix_cmdline(cmdline, workers)
+    cmdline_list = fix_cmdline(cmdline, workers, use_ssh)
     process_pool = []
     success = False
     for cmdline in cmdline_list:
@@ -133,11 +137,7 @@ def prepare_miniconda(logger):
     return True
 
 
-def check_requirements(workers, local, logger):
-    if len(workers) == 0:
-        return True, 'build_docker_no_push'
-    if len(workers) == 1 and local in workers:
-        return True, 'build_docker_no_push'
+def check_requirements(docker_name, workers, local, logger):
     # check if we can access all remote workers
     # check if sshpass is installed
     cmdline = "sshpass -V"
@@ -147,6 +147,22 @@ def check_requirements(workers, local, logger):
         if not execute(cmdline, logger):
             logger.error("Not detect sshpass and failed in installing, please fix manually")
             return False, None
+        # if docker exists in docker hub?
+    def is_regist_docker_exists(ret):
+        for line in ret[1:]:
+            in_dickerhub_name = line.split()[1]
+            if in_dickerhub_name.endswith(f"e2eaiok/{docker_name}"):
+                return True
+        return False
+    cmdline = f"docker search e2eaiok/{docker_name}"
+    if execute_check(cmdline, is_regist_docker_exists, logger):
+        logger.info(f"Docker Container {docker_name} exists, skip docker build")
+        return True, 'no_build_docker_no_push'
+
+    if len(workers) == 0:
+        return True, 'build_docker_no_push'
+    if len(workers) == 1 and local in workers:
+        return True, 'build_docker_no_push'
     for n in workers:
         if local == n:
             continue
@@ -177,21 +193,9 @@ def check_requirements(workers, local, logger):
             return False, None
     return True, 'start_docker_registry'
 
-def build_docker(backend, logger, proxy=None, local="localhost", is_push = False):
+def build_docker(docker_name, docker_file, logger, proxy=None, local="localhost", is_push = False):
     tag_name = 'v1'
     proxy_config = []
-    if backend == 'pytorch':
-        docker_name = "e2eaiok-pytorch"
-        docker_file = "DockerfilePytorch110"
-    if backend == 'tensorflow':
-        docker_name = "e2eaiok-tensorflow"
-        docker_file = "DockerfileTensorflow210"
-    if backend == 'pytorch_mlperf':
-        docker_name = "e2eaiok-pytorch-mlperf"
-        docker_file = "DockerfilePytorch"
-    if backend == 'tensorflow205':
-        docker_name = "e2eaiok-tensorflow-205"
-        docker_file = "DockerfileTensorflow"
     if proxy:
         proxy_config.extend(["--build-arg", f"http_proxy={proxy}"])
         proxy_config.extend(["--build-arg", f"https_proxy={proxy}"])
@@ -265,27 +269,18 @@ def start_docker_registry(logger):
     cmdline = "docker run -d -e REGISTRY_HTTP_ADDR=0.0.0.0:5000 -p 5000:5000 --restart=always --name registry registry:2"
     return execute(cmdline, logger)
 
-def run_docker(docker_name, backend, dataset_path, spark_shuffle_dir, logger, workers=[]):
-    if backend == 'pytorch':
-        docker_nickname = "e2eaiok-pytorch"
-        port = 12345
-    if backend == 'tensorflow':
-        docker_nickname = "e2eaiok-tensorflow"
-        port = 12344
-    if backend == 'pytorch_mlperf':
-        docker_nickname = "e2eaiok-pytorch-mlperf"
-        port = 12346
-    if backend == 'tensorflow205':
-        docker_nickname = "e2eaiok-tensorflow-205"
-        port = 12347
-
+def run_docker(docker_name, docker_nickname, port, dataset_path, spark_shuffle_dir, logger, workers=[]):
     # prepare dataset path
     cmdline = f"mkdir -p {dataset_path}"
     execute(cmdline, logger, workers)
 
     # check if docker exists
     def is_docker_exists(ret):
-        return docker_nickname in ret[-1]
+        for line in ret[1:]:
+            container_name = line.split()[-1]
+            if container_name == f"{docker_nickname}":
+                return True
+        return False
 
     workers = fix_workers(workers)
     cmdline = f"docker ps -f name={docker_nickname}"
@@ -299,7 +294,7 @@ def run_docker(docker_name, backend, dataset_path, spark_shuffle_dir, logger, wo
         return True, port
 
     # run
-    cmdline = ["docker", "run",  "--shm-size=300g", "--privileged",  "--network",  "host", "--device=/dev/dri", "-d", "-v", f"{dataset_path}/:/home/vmagent/app/dataset", "-v", f"{current_folder}/:/home/vmagent/app/e2eaiok", "-v", f"{spark_shuffle_dir}/:/home/vmagent/app/spark_local_dir", "-w",  "/home/vmagent/app/", "--name", docker_nickname,  docker_name, "/bin/bash", "-c", "service ssh start & sleep infinity"]
+    cmdline = ["docker", "run",  "--shm-size=300g", "--privileged",  "--network",  "host", "--device=/dev/dri", "-d", "-v", f"{dataset_path}/:/home/vmagent/app/dataset", "-v", f"{current_folder}/:/home/vmagent/app/e2eaiok", "-v", f"{spark_shuffle_dir}/:/home/vmagent/app/spark_local_dir", "-w",  "/home/vmagent/app/", "--name", docker_nickname,  docker_name, "/bin/bash", "-c", "\"service ssh start & sleep infinity\""]
 
     return execute(cmdline, logger, workers), port
 
@@ -345,8 +340,13 @@ def main(input_args):
 
     hostname = os.uname()[1]
     print_success = False
+    if input_args.backend == 'pytorch_mlperf':
+        docker_name = "e2eaiok-ray-pytorch"
+        docker_file = "DockerfilePytorch"
+        docker_nickname = "e2eaiok-ray-pytorch"
+        port = 12346
     # 0. prepare_env
-    r, next_step = check_requirements(input_args.workers, hostname, logger)
+    r, next_step = check_requirements(docker_name, input_args.workers, hostname, logger)
     if not r:
         logger.error(f"Failed in check_requirements, please check {input_args.log_path}")
         exit()
@@ -354,6 +354,7 @@ def main(input_args):
     # 1.1 start a local registry for other nodes to pull docker
     if next_step == "start_docker_registry":
         r = start_docker_registry(logger)
+        next_step = "build_docker_and_push"
         if r:
             logger.info(f"Completed Start Docker Registry")
         else:
@@ -361,16 +362,19 @@ def main(input_args):
             exit()
 
     # 1.2 build docker
-    is_push = next_step != "build_docker_no_push"
-    r, docker_name = build_docker(input_args.backend, logger, input_args.proxy, local=hostname, is_push = is_push)
-    if r:
-        logger.info(f"Completed Docker Building")
+    if next_step == "build_docker_no_push" or next_step == "build_docker_and_push":
+        is_push = next_step == "build_docker_and_push"
+        r, docker_name = build_docker(docker_name, docker_file, logger, input_args.proxy, local=hostname, is_push = is_push)
+        if r:
+            logger.info(f"Completed Docker Building")
+        else:
+            logger.error(f"Failed in building docker, please check {input_args.log_path}")
+            exit()
     else:
-        logger.error(f"Failed in building docker, please check {input_args.log_path}")
-        exit()
+        docker_name = f"e2eaiok/{docker_name}"
 
     # 2. start docker
-    r, port = run_docker(docker_name, input_args.backend, input_args.dataset_path, input_args.spark_shuffle_dir, logger, input_args.workers)
+    r, port = run_docker(docker_name, docker_nickname, port, input_args.dataset_path, input_args.spark_shuffle_dir, logger, input_args.workers)
     if r:
         cmd = [f"ssh {n} -p {port}" for n in input_args.workers]
         print_success = True

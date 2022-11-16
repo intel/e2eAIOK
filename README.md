@@ -50,11 +50,11 @@ sh patch_dlrm.sh
 > !!!Important: Meanwhile, we provided --spark_shuffle_dir and --dataset_path to attach different disk.
 ```
 cd ${path_to_e2eaiok}
-python3 scripts/start_e2eaiok_docker.py -b pytorch_mlperf
+python3 scripts/start_e2eaiok_docker.py
 # If you met any network/package not found error, please follow log output to do the fixing and re-run above cmdline.
 
 # To configure spark dir / proxy / dataset using below cmdline
-# python3 scripts/start_e2eaiok_docker.py -b pytorch_mlperf -b ${local_host_name} --proxy "http://ip:port" --spark_shuffle_dir "" --dataset_path ""
+# python3 scripts/start_e2eaiok_docker.py --proxy "http://ip:port" --spark_shuffle_dir "" --dataset_path "" -w ${host0} ${host1}
 ```
 
 ###  Enter docker and Activate conda
