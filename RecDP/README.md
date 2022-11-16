@@ -14,9 +14,10 @@ RecDP is a Data Process python module, specifically designed for Recommender Sys
 pip install pyrecdp
 ```
 
-## install with spark preinstalled docker img
+## use docker to setup pyrecdp
 ```
-docker run --network host -w /home/vmagent/app/ -it xuechendi/recdp_spark3.1 /bin/bash
+python3 scripts/start_e2eaiok_docker.py
+sshpass -p docker ssh sr414 -p 12349
 pip install pyrecdp
 ```
 

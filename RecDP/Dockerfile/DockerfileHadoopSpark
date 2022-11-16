@@ -1,0 +1,22 @@
+FROM ubuntu:20.04
+
+WORKDIR /root/
+RUN apt-get update -y && apt-get upgrade -y && DEBIAN_FRONTEND=noninteractive apt-get install -y openjdk-8-jre build-essential cmake wget git libunwind-dev openssh-server sshpass vim
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-pip python-is-python3
+RUN python -m pip install scikit-learn tqdm pyyaml pandas numpy pyarrow
+
+# ssh setup
+RUN sed -i 's/#Port 22/Port 12349/g' /etc/ssh/sshd_config
+RUN sed -i 's/#   Port 22/    Port 12349/g' /etc/ssh/ssh_config
+RUN echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config
+
+# install spark
+RUN python -m pip install pyspark==3.2.1
+COPY spark-env.sh .
+RUN echo "source ~/spark-env.sh" >> /etc/bash.bashrc
+
+# install hadoop
+RUN if [ "${install_hadoop}" = "True" ]; then wget -qO- https://archive.apache.org/dist/hadoop/common/hadoop-3.3.1/hadoop-3.3.1.tar.gz | tar xvz -C /home/; fi
+RUN if [ "${install_hadoop}" = "True" ]; then echo "export CLASSPATH=$CLASSPATH:`/home/hadoop-3.3.1/bin/hdfs classpath --glob`" >> /etc/bash.bashrc; fi
+RUN echo "root:docker" | chpasswd
+ENTRYPOINT [""]
