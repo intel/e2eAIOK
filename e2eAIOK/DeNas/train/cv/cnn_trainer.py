@@ -29,7 +29,25 @@ class CNNTrainer(BaseTrainer):
         self.args = parser.parse_args(args)
         self.data_path = self.args.data_path
         self.model_builder = CNNModelBuilder(self.args)
+        self.max_accuracy = 0.0
         ext_dist.init_distributed(backend=self.args.dist_backend)
+    
+    def create_dataloader(self):
+        self.data_loader_train,  self.data_loader_val = DataBuilder(self.args).get_data(ext_dist)
+    
+    def create_model(self):
+        with open(args.best_model_structure, 'r') as f:
+            arch = f.readlines()[-1]
+        self.model = self.model_builder.create_model(arch, ext_dist)
+    
+    def preparation(self):
+        if not output_dir.exists():
+            output_dir.mkdir(parents=True)
+        
+        criterion = torch.nn.CrossEntropyLoss()
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.1,
+                    momentum=0.9, weight_decay=5e-4)
+        lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
 
     
     def train_one_epoch(self, model: torch.nn.Module, criterion: torch.nn.Module,
@@ -98,37 +116,9 @@ class CNNTrainer(BaseTrainer):
         print('* Acc@1 {top1.global_avg:.3f} Acc@5 {top5.global_avg:.3f} loss {losses.global_avg:.3f}'
             .format(top1=metric_logger.acc1, top5=metric_logger.acc5, losses=metric_logger.loss))
 
-        return {k: meter.global_avg for k, meter in metric_logger.meters.items()}     
-        
-    def fit(self):
-        args = self.args
-        data_loader_train,  data_loader_val = DataBuilder(args).get_data(ext_dist)
-        output_dir = Path(args.output_dir)
-
-        if not output_dir.exists():
-            output_dir.mkdir(parents=True)
-        with open(args.best_model_structure, 'r') as f:
-            arch = f.readlines()[-1]
-        model = self.model_builder.create_model(arch, ext_dist)
-        criterion = torch.nn.CrossEntropyLoss()
-        optimizer = torch.optim.SGD(model.parameters(), lr=0.1,
-                    momentum=0.9, weight_decay=5e-4)
-        lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
-        print("Start training")
-        start_time = time.time()
-        max_accuracy = 0.0
-        for epoch in range(args.epochs):
-            epoch_start = time.time()
-            train_stats = self.train_one_epoch(
-                model, criterion, data_loader_train,
-                optimizer, epoch)
-
-            lr_scheduler.step(epoch)
-
-            test_stats = self.evaluate(data_loader_val, model)
-            max_accuracy = max(max_accuracy, test_stats["acc1"])
-            print(f'Max accuracy: {max_accuracy:.2f}%')
-            if args.output_dir:
+        return {k: meter.global_avg for k, meter in metric_logger.meters.items()}
+    def save_model(self):
+        if args.output_dir:
                 checkpoint_paths = [output_dir / 'checkpoint.pth']
                 for checkpoint_path in checkpoint_paths:
                     utils.save_model({
@@ -138,12 +128,8 @@ class CNNTrainer(BaseTrainer):
                         'epoch': epoch,
                         'args': args,
                     }, checkpoint_path)
-            epoch_time = time.time() - epoch_start
-            epoch_time_str = str(datetime.timedelta(seconds=int(epoch_time)))
-            print('This eppch training time {}'.format(epoch_time_str))
-        total_time = time.time() - start_time
-        total_time_str = str(datetime.timedelta(seconds=int(total_time)))
-        print('Training time {}'.format(total_time_str))
+
+
 
 
             
