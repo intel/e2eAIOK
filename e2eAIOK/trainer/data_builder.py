@@ -61,8 +61,9 @@ class DataBuilder():
             sampler=sampler_val, num_workers=args.num_workers,
             pin_memory=args.pin_mem, drop_last=False
         )
+        
         if args.data_set in ["CIFAR10","CIFAR100"]:
-            return data_loader_train, data_loader_val
+            return ["train":data_loader_train, "val":data_loader_val]
         elif args.data_set in ["SQuADv1.1"]:
             return data_loader_train, data_loader_val, train_examples, val_examples, val_dataset, val_features, tokenizer
         

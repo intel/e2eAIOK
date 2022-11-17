@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
  
-class BaseModelBuilder(ABC):
+class ModelBuilder(ABC):
     """
     The basic model builder class for all models
 
