@@ -5,14 +5,14 @@
 
 ```
 $ cd Dockerfile-ubuntu18.04
-$ docker build -t e2eaiok-pytorch110 . -f DockerfilePytorch110
+$ docker build -t e2eaiok-pytorch120 . -f DockerfilePytorch120
 ```
 
 ### Run DeNas docker container
 
 ```
-$ docker run --shm-size=10g -it --privileged --network host --device=/dev/dri -v ${dataset_path}:/home/vmagent/app/dataset -v ${e2eaiok_codebase}:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch110 /bin/bash
-$ conda activate pytorch-1.10.0
+$ docker run --shm-size=10g -it --privileged --network host --device=/dev/dri -v ${dataset_path}:/home/vmagent/app/dataset -v ${e2eaiok_codebase}:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch120 /bin/bash
+$ conda activate pytorch-1.20.0
 ```
 
 # Run quick try for CNN model

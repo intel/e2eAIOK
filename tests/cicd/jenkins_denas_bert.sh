@@ -2,7 +2,7 @@
 
 # init conda env
 eval "$('/opt/intel/oneapi/intelpython/latest/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
-conda activate pytorch-1.10.0
+conda activate pytorch-1.20.0
 
 # launch denas for bert-based supernet
 cd /home/vmagent/app/e2eaiok/e2eAIOK/DeNas

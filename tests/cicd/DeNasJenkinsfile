@@ -14,7 +14,7 @@ pipeline {
                             node(label) {
                                 cleanWs()
                                 checkout scm
-                                sh 'cd Dockerfile-ubuntu18.04 && docker build -t e2eaiok-pytorch110 . -f DockerfilePytorch110 && cd .. && yes | docker container prune && yes | docker image prune'
+                                sh 'cd Dockerfile-ubuntu18.04 && docker build -t e2eaiok-pytorch120 . -f DockerfilePytorch120 && cd .. && yes | docker container prune && yes | docker image prune'
                             }
                         }
                     }
@@ -27,7 +27,7 @@ pipeline {
                 label 'sr612'
             }
             steps {
-                sh 'docker run --rm --name test-denas-cnn --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch110 /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/cicd/jenkins_denas_cnn.sh"'
+                sh 'docker run --rm --name test-denas-cnn --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch120 /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/cicd/jenkins_denas_cnn.sh"'
             }
         }
         stage('Run DeNas ViT') {
@@ -35,7 +35,7 @@ pipeline {
                 label 'sr612'
             }
             steps {
-                sh 'docker run --rm --name test-denas-vit --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch110 /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/cicd/jenkins_denas_vit.sh"'
+                sh 'docker run --rm --name test-denas-vit --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch120 /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/cicd/jenkins_denas_vit.sh"'
             }
         }
         stage('Run DeNas Bert') {
@@ -43,7 +43,7 @@ pipeline {
                 label 'sr612'
             }
             steps {
-               sh 'docker run --rm --name test-denas-bert --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch110 /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/cicd/jenkins_denas_bert.sh"' 
+               sh 'docker run --rm --name test-denas-bert --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch120 /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/cicd/jenkins_denas_bert.sh"' 
             }
         }
         stage('Run DeNas ASR') {
@@ -51,7 +51,7 @@ pipeline {
                 label 'sr612'
             }
             steps {
-               sh 'docker run --rm --name test-denas-asr --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch110 /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/cicd/jenkins_denas_asr.sh"' 
+               sh 'docker run --rm --name test-denas-asr --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch120 /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/cicd/jenkins_denas_asr.sh"' 
             }
         }
     }
