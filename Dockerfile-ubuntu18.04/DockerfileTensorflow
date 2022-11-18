@@ -1,3 +1,5 @@
+# For v0.1 workload: WnD, DIEN
+# For v0.2 workload: BERT, ResNet
 FROM intel/oneapi-aikit:2022.3.0-devel-ubuntu18.04
 
 SHELL ["/bin/bash", "-c"]
