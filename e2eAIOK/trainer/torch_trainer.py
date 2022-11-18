@@ -1,8 +1,10 @@
+import time
+import utils
+import extend_distributed as ext_dist
 from abc import ABC, abstractmethod
 from data_builder import DataBuilder
 from model_builder import ModelBuilder
-import time
-import utils
+
  
 class TorchTrainer(ABC):
     """
@@ -14,6 +16,7 @@ class TorchTrainer(ABC):
     def __init__(self, cfg):
         super().__init__()
         self.cfg = cfg
+        ext_dist.init_distributed(backend=self.cfg.dist_backend)
 
     @abstractmethod
     def create_model(self):
@@ -98,10 +101,15 @@ class TorchTrainer(ABC):
                 "{}: {}".format(name, str(meter))
             )
         print(output_str)
-    
-    @abstractmethod
-    def save_model(self):
-        pass
+
+        if self.cfg.output_dir:
+            checkpoint_paths = [self.cfg.output_dir / 'checkpoint.pth']
+            for checkpoint_path in checkpoint_paths:
+                utils.save_model({
+                    'model': model.state_dict(),
+                    'optimizer': optimizer.state_dict(),
+                    'epoch': epoch,
+                }, checkpoint_path)
     
     '''
     post preprocess log, metric and etc, can be overwrite
@@ -127,7 +135,6 @@ class TorchTrainer(ABC):
                     eval_start = time.time()
                     self.evaluate()
                     print(F"Evaluate time:{time.time() - eval_start}")
-                self.save_model()
                 print(F"This epoch training time:{time.time() - train_start}")
             self.post_preprocess()
         else:
