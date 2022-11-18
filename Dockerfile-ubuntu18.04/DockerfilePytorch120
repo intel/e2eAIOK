@@ -10,14 +10,10 @@ RUN python -m pip install torchsummary easydict opencv-python scikit-image timm 
 RUN python -m pip install torchaudio~=0.12.0 -f https://download.pytorch.org/whl/cpu/torch_stable.html
 
 SHELL ["/bin/bash", "-c"]
-RUN conda init bash
-RUN echo "source /opt/intel/oneapi/setvars.sh --force" >> /root/.bashrc
-
-SHELL ["/bin/bash", "-c"]
 RUN sed -i 's/#Port 22/Port 12347/g' /etc/ssh/sshd_config
 RUN sed -i 's/#   Port 22/    Port 12347/g' /etc/ssh/ssh_config
 RUN echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config
 RUN conda init bash
-RUN echo "source /opt/intel/oneapi/setvars.sh --force" >> /etc/bash.bashrc
+RUN echo "source /opt/intel/oneapi/setvars.sh --force" >> /root/.bashrc
 RUN echo "root:docker" | chpasswd
 ENTRYPOINT [""]
