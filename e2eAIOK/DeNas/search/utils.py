@@ -23,15 +23,3 @@ def parse_config(conf_file):
     with open(conf_file) as f:
         settings.update(yaml.safe_load(f))
     return settings
-
-def timeout_input(printout, default, timeout = None, interactive = True):
-    if not interactive:
-        return default
-    import sys, select
-    print(printout)
-    i, o, e = select.select([sys.stdin], [], [], timeout)
-    if (i):
-        msg = sys.stdin.readline().strip()
-        return default if len(msg) == 0 else msg
-    else:
-        return default
