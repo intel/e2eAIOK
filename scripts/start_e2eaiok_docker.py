@@ -295,25 +295,25 @@ def main(input_args):
 
     hostname = os.uname()[1]
     print_success = False
+    if input_args.backend == 'tensorflow':
+        docker_name = "e2eaiok-tensorflow"
+        docker_file = "DockerfileTensorflow"
+        docker_nickname = "e2eaiok-tensorflow"
+        port = 12344
     if input_args.backend == 'pytorch':
         docker_name = "e2eaiok-pytorch110"
         docker_file = "DockerfilePytorch110"
-        docker_nickname = "e2eaiok-pytorch"
+        docker_nickname = "e2eaiok-pytorch110"
         port = 12345
-    if input_args.backend == 'tensorflow':
-        docker_name = "e2eaiok-tensorflow210"
-        docker_file = "DockerfileTensorflow210"
-        docker_nickname = "e2eaiok-tensorflow"
-        port = 12344
     if input_args.backend == 'pytorch_mlperf':
-        docker_name = "e2eaiok-pytorch"
+        docker_name = "e2eaiok-pytorch-mlperf"
         docker_file = "DockerfilePytorch"
         docker_nickname = "e2eaiok-pytorch-mlperf"
         port = 12346
-    if input_args.backend == 'tensorflow205':
-        docker_name = "e2eaiok-tensorflow"
-        docker_file = "DockerfileTensorflow"
-        docker_nickname = "e2eaiok-tensorflow205"
+    if input_args.backend == 'pytorch_denas':
+        docker_name = "e2eaiok-pytorch-denas"
+        docker_file = "DockerfilePytorch120"
+        docker_nickname = "e2eaiok-pytorch-denas"
         port = 12347
 
     # 0. prepare_env
