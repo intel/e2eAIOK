@@ -21,7 +21,7 @@ int_fields = [StructField('_c%d' % i, IntegerType()) for i in INT_COLS]
 str_fields = [StructField('_c%d' % i, StringType()) for i in CAT_COLS]
 schema = StructType(label_fields + int_fields + str_fields)
 
-def main(data_config):
+def main(data_config, run_mode):
     import os
     host_name = os.uname()[1]
     print(host_name)
@@ -65,11 +65,11 @@ def main(data_config):
     
 
     import subprocess
-    process = subprocess.Popen(["bash", "../data_processing/raw_test_split.sh", test_input_folder])
+    process = subprocess.Popen(["bash", "../data_processing/raw_test_split.sh", test_input_folder, run_mode])
     t11 = timer()
     process.wait()
     t12 = timer()
-    print(f"Split day_23 to test and valid completed, took {(t12 - t11)} secs")
+    print(f"Split last day to test and valid completed, took {(t12 - t11)} secs")
 
     t11 = timer()
     test_files = ["test/day_23"]
@@ -96,10 +96,11 @@ def main(data_config):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='manual to this script')
     parser.add_argument('--config_path', type=str, default = None)
+    parser.add_argument('--run_mode', type=str, default = None)
     args = parser.parse_args()
 
     with open(args.config_path, "r") as f:
         config = yaml.safe_load(f)
         data_config = config["data_preprocess"]
-        main(data_config)
+        main(data_config, args.run_mode)
 

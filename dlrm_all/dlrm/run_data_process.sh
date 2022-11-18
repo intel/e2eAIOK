@@ -1,5 +1,6 @@
-# bash run_data_process.sh local_small node_ip
-# bash run_data_process.sh distributed_full head_node_ip worker_node_ip...
+# bash run_aiokray_dlrm.sh criteo_small node_ip
+# bash run_aiokray_dlrm.sh kaggle node_ip
+# bash run_aiokray_dlrm.sh criteo_full head_node_ip worker_node_ip...
 #!/bin/bash
 set -eo pipefail
 seed_num=$(date +%s)
@@ -10,8 +11,8 @@ if [ "${2}" = "" ]; then
     echo "error: node_ip is None"
 fi
 
-if [[ ${1} != "local_small" && ${1} != "distributed_full" ]]; then
-    echo "error: need to use 'local_small' or 'distributed_full' mode"
+if [[ ${1} != "criteo_small" && ${1} != "criteo_full" && ${1} != "kaggle" ]]; then
+    echo "error: need to use 'criteo_small' or 'criteo_full' or 'kaggle' mode"
     exit
 fi
 
@@ -68,14 +69,19 @@ else
     echo always > /sys/kernel/mm/transparent_hugepage/defrag; sleep 1
     echo 1 > /proc/sys/vm/compact_memory; sleep 1
     echo 3 > /proc/sys/vm/drop_caches; sleep 1
-    export OMP_NUM_THREADS=${omp_num_threads} && ray start --node-ip-address="${2}" --head --port 5678 --dashboard-host 0.0.0.0 --object-store-memory 161061273600 --system-config='{"object_spilling_threshold":0.98}'
+    export OMP_NUM_THREADS=${omp_num_threads} && ray start --node-ip-address="${2}" --head --port 5678 --dashboard-host 0.0.0.0 --object-store-memory 171798691840 --system-config='{"object_spilling_threshold":0.98}'
 fi
 
 # data process
 echo "Start process dataset"
 cd ./dlrm
 data_start=$(date +%s)
-/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python -u ../data_processing/convert_to_parquet.py --config_path ${config_path} $dlrm_extra_option 2>&1 | tee run_data_process_${seed_num}.log
+data_path_train="/home/vmagent/app/dataset/criteo/train"
+if [ ! -d $data_path_train ]; then
+  rm -rf $data_path_train
+fi
+rm -rf /home/vmagent/app/dataset/criteo/dlrm_*
+/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python -u ../data_processing/convert_to_parquet.py --config_path ${config_path} --run_mode=$1 $dlrm_extra_option 2>&1 | tee run_data_process_${seed_num}.log
 /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python -u ../data_processing/preprocessing.py --config_path ${config_path}  --save_path=${save_path} $dlrm_extra_option 2>&1 | tee -a run_data_process_${seed_num}.log
 
 data_end=$(date +%s)

@@ -1,5 +1,6 @@
-# bash run_prepare_env.sh local_small node_ip
-# bash run_prepare_env.sh distributed_full head_node_ip worker_node_ip...
+# bash run_aiokray_dlrm.sh criteo_small node_ip
+# bash run_aiokray_dlrm.sh kaggle node_ip
+# bash run_aiokray_dlrm.sh criteo_full head_node_ip worker_node_ip...
 #!/bin/bash
 set -e
 seed_num=$(date +%s)
@@ -12,8 +13,8 @@ if [ "${2}" = "" ]; then
     echo "error: node_ip is None"
 fi
 
-if [[ ${1} != "local_small" && ${1} != "distributed_full" ]]; then
-    echo "error: need to use 'local_small' or 'distributed_full' mode"
+if [[ ${1} != "criteo_small" && ${1} != "criteo_full" && ${1} != "kaggle" ]]; then
+    echo "error: need to use 'criteo_small' or 'criteo_full' or 'kaggle' mode"
     exit
 fi
 
@@ -78,14 +79,20 @@ if [ ${nproc} -le 1048576 ] && [ ${omp_num_threads} -gt 12 ]; then
     omp_num_threads=12
 fi
 
-
-if [ "${1}" = "local_small" ]; then
-    echo "set params for local_small mode"
+if [ "${1}" = "criteo_small" ]; then
+    echo "set params for criteo_small mode"
     train_days="0-3"
     sparse_dense_boundary=1540370
 fi
-if [ "${1}" = "distributed_full" ]; then
-    echo "set params for distributed_full mode" 
+
+if [ "${1}" = "kaggle" ]; then
+    echo "set params for kaggle mode" 
+    train_days="24-24"
+    sparse_dense_boundary=285147
+fi
+
+if [ "${1}" = "criteo_full" ]; then
+    echo "set params for criteo_full mode" 
     train_days="0-22"
     sparse_dense_boundary=403346
 fi
@@ -106,7 +113,7 @@ else
     echo always > /sys/kernel/mm/transparent_hugepage/defrag; sleep 1
     echo 1 > /proc/sys/vm/compact_memory; sleep 1
     echo 3 > /proc/sys/vm/drop_caches; sleep 1
-    export OMP_NUM_THREADS=${omp_num_threads} && ray start --node-ip-address="${2}" --head --port 5678 --dashboard-host 0.0.0.0 --object-store-memory 161061273600 --system-config='{"object_spilling_threshold":0.98}'
+    export OMP_NUM_THREADS=${omp_num_threads} && ray start --node-ip-address="${2}" --head --port 5678 --dashboard-host 0.0.0.0 --object-store-memory 171798691840 --system-config='{"object_spilling_threshold":0.98}'
 fi
 
 retry=0

@@ -2,11 +2,16 @@
 echo "Splitting the last day into 2 parts of test and validation..."
 HADOOP_PATH="/home/hadoop-3.3.1"
 last_day=$1/day_23
+if [ $2 = "kaggle" ]; then
+    last_day=$1/day_25
+fi
 temp_test=$1/test
 temp_validation=$1/validation
 
-former=89137319
-latter=89137318
+day_info=$(wc -l $last_day)
+total_lines=${day_info% *}
+latter=$[ $total_lines/2 ]
+former=$[ $total_lines-$latter ]
 
 if [[ "$last_day" =~ ^hdfs.* ]]
 then

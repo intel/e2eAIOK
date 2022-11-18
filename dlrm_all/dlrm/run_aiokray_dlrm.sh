@@ -1,5 +1,6 @@
-# bash run_aiokray_dlrm.sh local_small node_ip
-# bash run_aiokray_dlrm.sh distributed_full head_node_ip worker_node_ip...
+# bash run_aiokray_dlrm.sh criteo_small node_ip
+# bash run_aiokray_dlrm.sh kaggle node_ip
+# bash run_aiokray_dlrm.sh criteo_full head_node_ip worker_node_ip...
 #!/bin/bash
 set -eo pipefail
 seed_num=$(date +%s)
@@ -12,8 +13,8 @@ if [ "${2}" = "" ]; then
     echo "error: node_ip is None"
 fi
 
-if [[ ${1} != "local_small" && ${1} != "distributed_full" ]]; then
-    echo "error: need to use 'local_small' or 'distributed_full' mode"
+if [[ ${1} != "criteo_small" && ${1} != "criteo_full" && ${1} != "kaggle" ]]; then
+    echo "error: need to use 'criteo_small' or 'criteo_full' or 'kaggle' mode"
     exit
 fi
 
@@ -78,13 +79,20 @@ if [ ${nproc} -le 1048576 ] && [ ${omp_num_threads} -gt 12 ]; then
     omp_num_threads=12
 fi
 
-if [ "${1}" = "local_small" ]; then
-    echo "set params for local_small mode"
+if [ "${1}" = "criteo_small" ]; then
+    echo "set params for criteo_small mode"
     train_days="0-3"
     sparse_dense_boundary=1540370
 fi
-if [ "${1}" = "distributed_full" ]; then
-    echo "set params for distributed_full mode" 
+
+if [ "${1}" = "kaggle" ]; then
+    echo "set params for kaggle mode" 
+    train_days="24-24"
+    sparse_dense_boundary=285147
+fi
+
+if [ "${1}" = "criteo_full" ]; then
+    echo "set params for criteo_full mode" 
     train_days="0-22"
     sparse_dense_boundary=403346
 fi
@@ -143,21 +151,26 @@ sed -i "s#output_folder: \".*\"#output_folder: \"${data_path}\"#g" ${config_path
 # data process, cancel this if dataset has been created
 echo "Start process dataset"
 data_start=$(date +%s)
-/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python -u ../data_processing/convert_to_parquet.py --config_path ${config_path} $dlrm_extra_option 2>&1 | tee run_data_process_${seed_num}.log
-# set ray cluster if distributed_full mode is set
-if [ "${1}" = "distributed_full" ]; then
+data_path_train="/home/vmagent/app/dataset/criteo/train"
+if [ -d $data_path_train ]; then
+  rm -rf $data_path_train
+fi
+rm -rf /home/vmagent/app/dataset/criteo/dlrm_*
+/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python -u ../data_processing/convert_to_parquet.py --config_path=${config_path} --run_mode=$1 $dlrm_extra_option 2>&1 | tee run_data_process_${seed_num}.log
+# set ray cluster if criteo_full mode is set
+if [ "${1}" = "criteo_full" ]; then
     index=1
     for arg in "$@"
     do
         if [ $index \> 2 ]; then
             echo $arg >> $hosts_file
             bash /home/vmagent/app/e2eaiok/scripts/config_passwdless_ssh.sh $args
-            ssh $arg export OMP_NUM_THREADS=${executor_cores} && ray start --address="${2}:5678" --object-store-memory 161061273600
+            ssh $arg export OMP_NUM_THREADS=${executor_cores} && ray start --address="${2}:5678" --object-store-memory 171798691840
         fi
         let index+=1
     done
 fi
-/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python -u ../data_processing/preprocessing.py --config_path ${config_path}  --save_path=${save_path} $dlrm_extra_option 2>&1 | tee -a run_data_process_${seed_num}.log
+/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python -u ../data_processing/preprocessing.py --config_path=${config_path} --save_path=${save_path} $dlrm_extra_option 2>&1 | tee -a run_data_process_${seed_num}.log
 
 data_end=$(date +%s)
 data_spend=$(( data_end - data_start ))
