@@ -17,7 +17,7 @@ class TorchTrainer(ABC):
         super().__init__()
         self.cfg = cfg
         ext_dist.init_distributed(backend=self.cfg.dist_backend)
-
+    
     @abstractmethod
     def create_model(self):
         model_builder = ModelBuilder(self.cfg)
@@ -30,15 +30,15 @@ class TorchTrainer(ABC):
 
     @abstractmethod
     def preparation(self):
-        self.misc_operations = create_operation(self.cfg)
+        self.all_operations = create_operation(self.model, self.cfg)
         
     '''
     one epoch training function, this function can be overwrite for specific model
     '''
     @abstractmethod
     def train_one_epoch(self, epoch):
-        criterion = self.misc_operations['train_criterion']
-        optimizer = self.misc_operations['optimizer']
+        criterion = self.all_operations['criterion']
+        optimizer = self.all_operations['optimizer']
 
         # set random seed
         random.seed(epoch)
@@ -70,10 +70,10 @@ class TorchTrainer(ABC):
     '''
     @abstractmethod
     def evaluate(self):
-        criterion = all_operations['critetion']
-        metric = all_operations['metric']
+        criterion = self.all_operations['critetion']
+        metric = self.all_operations['metric']
 
-        metric_logger = utils.MetricLogger(delimiter="  ")
+        metric_logger = utils.MetricLogger(delimiter="")
         header = 'Test:'
 
         # switch to evaluation mode
@@ -87,12 +87,12 @@ class TorchTrainer(ABC):
             
             loss = criterion(output, target)
 
-            metrics = metric(output, target)
+            metric = create_metric(output, target, cfg)
 
             batch_size = inputs.shape[0]
             metric_logger.update(loss=loss.item())
-            for i in range(len(metrics)):
-                metric_logger.meters[metrics[i]['name']].update(metrics[i]['value'].item(), n=self.cfg.batch_size)
+            for i in range(len(metric)):
+                metric_logger.meters[metric.keys()[i]].update(metric.values()[i], n=self.cfg.batch_size)
         # gather the stats from all processes
         metric_logger.synchronize_between_processes()
         output_str = []

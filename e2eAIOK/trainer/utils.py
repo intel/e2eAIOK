@@ -18,7 +18,7 @@ import datetime
 import yaml
 import torch
 import extend_distributed as ext_dist
-
+from timm.utils import accuracy
 from collections import defaultdict, deque
 from easydict import EasyDict as edict
 
@@ -181,3 +181,31 @@ def decode_arch_tuple(arch_tuple):
     num_heads = [int(x) for x in (arch_tuple[depth + 1: 2 * depth + 1])]
     embed_dim = int(arch_tuple[-1])
     return depth, mlp_ratio, num_heads, embed_dim
+
+def create_model(model, cfg):
+    if cfg.criterion == "CrossEntropyLoss":
+        criterion = torch.nn.CrossEntropyLoss()
+    if cfg.optimizer == "SGD":
+        optimizer = torch.optim.SGD(model.parameters(), lr=cfg.learning_rate,
+                momentum=cfg.momentum, weight_decay=cfg.weight_decay)
+    if cfg.lr_scheduler == "CosineAnnealingLR":
+        lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=cfg.epochs)
+    if cfg.metric = "accuracy":
+        acc1, acc5 = accuracy(output, target, topk=(1, 5))
+
+            batch_size = inputs.shape[0]
+            metric_logger.update(loss=loss.item())
+            metric_logger.meters['acc1'].update(acc1.item(), n=batch_size)
+            metric_logger.meters['acc5'].update(acc5.item(), n=batch_size)
+        metric = accuracy(topk=(1, 5))
+    all_operations = [
+        'criterion':criterion,
+        'optimizer':optimizer,
+        'lr_scheduler':lr_scheduler]
+    return all_operations
+
+def create_metric(output, targets, cfg):
+    if cfg.metric == "acuracy":
+        acc1, acc5 = accuracy(output, target, topk=(1, 5))
+        metric = ['acc1':acc1,'acc5':acc5]
+        return metric

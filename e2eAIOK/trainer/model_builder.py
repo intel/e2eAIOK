@@ -26,8 +26,8 @@ class ModelBuilder(ABC):
             if self.cfg.domain == 'cnn':
                 model = DeMainNet(num_classes=self.cfg.num_classes, plainnet_struct=arch, no_create=False)
             elif self.cfg.domain == 'vit':
-                model = Vision_TransformerSuper(img_size=self.cfginput_size,
-                                    patch_size=self.cfgpatch_size,
+                model = Vision_TransformerSuper(img_size=self.cfg.input_size,
+                                    patch_size=self.cfg.patch_size,
                                     embed_dim=self.cfg['SUPERNET']['EMBED_DIM'], depth=self.cfg['SUPERNET']['DEPTH'],
                                     num_heads=self.cfg['SUPERNET']['NUM_HEADS'],mlp_ratio=self.cfg['SUPERNET']['MLP_RATIO'],
                                     qkv_bias=True, drop_rate=self.cfg.drop,
