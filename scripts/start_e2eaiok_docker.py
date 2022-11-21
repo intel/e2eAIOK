@@ -12,7 +12,7 @@ current_folder = os.getcwd()
 def parse_args(args):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('-b', '--backend',choices=['pytorch', 'tensorflow', 'pytorch_mlperf', 'tensorflow205'],default='pytorch')
+    parser.add_argument('-b', '--backend',choices=['tensorflow', 'pytorch', 'pytorch110', 'pytorch120'],default='pytorch110')
     parser.add_argument('-dp', '--dataset_path',type=str,default="../e2eaiok_dataset",help='large capacity folder for dataset storing')
     parser.add_argument('--proxy', type=str, default=None, help='proxy for pip and apt install')
     parser.add_argument('--log_path',type=str,default="./e2eaiok_docker_building.log",help='large capacity folder for dataset storing')
