@@ -12,7 +12,7 @@ current_folder = os.getcwd()
 def parse_args(args):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('-b', '--backend',choices=['pytorch', 'tensorflow', 'pytorch_mlperf', 'tensorflow205'],default='pytorch')
+    parser.add_argument('-b', '--backend',choices=['tensorflow', 'pytorch', 'pytorch110', 'pytorch120'],default='pytorch110')
     parser.add_argument('-dp', '--dataset_path',type=str,default="../e2eaiok_dataset",help='large capacity folder for dataset storing')
     parser.add_argument('--proxy', type=str, default=None, help='proxy for pip and apt install')
     parser.add_argument('--log_path',type=str,default="./e2eaiok_docker_building.log",help='large capacity folder for dataset storing')
@@ -295,25 +295,29 @@ def main(input_args):
 
     hostname = os.uname()[1]
     print_success = False
-    if input_args.backend == 'pytorch':
-        docker_name = "e2eaiok-pytorch110"
-        docker_file = "DockerfilePytorch110"
-        docker_nickname = "e2eaiok-pytorch"
-        port = 12345
+    # latest tensorflow env
     if input_args.backend == 'tensorflow':
-        docker_name = "e2eaiok-tensorflow210"
-        docker_file = "DockerfileTensorflow210"
-        docker_nickname = "e2eaiok-tensorflow"
-        port = 12344
-    if input_args.backend == 'pytorch_mlperf':
-        docker_name = "e2eaiok-pytorch"
-        docker_file = "DockerfilePytorch"
-        docker_nickname = "e2eaiok-pytorch-mlperf"
-        port = 12346
-    if input_args.backend == 'tensorflow205':
         docker_name = "e2eaiok-tensorflow"
         docker_file = "DockerfileTensorflow"
-        docker_nickname = "e2eaiok-tensorflow205"
+        docker_nickname = "e2eaiok-tensorflow"
+        port = 12344
+    # pytorch1.10 env
+    if input_args.backend == 'pytorch110':
+        docker_name = "e2eaiok-pytorch110"
+        docker_file = "DockerfilePytorch110"
+        docker_nickname = "e2eaiok-pytorch110"
+        port = 12345
+    # pytorch1.5 env
+    if input_args.backend == 'pytorch':
+        docker_name = "e2eaiok-pytorch"
+        docker_file = "DockerfilePytorch"
+        docker_nickname = "e2eaiok-pytorch"
+        port = 12346
+    # pytorch1.12 env
+    if input_args.backend == 'pytorch120':
+        docker_name = "e2eaiok-pytorch120"
+        docker_file = "DockerfilePytorch120"
+        docker_nickname = "e2eaiok-pytorch120"
         port = 12347
 
     # 0. prepare_env
