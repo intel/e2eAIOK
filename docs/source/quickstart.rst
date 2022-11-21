@@ -14,7 +14,7 @@ How to run
 
 .. code-block:: bash
 
-    python run_e2eaiok.py --data_path ${dataset_path} --model_name [dlrm, wnd, dien, pipeline_test, twitter_recsys, rnnt, tpcxai09] --no_sigopt
+    python run_e2eaiok.py --data_path ${dataset_path} --model_name [dlrm, wnd, dien, pipeline_test, twitter_recsys, rnnt, tpcxai09] 
 
 * For user-define model
 

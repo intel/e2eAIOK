@@ -51,5 +51,5 @@ epochs: 2
 ```
 
 ```
-cd /home/vmagent/app/e2eaiok && python run_e2eaiok.py --data_path /home/vmagent/app/dataset/LibriSpeech --model_name rnnt --conf conf/e2eaiok_defaults_rnnt_example.conf --no_sigopt
+cd /home/vmagent/app/e2eaiok && python run_e2eaiok.py --data_path /home/vmagent/app/dataset/LibriSpeech --model_name rnnt --conf conf/e2eaiok_defaults_rnnt_example.conf 
 ```

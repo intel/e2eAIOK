@@ -197,11 +197,11 @@ def parse_args(args):
         type=str,
         default=str(pathlib.Path(__file__).parent.absolute()),
         help='custom result path')
-    parser.add_argument('--no_sigopt',
+    parser.add_argument('--enable_sigopt',
         dest="enable_sigopt",
-        action="store_false",
-        default=True,
-        help='if disable sigopt')
+        action="store_true",
+        default=False,
+        help='if enable sigopt')
     parser.add_argument('--no_model_cache',
         dest="enable_model_cache",
         action="store_false",

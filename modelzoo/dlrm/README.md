@@ -75,7 +75,7 @@ total 683357412
 
 ## Training
 ```
-cd /home/vmagent/app/e2eaiok/; python -u run_e2eaiok.py --data_path /home/vmagent/app/dataset/criteo --model_name dlrm --no_sigopt
+cd /home/vmagent/app/e2eaiok/; python -u run_e2eaiok.py --data_path /home/vmagent/app/dataset/criteo --model_name dlrm 
 ```
 
 ## Inference

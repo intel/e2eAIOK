@@ -53,7 +53,7 @@ export OMP_NUM_THREADS=24
 export KMP_BLOCKTIME=1
 export KMP_AFFINITY="granularity=fine,compact,1,0"
 
-cd /home/vmagent/app/e2eaiok/; python -u run_e2eaiok.py --data_path /home/vmagent/app/dataset/resnet --model_name resnet --conf /home/vmagent/app/e2eaiok/tests/cicd/conf/e2eaiok_defaults_resnet_example.conf --no_sigopt
+cd /home/vmagent/app/e2eaiok/; python -u run_e2eaiok.py --data_path /home/vmagent/app/dataset/resnet --model_name resnet --conf /home/vmagent/app/e2eaiok/tests/cicd/conf/e2eaiok_defaults_resnet_example.conf 
 ```
 
 ## Inference

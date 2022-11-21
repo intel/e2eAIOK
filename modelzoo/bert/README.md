@@ -56,5 +56,5 @@ sh patch_bert.sh
 ## Training
 
 ```
-cd /home/vmagent/app/e2eaiok/; python run_e2eaiok.py --data_path /home/vmagent/app/dataset/SQuAD --model_name bert --conf /home/vmagent/app/e2eaiok/conf/e2eaiok_defaults_bert_example.conf --no_sigopt
+cd /home/vmagent/app/e2eaiok/; python run_e2eaiok.py --data_path /home/vmagent/app/dataset/SQuAD --model_name bert --conf /home/vmagent/app/e2eaiok/conf/e2eaiok_defaults_bert_example.conf 
 ```
