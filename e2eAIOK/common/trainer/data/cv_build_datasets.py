@@ -5,7 +5,7 @@ from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from timm.data import create_transform
 
 
-def build_dataset(is_train, cfg, folder_name=None):
+def build_dataset(is_train, cfg):
     transform = build_transform(is_train,cfg)
 
     if cfg.data_set == 'CIFAR10':

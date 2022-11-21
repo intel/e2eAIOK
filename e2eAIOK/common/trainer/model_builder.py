@@ -1,8 +1,8 @@
 import utils
 from abc import ABC, abstractmethod
 import extend_distributed as ext_dist
-from cv.third_party.ZenNet import DeMainNet
-from cv.supernet_transformer import Vision_TransformerSuper
+from e2eAIOK.DeNas.cv.third_party.ZenNet import DeMainNet
+from e2eAIOK.DeNas.cv.supernet_transformer import Vision_TransformerSuper
 
 class ModelBuilder(ABC):
     """
@@ -18,7 +18,6 @@ class ModelBuilder(ABC):
     '''
     ceate the model for training or evluation
     '''
-    @abstractmethod
     def create_model(self):
         if self.cfg.best_model_structure != None:
             with open(self.cfg.best_model_structure, 'r') as f:
