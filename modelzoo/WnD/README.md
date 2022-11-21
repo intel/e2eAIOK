@@ -62,7 +62,7 @@ hosts:
 
 ```
 export OMP_NUM_THREADS=30
-cd /home/vmagent/app/e2eaiok; python run_e2eaiok.py --data_path /home/vmagent/app/dataset/outbrain/ --model_name wnd --conf conf/e2eaiok_defaults_wnd_example.conf --no_sigopt
+cd /home/vmagent/app/e2eaiok; python run_e2eaiok.py --data_path /home/vmagent/app/dataset/outbrain/ --model_name wnd --conf conf/e2eaiok_defaults_wnd_example.conf 
 ```
 
 ## Inference

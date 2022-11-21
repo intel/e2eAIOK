@@ -54,7 +54,7 @@ cat_voc: /home/vmagent/app/dataset/amazon_reviews/cat_voc.pkl
 ```
 
 ```
-cd /home/vmagent/app/e2eaiok/; python -u run_e2eaiok.py --data_path /home/vmagent/app/dataset/amazon_reviews --model_name dien --no_sigopt
+cd /home/vmagent/app/e2eaiok/; python -u run_e2eaiok.py --data_path /home/vmagent/app/dataset/amazon_reviews --model_name dien 
 ```
 
 ## Distributed Training
@@ -71,7 +71,7 @@ hosts:
 
 # run distributed training
 cd /home/vmagent/app/e2eaiok/modelzoo/dien/feature_engineering/; sh split_for_distribute.sh
-cd /home/vmagent/app/e2eaiok/; python -u run_e2eaiok.py --data_path /home/vmagent/app/dataset/amazon_reviews_distributed --model_name dien --no_sigopt --conf conf/e2eaiok_defaults_dien_example.conf
+cd /home/vmagent/app/e2eaiok/; python -u run_e2eaiok.py --data_path /home/vmagent/app/dataset/amazon_reviews_distributed --model_name dien  --conf conf/e2eaiok_defaults_dien_example.conf
 ```
 
 ## Result
