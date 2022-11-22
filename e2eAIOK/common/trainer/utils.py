@@ -18,7 +18,7 @@ import datetime
 import yaml
 import torch
 import extend_distributed as ext_dist
-
+from timm.utils import accuracy
 from collections import defaultdict, deque
 from easydict import EasyDict as edict
 
@@ -174,12 +174,28 @@ class MetricLogger(object):
             header, total_time_str, total_time / len(iterable)))
 
 
-def update_config(cfg, filename):
-    with open(filename) as f:
-        exp_config = edict(yaml.safe_load(f))
-        for k, v in exp_config.items():
-            str_k = f'--{str(k)}'
-            cfg.append(str_k)
-            if v != 'True':
-                cfg.append(v)
+def decode_arch_tuple(arch_tuple):
+    arch_tuple = ast.literal_eval(arch_tuple)
+    depth = int(arch_tuple[0])
+    mlp_ratio = [float(x) for x in (arch_tuple[1:depth+1])]
+    num_heads = [int(x) for x in (arch_tuple[depth + 1: 2 * depth + 1])]
+    embed_dim = int(arch_tuple[-1])
+    return depth, mlp_ratio, num_heads, embed_dim
 
+def create_operation(model, cfg):
+    if cfg.criterion == "CrossEntropyLoss":
+        criterion = torch.nn.CrossEntropyLoss()
+    if cfg.optimizer == "SGD":
+        optimizer = torch.optim.SGD(model.parameters(), lr=cfg.learning_rate,
+                momentum=cfg.momentum, weight_decay=cfg.weight_decay)
+    if cfg.lr_scheduler == "CosineAnnealingLR":
+        lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=cfg.train_epochs)
+    all_operations = {'criterion':criterion,'optimizer':optimizer,'lr_scheduler':lr_scheduler}
+    return all_operations
+
+def create_metric(output, target, cfg):
+    if cfg.eval_metric == "accuracy":
+        acc1, acc5 = accuracy(output, target, topk=(1, 5))
+        metric = {'acc1':acc1,'acc5':acc5}
+        return metric
+    
