@@ -9,6 +9,14 @@ git submodule update --init --recursive
 python3 scripts/start_e2eaiok_docker.py -b pytorch120 -w ${host0} ${host1} ${host2} ${host3} --proxy ""
 ```
 
+## Enter Docker
+```
+sshpass -p docker ssh ${host0} -p 12347
+```
+
+# Enter DeNas directory
+cd /home/vmagent/app/e2eaiok/e2eAIOK/DeNas
+
 # Run quick try for CNN model
 
 ```
