@@ -1,19 +1,21 @@
 # Quick Start
 
-### Build DeNas docker image
-
-
+# Environment Setup
+``` bash
+# Setup ENV
+git clone https://github.com/intel/e2eAIOK.git
+cd e2eAIOK
+git submodule update --init --recursive
+python3 scripts/start_e2eaiok_docker.py -b pytorch120 -w ${host0} ${host1} ${host2} ${host3} --proxy ""
 ```
-$ cd Dockerfile-ubuntu18.04
-$ docker build -t e2eaiok-pytorch120 . -f DockerfilePytorch120
+
+## Enter Docker
+```
+sshpass -p docker ssh ${host0} -p 12347
 ```
 
-### Run DeNas docker container
-
-```
-$ docker run --shm-size=10g -it --privileged --network host --device=/dev/dri -v ${dataset_path}:/home/vmagent/app/dataset -v ${e2eaiok_codebase}:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch120 /bin/bash
-$ conda activate pytorch-1.20.0
-```
+# Enter DeNas directory
+cd /home/vmagent/app/e2eaiok/e2eAIOK/DeNas
 
 # Run quick try for CNN model
 
