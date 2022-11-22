@@ -5,19 +5,19 @@ from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from timm.data import create_transform
 
 
-def build_dataset(is_train, args, folder_name=None):
-    transform = build_transform(is_train, args)
+def build_dataset(is_train, cfg):
+    transform = build_transform(is_train,cfg)
 
-    if args.data_set == 'CIFAR10':
-        dataset = datasets.CIFAR10(args.data_path, train=is_train, transform=transform, download=True)
+    if cfg.data_set == 'CIFAR10':
+        dataset = datasets.CIFAR10(cfg.data_path, train=is_train, transform=transform, download=True)
         nb_classes = 10
-    elif args.data_set == 'CIFAR100':
-        dataset = datasets.CIFAR100(args.data_path, train=is_train, transform=transform, download=True)
+    elif cfg.data_set == 'CIFAR100':
+        dataset = datasets.CIFAR100(cfg.data_path, train=is_train, transform=transform, download=True)
         nb_classes = 100    
     return dataset, nb_classes
 
-def build_transform(is_train, args):
-    resize_im = args.input_size > 32
+def build_transform(is_train, cfg):
+    resize_im = cfg.input_size > 32
     if is_train:
         # this should always dispatch to transforms_imagenet_train
         transform = transforms.Compose([
@@ -30,7 +30,7 @@ def build_transform(is_train, args):
             # replace RandomResizedCropAndInterpolation with
             # RandomCrop
             transform.transforms[0] = transforms.RandomCrop(
-                args.input_size, padding=4)
+                cfg.input_size, padding=4)
         return transform
     else:
         transform = transforms.Compose([
