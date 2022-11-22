@@ -13,7 +13,7 @@ public reference on train-clean-100: https://arxiv.org/pdf/1807.10893.pdf, https
 git clone https://github.com/intel/e2eAIOK.git
 cd e2eAIOK
 git submodule update --init --recursive
-python3 scripts/start_e2eaiok_docker.py -b pytorch -w ${host0} ${host1} ${host2} ${host3} --proxy ""
+python3 scripts/start_e2eaiok_docker.py -b pytorch110 -w ${host0} ${host1} ${host2} ${host3} --proxy ""
 ```
 
 ## Enter Docker
