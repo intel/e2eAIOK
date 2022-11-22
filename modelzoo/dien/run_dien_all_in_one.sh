@@ -16,4 +16,4 @@ export CCL_WORKER_AFFINITY="0,32"
 export HOROVOD_THREAD_AFFINITY="1,33"
 #export I_MPI_PIN_DOMAIN=socket
 export I_MPI_PIN_PROCESSOR_EXCLUDE_LIST="0,1,32,33"
-python -u run_e2eaiok.py --data_path /home/vmagent/app/dataset/amazon_reviews --model_name dien --no_sigopt
+python -u run_e2eaiok.py --data_path /home/vmagent/app/dataset/amazon_reviews --model_name dien 

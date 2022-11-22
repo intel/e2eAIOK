@@ -1,4 +1,6 @@
-FROM intel/oneapi-aikit:2021.4-devel-ubuntu18.04
+# For v0.1 workload: WnD, DIEN
+# For v0.2 workload: BERT, ResNet
+FROM intel/oneapi-aikit:2022.3.0-devel-ubuntu18.04
 
 SHELL ["/bin/bash", "-c"]
 WORKDIR /root/
@@ -26,7 +28,7 @@ RUN python -m pip install "git+https://github.com/mlperf/logging.git@1.0.0"
 
 SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
 RUN python -m pip install --no-cache-dir --ignore-installed sigopt pytest
-RUN python -m pip install pyrecdp pyarrow notebook e2eAIOK
+RUN python -m pip install pyrecdp pyarrow notebook
 
 SHELL ["/bin/bash", "-c"]
 RUN sed -i 's/#Port 22/Port 12344/g' /etc/ssh/sshd_config

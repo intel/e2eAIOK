@@ -32,9 +32,9 @@ set -e
 # lauch e2eaiok pipeline_test
 cd /home/vmagent/app/e2eaiok
 if [ $USE_SIGOPT == 1 ]; then
-  SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN python run_e2eaiok.py --model_name $MODEL_NAME --data_path $DATA_PATH --custom_result_path $tmp_dir 2>&1 | tee $tmp_dir/e2eaiok_cicd.log
+  SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN python run_e2eaiok.py --model_name $MODEL_NAME --data_path $DATA_PATH --enable_sigopt --custom_result_path $tmp_dir 2>&1 | tee $tmp_dir/e2eaiok_cicd.log
 else
-  python run_e2eaiok.py --model_name $MODEL_NAME --data_path $DATA_PATH --no_sigopt --custom_result_path $tmp_dir 2>&1 | tee $tmp_dir/e2eaiok_cicd.log
+  python run_e2eaiok.py --model_name $MODEL_NAME --data_path $DATA_PATH  --custom_result_path $tmp_dir 2>&1 | tee $tmp_dir/e2eaiok_cicd.log
 fi
 
 # BATS test

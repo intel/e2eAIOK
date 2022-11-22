@@ -16,6 +16,7 @@ import os
 import builtins
 import numpy as np
 import torch
+from packaging import version
 from torch.autograd import Function
 from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.distributed as dist

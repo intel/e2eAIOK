@@ -37,11 +37,11 @@ def parse_args(args):
         default='',
         help='user defined train.py')
     parser.add_argument(
-        '--no_sigopt',
+        '--enable_sigopt',
         dest="enable_sigopt",
-        action="store_false",
-        default=True,
-        help='if disable sigopt')
+        action="store_true",
+        default=False,
+        help='if enable sigopt')
     parser.add_argument(
         '--no_model_cache',
         dest="enable_model_cache",
