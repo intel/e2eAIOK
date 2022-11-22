@@ -17,15 +17,15 @@ This workflow trying to address those pain points: unifies both data processing 
 
 > Note: If you prefer to download dataset manually, please provide dataset path to start_e2eaiok_docker.py
 
-> Note: For criteo small run, day_0, day_1, day_2, day_3, day_23 are required.
+> Note: For kaggle run, train.csv and test.csv are required.
 
-> Note: For criteo kaggle run, train.csv and test.csv are required.
+> Note: For criteo small run, day_0, day_1, day_2, day_3, day_23 are required.
 
 > Note: For criteo full test, day_0-day_23 are required
 ```
 # Dataset download page:
 # criteo small and criteo full: https://labs.criteo.com/2013/12/download-terabyte-click-logs/
-# criteo kaggle: https://go.criteo.net/criteo-research-kaggle-display-advertising-challenge-dataset.tar.gz
+# kaggle: https://go.criteo.net/criteo-research-kaggle-display-advertising-challenge-dataset.tar.gz
 ```
 
 ### Prerequisites
