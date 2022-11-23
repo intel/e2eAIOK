@@ -17,6 +17,7 @@ class TorchTrainer(ABC):
         super().__init__()
         self.cfg = cfg
         ext_dist.init_distributed(backend=self.cfg.dist_backend)
+        self.size = ext_dist.my_size
  
     def create_model(self):
         model_builder = ModelBuilder(self.cfg)

@@ -27,7 +27,7 @@ class ASRTrainer(TorchTrainer):
     def __init__(self, cfg):
         super(ASRTrainer, self).__init__(cfg)
         torch.manual_seed(self.cfg.seed)
-        init_log(self.cfg.distributed_launch)
+        init_log(self.size > 1)
         self.tokenizer = sp.SentencePieceProcessor()
         logger = logging.getLogger("Trainer")
         logger.info(f"ASR config: {self.cfg}")
@@ -37,7 +37,7 @@ class ASRTrainer(TorchTrainer):
         train_data, valid_data, test_datasets = dataio_prepare(self.cfg, self.tokenizer)
         # load tokenizer
         load_spm(self.tokenizer, self.cfg.tokenizer_ckpt)
-        train_dataloader = get_dataloader(train_data, self.cfg["train_dataloader_opts"]["batch_size"], self.cfg.distributed_launch)
+        train_dataloader = get_dataloader(train_data, self.cfg["train_dataloader_opts"]["batch_size"], self.size >1)
         valid_dataloader = get_dataloader(valid_data, self.cfg["valid_dataloader_opts"]["batch_size"], False)
         self.data_loader = {'train':train_dataloader, 'val':valid_dataloader}
     
@@ -152,31 +152,3 @@ class ASRTrainer(TorchTrainer):
             wer = wer_metric.summarize("error_rate")
             logger.info(f"epoch: {epoch}, time: {time.time()-eval_start_time}, wer: {wer}, acc: {acc}, avg_loss: {avg_valid_loss}")
         return wer
-
-    # def fit(self):
-    #     logger = logging.getLogger("train")
-    #     create_experiment_directory(self.cfg.output_folder)
-    #     tokenizer = sp.SentencePieceProcessor()
-    #     train_data, valid_data, test_datasets = dataio_prepare(self.cfg, tokenizer)
-    #     # load tokenizer
-    #     load_spm(tokenizer, self.cfg.tokenizer_ckpt)
-    #     model = self.model_builder.create_model(self.hparams)
-    #     train_dataloader_opts = self.cfg["train_dataloader_opts"]
-    #     valid_dataloader_opts = self.cfg["valid_dataloader_opts"]
-    #     # train_dataloader = make_dataloader(train_data, 'train', self.cfg.distributed_launch, **hparams["train_dataloader_opts"])
-    #     # valid_dataloader = make_dataloader(valid_data, 'valid', self.cfg.distributed_launch, **hparams["valid_dataloader_opts"])
-    #     train_dataloader = get_dataloader(train_data, self.cfg["train_dataloader_opts"]["batch_size"], self.cfg.distributed_launch)
-    #     valid_dataloader = get_dataloader(valid_data, self.cfg["valid_dataloader_opts"]["batch_size"], False)
-    #     optimizer = torch.optim.Adam(model.parameters(), lr=self.cfg["lr_adam"], betas=(0.9, 0.98), eps=0.000000001)
-
-    #     scheduler = NoamScheduler(lr_initial=self.cfg["lr_adam"], n_warmup_steps=self.cfg["n_warmup_steps"])
-    #     feat_proc = Fbank(**self.cfg["compute_features"])
-    #     train_start_time = time.time()
-
-    #     for epoch in range(1, self.cfg["epochs"]+1):
-    #         self.train_one_epoch(model, optimizer, train_dataloader, epoch, self.cfg, scheduler, feat_proc)
-    #         wer = self.evaluate(model, valid_dataloader, epoch, self.cfg, tokenizer, feat_proc)
-    #         if wer <= self.cfg["metric_threshold"]:
-    #             logger.info(f"wer {wer} got threshold {self.cfg['metric_threshold']}, early stop")
-    #             break
-    #     logger.info(f"training time: {time.time() - train_start_time}")
