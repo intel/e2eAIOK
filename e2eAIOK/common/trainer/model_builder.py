@@ -73,8 +73,8 @@ class ModelBuilder(ABC):
                     d_ffn=self.cfg["d_ffn"], 
                     transformer_dropout=self.cfg["transformer_dropout"]
                 )
-                ctc_lin = Linear(input_size=self.cfg["d_model"], n_neurons=self.cfg["output_neurons"])
-                seq_lin = Linear(input_size=self.cfg["d_model"], n_neurons=self.cfg["output_neurons"])
+                ctc_lin = Linear(input_size=d_model, n_neurons=self.cfg["output_neurons"])
+                seq_lin = Linear(input_size=d_model, n_neurons=self.cfg["output_neurons"])
                 normalize = InputNormalization(norm_type="global", update_until_epoch=4)
                 modules["CNN"] = cnn
                 modules["Transformer"] = transformer
