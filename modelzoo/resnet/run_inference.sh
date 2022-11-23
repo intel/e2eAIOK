@@ -1,5 +1,5 @@
 #/usr/bin/bash
-source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force
+source /opt/intel/oneapi/setvars.sh --force
 conda activate tensorflow
 cd mlperf_resnet
 

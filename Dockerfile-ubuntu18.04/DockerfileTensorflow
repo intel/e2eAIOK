@@ -13,10 +13,10 @@ RUN apt-get update -y && apt-get install -y git openssh-server gcc-8 g++-8 \
         && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 8
 
 SHELL ["conda", "run", "-n", "tensorflow", "/bin/bash", "-c"]
-RUN python -m pip install --no-cache-dir --ignore-installed psutil sklearn \
-        tqdm prefetch_generator absl-py pydot dill typing-extensions~=3.7.4 \
-        six~=1.15.0 h5py~=3.1.0 grpcio~=1.34.0 pandas future sigopt pytest
-RUN source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force \
+RUN python -m pip install --no-cache-dir --ignore-installed psutil==5.9.0 sklearn \
+        tqdm prefetch_generator absl-py pydot dill typing-extensions \
+        six h5py grpcio pandas future sigopt pytest
+RUN source /opt/intel/oneapi/setvars.sh --force \
         && conda activate tensorflow \
         && python -m pip install --no-cache-dir intel-tensorflow==2.10 \
         && HOROVOD_WITHOUT_MPI=1 HOROVOD_CPU_OPERATIONS=CCL \
@@ -48,6 +48,6 @@ RUN echo "if [ -z \$SPARK_HOME ]; then source /home/spark-env.sh; fi" >> /etc/ba
 RUN mkdir -p /home/vmagent/app/e2eaiok/spark_data_processing/spark_local_dir
 RUN mkdir -p /home/mnt/applicationHistory
 RUN conda init bash
-RUN echo "source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force" >> /etc/bash.bashrc
+RUN echo "source /opt/intel/oneapi/setvars.sh --force" >> /root/.bashrc
 RUN echo "root:docker" | chpasswd
 ENTRYPOINT [""]

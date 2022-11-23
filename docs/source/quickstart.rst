@@ -89,7 +89,7 @@ Quick Start
 * Test WnD
 .. code-block:: bash
 
-    source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force
+    source /opt/intel/oneapi/setvars.sh --force
     # prepare data
     # tree -d 1 ../dataset/outbrain/
     # 1 [error opening dir]
@@ -113,7 +113,7 @@ Quick Start
  * Test DIEN
 .. code-block:: bash
 
-    source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force
+    source /opt/intel/oneapi/setvars.sh --force
     # dataset layout
     #  tree ../dataset/amazon_reviews/
     # ../dataset/amazon_reviews/

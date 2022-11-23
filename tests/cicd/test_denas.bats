@@ -9,5 +9,5 @@ setup() {
 }
 
 @test "Check e2eAIOK DE-NAS Best Structure" {
-    assert_file_exist /home/vmagent/app/e2eaiok/DeNas/best_model_structure.txt
+    assert_file_exist /home/vmagent/app/e2eaiok/e2eAIOK/DeNas/best_model_structure.txt
 }

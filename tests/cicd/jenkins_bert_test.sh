@@ -5,8 +5,10 @@ MODEL_NAME="bert"
 DATA_PATH="/home/vmagent/app/dataset/SQuAD"
 CONF_FILE="/home/vmagent/app/e2eaiok/tests/cicd/conf/e2eaiok_defaults_bert_example.conf"
 
+# init conda
+eval "$('/opt/intel/oneapi/intelpython/latest/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
 # enable oneAPI
-source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force
+source /opt/intel/oneapi/setvars.sh --force
 
 # create ci log dir
 hashstr_id=$(date +%Y-%m-%d)_$(echo $RANDOM | md5sum | head -c 8)

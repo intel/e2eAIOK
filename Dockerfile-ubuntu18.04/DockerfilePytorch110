@@ -4,7 +4,7 @@ FROM intel/oneapi-aikit:2022.2-devel-ubuntu18.04
 SHELL ["/bin/bash", "-c"]
 WORKDIR /root/
 ENV PATH /opt/intel/oneapi/intelpython/latest/condabin:$PATH
-RUN apt-get update -y && apt-get install -y libsndfile1-dev vim
+RUN apt-get update -y && apt-get install -y libsndfile1-dev vim openssh-server openjdk-8-jdk sshpass
 
 SHELL ["conda", "run", "-n", "pytorch-1.10.0", "/bin/bash", "-c"]
 RUN python -m pip install pyyaml typing cffi cmake ninja numpy Unidecode prefetch_generator \
@@ -17,15 +17,14 @@ RUN git clone https://github.com/HawkAaron/warp-transducer && cd warp-transducer
     && mkdir build && cd build \
     && cmake .. && make && cd ../pytorch_binding \
     && python setup.py install
-RUN python -m pip install torchvision torchsummary easydict opencv-python scikit-image timm boto3 ptflops
+RUN python -m pip install torchvision torchsummary easydict opencv-python scikit-image timm boto3 ptflops sentencepiece
 RUN python -m pip install torchaudio==0.10.0 -f https://download.pytorch.org/whl/cpu/torch_stable.html
 
 SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
-RUN python -m pip install --no-cache-dir --ignore-installed sigopt pytest
-RUN python -m pip install pyrecdp pyarrow notebook e2eAIOK
+RUN python -m pip install sigopt pytest pyarrow notebook
+RUN python -m pip install pyrecdp e2eAIOK
 
 SHELL ["/bin/bash", "-c"]
-RUN apt-get update -y && apt-get install -y openssh-server openjdk-8-jdk sshpass
 RUN sed -i 's/#Port 22/Port 12345/g' /etc/ssh/sshd_config
 RUN sed -i 's/#   Port 22/    Port 12345/g' /etc/ssh/ssh_config
 RUN echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config
@@ -42,6 +41,6 @@ RUN echo "if [ -z \$SPARK_HOME ]; then source /home/spark-env.sh; fi" >> /etc/ba
 RUN mkdir -p /home/vmagent/app/e2eaiok/spark_data_processing/spark_local_dir
 RUN mkdir -p /home/mnt/applicationHistory
 RUN conda init bash
-RUN echo "source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force" >> /etc/bash.bashrc
+RUN echo "source /opt/intel/oneapi/setvars.sh --force" >> /root/.bashrc
 RUN echo "root:docker" | chpasswd
 ENTRYPOINT [""]
