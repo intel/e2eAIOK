@@ -122,7 +122,7 @@ class TorchTrainer(ABC):
         self.create_model()
         self.preparation()
         if self.cfg.mode == "train":
-            for i in range(self.cfg.train_epochs):
+            for i in range(1, self.cfg.train_epochs+1):
                 train_start = time.time()
                 self.train_one_epoch(i)
                 if i % self.cfg.eval_epochs == 0:

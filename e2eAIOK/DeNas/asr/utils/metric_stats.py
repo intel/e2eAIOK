@@ -1,9 +1,9 @@
 import torch
 from joblib import Parallel, delayed
-from asr.utils.data_utils import undo_padding
-from asr.utils.edit_distance import wer_summary, wer_details_for_batch
-from asr.data.dataio.dataio import merge_char, split_word
-from asr.data.dataio.wer import print_wer_summary, print_alignments
+from e2eAIOK.DeNas.asr.utils.data_utils import undo_padding
+from e2eAIOK.DeNas.asr.utils.edit_distance import wer_summary, wer_details_for_batch
+from e2eAIOK.DeNas.asr.data.dataio.dataio import merge_char, split_word
+from e2eAIOK.DeNas.asr.data.dataio.wer import print_wer_summary, print_alignments
 
 
 class MetricStats:

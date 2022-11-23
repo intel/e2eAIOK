@@ -21,7 +21,7 @@ from torch.autograd import Function
 from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.distributed as dist
 try:
-    if torch.__version__ < version.parse("1.12.0"):
+    if torch.__version__.split("+")[0] < "1.12.0":
         import torch_ccl
     else:
         import oneccl_bindings_for_pytorch as torch_ccl

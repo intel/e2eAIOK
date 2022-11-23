@@ -21,6 +21,7 @@ import extend_distributed as ext_dist
 from timm.utils import accuracy
 from collections import defaultdict, deque
 from easydict import EasyDict as edict
+import ast
 
 def is_main_process():
     if ext_dist.my_size > 1:

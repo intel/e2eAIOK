@@ -7,11 +7,11 @@ import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.nn import SyncBatchNorm
 
-from asr.lib.convolution import ConvolutionFrontEnd
-from module.asr.linear import Linear
-from asr.data.processing.features import InputNormalization
-from module.asr.utils import gen_transformer
-from trainer.ModelBuilder import BaseModelBuilder
+from e2eAIOK.DeNas.asr.lib.convolution import ConvolutionFrontEnd
+from e2eAIOK.DeNas.module.asr.linear import Linear
+from e2eAIOK.DeNas.asr.data.processing.features import InputNormalization
+from e2eAIOK.DeNas.module.asr.utils import gen_transformer
+from e2eAIOK.DeNas.trainer.ModelBuilder import BaseModelBuilder
 
 class ASRModelBuilder(BaseModelBuilder):
     def __init__(self, args):

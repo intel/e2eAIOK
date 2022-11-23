@@ -1,7 +1,7 @@
 import torch
 import logging
 import functools
-from asr.data.dataio.dataio import length_to_mask
+from e2eAIOK.DeNas.asr.data.dataio.dataio import length_to_mask
 
 
 logger = logging.getLogger(__name__)

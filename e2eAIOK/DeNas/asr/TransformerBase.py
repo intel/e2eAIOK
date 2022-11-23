@@ -3,9 +3,9 @@ import torch
 import torch.nn as nn
 from typing import Optional
 
-from module.asr.attention import RelPosEncXL, MultiheadAttention, RelPosMHAXL, PositionalwiseFeedForward
-from module.asr.normalization import LayerNorm
-from module.asr.embedding import Embedding
+from e2eAIOK.DeNas.module.asr.attention import RelPosEncXL, MultiheadAttention, RelPosMHAXL, PositionalwiseFeedForward
+from e2eAIOK.DeNas.module.asr.normalization import LayerNorm
+from e2eAIOK.DeNas.module.asr.embedding import Embedding
 
 
 class TransformerBase(nn.Module):

@@ -3,8 +3,8 @@ import torch
 import torch.nn as nn
 from typing import Optional
 
-from module.asr.attention import MultiheadAttention, PositionalwiseFeedForward
-from module.asr.normalization import LayerNorm
+from e2eAIOK.DeNas.module.asr.attention import MultiheadAttention, PositionalwiseFeedForward
+from e2eAIOK.DeNas.module.asr.normalization import LayerNorm
 
 class TransformerDecoderLayer(nn.Module):
     def __init__(

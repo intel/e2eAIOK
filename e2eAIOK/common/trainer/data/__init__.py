@@ -1,1 +1,1 @@
-__all__ = ['cv_build_datasets','nlp_build_datasets']
+__all__ = ['cv_build_datasets','nlp_build_datasets', 'asr_build_datasets']

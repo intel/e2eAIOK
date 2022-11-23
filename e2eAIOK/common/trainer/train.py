@@ -6,6 +6,7 @@ import random
 import yaml
 from easydict import EasyDict as edict
 from torch_trainer import TorchTrainer 
+from e2eAIOK.DeNas.asr.asr_trainer import ASRTrainer
 
 def parse_args(args):
     parser = argparse.ArgumentParser('Torch model training or evluation............')
@@ -30,17 +31,14 @@ def main(args):
 
     if args.domain in ['cnn','vit']:
         trainer = TorchTrainer(cfg)
-        trainer.fit()
     elif args.domain == 'bert':
         ## TODO 
         trainer = BertTrainer(cfg)
-        trainer.fit()
     elif args.domain == 'asr':
-        # TODO
         trainer = ASRTrainer(cfg)
-        trainer.fit(cfg)
     else:
         raise RuntimeError(f"Domain {args.domain} is not supported")
+    trainer.fit()
 
 if __name__ == '__main__':
     args  = parse_args(sys.argv[1:])

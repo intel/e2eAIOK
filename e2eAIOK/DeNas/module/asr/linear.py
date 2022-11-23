@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from module.Linear_base import LinearBase
+from e2eAIOK.DeNas.module.Linear_base import LinearBase
 
 
 class Linear(LinearBase):

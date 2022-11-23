@@ -272,7 +272,7 @@ def create_csv(
     msg = "Creating csv lists in  %s..." % (csv_file)
     logger.info(msg)
 
-    csv_lines = [["ID", "duration", "wav", "spk_id", "transcript"]]
+    csv_lines = [["ID", "duration", "wav", "spk_id", "wrd"]]
 
     snt_cnt = 0
     # Processing all the wav files in wav_lst
