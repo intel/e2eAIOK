@@ -4,6 +4,7 @@ import numpy as np
 import torch
 import random
 import yaml
+from e2eAIOK.common.trainer.utils import create_criterion, create_scheduler
 from easydict import EasyDict as edict
 from torch_trainer import TorchTrainer 
 
@@ -29,18 +30,19 @@ def main(args):
         cfg = edict(yaml.safe_load(f))
 
     if args.domain in ['cnn','vit']:
-        trainer = TorchTrainer(cfg)
-        trainer.fit()
+        # TODO
+        model = ModelBuilderCV.create_model(cfg)
+        train_dataloader, eval_dataloader = DataBuilderCV.get_dataloader(cfg)
+        trainer = TorchTrainer(cfg, model, train_dataloader, eval_dataloader)
     elif args.domain == 'bert':
         ## TODO 
         trainer = BertTrainer(cfg)
-        trainer.fit()
     elif args.domain == 'asr':
         # TODO
         trainer = ASRTrainer(cfg)
-        trainer.fit(cfg)
     else:
         raise RuntimeError(f"Domain {args.domain} is not supported")
+    trainer.fit()
 
 if __name__ == '__main__':
     args  = parse_args(sys.argv[1:])

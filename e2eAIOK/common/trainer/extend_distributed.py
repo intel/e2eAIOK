@@ -21,7 +21,7 @@ from torch.autograd import Function
 from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.distributed as dist
 try:
-    if torch.__version__ < version.parse("1.12.0"):
+    if torch.__version__ < "1.12.0":
         import torch_ccl
     else:
         import oneccl_bindings_for_pytorch as torch_ccl
@@ -41,6 +41,7 @@ def env2int(env_list, default = -1):
 
 def init_distributed(rank = -1, size = -1, backend='gloo'):
     global my_size
+    global my_rank
     global my_local_rank
     global my_local_size
 

@@ -21,6 +21,7 @@ import extend_distributed as ext_dist
 from timm.utils import accuracy
 from collections import defaultdict, deque
 from easydict import EasyDict as edict
+import logging
 
 def is_main_process():
     if ext_dist.my_size > 1:
@@ -30,6 +31,15 @@ def is_main_process():
 def save_model(*args, **kwargs):
     if is_main_process():
         torch.save(*args, **kwargs)
+
+def init_log():
+    if ext_dist.my_size > 1:
+        if ext_dist.my_rank == 0:
+            logging.basicConfig(level=logging.INFO)
+        else:
+            logging.basicConfig(level=logging.WARNING)
+    else:
+        logging.basicConfig(level=logging.INFO)
 
 class SmoothedValue(object):
     """Track a series of values and provide access to smoothed values over a
@@ -173,29 +183,25 @@ class MetricLogger(object):
         print('{} Total time: {} ({:.4f} s / it)'.format(
             header, total_time_str, total_time / len(iterable)))
 
-
-def decode_arch_tuple(arch_tuple):
-    arch_tuple = ast.literal_eval(arch_tuple)
-    depth = int(arch_tuple[0])
-    mlp_ratio = [float(x) for x in (arch_tuple[1:depth+1])]
-    num_heads = [int(x) for x in (arch_tuple[depth + 1: 2 * depth + 1])]
-    embed_dim = int(arch_tuple[-1])
-    return depth, mlp_ratio, num_heads, embed_dim
-
-def create_operation(model, cfg):
-    if cfg.criterion == "CrossEntropyLoss":
-        criterion = torch.nn.CrossEntropyLoss()
+    
+def create_optimizer(model, cfg):
     if cfg.optimizer == "SGD":
         optimizer = torch.optim.SGD(model.parameters(), lr=cfg.learning_rate,
                 momentum=cfg.momentum, weight_decay=cfg.weight_decay)
-    if cfg.lr_scheduler == "CosineAnnealingLR":
-        lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=cfg.train_epochs)
-    all_operations = {'criterion':criterion,'optimizer':optimizer,'lr_scheduler':lr_scheduler}
-    return all_operations
+    return optimizer
 
 def create_metric(output, target, cfg):
     if cfg.eval_metric == "accuracy":
         acc1, acc5 = accuracy(output, target, topk=(1, 5))
         metric = {'acc1':acc1,'acc5':acc5}
-        return metric
-    
+    return metric
+
+def create_criterion(cfg):
+    if cfg.criterion == "CrossEntropyLoss":
+        criterion = torch.nn.CrossEntropyLoss()
+    return criterion
+
+def create_scheduler(optimizer, cfg):
+    if cfg.lr_scheduler == "CosineAnnealingLR":
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=cfg.train_epochs)
+    return scheduler
