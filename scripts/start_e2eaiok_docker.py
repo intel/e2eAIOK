@@ -230,7 +230,7 @@ def build_docker(docker_name, docker_file, logger, proxy=None, local="localhost"
     # step 3
     if next_step == 3:
         # start to build
-        if docker_name == "e2eaiok-pytorch-mlperf":
+        if docker_name == "e2eaiok-ray-pytorch":
             prepare_miniconda(logger)
         cmdline = ["docker", "build",  "-t",  docker_name, "Dockerfile-ubuntu18.04", "-f", f"Dockerfile-ubuntu18.04/{docker_file}"] + proxy_config
         if execute(cmdline, logger):
