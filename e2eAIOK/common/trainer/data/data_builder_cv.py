@@ -4,6 +4,11 @@ from torchvision.datasets.folder import ImageFolder
 from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from timm.data import create_transform
 
+from e2eAIOK.common.trainer.data_builder import DataBuilder
+
+class DataBuilderCV(DataBuilder):
+    def __init__(self, cfg):
+        super().__init__(cfg)
 
 def build_dataset(is_train, cfg):
     transform = build_transform(is_train,cfg)

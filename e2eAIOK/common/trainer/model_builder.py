@@ -1,8 +1,8 @@
 import logging
-import utils
+import e2eAIOK.common.trainer.utils.utils as utils
 import os
 import torch
-import extend_distributed as ext_dist
+import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 
 class ModelBuilder():
     """
@@ -11,9 +11,10 @@ class ModelBuilder():
     Note:
         You should implement specfic model builder class under model folder like vit_model_builder
     """
-    def __init__(self, cfg):
+    def __init__(self, cfg, model=None):
         super().__init__()
         self.cfg = cfg
+        self.model = model
     
     def _pre_process(self):
         self.logger = logging.getLogger('Trainer')
@@ -35,9 +36,10 @@ class ModelBuilder():
         """
             create model, load pre-trained model
         """
-        self.model = self._init_model()
-        if self.cfg.pretrain:
+        if self.model is not None and self.cfg.pretrain:
             self.load_model()
+        else:
+            self.model = self._init_model()
 
         self._post_process()
         return self.model

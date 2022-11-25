@@ -1,12 +1,12 @@
 import time
-import utils
+import e2eAIOK.common.trainer.utils.utils as utils
 import random
 import torch
 import logging
-import extend_distributed as ext_dist
+import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 from abc import ABC, abstractmethod
-from data_builder import DataBuilder
-from model_builder import ModelBuilder
+from e2eAIOK.common.trainer.data_builder import DataBuilder
+from e2eAIOK.common.trainer.model_builder import ModelBuilder
  
 class TorchTrainer():
     """
@@ -30,7 +30,6 @@ class TorchTrainer():
         """
             trainer pre process to prepare trainer environment
         """
-        torch.manual_seed(self.cfg.seed)
         ext_dist.init_distributed(backend=self.cfg.dist_backend)
         utils.init_log()
         self.logger = logging.getLogger('Trainer')

@@ -8,5 +8,5 @@ export KMP_AFFINITY="granularity=fine,compact,1,0"
 
 
 #CNN single process training
-python -m intel_extension_for_pytorch.cpu.launch --distributed --nproc_per_node=2 --nnodes=1 /home/vmagent/app/e2eAIOK/e2eAIOK/common/trainer/train.py --domain cnn --conf /home/vmagent/app/e2eAIOK/conf/denas/cv/e2eaiok_denas_train_cnn.conf 2>&1 | tee CNN_training_${RANDOM_SEED}.log
+python -m intel_extension_for_pytorch.cpu.launch --distributed --nproc_per_node=2 --nnodes=1 /home/vmagent/app/e2eaiok/e2eAIOK/DeNas/train.py --domain cnn --conf /home/vmagent/app/e2eaiok/conf/denas/cv/e2eaiok_denas_train_cnn.conf 2>&1 | tee CNN_training_${RANDOM_SEED}.log
 

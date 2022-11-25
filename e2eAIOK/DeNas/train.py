@@ -5,8 +5,14 @@ import torch
 import random
 import yaml
 from easydict import EasyDict as edict
-from torch_trainer import TorchTrainer 
-import utils
+from e2eAIOK.common.trainer.torch_trainer import TorchTrainer 
+import e2eAIOK.common.trainer.utils.utils as utils
+from e2eAIOK.common.trainer.model.model_builder_asr import ModelBuilderASR
+from e2eAIOK.common.trainer.model.model_builder_cv import ModelBuilderCV
+from e2eAIOK.common.trainer.model.model_builder_nlp import ModelBuilderNLP
+from e2eAIOK.common.trainer.data.data_builder_asr import DataBuilderASR
+from e2eAIOK.common.trainer.data.data_builder_cv import DataBuilderCV
+from e2eAIOK.common.trainer.data.data_builder_nlp import DataBuilderNLP
 
 def parse_args(args):
     parser = argparse.ArgumentParser('Torch model training or evluation............')
@@ -37,13 +43,25 @@ def main(args):
         criterion = utils.create_criterion(cfg)
         scheduler = utils.create_scheduler(optimizer, cfg)
         metric = utils.create_metric(cfg)
-        trainer = TorchTrainer(cfg, model, train_dataloader, eval_dataloader, optimizer, criterion, scheduler, metric)
+        trainer = CVTrainer(cfg, model, train_dataloader, eval_dataloader, optimizer, criterion, scheduler, metric)
     elif args.domain == 'bert':
         ## TODO 
-        trainer = BertTrainer(cfg)
+        model = ModelBuilderNLP.create_model(cfg)
+        train_dataloader, eval_dataloader = DataBuilderNLP.get_dataloader(cfg)
+        optimizer = utils.create_optimizer(model, cfg)
+        criterion = utils.create_criterion(cfg)
+        scheduler = utils.create_scheduler(optimizer, cfg)
+        metric = utils.create_metric(cfg)
+        trainer = BERTTrainer(cfg, model, train_dataloader, eval_dataloader, optimizer, criterion, scheduler, metric)
     elif args.domain == 'asr':
         # TODO
-        trainer = ASRTrainer(cfg)
+        model = ModelBuilderASR.create_model(cfg)
+        train_dataloader, eval_dataloader = DataBuilderASR.get_dataloader(cfg)
+        optimizer = utils.create_optimizer(model, cfg)
+        criterion = utils.create_criterion(cfg)
+        scheduler = utils.create_scheduler(optimizer, cfg)
+        metric = utils.create_metric(cfg)
+        trainer = ASRTrainer(cfg, model, train_dataloader, eval_dataloader, optimizer, criterion, scheduler, metric)
     else:
         raise RuntimeError(f"Domain {args.domain} is not supported")
     trainer.fit()

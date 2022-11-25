@@ -17,7 +17,7 @@ import time
 import datetime
 import yaml
 import torch
-import extend_distributed as ext_dist
+import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 from timm.utils import accuracy
 from collections import defaultdict, deque
 from easydict import EasyDict as edict

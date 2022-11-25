@@ -1,5 +1,5 @@
 import torch
-import extend_distributed as ext_dist
+import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 
 class DataBuilder():
     """
