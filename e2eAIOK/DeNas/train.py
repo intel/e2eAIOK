@@ -5,14 +5,20 @@ import torch
 import random
 import yaml
 from easydict import EasyDict as edict
+import sentencepiece as sp
+import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 from e2eAIOK.common.trainer.torch_trainer import TorchTrainer 
 import e2eAIOK.common.trainer.utils.utils as utils
 from e2eAIOK.common.trainer.model.model_builder_asr import ModelBuilderASR
 from e2eAIOK.common.trainer.model.model_builder_cv import ModelBuilderCV
 from e2eAIOK.common.trainer.model.model_builder_nlp import ModelBuilderNLP
-from e2eAIOK.common.trainer.data.data_builder_asr import DataBuilderASR
+from e2eAIOK.common.trainer.data.data_builder_librispeech import DataBuilderLibriSpeech
 from e2eAIOK.common.trainer.data.data_builder_cv import DataBuilderCV
 from e2eAIOK.common.trainer.data.data_builder_nlp import DataBuilderNLP
+from asr.asr_trainer import ASRTrainer
+from asr.trainer.schedulers import NoamScheduler
+from asr.trainer.losses import ctc_loss, kldiv_loss
+from asr.utils.metric_stats import ErrorRateStats
 
 def parse_args(args):
     parser = argparse.ArgumentParser('Torch model training or evluation............')
@@ -23,10 +29,6 @@ def parse_args(args):
     return train_args
 
 def main(args):
-    """The unified trainer for DE-NAS to load the searched best model structure, conduct training and generate the compact model. 
-    :param train_args: the overall arguments
-    :param model_args: specific model arguments
-    """
     if args.random_seed:
         random.seed(args.random_seed)
         np.random.seed(args.random_seed)
@@ -34,6 +36,8 @@ def main(args):
     
     with open(args.conf) as f:
         cfg = edict(yaml.safe_load(f))
+
+    ext_dist.init_distributed(backend=cfg.dist_backend)
 
     if args.domain in ['cnn','vit']:
         # TODO
@@ -54,14 +58,14 @@ def main(args):
         metric = utils.create_metric(cfg)
         trainer = BERTTrainer(cfg, model, train_dataloader, eval_dataloader, optimizer, criterion, scheduler, metric)
     elif args.domain == 'asr':
-        # TODO
-        model = ModelBuilderASR.create_model(cfg)
-        train_dataloader, eval_dataloader = DataBuilderASR.get_dataloader(cfg)
-        optimizer = utils.create_optimizer(model, cfg)
-        criterion = utils.create_criterion(cfg)
-        scheduler = utils.create_scheduler(optimizer, cfg)
-        metric = utils.create_metric(cfg)
-        trainer = ASRTrainer(cfg, model, train_dataloader, eval_dataloader, optimizer, criterion, scheduler, metric)
+        model = ModelBuilderASR(cfg).create_model()
+        tokenizer = sp.SentencePieceProcessor()
+        train_dataloader, eval_dataloader = DataBuilderLibriSpeech(cfg, tokenizer).get_dataloader()
+        optimizer = torch.optim.Adam(model.parameters(), lr=cfg["lr_adam"], betas=(0.9, 0.98), eps=0.000000001)
+        criterion = {"ctc_loss": ctc_loss, "seq_loss": kldiv_loss}
+        scheduler = NoamScheduler(lr_initial=cfg["lr_adam"], n_warmup_steps=cfg["n_warmup_steps"])
+        metric = ErrorRateStats()
+        trainer = ASRTrainer(cfg, model, train_dataloader, eval_dataloader, optimizer, criterion, scheduler, metric, tokenizer)
     else:
         raise RuntimeError(f"Domain {args.domain} is not supported")
     trainer.fit()

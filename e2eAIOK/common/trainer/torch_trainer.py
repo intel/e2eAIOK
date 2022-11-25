@@ -30,7 +30,6 @@ class TorchTrainer():
         """
             trainer pre process to prepare trainer environment
         """
-        ext_dist.init_distributed(backend=self.cfg.dist_backend)
         utils.init_log()
         self.logger = logging.getLogger('Trainer')
         self.logger.info(f"Trainer config: {self.cfg}")

@@ -35,11 +35,11 @@ def save_model(*args, **kwargs):
 def init_log():
     if ext_dist.my_size > 1:
         if ext_dist.my_rank == 0:
-            logging.basicConfig(level=logging.INFO)
+            logging.getLogger().setLevel(logging.INFO)
         else:
-            logging.basicConfig(level=logging.WARNING)
+            logging.getLogger().setLevel(logging.WARNING)
     else:
-        logging.basicConfig(level=logging.INFO)
+        logging.getLogger().setLevel(logging.INFO)
 
 class SmoothedValue(object):
     """Track a series of values and provide access to smoothed values over a

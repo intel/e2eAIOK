@@ -1,1 +1,1 @@
-__all__ = ['data_builder_asr','data_builder_cv','data_builder_nlp']
+__all__ = ['data_builder_asr','data_builder_cv','data_builder_nlp', 'data_builder_librispeech']

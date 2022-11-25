@@ -17,6 +17,9 @@ class ModelBuilder():
         self.model = model
     
     def _pre_process(self):
+        """
+            pre work before create model
+        """
         self.logger = logging.getLogger('Trainer')
         self.logger.info("building model")
 
@@ -30,12 +33,13 @@ class ModelBuilder():
         """
             post work after create model
         """
-        print(f"model created: {self.model}")
+        self.logger.info(f"model created: {self.model}")
 
     def create_model(self):
         """
             create model, load pre-trained model
         """
+        self._pre_process()
         if self.model is not None and self.cfg.pretrain:
             self.load_model()
         else:
