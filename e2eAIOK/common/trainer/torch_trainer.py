@@ -48,6 +48,12 @@ class TorchTrainer():
         """
         if ext_dist.my_size > 1:
             self.model = ext_dist.DDP(self.model)
+    
+    def _is_early_stop(self, metric):
+        """
+            check whether training achieved pre-defined metric threshold
+        """
+        return metric >= self.cfg["metric_threshold"]
 
     def train_one_epoch(self, epoch):
         """
@@ -73,7 +79,6 @@ class TorchTrainer():
         # gather the stats from all processes
         metric_logger.synchronize_between_processes()
         self.logger.info("Averaged stats:", metric_logger)
-
 
     def evaluate(self, epoch):
         """
@@ -108,7 +113,6 @@ class TorchTrainer():
                     'optimizer': self.optimizer.state_dict(),
                     'epoch': epoch,
                 }, checkpoint_path)
-    
 
     def fit(self):
         """
@@ -116,13 +120,17 @@ class TorchTrainer():
         """
         self._pre_process()
         start_time = time.time()
-        for i in range(self.cfg.train_epochs):
+        for i in range(1, self.cfg.train_epochs):
             train_start = time.time()
             self.train_one_epoch(i)
             if i % self.cfg.eval_epochs == 0:
                 eval_start = time.time()
-                self.evaluate(i)
+                metric = self.evaluate(i)
                 self.logger.info(F"Evaluate time:{time.time() - eval_start}")
-            self.logger.info(F"This epoch training time:{time.time() - train_start}")
+                if self._is_early_stop(metric):
+                    self.logger.info(f"Metric {metric} got threshold {self.cfg['metric_threshold']}, early stop")
+                    break
+            self.logger.info(F"Epoch {i} training time:{time.time() - train_start}")
+
         self.logger.info(F"Total time:{time.time() - start_time}")
         self._post_process()
