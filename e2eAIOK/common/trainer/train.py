@@ -4,9 +4,9 @@ import numpy as np
 import torch
 import random
 import yaml
-from e2eAIOK.common.trainer.utils import create_criterion, create_scheduler
 from easydict import EasyDict as edict
 from torch_trainer import TorchTrainer 
+import utils
 
 def parse_args(args):
     parser = argparse.ArgumentParser('Torch model training or evluation............')
@@ -33,7 +33,11 @@ def main(args):
         # TODO
         model = ModelBuilderCV.create_model(cfg)
         train_dataloader, eval_dataloader = DataBuilderCV.get_dataloader(cfg)
-        trainer = TorchTrainer(cfg, model, train_dataloader, eval_dataloader)
+        optimizer = utils.create_optimizer(model, cfg)
+        criterion = utils.create_criterion(cfg)
+        scheduler = utils.create_scheduler(optimizer, cfg)
+        metric = utils.create_metric(cfg)
+        trainer = TorchTrainer(cfg, model, train_dataloader, eval_dataloader, optimizer, criterion, scheduler, metric)
     elif args.domain == 'bert':
         ## TODO 
         trainer = BertTrainer(cfg)

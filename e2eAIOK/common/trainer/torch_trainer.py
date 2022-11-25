@@ -15,12 +15,16 @@ class TorchTrainer():
     Note:
         You should implement specfic model trainer under model folder like vit_trainer
     """
-    def __init__(self, cfg, model, train_dataloader, eval_dataloader):
+    def __init__(self, cfg, model, train_dataloader, eval_dataloader, optimizer, criterion, scheduler, metric):
         super().__init__()
         self.cfg = cfg
         self.model = model
         self.train_dataloader = train_dataloader
         self.eval_dataloader = eval_dataloader
+        self.optimizer = optimizer
+        self.criterion = criterion
+        self.scheduler = scheduler
+        self.metric = metric
         
     def _pre_process(self):
         """
@@ -31,26 +35,8 @@ class TorchTrainer():
         utils.init_log()
         self.logger = logging.getLogger('Trainer')
         self.logger.info(f"Trainer config: {self.cfg}")
-    
-    def _prepare(self):
-        """
-            prepare optimizer, criterion, scheduler for training
-        """
-        self.optimizer = self.create_optimizer()
-        self.criterion = self.create_criterion()
-        self.scheduler = self.create_scheduler()
-
         self._dist_wrapper()
-    
-    def create_optimizer(self):
-        pass
 
-    def create_criterion(self):
-        pass
-
-    def create_scheduler(self):
-        pass
-    
     def _post_process(self):
         """
             trainer post process
@@ -101,10 +87,8 @@ class TorchTrainer():
         for inputs, target in self.eval_dataloader:
             output = self.model(inputs)
             loss = self.criterion(output, target)
+            metric = self.metric(output, target)
 
-            metric = utils.create_metric(output, target, self.cfg)
-
-            batch_size = inputs.shape[0]
             metric_logger.update(loss=loss.item())
             for k in metric.keys():
                 metric_logger.meters[k].update(metric[k], n=self.cfg.eval_batch_size)

@@ -190,10 +190,9 @@ def create_optimizer(model, cfg):
                 momentum=cfg.momentum, weight_decay=cfg.weight_decay)
     return optimizer
 
-def create_metric(output, target, cfg):
+def create_metric(cfg):
     if cfg.eval_metric == "accuracy":
-        acc1, acc5 = accuracy(output, target, topk=(1, 5))
-        metric = {'acc1':acc1,'acc5':acc5}
+        metric = accuracy
     return metric
 
 def create_criterion(cfg):
