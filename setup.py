@@ -7,10 +7,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 e2eaiok_home = os.path.abspath(__file__ + "/../")
-try:
-    VERSION = open(os.path.join(e2eaiok_home, 'e2eAIOK/', 'version'), 'r').read().strip()
-except:
-    VERSION = '0.2.1'
+VERSION = open(os.path.join(e2eaiok_home, 'e2eAIOK/', 'version'), 'r').read().strip()
 
 setuptools.setup(
     name="e2eAIOK",
