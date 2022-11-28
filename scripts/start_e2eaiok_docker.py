@@ -32,10 +32,17 @@ def log_subprocess_output(pipe, logger, idx = ""):
     for line in iter(pipe.readline, b''):
         logger.info(f"[{idx}]" + line.decode("utf-8").strip())
 
-def get_install_cmd():
-    import platform
-    os = platform.linux_distribution()[0]
-    if 'debian' in os:
+def get_install_cmd(logger):
+    try:
+        import distro
+    except:
+        python_name = f"python{sys.version_info[0]}"
+        cmdline = f"{python_name} -m pip install distro"
+        if not execute(cmdline, logger):
+            logger.error("failed to install distro package, please fix manually")
+            return None
+    os = distro.id()
+    if 'debian' in os or 'ubuntu' in os:
         return "apt install -y "
     else:
         return "yum install -y "
@@ -143,7 +150,10 @@ def check_requirements(docker_name, workers, local, logger):
     cmdline = "sshpass -V"
     if not execute(cmdline, logger):
         # install sshpass
-        cmdline = get_install_cmd() + " sshpass"
+        cmd = get_install_cmd(logger)
+        if cmd is None:
+            exit()
+        cmdline = cmd + " sshpass"
         if not execute(cmdline, logger):
             logger.error("Not detect sshpass and failed in installing, please fix manually")
             return False, None
@@ -231,7 +241,9 @@ def build_docker(docker_name, docker_file, logger, proxy=None, local="localhost"
     if next_step == 3:
         # start to build
         if docker_name == "e2eaiok-ray-pytorch":
-            prepare_miniconda(logger)
+            r = prepare_miniconda(logger)
+            if not r:
+                exit()
         cmdline = ["docker", "build",  "-t",  docker_name, "Dockerfile-ubuntu18.04", "-f", f"Dockerfile-ubuntu18.04/{docker_file}"] + proxy_config
         if execute(cmdline, logger):
             next_step = 4 if is_push else 6
