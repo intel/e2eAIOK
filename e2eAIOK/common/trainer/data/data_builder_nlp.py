@@ -8,6 +8,7 @@ import torch
 from torch.utils.data import TensorDataset
 
 from module.nlp.tokenization import BertTokenizer, BasicTokenizer, whitespace_tokenize
+from e2eAIOK.common.trainer.data_builder import DataBuilder
 
 csv.field_size_limit(sys.maxsize)
 
@@ -15,6 +16,12 @@ logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message
                     datefmt='%m/%d/%Y %H:%M:%S',
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+class DataBuilderNLP(DataBuilder):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+
 
 class InputExample(object):
     """A single training/test example for simple sequence classification."""

@@ -1,52 +1,60 @@
-import utils
-from abc import ABC, abstractmethod
-import extend_distributed as ext_dist
-from e2eAIOK.DeNas.cv.third_party.ZenNet import DeMainNet
-from e2eAIOK.DeNas.cv.supernet_transformer import Vision_TransformerSuper
+import logging
+import e2eAIOK.common.trainer.utils.utils as utils
+import os
+import torch
+import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 
-class ModelBuilder(ABC):
+class ModelBuilder():
     """
     The basic model builder class for all models
 
     Note:
         You should implement specfic model builder class under model folder like vit_model_builder
     """
-    def __init__(self, cfg):
+    def __init__(self, cfg, model=None):
         super().__init__()
         self.cfg = cfg
+        self.model = model
     
-    '''
-    ceate the model for training or evluation
-    '''
+    def _pre_process(self):
+        """
+            pre work before create model
+        """
+        self.logger = logging.getLogger('Trainer')
+        self.logger.info("building model")
+
+    def _init_model(self):
+        """
+            create model
+        """
+        raise NotImplementedError("_init_model is abstract.")
+    
+    def _post_process(self):
+        """
+            post work after create model
+        """
+        self.logger.info(f"model created: {self.model}")
+
     def create_model(self):
-        if self.cfg.best_model_structure != None:
-            with open(self.cfg.best_model_structure, 'r') as f:
-                arch = f.readlines()[-1]
-            if self.cfg.domain == 'cnn':
-                model = DeMainNet(num_classes=self.cfg.num_classes, plainnet_struct=arch, no_create=False)
-            elif self.cfg.domain == 'vit':
-                model = Vision_TransformerSuper(img_size=self.cfg.input_size,
-                                    patch_size=self.cfg.patch_size,
-                                    embed_dim=self.cfg['SUPERNET']['EMBED_DIM'], depth=self.cfg['SUPERNET']['DEPTH'],
-                                    num_heads=self.cfg['SUPERNET']['NUM_HEADS'],mlp_ratio=self.cfg['SUPERNET']['MLP_RATIO'],
-                                    qkv_bias=True, drop_rate=self.cfg.drop,
-                                    drop_path_rate=self.cfg.drop_path,
-                                    gp=self.cfg.gp,
-                                    num_classes=self.cfg.nb_classes,
-                                    max_relative_position=self.cfg.max_relative_position,
-                                    relative_position=self.cfg.relative_position,
-                                    change_qkv=self.cfg.change_qkv, abs_pos=not self.cfg.no_abs_pos)
-                depth, mlp_ratio, num_heads, embed_dim = utils.decode_arch_tuple(arch)
-                model_config = {}
-                model_config['layer_num'] = depth
-                model_config['mlp_ratio'] = mlp_ratio
-                model_config['num_heads'] = num_heads
-                model_config['embed_dim'] = [embed_dim]*depth
-                n_parameters = model.get_sampled_params_numel(model_config)
-                print("model parameters size: {}".format(n_parameters))
-                
-            if ext_dist.my_size > 1:
-                model_dist = ext_dist.DDP(model, find_unused_parameters=True)
-                return model_dist
-            else:
-                return model
+        """
+            create model, load pre-trained model
+        """
+        self._pre_process()
+        if self.model is not None and self.cfg.pretrain:
+            self.load_model()
+        else:
+            self.model = self._init_model()
+
+        self._post_process()
+        return self.model
+
+    def load_model(self):
+        """
+            load pre-trained model
+        """
+        if not os.path.exists(self.cfg.pretrain):
+            raise RuntimeError(f"Can not find {self.cfg.pretrain}!")
+        self.logger.info(f"loading pretrained model at {self.cfg.pretrain}")
+        state_dict = torch.load(self.cfg.pretrain, map_location=torch.device(self.cfg.device))
+        state_dict = state_dict["state_dict"] if "state_dict" in state_dict else state_dict
+        self.model.load_state_dict(state_dict, strict=True)

@@ -1,26 +1,15 @@
 import torch
+from e2eAIOK.common.trainer.data_builder import DataBuilder
 import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
+from e2eAIOK.DeNas.asr.data.dataio.dataset import dataio_prepare
+from e2eAIOK.DeNas.asr.data.dataio.batch import PaddedBatch
 
-class DataBuilder():
-    """
-    The basic data builder class for all dataset
+class DataBuilderASR(DataBuilder):
+    def __init__(self, cfg, tokenizer):
+        super().__init__(cfg)
+        self.tokenizer = tokenizer
 
-    Note:
-        You should implement specfic build_dataset function in the build_dataset.py under data folder
-    """
-    def __init__(self,cfg):
-        self.cfg = cfg
-    
-    def prepare_dataset(self):
-        """
-            prepare training/evaluation dataset
-        """
-        raise NotImplementedError("prepare_dataset is abstract.")
-    
     def get_dataloader(self):
-        """
-            create training/evaluation dataloader
-        """
         dataset_train, dataset_val = self.prepare_dataset()
 
         if ext_dist.my_size > 1:
@@ -41,7 +30,8 @@ class DataBuilder():
             sampler=sampler_train,
             batch_size=self.cfg.train_batch_size,
             num_workers=self.cfg.num_workers,
-            shuffle=True,
+            collate_fn=PaddedBatch,
+            shuffle=(ext_dist.my_size <= 1),
             drop_last=True,
         )
 
@@ -50,6 +40,7 @@ class DataBuilder():
             batch_size=self.cfg.eval_batch_size,
             sampler=sampler_val, 
             num_workers=self.cfg.num_workers,
+            collate_fn=PaddedBatch,
             shuffle=False,
             drop_last=False
         )
