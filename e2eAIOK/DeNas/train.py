@@ -19,6 +19,7 @@ from asr.asr_trainer import ASRTrainer
 from asr.trainer.schedulers import NoamScheduler
 from asr.trainer.losses import ctc_loss, kldiv_loss
 from asr.utils.metric_stats import ErrorRateStats
+from cv.cv_trainer import CVTrainer
 
 def parse_args(args):
     parser = argparse.ArgumentParser('Torch model training or evluation............')
@@ -40,7 +41,6 @@ def main(args):
     ext_dist.init_distributed(backend=cfg.dist_backend)
 
     if args.domain in ['cnn','vit']:
-        # TODO
         model = ModelBuilderCV.create_model(cfg)
         train_dataloader, eval_dataloader = DataBuilderCV.get_dataloader(cfg)
         optimizer = utils.create_optimizer(model, cfg)
