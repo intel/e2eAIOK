@@ -28,8 +28,6 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     packages=find_packages(),
-    package_dir={"": "."},
-    package_data = {'e2eAIOK-sda': ['version']},
     python_requires=">=3.6",
     zip_safe=False,
     install_requires=[])
