@@ -46,7 +46,8 @@ class DataBuilderSQuAD(DataBuilderNLP):
         else:
             sampler_val = None
             sampler_train = None
-
+        
+        shuffle = True
         if sampler_train is not None:
             shuffle = False
 
