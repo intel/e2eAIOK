@@ -1,15 +1,16 @@
 import os
+import sys
 from setuptools import setup, find_packages
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
-e2eaiok_home = os.path.abspath(__file__ + "/../")
-VERSION = open(os.path.join(e2eaiok_home, 'e2eAIOK/', 'version'), 'r').read().strip()
+e2eaiok_home = os.path.join(os.path.dirname(os.path.abspath(__file__)), "e2eAIOK")
+VERSION = open(os.path.join(e2eaiok_home, "version"), 'r').read().strip()
 
-def setup_package():
+def setup_package(args):
     metadata = dict(
-        name="e2eAIOK",
+        name=args["name"],
         version=VERSION,
         author="INTEL AIA BDF",
         author_email="chendi.xue@intel.com",
@@ -25,7 +26,7 @@ def setup_package():
             "License :: OSI Approved :: Apache Software License",
             "Operating System :: OS Independent",
         ],
-        packages=find_packages(exclude=["RecDP", "modelzoo", "example"]),
+        packages=args["packages"],
         package_data = {'e2eAIOK': ['version']},
         python_requires=">=3.6",
         zip_safe=False,
@@ -34,4 +35,16 @@ def setup_package():
     setup(**metadata)
 
 if __name__ == '__main__':
-    setup_package()
+    args = dict(
+        name = "e2eAIOK",
+        packages = find_packages(exclude=["RecDP", "modelzoo", "example"])
+    )
+    if "--denas" in sys.argv:
+        args["name"] = "e2eAIOK-denas"
+        args["packages"] = find_packages(exclude=["RecDP", "modelzoo", "example","e2eAIOK.SDA"])
+        sys.argv.remove("--denas")
+    elif "--sda" in sys.argv:
+        args["name"] = "e2eAIOK-sda"
+        args["packages"] = find_packages(exclude=["RecDP", "modelzoo", "example","e2eAIOK.DeNas"])
+        sys.argv.remove("--sda")
+    setup_package(args)
