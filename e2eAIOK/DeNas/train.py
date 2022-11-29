@@ -14,11 +14,14 @@ from e2eAIOK.common.trainer.model.model_builder_cv import ModelBuilderCV
 from e2eAIOK.common.trainer.model.model_builder_nlp import ModelBuilderNLP
 from e2eAIOK.common.trainer.data.data_builder_librispeech import DataBuilderLibriSpeech
 from e2eAIOK.common.trainer.data.data_builder_cv import DataBuilderCV
-from e2eAIOK.common.trainer.data.data_builder_nlp import DataBuilderNLP
+from e2eAIOK.common.trainer.data.data_builder_squad import DataBuilderSQuAD
 from asr.asr_trainer import ASRTrainer
 from asr.trainer.schedulers import NoamScheduler
 from asr.trainer.losses import ctc_loss, kldiv_loss
 from asr.utils.metric_stats import ErrorRateStats
+from nlp.utils import bert_create_optimizer, bert_create_criterion, bert_create_scheduler, bert_create_metric
+from nlp.bert_trainer import BERTTrainer
+
 
 def parse_args(args):
     parser = argparse.ArgumentParser('Torch model training or evluation............')
@@ -49,14 +52,13 @@ def main(args):
         metric = utils.create_metric(cfg)
         trainer = CVTrainer(cfg, model, train_dataloader, eval_dataloader, optimizer, criterion, scheduler, metric)
     elif args.domain == 'bert':
-        ## TODO 
-        model = ModelBuilderNLP.create_model(cfg)
-        train_dataloader, eval_dataloader = DataBuilderNLP.get_dataloader(cfg)
-        optimizer = utils.create_optimizer(model, cfg)
-        criterion = utils.create_criterion(cfg)
-        scheduler = utils.create_scheduler(optimizer, cfg)
-        metric = utils.create_metric(cfg)
-        trainer = BERTTrainer(cfg, model, train_dataloader, eval_dataloader, optimizer, criterion, scheduler, metric)
+        model = ModelBuilderNLP(cfg).create_model()
+        train_dataloader, eval_dataloader, other_data = DataBuilderSQuAD(cfg).get_dataloader()
+        optimizer = bert_create_optimizer(model, cfg)
+        criterion = bert_create_criterion(cfg)
+        scheduler = bert_create_scheduler(cfg)
+        metric = bert_create_metric(cfg)
+        trainer = BERTTrainer(cfg, model, train_dataloader, eval_dataloader, other_data, optimizer, criterion, scheduler, metric)
     elif args.domain == 'asr':
         model = ModelBuilderASR(cfg).create_model()
         tokenizer = sp.SentencePieceProcessor()

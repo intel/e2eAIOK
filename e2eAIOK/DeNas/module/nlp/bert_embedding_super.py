@@ -5,7 +5,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from module.nlp.layernorm_super import LayerNormSuper as SuperBertLayerNorm
+from e2eAIOK.DeNas.module.nlp.layernorm_super import LayerNormSuper as SuperBertLayerNorm
 
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
