@@ -186,6 +186,7 @@ class MetricLogger(object):
 
     
 def create_optimizer(model, cfg):
+    print(F"model:{model}")
     if cfg.optimizer == "SGD":
         optimizer = torch.optim.SGD(model.parameters(), lr=cfg.learning_rate,
                 momentum=cfg.momentum, weight_decay=cfg.weight_decay)

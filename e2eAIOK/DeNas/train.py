@@ -13,12 +13,15 @@ from e2eAIOK.common.trainer.model.model_builder_asr import ModelBuilderASR
 from e2eAIOK.common.trainer.model.model_builder_cv import ModelBuilderCV
 from e2eAIOK.common.trainer.model.model_builder_nlp import ModelBuilderNLP
 from e2eAIOK.common.trainer.data.data_builder_librispeech import DataBuilderLibriSpeech
+from e2eAIOK.common.trainer.data.data_builder_cifar import DataBuilderCIFAR
+from e2eAIOK.common.trainer.data.data_builder_nlp import DataBuilderNLP
 from e2eAIOK.common.trainer.data.data_builder_cv import DataBuilderCV
 from e2eAIOK.common.trainer.data.data_builder_squad import DataBuilderSQuAD
 from asr.asr_trainer import ASRTrainer
 from asr.trainer.schedulers import NoamScheduler
 from asr.trainer.losses import ctc_loss, kldiv_loss
 from asr.utils.metric_stats import ErrorRateStats
+from cv.cv_trainer import CVTrainer
 from nlp.utils import bert_create_optimizer, bert_create_criterion, bert_create_scheduler, bert_create_metric
 from nlp.bert_trainer import BERTTrainer
 
@@ -43,9 +46,8 @@ def main(args):
     ext_dist.init_distributed(backend=cfg.dist_backend)
 
     if args.domain in ['cnn','vit']:
-        # TODO
-        model = ModelBuilderCV.create_model(cfg)
-        train_dataloader, eval_dataloader = DataBuilderCV.get_dataloader(cfg)
+        model = ModelBuilderCV(cfg).create_model()
+        train_dataloader, eval_dataloader = DataBuilderCIFAR(cfg).get_dataloader()
         optimizer = utils.create_optimizer(model, cfg)
         criterion = utils.create_criterion(cfg)
         scheduler = utils.create_scheduler(optimizer, cfg)
