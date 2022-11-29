@@ -27,11 +27,11 @@ class DataBuilder():
             num_tasks = ext_dist.dist.get_world_size()
             global_rank = ext_dist.dist.get_rank()
             sampler_train = torch.utils.data.DistributedSampler(
-                dataset_train, num_replicas=num_tasks, rank=global_rank, shuffle=True, drop_last= True
+                dataset_train, num_replicas=num_tasks, rank=global_rank
             )
             
             sampler_val = torch.utils.data.DistributedSampler(
-                dataset_val, num_replicas=num_tasks, rank=global_rank,  shuffle=False)
+                dataset_val, num_replicas=num_tasks, rank=global_rank)
         else:
             sampler_val = None
             sampler_train = None
@@ -41,7 +41,8 @@ class DataBuilder():
             sampler=sampler_train,
             batch_size=self.cfg.train_batch_size,
             num_workers=self.cfg.num_workers,
-            pin_memory=self.cfg.pin_mem
+            shuffle=True,
+            drop_last=True,
         )
 
         dataloader_val = torch.utils.data.DataLoader(

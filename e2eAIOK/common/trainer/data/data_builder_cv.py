@@ -13,44 +13,40 @@ class DataBuilderCV(DataBuilder):
     def __init__(self, cfg):
         super().__init__(cfg)
     
-    def prepare_dataset(self):
+    def get_dataloader(self):
         """
-            prepare CV related dataset
+            create training/evaluation dataloader
         """
-        if self.cfg.data_set in ["CIFAR10","CIFAR100"]:
-            dataset_train = self.build_dataset(is_train=True)
-            dataset_val = self.build_dataset(is_train=False)
-        else:
-            raise RuntimeError(f"dataset {self.cfg.data_set} not supported")
-        return dataset_train, dataset_val
-    
-    def build_dataset(self, is_train = True):
-        transform = self.build_transform(is_train)
-        if self.cfg.data_set == 'CIFAR10':
-            dataset = datasets.CIFAR10(self.cfg.data_path, train=is_train, transform=transform, download=True)
-        elif self.cfg.data_set == 'CIFAR100':
-            dataset = datasets.CIFAR100(self.cfg.data_path, train=is_train, transform=transform, download=True)
-        return dataset
-    def build_transform(self, is_train):
-        resize_im = self.cfg.input_size > 32
-        if is_train:
-            # this should always dispatch to transforms_imagenet_train
-            transform = transforms.Compose([
-                transforms.RandomCrop(32, padding=4),
-                transforms.RandomHorizontalFlip(),
-                transforms.ToTensor(),
-                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-            ])
-            if not resize_im:
-                # replace RandomResizedCropAndInterpolation with
-                # RandomCrop
-                transform.transforms[0] = transforms.RandomCrop(
-                    self.cfg.input_size, padding=4)
-            return transform
-        else:
-            transform = transforms.Compose([
-                transforms.ToTensor(),
-                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-            ])
+        dataset_train, dataset_val = self.prepare_dataset()
 
-        return transform
+        if ext_dist.my_size > 1:
+            num_tasks = ext_dist.dist.get_world_size()
+            global_rank = ext_dist.dist.get_rank()
+            sampler_train = torch.utils.data.DistributedSampler(
+                dataset_train, num_replicas=num_tasks, rank=global_rank, shuffle=True, drop_last= True
+            )
+            
+            sampler_val = torch.utils.data.DistributedSampler(
+                dataset_val, num_replicas=num_tasks, rank=global_rank,  shuffle=False)
+        else:
+            sampler_val = torch.utils.data.SequentialSampler(dataset_val)
+            sampler_train = torch.utils.data.RandomSampler(dataset_train)
+
+        dataloader_train = torch.utils.data.DataLoader(
+            dataset_train, 
+            sampler=sampler_train,
+            batch_size=self.cfg.train_batch_size,
+            num_workers=self.cfg.num_workers,
+            pin_memory=self.cfg.pin_mem
+        )
+
+        dataloader_val = torch.utils.data.DataLoader(
+            dataset_val, 
+            batch_size=self.cfg.eval_batch_size,
+            sampler=sampler_val, 
+            num_workers=self.cfg.num_workers,
+            shuffle=False,
+            drop_last=False
+        )
+        
+        return dataloader_train, dataloader_val

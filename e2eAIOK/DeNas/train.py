@@ -13,7 +13,7 @@ from e2eAIOK.common.trainer.model.model_builder_asr import ModelBuilderASR
 from e2eAIOK.common.trainer.model.model_builder_cv import ModelBuilderCV
 from e2eAIOK.common.trainer.model.model_builder_nlp import ModelBuilderNLP
 from e2eAIOK.common.trainer.data.data_builder_librispeech import DataBuilderLibriSpeech
-from e2eAIOK.common.trainer.data.data_builder_cv import DataBuilderCV
+from e2eAIOK.common.trainer.data.data_builder_cifar import DataBuilderCIFAR
 from e2eAIOK.common.trainer.data.data_builder_nlp import DataBuilderNLP
 from asr.asr_trainer import ASRTrainer
 from asr.trainer.schedulers import NoamScheduler
@@ -42,7 +42,7 @@ def main(args):
 
     if args.domain in ['cnn','vit']:
         model = ModelBuilderCV(cfg).create_model()
-        train_dataloader, eval_dataloader = DataBuilderCV(cfg).get_dataloader()
+        train_dataloader, eval_dataloader = DataBuilderCIFAR(cfg).get_dataloader()
         optimizer = utils.create_optimizer(model, cfg)
         criterion = utils.create_criterion(cfg)
         scheduler = utils.create_scheduler(optimizer, cfg)
