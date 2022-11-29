@@ -11,13 +11,12 @@ import torch
 from torch import embedding, nn
 from torch.nn import CrossEntropyLoss
 
-sys.path.append("..")
-from module.nlp.Linear_super import LinearSuper as SuperLinear
-from module.nlp.layernorm_super import LayerNormSuper as SuperBertLayerNorm
-from module.nlp.bert_embedding_super import SuperBertEmbeddings
-from module.nlp.bert_encoder_super import SuperBertEncoder
-from module.nlp.bert_pooler_super import SuperBertPooler
-from nlp.utils import *
+from e2eAIOK.DeNas.module.nlp.Linear_super import LinearSuper as SuperLinear
+from e2eAIOK.DeNas.module.nlp.layernorm_super import LayerNormSuper as SuperBertLayerNorm
+from e2eAIOK.DeNas.module.nlp.bert_embedding_super import SuperBertEmbeddings
+from e2eAIOK.DeNas.module.nlp.bert_encoder_super import SuperBertEncoder
+from e2eAIOK.DeNas.module.nlp.bert_pooler_super import SuperBertPooler
+from e2eAIOK.DeNas.nlp.utils import *
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',
@@ -398,35 +397,48 @@ class SuperBertForQuestionAnswering(BertPreTrainedModel):
         torch.save(model_to_save.state_dict(), output_model_file)
         logger.info("Model weights saved in {}".format(output_model_file))
 
-    def forward(self, input_ids, attention_mask=None, token_type_ids=None,
-                start_positions=None, end_positions=None):
+    def forward(self, x):
 
+        input_ids, attention_mask, token_type_ids = x.split(1, -1)
+        input_ids = input_ids.squeeze()
+        attention_mask = attention_mask.squeeze()
+        token_type_ids = token_type_ids.squeeze()
         encoded_layers, pooled_output = self.bert(input_ids, 
                                                     attention_mask=attention_mask,
                                                     token_type_ids=token_type_ids)
         last_sequence_output = encoded_layers
         
         logits = self.qa_outputs(last_sequence_output)
-        start_logits, end_logits = logits.split(1, dim=-1)
-        start_logits = start_logits.squeeze(-1)
-        end_logits = end_logits.squeeze(-1)
+        #start_logits, end_logits = logits.split(1, dim=-1)
+        #start_logits = start_logits.squeeze(-1)
+        #end_logits = end_logits.squeeze(-1)
 
-        logits = (start_logits, end_logits)
-        if start_positions is not None and end_positions is not None:
-            # If we are on multi-GPU, split add a dimension
-            if len(start_positions.size()) > 1:
-                start_positions = start_positions.squeeze(-1)
-            if len(end_positions.size()) > 1:
-                end_positions = end_positions.squeeze(-1)
-            
-            ignored_index = start_logits.size(1)
-            start_positions.clamp_(0, ignored_index)
-            end_positions.clamp_(0, ignored_index)
-
-            loss_fct = CrossEntropyLoss(ignore_index=ignored_index)
-            start_loss = loss_fct(start_logits, start_positions)
-            end_loss = loss_fct(end_logits, end_positions)
-            total_loss = (start_loss + end_loss) / 2
-            return total_loss
+        #logits = torch.cat((start_logits, end_logits), -1)
 
         return logits
+
+
+class CrossEntropyQALoss(nn.Module):
+    def __init__(self, ignored_index):
+        super(CrossEntropyQALoss, self).__init__()
+        self.ignored_index = ignored_index
+        self.loss = CrossEntropyLoss(ignore_index=ignored_index)
+
+    def forward(self, output, target):
+        target_s, target_e = torch.split(target, int(target.size()[-1]/2), -1)
+        output_s, output_e = torch.split(output, int(output.size()[-1]/2), -1)
+        if len(target_s.size()) > 1:
+            target_s = target_s.squeeze()
+        if len(target_e.size()) > 1:
+            target_e = target_e.squeeze()
+        if len(output_s.size()) > 1:
+            output_s = output_s.squeeze()
+        if len(output_e.size()) > 1:
+            output_e = output_e.squeeze()
+        target_s.clamp_(0, self.ignored_index)
+        target_e.clamp_(0, self.ignored_index)
+        start_loss = self.loss(output_s, target_s)
+        end_loss = self.loss(output_e, target_e)
+        cls_loss = (start_loss + end_loss) / 2
+        return cls_loss 
+
