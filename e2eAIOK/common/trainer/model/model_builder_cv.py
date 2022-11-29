@@ -36,4 +36,5 @@ class ModelBuilderCV(ModelBuilder):
             model_config['embed_dim'] = [embed_dim]*depth
             n_parameters = model.get_sampled_params_numel(model_config)
             print("model parameters size: {}".format(n_parameters))
+        return model
         

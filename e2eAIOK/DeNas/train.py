@@ -9,16 +9,16 @@ import sentencepiece as sp
 import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 from e2eAIOK.common.trainer.torch_trainer import TorchTrainer 
 import e2eAIOK.common.trainer.utils.utils as utils
-from e2eAIOK.common.trainer.model.model_builder_asr import ModelBuilderASR
+# from e2eAIOK.common.trainer.model.model_builder_asr import ModelBuilderASR
 from e2eAIOK.common.trainer.model.model_builder_cv import ModelBuilderCV
 from e2eAIOK.common.trainer.model.model_builder_nlp import ModelBuilderNLP
-from e2eAIOK.common.trainer.data.data_builder_librispeech import DataBuilderLibriSpeech
+# from e2eAIOK.common.trainer.data.data_builder_librispeech import DataBuilderLibriSpeech
 from e2eAIOK.common.trainer.data.data_builder_cv import DataBuilderCV
 from e2eAIOK.common.trainer.data.data_builder_nlp import DataBuilderNLP
-from asr.asr_trainer import ASRTrainer
-from asr.trainer.schedulers import NoamScheduler
-from asr.trainer.losses import ctc_loss, kldiv_loss
-from asr.utils.metric_stats import ErrorRateStats
+# from asr.asr_trainer import ASRTrainer
+# from asr.trainer.schedulers import NoamScheduler
+# from asr.trainer.losses import ctc_loss, kldiv_loss
+# from asr.utils.metric_stats import ErrorRateStats
 from cv.cv_trainer import CVTrainer
 
 def parse_args(args):
@@ -41,8 +41,8 @@ def main(args):
     ext_dist.init_distributed(backend=cfg.dist_backend)
 
     if args.domain in ['cnn','vit']:
-        model = ModelBuilderCV.create_model(cfg)
-        train_dataloader, eval_dataloader = DataBuilderCV.get_dataloader(cfg)
+        model = ModelBuilderCV(cfg).create_model()
+        train_dataloader, eval_dataloader = DataBuilderCV(cfg).get_dataloader()
         optimizer = utils.create_optimizer(model, cfg)
         criterion = utils.create_criterion(cfg)
         scheduler = utils.create_scheduler(optimizer, cfg)
