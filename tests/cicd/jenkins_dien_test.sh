@@ -4,8 +4,10 @@
 MODEL_NAME="dien"
 DATA_PATH="/home/vmagent/app/dataset/amazon_reviews"
 
+# init conda
+eval "$('/opt/intel/oneapi/intelpython/latest/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
 # enable oneAPI
-source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force
+source /opt/intel/oneapi/setvars.sh --force
 
 # create ci log dir
 hashstr_id=$(date +%Y-%m-%d)_$(echo $RANDOM | md5sum | head -c 8)
