@@ -12,7 +12,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import sys
+import ast
 import time
 import datetime
 import yaml
@@ -185,6 +186,7 @@ class MetricLogger(object):
 
     
 def create_optimizer(model, cfg):
+    print(F"model:{model}")
     if cfg.optimizer == "SGD":
         optimizer = torch.optim.SGD(model.parameters(), lr=cfg.learning_rate,
                 momentum=cfg.momentum, weight_decay=cfg.weight_decay)

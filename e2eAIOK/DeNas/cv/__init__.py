@@ -1,1 +1,1 @@
-__all__ = ['third_party','utils','benchmark_network_latency','DeNet','supernet_transformer']
+__all__ = ['third_party','utils','benchmark_network_latency','DeNet','supernet_transformer','cv_trainer']

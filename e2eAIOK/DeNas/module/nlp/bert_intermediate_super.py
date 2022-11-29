@@ -7,7 +7,7 @@ import logging
 import torch
 from torch import nn
 
-from module.nlp.Linear_super import LinearSuper as SuperLinear
+from e2eAIOK.DeNas.module.nlp.Linear_super import LinearSuper as SuperLinear
 
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',

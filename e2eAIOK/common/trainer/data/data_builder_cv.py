@@ -1,41 +1,52 @@
 import os
+import torch
 from torchvision import datasets, transforms
 from torchvision.datasets.folder import ImageFolder
 from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from timm.data import create_transform
+import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
+
 
 from e2eAIOK.common.trainer.data_builder import DataBuilder
 
 class DataBuilderCV(DataBuilder):
     def __init__(self, cfg):
         super().__init__(cfg)
-
-    def prepare_dataset(self):
+    
+    def get_dataloader(self):
         """
-            prepare CV related dataset
+            create training/evaluation dataloader
         """
-        raise NotImplementedError("Please implement specific dataset builder")
+        dataset_train, dataset_val = self.prepare_dataset()
 
-    def build_transform(is_train, cfg):
-        resize_im = cfg.input_size > 32
-        if is_train:
-            # this should always dispatch to transforms_imagenet_train
-            transform = transforms.Compose([
-                transforms.RandomCrop(32, padding=4),
-                transforms.RandomHorizontalFlip(),
-                transforms.ToTensor(),
-                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-            ])
-            if not resize_im:
-                # replace RandomResizedCropAndInterpolation with
-                # RandomCrop
-                transform.transforms[0] = transforms.RandomCrop(
-                    cfg.input_size, padding=4)
-            return transform
+        if ext_dist.my_size > 1:
+            num_tasks = ext_dist.dist.get_world_size()
+            global_rank = ext_dist.dist.get_rank()
+            sampler_train = torch.utils.data.DistributedSampler(
+                dataset_train, num_replicas=num_tasks, rank=global_rank, shuffle=True, drop_last= True
+            )
+            
+            sampler_val = torch.utils.data.DistributedSampler(
+                dataset_val, num_replicas=num_tasks, rank=global_rank,  shuffle=False)
         else:
-            transform = transforms.Compose([
-                transforms.ToTensor(),
-                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-            ])
+            sampler_val = torch.utils.data.SequentialSampler(dataset_val)
+            sampler_train = torch.utils.data.RandomSampler(dataset_train)
 
-        return transform
+        dataloader_train = torch.utils.data.DataLoader(
+            dataset_train, 
+            sampler=sampler_train,
+            batch_size=self.cfg.train_batch_size,
+            num_workers=self.cfg.num_workers,
+            pin_memory=self.cfg.pin_mem
+        )
+
+        dataloader_val = torch.utils.data.DataLoader(
+            dataset_val, 
+            batch_size=self.cfg.eval_batch_size,
+            sampler=sampler_val, 
+            num_workers=self.cfg.num_workers,
+            shuffle=False,
+            drop_last=False
+        )
+        
+        return dataloader_train, dataloader_val

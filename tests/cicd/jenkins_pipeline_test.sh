@@ -4,29 +4,15 @@
 MODEL_NAME="pipeline_test"
 DATA_PATH="/home/vmagent/app/dataset/pipeline_test"
 
+# init conda
+eval "$('/opt/intel/oneapi/intelpython/latest/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
 # enable oneAPI
-source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force
+source /opt/intel/oneapi/setvars.sh --force
 
 # create ci log dir
 hashstr_id=$(date +%Y-%m-%d)_$(echo $RANDOM | md5sum | head -c 8)
 tmp_dir="/home/vmagent/app/cicd_logs/e2eaiok_cicd_"$MODEL_NAME"_"$hashstr_id
 mkdir -p $tmp_dir
-
-# set default options
-CODE_STYLE_FORMAT="${CODE_STYLE_FORMAT:=0}"
-CODE_STYLE_CHECK="${CODE_STYLE_CHECK:=0}"
-# static codestyle format
-if [ $CODE_STYLE_FORMAT == 1 ]
-then
-  yapf -i -r /home/vmagent/app/e2eaiok/SDA/
-  yapf -i -r /home/vmagent/app/e2eaiok/e2eaiok/
-fi
-# static codestyle check
-if [ $CODE_STYLE_CHECK == 1 ]
-then
-  pylint --output-format=json /home/vmagent/app/e2eaiok/SDA/ | pylint-json2html -o $tmp_dir/pylint_out_SDA.html
-  pylint --output-format=json /home/vmagent/app/e2eaiok/e2eaiok/ | pylint-json2html -o $tmp_dir/pylint_out_e2eaiok.html
-fi
 
 set -e
 # lauch e2eaiok pipeline_test

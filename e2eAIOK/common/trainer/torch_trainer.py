@@ -1,3 +1,4 @@
+import sys
 import time
 import e2eAIOK.common.trainer.utils.utils as utils
 import random
@@ -74,6 +75,12 @@ class TorchTrainer():
         
             metric_logger.update(loss=loss_value)
             metric_logger.update(lr=self.optimizer.param_groups[0]["lr"])
+
+            self.global_step += 1
+
+            if 'eval_step' in self.cfg and self.global_step % self.cfg.eval_step == 0:
+                self.model.eval()
+                metric = utils.create_metric(self.cfg ,self.model, self.data_loader)
 
         # gather the stats from all processes
         metric_logger.synchronize_between_processes()

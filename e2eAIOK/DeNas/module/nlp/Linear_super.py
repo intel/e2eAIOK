@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
-from module.Linear_base import LinearBase
+from e2eAIOK.DeNas.module.Linear_base import LinearBase
 
 
 class LinearSuper(LinearBase):
