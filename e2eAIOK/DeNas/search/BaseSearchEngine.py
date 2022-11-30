@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from scores.compute_de_score import do_compute_nas_score 
 from cv.utils.cnn import cnn_is_legal, cnn_populate_random_func
 from cv.utils.vit import vit_is_legal, vit_populate_random_func
-from nlp.utils import LatencyPredictor, bert_is_legal, bert_populate_random_func, get_subconfig
+from nlp.utils import bert_is_legal, bert_populate_random_func, get_subconfig, get_bert_latency
 from asr.utils.asr_nas import asr_is_legal, asr_populate_random_func
 
  
@@ -81,9 +81,8 @@ class BaseSearchEngine(ABC):
             sampled_config['sample_qkv_sizes'] = [cand[2]]*cand[0]
             sampled_config['sample_hidden_size'] = cand[3]
             sampled_config['sample_intermediate_sizes'] = [cand[4]]*cand[0]
-            predictor = LatencyPredictor(feature_norm=self.params.feature_norm, lat_norm=self.params.lat_norm, feature_dim=self.params.feature_dim, hidden_dim=self.params.hidden_dim, ckpt_path=self.params.ckpt_path)
-            predictor.load_ckpt()
-            latency = predictor.predict_lat(sampled_config)
+            model = self.super_net.set_sample_config(sampled_config)
+            latency = get_bert_latency(model=model, batch_size=self.params.batch_size, max_seq_length=self.params.img_size, gpu=None, infer_cnt=10.)
         else:
             raise RuntimeError(f"Domain {self.params.domain} is not supported")
         self.vis_dict[cand]['latency']= latency

@@ -24,8 +24,8 @@ import math
 import torch
 from torch import nn
 
-from e2eAIOK.DeNas.module.nlp.Linear_super import LinearSuper as SuperLinear
-from e2eAIOK.DeNas.module.nlp.layernorm_super import LayerNormSuper as SuperBertLayerNorm
+from module.nlp.Linear_super import LinearSuper as SuperLinear
+from module.nlp.layernorm_super import LayerNormSuper as SuperBertLayerNorm
 
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
