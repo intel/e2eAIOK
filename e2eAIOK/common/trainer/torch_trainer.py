@@ -126,7 +126,7 @@ class TorchTrainer():
         """
         self._pre_process()
         start_time = time.time()
-        for i in range(1, self.cfg.train_epochs):
+        for i in range(1, self.cfg.train_epochs+1):
             train_start = time.time()
             self.train_one_epoch(i)
             if i % self.cfg.eval_epochs == 0:

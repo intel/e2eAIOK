@@ -5,6 +5,7 @@ from tqdm import tqdm
 import torch
 import random
 
+import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 from e2eAIOK.common.trainer.torch_trainer import TorchTrainer
 
 class BERTTrainer(TorchTrainer):
@@ -16,6 +17,13 @@ class BERTTrainer(TorchTrainer):
 
     def _is_early_stop(self, metric):
         return super()._is_early_stop(metric)
+
+    def _dist_wrapper(self):
+        """
+            wrapper model for distributed training
+        """
+        if ext_dist.my_size > 1:
+            self.model = ext_dist.DDP(self.model, find_unused_parameters=True)
 
     def _post_process(self):
         model_to_save = self.model.module if hasattr(self.model, 'module') else self.model

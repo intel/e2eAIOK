@@ -332,7 +332,7 @@ def set_output_keys(datasets, output_keys):
         dataset.set_output_keys(output_keys)
 
 
-def dataio_prepare(args, hparams, tokenizer):
+def dataio_prepare(args, tokenizer):
     """This function prepares the datasets.
     It also defines the data processing pipeline through user-defined functions."""
     data_folder = args.data_folder
@@ -346,19 +346,13 @@ def dataio_prepare(args, hparams, tokenizer):
     )
     valid_data = valid_data.filtered_sorted(sort_key="duration")
 
-    # test is separate
-    test_datasets = {}
-    for csv_file in args.test_csv:
-        name = Path(csv_file).stem
-        test_datasets[name] = DynamicItemDataset.from_csv(
-            csv_path=csv_file, replacements={"data_root": data_folder}
-        )
-        test_datasets[name] = test_datasets[name].filtered_sorted(
-            sort_key="duration"
-        )
+    test_data = DynamicItemDataset.from_csv(
+        csv_path=args.test_csv, replacements={"data_root": data_folder},
+    )
+    test_data = test_data.filtered_sorted(sort_key="duration")
 
-    datasets = [train_data, valid_data] + [i for k, i in test_datasets.items()]
-    valtest_datasets = [valid_data] + [i for k, i in test_datasets.items()]
+    datasets = [train_data, valid_data, test_data]
+    valtest_datasets = [valid_data, test_data]
 
     # Define audio pipeline:
     @utils.data_pipeline.takes("wav")
@@ -374,7 +368,7 @@ def dataio_prepare(args, hparams, tokenizer):
     def audio_pipeline_train(wav):
         # Speed Perturb is done here so it is multi-threaded with the
         # workers of the dataloader (faster).
-        if hparams["speed_perturb"]:
+        if args["speed_perturb"]:
             sig = read_audio(wav)
             # factor = np.random.uniform(0.95, 1.05)
             # sig = resample(sig.numpy(), 16000, int(16000*factor))
@@ -395,9 +389,9 @@ def dataio_prepare(args, hparams, tokenizer):
         yield wrd
         tokens_list = tokenizer.encode_as_ids(wrd)
         yield tokens_list
-        tokens_bos = torch.LongTensor([hparams["bos_index"]] + (tokens_list))
+        tokens_bos = torch.LongTensor([args["bos_index"]] + (tokens_list))
         yield tokens_bos
-        tokens_eos = torch.LongTensor(tokens_list + [hparams["eos_index"]])
+        tokens_eos = torch.LongTensor(tokens_list + [args["eos_index"]])
         yield tokens_eos
         tokens = torch.LongTensor(tokens_list)
         yield tokens
@@ -412,5 +406,5 @@ def dataio_prepare(args, hparams, tokenizer):
     return (
         train_data,
         valid_data,
-        test_datasets,
+        test_data,
     )
