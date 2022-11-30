@@ -10,7 +10,7 @@ import collections
 from datetime import datetime
 from collections import Counter
 
-from e2eAIOK.DeNas.module.nlp.tokenization import BasicTokenizer
+from module.nlp.tokenization import BasicTokenizer
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
 logger = logging.getLogger(__name__)

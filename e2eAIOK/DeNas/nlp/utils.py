@@ -4,7 +4,6 @@ import time
 import random
 import numpy as np
 import json
-import tempfile
 import shutil
 import torch
 import torch.nn as nn
@@ -14,8 +13,6 @@ from module.nlp.optimization import BertAdam
 from nlp.supernet_bert import CrossEntropyQALoss
 from nlp.utils_eval import do_qa_eval
 
-CONFIG_NAME = "bert_config.json"
-WEIGHTS_NAME = "pytorch_model.bin"
 
 def generate_search_space(search_space_config):
         # build arch space
@@ -127,6 +124,34 @@ def bert_crossover_random_func(top_candidates):
             cand.append(random.choice(it))
     return tuple(cand)
 
+def get_bert_latency(model, batch_size, max_seq_length, gpu, infer_cnt):
+    if gpu is None:
+        device = 'cpu'
+    else:
+        device = 'cuda'
+    input_ids = [9333] * max_seq_length
+    input_masks = max_seq_length * [1]
+    input_segments = max_seq_length * [0]
+    input_ids = torch.tensor([input_ids]*batch_size, dtype=torch.long).to(device)
+    input_masks = torch.tensor([input_masks]*batch_size, dtype=torch.long).to(device)
+    input_segments = torch.tensor([input_segments]*batch_size, dtype=torch.long).to(device)
+
+    aver_time = 0.
+    model.eval()
+
+    for i in range(int(infer_cnt)):
+        start = time.time()
+        with torch.no_grad():
+            model.forward(input_ids, input_masks, input_segments)
+
+        end = time.time()
+        sep = 1000 * (end - start)
+
+        if i == 0:
+            continue
+        else:
+            aver_time += sep / (infer_cnt - 1)
+    return aver_time
 
 def bert_create_optimizer(model, cfg):
     if cfg.optimizer == "BertAdam":
