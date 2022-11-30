@@ -16,7 +16,7 @@ This multi-model, hardware-aware train-free NAS solution is targeting for citize
 ![image](https://user-images.githubusercontent.com/6396930/204731145-b213da18-b4cb-4bca-8285-061e279fef84.png)
 
 DE-NAS: Multi-model, hardware-aware train-free neural architecture search 
-One key component of DE-NAS is multi-model and unified search space. Currently Compute Vision (CV), Natural Language Processing (NLP), and Recommendation System (RecSys) search spaces are supported.
+One key component of DE-NAS is multi-model and unified search space. Currently Compute Vision (CV), Natural Language Processing (NLP), and Automatic Speech Recognition (ASR) search spaces are supported.
 The proposed search strategy generates candidate architecture adaptively based on target-hardware from search space, maximizes the DE-Score to determine the best architecture using on pluggable search strategy and innovatively integrated latency into train-free DE-Score as an indicator. We implement hardware-aware from two perspectives: (1) we added two thresholds for model parameter size and model latency, the underlying search engine will filter out the models suitable for the hardware platform in a coarse-grained manner.
 The train-free score uses an innovative, zero-cost “proxy” to predict model accuracy instead of full training and validation. It used a novel zero-cost metric combined Gaussian complexity based on network expressivity, NTK score based on network complexity, nuclear norm score based on network diversity, Synflow score based on network saliency, and latency score. The computation of DE-Score only takes a few forward inferences other than iterative training, making it extremely fast, lightweight, and data-free.
 
