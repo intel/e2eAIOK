@@ -33,7 +33,7 @@ jobs:
     - name: Build wheel
       run: |
         pip install build wheel
-        release_version=$(cat version | head -1)
+        release_version=$(cat e2eAIOK/version | head -1)
         nightly_build_date=`date '+%Y%m%d%H'`
         nightly_version=${release_version}b${nightly_build_date}
         echo $nightly_version > e2eAIOK/version

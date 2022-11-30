@@ -23,7 +23,7 @@ jobs:
     - name: Build wheel
       run: |
         pip install build wheel
-        release_version=$(cat version | head -1)
+        release_version=$(cat e2eAIOK/version | head -1)
         echo ${release_version} > e2eAIOK/version
         python3 setup.py sdist
 
