@@ -64,7 +64,7 @@ def fix_workers(workers):
         workers.append(local)
     return workers
 
-def execute(cmdline, logger, workers = [], use_ssh = False):
+def execute(cmdline, logger, workers = [], use_ssh = False, backend = False):
     if not isinstance(cmdline, list):
         cmdline = cmdline.split()
     logger.info(' '.join(cmdline))
@@ -77,6 +77,8 @@ def execute(cmdline, logger, workers = [], use_ssh = False):
         except:
             return success
     process = process_pool[0]
+    if backend:
+        return True
     with process[1].stdout:
         log_subprocess_output(process[1].stdout, logger, 0 if len(workers) > 0 else "")
     success = True
@@ -255,12 +257,12 @@ def run_docker(docker_name, docker_nickname, port, dataset_path, spark_shuffle_d
         return True, port
 
     # run
-    cmdline = ["docker", "run",  "--shm-size=300g", "--privileged",  "--network",  "host", "--device=/dev/dri", "-d", "-v", f"{dataset_path}/:/home/vmagent/app/dataset", "-v", f"{current_folder}/:/home/vmagent/app/e2eaiok", "-v", f"{spark_shuffle_dir}/:/home/vmagent/app/spark_local_dir", "-w",  "/home/vmagent/app/", "--name", docker_nickname,  docker_name, "/bin/bash", "-c", "\"service ssh start & sleep infinity\""]
+    cmdline = ["docker", "run",  "--shm-size=300g", "--privileged",  "--network",  "host", "--device=/dev/dri", "-d", "-v", f"{dataset_path}/:/home/vmagent/app/dataset", "-v", f"{current_folder}/:/home/vmagent/app/recdp", "-v", f"{spark_shuffle_dir}/:/home/vmagent/app/spark_local_dir", "-w",  "/home/vmagent/app/", "--name", docker_nickname,  docker_name, "/bin/bash", "-c", "\"service ssh start & sleep infinity\""]
 
     return execute(cmdline, logger, workers), port
 
 def build_cluster(port, workers, logger):
-    if len(input_args.workers) == 0:
+    if len(workers) == 0:
         return True
     file_path = os.path.dirname(os.path.abspath(__file__))
     cmdline = f"sshpass -p docker scp -P {port} -o StrictHostKeyChecking=no {file_path}/config_passwdless_ssh.sh {workers[0]}:~/"
@@ -277,6 +279,13 @@ def build_cluster(port, workers, logger):
             logger.error(f"please check if sshpass is installed, and is {workers[0]}:{port} has a conflict hot key in known_hosts")
             return False
     return True 
+
+def build_jupyter(port, head, logger):
+    cmdline = f"sshpass -p docker ssh {head} -p {port} /home/start_jupyter.sh"
+    if not execute(cmdline, logger):
+        logger.error(f"initiate jupyter failed, please manually execute")
+        logger.error(cmdline)
+
 
 def prepare_logger(log_path):
     logFormatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
@@ -351,6 +360,11 @@ def main(input_args):
     else:
         logger.error(f"Failed in passwdless, please check {input_args.log_path}")
         exit()
+    
+    # 4. start jupyter env
+    r = build_jupyter(port, input_args.workers[0], logger)
+    if not r:
+        logger.error(f"Failed to enable jupyter, please check {input_args.log_path}")
     if print_success:
         logger.info(f"Docker Container is now running, you may access by")
         logger.info(f"{cmd}, access_code: docker")
