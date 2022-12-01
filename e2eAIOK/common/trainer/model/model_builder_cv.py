@@ -24,7 +24,7 @@ class ModelBuilderCV(ModelBuilder):
                                 qkv_bias=True, drop_rate=self.cfg.drop,
                                 drop_path_rate=self.cfg.drop_path,
                                 gp=self.cfg.gp,
-                                num_classes=self.cfg.nb_classes,
+                                num_classes=self.cfg.num_classes,
                                 max_relative_position=self.cfg.max_relative_position,
                                 relative_position=self.cfg.relative_position,
                                 change_qkv=self.cfg.change_qkv, abs_pos=not self.cfg.no_abs_pos)
