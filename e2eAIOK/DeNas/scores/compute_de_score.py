@@ -12,7 +12,7 @@ import torch
 from scores.basic_utils import *
 from scores.transformer_proxy import do_compute_nas_score_transformer
 
-def do_compute_nas_score_cnn(model_type, model, resolution, batch_size, mixup_gamma, expressivity_weight, complexity_weight, diversity_weight, saliency_weight, latency_weight):
+def do_compute_nas_score_cnn(model_type, model, resolution, batch_size, mixup_gamma, expressivity_weight=0, complexity_weight=0, diversity_weight=0, saliency_weight=0, latency_weight=0):
     disversity_score = 0
     latency = 0
 
