@@ -8,21 +8,21 @@ def cnn_is_legal(cand, vis_dict, params, super_net):
     if 'visited' in info:
         return False
     the_model = None
-    if params.budget_num_layers is not None:
+    if "budget_num_layers" in params:
         if the_model is None:
             the_model = super_net(num_classes=params.num_classes, plainnet_struct=cand,
                                     no_create=True, no_reslink=False)
         the_layers = the_model.get_num_layers()
         if params.budget_num_layers < the_layers:
             return False
-    if params.budget_model_size is not None:
+    if "budget_model_size" in params:
         if the_model is None:
             the_model = super_net(num_classes=params.num_classes, plainnet_struct=cand,
                                     no_create=True, no_reslink=False)
         the_model_size = the_model.get_model_size()
         if params.budget_model_size < the_model_size:
             return False
-    if params.budget_flops is not None:
+    if "budget_flops" in params:
         if the_model is None:
             the_model = super_net(num_classes=params.num_classes, plainnet_struct=cand,
                                     no_create=True, no_reslink=False)
