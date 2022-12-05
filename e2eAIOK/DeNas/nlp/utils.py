@@ -9,6 +9,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 from module.nlp.optimization import BertAdam
 from nlp.supernet_bert import CrossEntropyQALoss
 from nlp.utils_eval import do_qa_eval
@@ -164,6 +165,8 @@ def bert_create_optimizer(model, cfg):
         ]
         num_train_optimization_steps = int(
             cfg.num_train_examples / cfg.train_batch_size / cfg.gradient_accumulation_steps * cfg.train_epochs)
+        if ext_dist.my_size > 1:
+            num_train_optimization_steps = num_train_optimization_steps // ext_dist.my_size
         optimizer = BertAdam(optimizer_grouped_parameters,
                              schedule=cfg.lr_scheduler,
                              lr=cfg.learning_rate,
