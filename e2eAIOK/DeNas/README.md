@@ -29,7 +29,7 @@ The train-free score uses an innovative, zero-cost “proxy” to predict model 
 git clone https://github.com/intel/e2eAIOK.git
 cd e2eAIOK
 git submodule update --init --recursive
-python3 scripts/start_e2eaiok_docker.py -b pytorch120 -w ${host0} ${host1} ${host2} ${host3} --proxy ""
+python3 scripts/start_e2eaiok_docker.py -b pytorch112 -w ${host0} ${host1} ${host2} ${host3} --proxy ""
 ```
 
  Enter Docker
