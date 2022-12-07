@@ -35,7 +35,7 @@ class EvolutionarySearchEngine(BaseSearchEngine):
         elif self.params.domain == "asr":
             return asr_mutation_random_func(self.params.m_prob, self.params.s_prob, self.search_space, self.top_candidates)
         elif self.params.domain == "cnn":
-            return cnn_mutation_random_func(self.candidates, self.super_net, self.search_space, self.params.num_classes)
+            return cnn_mutation_random_func(self.candidates, self.super_net, self.search_space, self.params.num_classes, self.params.plainnet_struct)
         else:
             raise RuntimeError(f"Domain {self.params.domain} is not supported")
 
