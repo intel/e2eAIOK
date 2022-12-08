@@ -403,9 +403,9 @@ class SuperBertForQuestionAnswering(BertPreTrainedModel):
     def forward(self, x):
 
         input_ids, attention_mask, token_type_ids = x.split(1, -1)
-        input_ids = input_ids.squeeze()
-        attention_mask = attention_mask.squeeze()
-        token_type_ids = token_type_ids.squeeze()
+        input_ids = input_ids.squeeze(-1)
+        attention_mask = attention_mask.squeeze(-1)
+        token_type_ids = token_type_ids.squeeze(-1)
         encoded_layers, pooled_output = self.bert(input_ids, 
                                                     attention_mask=attention_mask,
                                                     token_type_ids=token_type_ids)
@@ -431,13 +431,13 @@ class CrossEntropyQALoss(nn.Module):
         target_s, target_e = torch.split(target, int(target.size()[-1]/2), -1)
         output_s, output_e = torch.split(output, int(output.size()[-1]/2), -1)
         if len(target_s.size()) > 1:
-            target_s = target_s.squeeze()
+            target_s = target_s.squeeze(-1)
         if len(target_e.size()) > 1:
-            target_e = target_e.squeeze()
+            target_e = target_e.squeeze(-1)
         if len(output_s.size()) > 1:
-            output_s = output_s.squeeze()
+            output_s = output_s.squeeze(-1)
         if len(output_e.size()) > 1:
-            output_e = output_e.squeeze()
+            output_e = output_e.squeeze(-1)
         target_s.clamp_(0, self.ignored_index)
         target_e.clamp_(0, self.ignored_index)
         start_loss = self.loss(output_s, target_s)

@@ -61,7 +61,8 @@ class BERTTrainer(TorchTrainer):
                     output_model_file = os.path.join(self.cfg.output_dir, self.cfg.task_name)
                     torch.save(model_to_save.state_dict(), output_model_file)
                     self.other_data[-1].save_vocabulary(self.cfg.output_dir)
-                self.is_stop = self._is_early_stop(result[self.cfg.eval_metric])
+                if self.cfg.metric_threshold != 'None':
+                    self.is_stop = self._is_early_stop(result[self.cfg.eval_metric])
                 if self.is_stop:
                     break
 

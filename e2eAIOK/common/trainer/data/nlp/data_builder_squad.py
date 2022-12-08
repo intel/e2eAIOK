@@ -59,7 +59,7 @@ class DataBuilderSQuAD(DataBuilderNLP):
             batch_size=self.cfg.train_batch_size,
             num_workers=self.cfg.num_workers,
             shuffle=shuffle,
-            drop_last=True,
+            drop_last=False,
         )
 
         dataloader_val = torch.utils.data.DataLoader(
