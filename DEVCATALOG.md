@@ -12,74 +12,122 @@ This workflow trying to address those pain points: unifies both data processing 
 
 ## Get Started
 
-### Download Dataset
-> Note: Dataset will be downloaded automatically in run_aiok_dlrm.sh
-
-> Note: If you prefer to download dataset manually, please provide dataset path to start_e2eaiok_docker.py
-
-> Note: For kaggle run, train.csv and test.csv are required.
-
-> Note: For criteo small run, day_0, day_1, day_2, day_3, day_23 are required.
-
-> Note: For criteo full test, day_0-day_23 are required
-```
-# Dataset download page:
-# criteo small and criteo full: https://labs.criteo.com/2013/12/download-terabyte-click-logs/
-# kaggle: https://go.criteo.net/criteo-research-kaggle-display-advertising-challenge-dataset.tar.gz
-```
-
 ### Prerequisites
 ```
-export path_to_e2eaiok=`pwd`/frameworks.bigdata.AIDK
 git clone https://github.com/intel-innersource/frameworks.bigdata.AIDK.git
-cd ${path_to_e2eaiok}
+cd frameworks.bigdata.AIDK
 git checkout AIDK_Ray
 git submodule update --init --recursive
-cd dlrm_all/dlrm
-sh patch_dlrm.sh
+sh dlrm_all/dlrm/patch_dlrm.sh
 ```
 
 ### Docker
-> !!!Important: default dataset and spark_shuffle will use the same disk. Required 1000G for criteo small run.
-
-> !!!Important: Meanwhile, we provided --spark_shuffle_dir and --dataset_path to attach different disk.
 ```
-cd ${path_to_e2eaiok}
-python3 scripts/start_e2eaiok_docker.py
-# If you met any network/package not found error, please follow log output to do the fixing and re-run above cmdline.
+# prepare a folder for dataset
+cd frameworks.bigdata.AIDK
+mkdir -p ../e2eaiok_dataset
+cur_path=`pwd`
 
-# To configure spark dir / proxy / dataset using below cmdline
-# python3 scripts/start_e2eaiok_docker.py --proxy "http://ip:port" --spark_shuffle_dir "" --dataset_path "" -w ${host0} ${host1}
+# run docker
+docker run -it --shm-size=300g --privileged --network host --device=/dev/dri -v ${cur_path}/../e2eaiok_dataset/:/home/vmagent/app/dataset -v ${cur_path}:/home/vmagent/app/e2eaiok -v ${cur_path}/../spark_local_dir/:/home/vmagent/app/spark_local_dir -w /home/vmagent/app/ --name e2eaiok-ray-pytorch e2eaiok/e2eaiok-ray-pytorch /bin/bash
 ```
 
-###  Enter docker and Activate conda
+### How to run (run below cmds inside docker)
 ```
-sshpass -p docker ssh ${local_host_name} -p 12346
-```
-
-### How to run
-
-> Note: run_mode can be "kaggle", "criteo_small".
-
-```
+# active conda
 conda activate pytorch_mlperf
-cd /home/vmagent/app/e2eaiok/dlrm_all/dlrm/; bash run_aiokray_dlrm.sh ${run_mode} ${current_node_ip}
+
+# if behind proxy, please set proxy firstly
+# export https_proxy=http://{ip}:{port}
+
+# kaggle test
+# For kaggle test, ~45G disk space is required
+cd /home/vmagent/app/e2eaiok/dlrm_all/dlrm/; bash run_aiokray_dlrm.sh kaggle ${current_node_ip}
+
 ```
+
+### Now you have completed the test
+
+------
+
+## Useful Resources
 
 ## Recommended Hardware and OS
 
 * recommend to use ubuntu20.04 as Host OS
 * memory size is over 250G
-* disk capacity is over 1000G or 500G + 500G
+* disk capacity requirement
+    * For kaggle run, ~45G is required for both spark_shuffle_dir and dataset, 10G for spark shuffle and 35G for dataset
+    * For criteo small run, at lease ~300G is required for spark_shuffle_dir and ~500G is required for dataset
+    * For criteo full run, at lease ~1500G is required for spark_shuffle_dir(3 nodes, 500G each) and ~1000G is required for dataset on HDFS, another ~2000G is required for dataset on head node local disk.
 
-> For criteo small run, at lease ~300G is required for spark_shuffle_dir and ~500G is required for dataset
+### Dataset
+> Note: For kaggle run, train.csv and test.csv are required.
 
-> For criteo full run, at lease ~1500G is required for spark_shuffle_dir(3 nodes, 500G each) and ~1000G is required for dataset on HDFS, another ~2000G is required for dataset on head node local disk.
+kaggle: https://go.criteo.net/criteo-research-kaggle-display-advertising-challenge-dataset.tar.gz
 
-## Useful Resources
+> Note: For criteo small run, day_0, day_1, day_2, day_3, day_23 are required.
 
-### [Optional] Run step by step
+> Note: For criteo full test, day_0-day_23 are required
+
+criteo small and criteo full: https://labs.criteo.com/2013/12/download-terabyte-click-logs/
+
+### step by step guide
+
+[option1] Build docker for single or multiple node and enter docker with click-to-run script
 ```
+python3 scripts/start_e2eaiok_docker.py
+sshpass -p docker ssh ${local_host_name} -p 12346
+# If you met any network/package not found error, please follow log output to do the fixing and re-run above cmdline.
+
+# If you are behind proxy, use below cmd
+# python3 scripts/start_e2eaiok_docker.py --proxy "http://ip:port"
+# sshpass -p docker ssh ${local_host_name} -p 12346
+
+# If you disk space is limited, you can specify spark_shuffle_dir and dataset_path to different mounted volumn
+# python3 scripts/start_e2eaiok_docker.py --spark_shuffle_dir "" --dataset_path ""
+# sshpass -p docker ssh ${local_host_name} -p 12346
+```
+
+[option2] Build docker manually
+```
+# prepare a folder for dataset
+cd frameworks.bigdata.AIDK
+cur_path=`pwd`
+mkdir -p ../e2eaiok_dataset
+
+# download miniconda
+wget https://repo.anaconda.com/miniconda/Miniconda3-py37_4.12.0-Linux-x86_64.sh -P Dockerfile-ubuntu18.04/ -O Dockerfile-ubuntu18.04/miniconda.sh
+
+# build docker from dockerfile
+docker build -t e2eaiok-ray-pytorch Dockerfile-ubuntu18.04 -f Dockerfile-ubuntu18.04/DockerfilePytorch
+# if you are behine proxy
+# docker build -t e2eaiok-ray-pytorch Dockerfile-ubuntu18.04 -f Dockerfile-ubuntu18.04/DockerfilePytorch --build-arg http_proxy={ip}:{port} --build-arg https_proxy=http://{ip}:{port}
+
+# run docker
+docker run -it --shm-size=300g --privileged --network host --device=/dev/dri -v ${cur_path}/../e2eaiok_dataset/:/home/vmagent/app/dataset -v ${cur_path}:/home/vmagent/app/e2eaiok -v ${cur_path}/../spark_local_dir/:/home/vmagent/app/spark_local_dir -w /home/vmagent/app/ --name e2eaiok-ray-pytorch e2eaiok-ray-pytorch /bin/bash
+```
+
+### Test with other dataset (run cmd inside docker)
+```
+# active conda
+conda activate pytorch_mlperf
+
+# if behind proxy, please set proxy firstly
+# export https_proxy=http://{ip}:{port}
+
+# criteo test
+cd /home/vmagent/app/e2eaiok/dlrm_all/dlrm/; bash run_aiokray_dlrm.sh criteo_small ${current_node_ip}
+```
+
+### Test full pipeline manually (run cmd inside docker)
+```
+# active conda
+conda activate pytorch_mlperf
+
+# if behind proxy, please set proxy firstly
+# export https_proxy=http://{ip}:{port}
+
 # prepare env
 bash run_prepare_env.sh ${run_mode} ${current_node_ip}
 

@@ -17,9 +17,13 @@ apply_patch_ray () {
 
 }
 
+cur_path=`pwd`
+cd dlrm_all/dlrm
 
 get_original_model
 
 apply_patch
 
 apply_patch_ray
+
+cd ${cur_path}

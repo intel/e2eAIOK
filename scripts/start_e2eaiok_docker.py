@@ -159,9 +159,10 @@ def check_requirements(docker_name, workers, local, logger):
             return False, None
         # if docker exists in docker hub?
     def is_regist_docker_exists(ret):
+        return False
         for line in ret[1:]:
-            in_dickerhub_name = line.split()[1]
-            if in_dickerhub_name.endswith(f"e2eaiok/{docker_name}"):
+            in_dockerhub_name = line.split()[1]
+            if in_dockerhub_name.endswith(f"e2eaiok/{docker_name}"):
                 return True
         return False
     cmdline = f"docker search e2eaiok/{docker_name}"
