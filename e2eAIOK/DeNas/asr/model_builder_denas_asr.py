@@ -1,12 +1,12 @@
 import torch
-from e2eAIOK.common.trainer.model_builder import ModelBuilder
+from e2eAIOK.common.trainer.model.model_builder_asr import ModelBuilderASR
 from e2eAIOK.DeNas.asr.lib.convolution import ConvolutionFrontEnd
 from e2eAIOK.DeNas.module.asr.linear import Linear
 from e2eAIOK.DeNas.asr.data.processing.features import InputNormalization
 from e2eAIOK.DeNas.module.asr.utils import gen_transformer
 from e2eAIOK.DeNas.utils import decode_arch_tuple
 
-class ModelBuilderASR(ModelBuilder):
+class ModelBuilderASRDeNas(ModelBuilderASR):
     def __init__(self, cfg):
         super().__init__(cfg)
 

@@ -3,11 +3,11 @@ import os
 import logging
 import torch
 
-from e2eAIOK.common.trainer.model_builder import ModelBuilder
+from e2eAIOK.common.trainer.model.model_builder_nlp import ModelBuilderNLP
 from e2eAIOK.DeNas.nlp.supernet_bert import SuperBertForQuestionAnswering, BertConfig
 from e2eAIOK.DeNas.nlp.utils import decode_arch
 
-class ModelBuilderNLP(ModelBuilder):
+class ModelBuilderNLPDeNas(ModelBuilderNLP):
     def __init__(self, cfg):
         super().__init__(cfg)
 

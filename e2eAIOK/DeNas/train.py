@@ -9,9 +9,9 @@ import sentencepiece as sp
 import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 from e2eAIOK.common.trainer.torch_trainer import TorchTrainer 
 import e2eAIOK.common.trainer.utils.utils as utils
-from asr.model_builder_denas_asr import ModelBuilderASR
-from cv.model_builder_denas_cv import ModelBuilderCV
-from nlp.model_builder_denas_nlp import ModelBuilderNLP
+from asr.model_builder_denas_asr import ModelBuilderASRDeNas
+from cv.model_builder_denas_cv import ModelBuilderCVDeNas
+from nlp.model_builder_denas_nlp import ModelBuilderNLPDeNas
 from e2eAIOK.common.trainer.data.asr.data_builder_librispeech import DataBuilderLibriSpeech
 from e2eAIOK.common.trainer.data.cv.data_builder_cifar import DataBuilderCIFAR
 from e2eAIOK.common.trainer.data.data_builder_nlp import DataBuilderNLP
@@ -46,7 +46,7 @@ def main(args):
     ext_dist.init_distributed(backend=cfg.dist_backend)
 
     if args.domain in ['cnn','vit']:
-        model = ModelBuilderCV(cfg).create_model()
+        model = ModelBuilderCVDeNas(cfg).create_model()
         train_dataloader, eval_dataloader = DataBuilderCIFAR(cfg).get_dataloader()
         optimizer = utils.create_optimizer(model, cfg)
         criterion = utils.create_criterion(cfg)
@@ -54,7 +54,7 @@ def main(args):
         metric = utils.create_metric(cfg)
         trainer = CVTrainer(cfg, model, train_dataloader, eval_dataloader, optimizer, criterion, scheduler, metric)
     elif args.domain == 'bert':
-        model = ModelBuilderNLP(cfg).create_model()
+        model = ModelBuilderNLPDeNas(cfg).create_model()
         train_dataloader, eval_dataloader, other_data = DataBuilderSQuAD(cfg).get_dataloader()
         optimizer = bert_create_optimizer(model, cfg)
         criterion = bert_create_criterion(cfg)
@@ -62,7 +62,7 @@ def main(args):
         metric = bert_create_metric(cfg)
         trainer = BERTTrainer(cfg, model, train_dataloader, eval_dataloader, other_data, optimizer, criterion, scheduler, metric)
     elif args.domain == 'asr':
-        model = ModelBuilderASR(cfg).create_model()
+        model = ModelBuilderASRDeNas(cfg).create_model()
         tokenizer = sp.SentencePieceProcessor()
         train_dataloader, eval_dataloader = DataBuilderLibriSpeech(cfg, tokenizer).get_dataloader()
         optimizer = torch.optim.Adam(model.parameters(), lr=cfg["lr_adam"], betas=(0.9, 0.98), eps=0.000000001)

@@ -1,9 +1,9 @@
 from e2eAIOK.DeNas.utils import decode_arch_tuple
 from e2eAIOK.DeNas.cv.third_party.ZenNet import DeMainNet
-from e2eAIOK.common.trainer.model_builder import ModelBuilder
+from e2eAIOK.common.trainer.model.model_builder_cv import ModelBuilderCV
 from e2eAIOK.DeNas.cv.supernet_transformer import Vision_TransformerSuper
 
-class ModelBuilderCV(ModelBuilder):
+class ModelBuilderCVDeNas(ModelBuilderCV):
     def __init__(self, cfg):
         super().__init__(cfg)
     
