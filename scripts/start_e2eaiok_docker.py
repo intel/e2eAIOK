@@ -12,7 +12,7 @@ current_folder = os.getcwd()
 def parse_args(args):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('-b', '--backend',choices=['tensorflow', 'pytorch', 'pytorch110', 'pytorch120'],default='pytorch110')
+    parser.add_argument('-b', '--backend',choices=['tensorflow', 'pytorch', 'pytorch110', 'pytorch112'],default='pytorch110')
     parser.add_argument('-dp', '--dataset_path',type=str,default="../e2eaiok_dataset",help='large capacity folder for dataset storing')
     parser.add_argument('--proxy', type=str, default=None, help='proxy for pip and apt install')
     parser.add_argument('--log_path',type=str,default="./e2eaiok_docker_building.log",help='large capacity folder for dataset storing')
@@ -314,10 +314,10 @@ def main(input_args):
         docker_nickname = "e2eaiok-pytorch"
         port = 12346
     # pytorch1.12 env
-    if input_args.backend == 'pytorch120':
-        docker_name = "e2eaiok-pytorch120"
-        docker_file = "DockerfilePytorch120"
-        docker_nickname = "e2eaiok-pytorch120"
+    if input_args.backend == 'pytorch112':
+        docker_name = "e2eaiok-pytorch112"
+        docker_file = "DockerfilePytorch112"
+        docker_nickname = "e2eaiok-pytorch112"
         port = 12347
 
     # 0. prepare_env

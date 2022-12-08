@@ -5,7 +5,7 @@ $ cd Dockerfile-ubuntu18.04
 $ docker build -t e2eaiok-tensorflow . -f DockerfileTensorflow
 $ docker build -t e2eaiok-pytorch . -f DockerfilePytorch
 $ docker build -t e2eaiok-pytorch110 . -f DockerfilePytorch110
-$ docker build -t e2eaiok-pytorch120 . -f DockerfilePytorch120
+$ docker build -t e2eaiok-pytorch112 . -f DockerfilePytorch112
 ```
 
 Notice:
@@ -15,5 +15,5 @@ $ cd Dockerfile-ubuntu18.04
 $ docker build -t e2eaiok-tensorflow . -f DockerfileTensorflow --build-arg http_proxy=http://proxy-ip:proxy-port --build-arg https_proxy=http://proxy-ip:proxy-port
 $ docker build -t e2eaiok-pytorch . -f DockerfilePytorch --build-arg http_proxy=http://proxy-ip:proxy-port --build-arg https_proxy=http://proxy-ip:proxy-port
 $ docker build -t e2eaiok-pytorch110 . -f DockerfilePytorch110 --build-arg http_proxy=http://proxy-ip:proxy-port --build-arg https_proxy=http://proxy-ip:proxy-port
-$ docker build -t e2eaiok-pytorch120 . -f DockerfilePytorch120 --build-arg http_proxy=http://proxy-ip:proxy-port --build-arg https_proxy=http://proxy-ip:proxy-port
+$ docker build -t e2eaiok-pytorch112 . -f DockerfilePytorch112 --build-arg http_proxy=http://proxy-ip:proxy-port --build-arg https_proxy=http://proxy-ip:proxy-port
 ```
