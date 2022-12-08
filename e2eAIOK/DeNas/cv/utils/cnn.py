@@ -32,7 +32,7 @@ def cnn_is_legal(cand, vis_dict, params, super_net):
     info['params'] = get_model_complexity_info(super_net(num_classes=params.num_classes, plainnet_struct=cand, no_reslink=False),
                                               (3, params.img_size, params.img_size),
                                               as_strings=False,
-                                              print_per_layer_stat=True)[1]
+                                              print_per_layer_stat=False)[1]
     info['visited'] = True
     return True
 
