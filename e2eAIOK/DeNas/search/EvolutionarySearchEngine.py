@@ -35,7 +35,7 @@ class EvolutionarySearchEngine(BaseSearchEngine):
         elif self.params.domain == "asr":
             return asr_mutation_random_func(self.params.m_prob, self.params.s_prob, self.search_space, self.top_candidates)
         elif self.params.domain == "cnn":
-            return cnn_mutation_random_func(self.candidates, self.super_net, self.search_space, self.params.num_classes, self.params.plainnet_struct)
+            return cnn_mutation_random_func(self.top_candidates, self.super_net, self.search_space, self.params.num_classes, self.params.plainnet_struct)
         else:
             raise RuntimeError(f"Domain {self.params.domain} is not supported")
 
@@ -58,17 +58,21 @@ class EvolutionarySearchEngine(BaseSearchEngine):
     Supernet decoupled EA populate process
     '''
     def get_populate(self):
+        res = []
+        max_iters = 10 * self.params.population_num 
         cand_iter = self.stack_random_cand(self.populate_random_func)
-        while len(self.candidates) < self.params.population_num:
+        while len(res) < self.params.population_num and max_iters > 0:
+            max_iters -= 1
             cand = next(cand_iter)
             if not self.cand_islegal(cand):
                 continue
             if not self.cand_islegal_latency(cand):
                 continue
             self.cand_evaluate(cand)
-            self.candidates.append(cand)
-            self.logger.info('random {}/{} structure {} nas_score {} params {}'.format(len(self.candidates), self.params.population_num, cand, self.vis_dict[cand]['score'], self.vis_dict[cand]['params']))
-        self.logger.info('random_num = {}'.format(len(self.candidates)))
+            res.append(cand)
+            self.logger.info('random {}/{} structure {} nas_score {} params {}'.format(len(res), self.params.population_num, cand, self.vis_dict[cand]['score'], self.vis_dict[cand]['params']))
+        self.logger.info('random_num = {}'.format(len(res)))
+        self.candidates += res
 
     '''
     Supernet decoupled EA mutation process
@@ -116,6 +120,7 @@ class EvolutionarySearchEngine(BaseSearchEngine):
     def update_population_pool(self):
         t = self.top_candidates
         t += self.candidates
+        self.candidates = []
         t.sort(key=lambda x: self.vis_dict[x]['score'], reverse=True)
         self.top_candidates = t[:self.params.select_num]
 
