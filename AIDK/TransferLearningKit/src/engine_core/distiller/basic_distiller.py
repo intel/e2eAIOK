@@ -53,7 +53,7 @@ class BasicDistiller(nn.Module):
         '''
         if not self.use_saved_logits:
             output = self.pretrained_model(x)
-            output = (output.logits,None) if self.pretrained_model_type == "vit_base_224_in21k_ft_cifar100" else output
+            output = (output.logits,None) if self.pretrained_model_type is not None and self.pretrained_model_type.startswith("huggingface") else output
             return output
         else:
             if not isinstance(x, list) or len(x)!=2:

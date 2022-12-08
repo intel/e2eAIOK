@@ -27,8 +27,9 @@ def initWeights(layer):
             nn.init.zeros_(layer.bias)
         logging.info("init layer [%s] with normal" % classname)
     elif classname.find('Linear') != -1:
-        nn.init.xavier_normal_(layer.weight)
-        if layer.bias is not None:
+        if hasattr(layer, "weight"):
+            nn.init.xavier_normal_(layer.weight)
+        if hasattr(layer, "bias") and layer.bias is not None:
             nn.init.zeros_(layer.bias)
         logging.info("init layer [%s] with xavier_normal" % classname)
     else:

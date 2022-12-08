@@ -1,6 +1,6 @@
 experiment:
   project: "distiller"
-  tag: "cifar100_kd_vit_hg_pretrainI21k_res18_tolerance12"
+  tag: "cifar100_kd_vitPretrainI21k_res18_LRdecay12"
   strategy: "OnlyDistillationStrategy"
   model_save:  "/home/vmagent/app/data/model"
   loss:
@@ -9,29 +9,23 @@ experiment:
 dataset:
   type: "cifar100"
   num_workers: 4
-  path:  "/home/vmagent/app/data/dataset"
-  ### save_logits
-  # train_transform: "vit_hg"
-  # test_transform: "vit_hg"
-  ### load logits
-  train_transform: "vit_hg_train"
-  test_transform: "vit_hg_train"
+  path:  "/home/vmagent/app/data/dataset/cifar"
+  train_transform: "vit_train"
+  test_transform: "vit_train"
 model:
   type: "resnet18_cifar"
 distiller:
   type: "kd"
   teacher: 
-      type: "vit_base_224_in21k_ft_cifar100"
-      pretrain: True
+      type: "huggingface_vit_base_224_in21k_ft_cifar100"
+      pretrain: "true"
   # save_logits: True
   use_saved_logits: True
   # check_logits: True
-  logits_path:  "/home/vmagent/app/data/model/distiller/cifar100_kd_vit_hg_pretrainI21k_res18/logits"
+  logits_path:  "/home/vmagent/app/data/model/distiller/cifar100_kd_vitPretrainI21k_res18_LRdecay10/logits"
   logits_topk: 0
-  save_logits_STATT_EPOCH: 1
 solver:
   batch_size: 128
-  start_epoch: 1
   epochs: 200
   optimizer:
     type: "SGD"

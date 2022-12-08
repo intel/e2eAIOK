@@ -1,6 +1,6 @@
 experiment:
-  project: "demo"
-  tag: "cifar100_kd_vit_res18"
+  project: "distiller"
+  tag: "cifar100_kd_res50PretrainI21k_res18"
   strategy: "OnlyDistillationStrategy"
   model_save: "/home/vmagent/app/data/model"
   loss:
@@ -10,18 +10,20 @@ dataset:
   type: "cifar100"
   num_workers: 4
   path: "/home/vmagent/app/data/dataset/cifar"
-  train_transform: "vit_train"
-  test_transform: "vit_train"
+  train_transform: "pretrainI21k"
 model:
   type: "resnet18_cifar"
 distiller:
   type: "kd"
   teacher: 
-      type: "vit_base_224_in21k_ft_cifar100"
-      pretrain: "true"
-  use_saved_logits: True
-  logits_path: "/home/vmagent/app/data/model/demo/cifar100_vit/logits"
+      type: "resnet50"
+      pretrain: "/home/vmagent/app/data/model/baselines/cifar100_res50PretrainI21k/cifar100_res50_pretrain_imagenet21k.pth"
+  save_logits: True
+  # use_saved_logits: True
+  # check_logits: True
+  logits_path: "/home/vmagent/app/data/model/distiller/cifar100_kd_res50PretrainI21k_res18/logits"
   logits_topk: 0
+  save_logits_start_epoch: 0
 solver:
   batch_size: 128
   epochs: 200

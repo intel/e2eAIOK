@@ -35,17 +35,8 @@ pipeline {
                label 'sr613'
             }
             steps {
-               sh 'docker run -t -d --name test-tlk-multinode-baseline-r1 --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/tlk:/home/vmagent/app/data  -v `pwd`:/home/vmagent/app -w /home/vmagent/app/AIDK/TransferLearningKit/src aidk-pytorch110 /opt/intel/oneapi/intelpython/latest/envs/pytorch-1.10.0/bin/python main.py --cfg ../config/baseline/cifar100_resnet18_test.yaml -s2 -r1'
-               sh 'docker run --rm --name test-tlk-multinode-baseline-r0 --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/tlk:/home/vmagent/app/data  -v `pwd`:/home/vmagent/app -w /home/vmagent/app/AIDK/TransferLearningKit/src aidk-pytorch110 /opt/intel/oneapi/intelpython/latest/envs/pytorch-1.10.0/bin/python main.py --cfg ../config/baseline/cifar100_resnet18_test.yaml -s2 -r0'
-           }
-        }
-        stage('Run transfer_learning_DDPF_finetuner_test') {
-            agent {
-               label 'sr613'
-            }
-            steps {
-               sh 'docker run -t -d --name test-tlk-multinode-finetuner-r1 --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/tlk:/home/vmagent/app/data  -v `pwd`:/home/vmagent/app -w /home/vmagent/app/AIDK/TransferLearningKit/src aidk-pytorch110 /opt/intel/oneapi/intelpython/latest/envs/pytorch-1.10.0/bin/python main.py --cfg ../config/finetuner/cifar100_res50PretrainI21k.yaml -s2 -r1'
-               sh 'docker run --rm --name test-tlk-multinode-finetuner-r0 --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/tlk:/home/vmagent/app/data  -v `pwd`:/home/vmagent/app -w /home/vmagent/app/AIDK/TransferLearningKit/src aidk-pytorch110 /opt/intel/oneapi/intelpython/latest/envs/pytorch-1.10.0/bin/python main.py --cfg ../config/finetuner/cifar100_res50PretrainI21k.yaml -s2 -r0'
+               sh 'docker run -t -d --name test-tlk-multinode-baseline-r1 --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/tlk:/home/vmagent/app/data  -v `pwd`:/home/vmagent/app -w /home/vmagent/app/AIDK/TransferLearningKit/src aidk-pytorch110 /opt/intel/oneapi/intelpython/latest/envs/pytorch-1.10.0/bin/python main.py --cfg ../config/demo/baseline/cifar100_res18.yaml -s2 -r1'
+               sh 'docker run --rm --name test-tlk-multinode-baseline-r0 --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/tlk:/home/vmagent/app/data  -v `pwd`:/home/vmagent/app -w /home/vmagent/app/AIDK/TransferLearningKit/src aidk-pytorch110 /opt/intel/oneapi/intelpython/latest/envs/pytorch-1.10.0/bin/python main.py --cfg ../config/demo/baseline/cifar100_res18.yaml -s2 -r0'
            }
         }
         stage('Run TLK_baseline_none_DDP_test') {

@@ -68,18 +68,23 @@ def trainEpoch(model, metric_fn_map, optimizer, train_dataloader,
             '''
             Four cases of data
             Case 1 - basic: input
-            Case 2 - distiller with logits: (input, logits)
-            Case 3 - adapter: (input1, input2)  - to be supported
-            Case 4 - distiller with logits and adapter: ((input1, logits1),(input2, logits2)) - to be supported
+            Case 2 - distiller with logits: (input, (logits,seed))
+            Case 3 - adapter: (input1, input2)
+            Case 4 - distiller with logits and adapter: ((input1, (logits1,seed1)),(input2, (logits2,seed2))) - too complex, to be supported
             '''
             if isinstance(data, torch.Tensor):
+                # case 1
                 data = data.to(device)
                 label = label.to(device)
             elif isinstance(data, Iterable):
-                assert len(data) == len(label), "data len[%s] must equal label len[%s]"%(len(data),len(label))
-                for i in range(0,len(data)):
-                    data[i] = data[i].to(device)
-                    label[i] = label[i].to(device)
+                # case 2
+                data[0] = data[0].to(device)
+                label[0] = label[0].to(device)
+                # case 3
+                if len(data)>=2 and isinstance(data[1], torch.Tensor):
+                    assert len(data) == len(label), "data len[%s] must equal label len[%s]"%(len(data),len(label))
+                    data[1] = data[1].to(device)
+                    label[1] = label[1].to(device)
             else:
                 raise RuntimeError("Known data type:%s"%type(data))
             optimizer.zero_grad()
@@ -103,7 +108,7 @@ def trainEpoch(model, metric_fn_map, optimizer, train_dataloader,
                         tensorboard_writer.add_histogram("%s_Grad"%name, parameter.grad, cur_epoch * epoch_steps + cur_step)
 
             optimizer.step()
-            if cur_epoch <= cfg.solver.warmup:
+            if cur_epoch < cfg.solver.warmup:
                 warmup_scheduler.step()
             if context is profiler:
                 context.step()
@@ -139,7 +144,7 @@ def evaluateEpoch(model, metric_fn_map, dataloader,
                 data = data.to(device)
                 label = label.to(device)
                 output = model(data)
-                output = output.logits if cfg.model.type == "vit_base_224_in21k_ft_cifar100" else output
+                output = output.logits if cfg.model.type.startswith("huggingface") else output
                 if isinstance(output, Iterable):
                     if not isinstance(output, torch.Tensor): # Tensor is Iterable
                         output = output[0]
@@ -252,15 +257,21 @@ class Trainer:
             initial_epoch = state["epoch"] + 1
             self._best_metrics_value = state["best_metric"]
             self._model.load_state_dict(state["model"])
-            if self._rank < 0:
-                self._optimizer.load_state_dict(state["optimizer"])
-                self._scheduler.load_state_dict(state["scheduler"])
+            self._optimizer.load_state_dict(state["optimizer"])
+            self._scheduler.load_state_dict(state["scheduler"])
         train_dataset = train_dataloader.dataset
-        for epoch in range(initial_epoch, self._cfg.solver.epochs + 1):
+        for epoch in range(initial_epoch, self._cfg.solver.epochs):
             start_time = time.time()
             
             if hasattr(train_dataset, 'set_epoch'):
                 train_dataset.set_epoch(epoch)
+
+            if type(self._scheduler) is  torch.optim.lr_scheduler.ReduceLROnPlateau:
+                last_lr = [item['lr'] for item in self._scheduler.optimizer.state_dict()['param_groups']]
+            else:
+                last_lr = self._scheduler.get_last_lr()
+            print("Epoch [%s] learning rate: %s" % (epoch, last_lr))
+            logging.info("Epoch [%s] learning rate: %s" % (epoch, last_lr))
 
             ###### train and evaluate for on epoch
             trainEpoch(self._model, self._validate_metric_fn_map, self._optimizer, train_dataloader,
@@ -272,7 +283,7 @@ class Trainer:
             
             ###### flush tensorboard and update scheduler
             self._tensorboard_writer.flush()
-            if epoch > self._cfg.solver.warmup:
+            if epoch >= self._cfg.solver.warmup:
                 if self._cfg.solver.scheduler.type == "ReduceLROnPlateau":
                     self._scheduler.step(metrics_map[self._best_metric])
                 else:
@@ -284,8 +295,8 @@ class Trainer:
                     "epoch": epoch,
                     "best_metric": self._best_metrics_value,
                     "model": self._model.state_dict(),
-                    "optimizer": self._optimizer.state_dict() if self._rank < 0 else None,
-                    "scheduler": self._scheduler.state_dict() if self._rank < 0 else None}
+                    "optimizer": self._optimizer.state_dict(),
+                    "scheduler": self._scheduler.state_dict()}
                 torch.save(state, os.path.join(model_dir, "latest.pth"))
                 torch.save(backbone.state_dict(), os.path.join(model_dir, "backbone_latest.pth"))
                 if epoch % self._cfg.experiment.model_save_interval == 0:

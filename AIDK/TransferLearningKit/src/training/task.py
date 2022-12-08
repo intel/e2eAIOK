@@ -3,7 +3,7 @@
 # @Author : Hua XiaoZhuan          
 # @Time   : 8/19/2022 10:08 AM
 import torch
-import datetime
+import datetime, time
 from torch.utils.tensorboard import SummaryWriter
 from engine_core.backbone.factory import createBackbone
 from engine_core.adapter.factory import createAdapter
@@ -97,7 +97,7 @@ class Task:
             distiller = None
         else:
             teacher_model = createBackbone(self._cfg.distiller.teacher.type, num_classes = self._num_classes, pretrain = self._cfg.distiller.teacher.pretrain)
-            if self._cfg.distiller.teacher.type != "vit_base_224_in21k_ft_cifar100":
+            if not self._cfg.distiller.teacher.type.startswith("huggingface"):
                 teacher_model = extract_distiller_adapter_features(teacher_model,self._cfg.distiller.feature_layer_name,self._cfg.adapter.feature_layer_name)
             if self._cfg.distiller.type == "kd":
                 distiller = KD(pretrained_model = teacher_model, 
@@ -319,6 +319,9 @@ class Task:
             model, optimizer = ipex.optimize(model, optimizer=optimizer)
             if is_transferrable: # ipex bug: some attribute is lost 
                 setattr(model.backbone, "loss", self._loss)
+            if distiller is not None and self._cfg.distiller.teacher.frozen: # ipex bug: requires_grad changed
+                for param in model.distiller.pretrained_model.parameters():
+                    param.requires_grad = False
         #############  DDP wrapper  ##############             
         if self._is_distributed:
             logging.info("training with DistributedDataParallel")
@@ -339,9 +342,9 @@ class Task:
         logging.info("evaluator:%s" % evaluator)
         if rank <= 0 and eval: # only non-distributed training, or rank 0 in distributed training
             with Timer():
-                start = datetime.datetime.now()
+                start = time.time()
                 metric_values = evaluator.evaluate(model, test_loader)
-                total_seconds = datetime.datetime.now() - start
+                total_seconds = time.time() - start
                 test_num = num_data["test"]
                 print(f"test data: {test_num}, throughput: {test_num/total_seconds} samples/second")
                 print(metric_values)

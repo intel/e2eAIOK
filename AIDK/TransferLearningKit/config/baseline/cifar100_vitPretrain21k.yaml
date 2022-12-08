@@ -10,7 +10,7 @@ dataset:
   train_transform: "vit"
   test_transform: "vit"
 model:
-  type: "vit_base_224_in21k_ft_cifar100"
+  type: "huggingface_vit_base_224_in21k_ft_cifar100"
   pretrain: True
 solver:
   batch_size: 128

@@ -67,11 +67,12 @@ def main(args, trial):
                      "_trial%s" % trial.number if trial is not None else "",
                      "_rank%s" % rank if is_distributed else "")
     prefix_time = "%s_%s"%(prefix,int(time.time()))
+    cfg.experiment.tag = cfg.experiment.tag + "%s" % ("_dist%s" % world_size if is_distributed else "")
     root_dir = os.path.join(cfg.experiment.model_save, cfg.experiment.project,cfg.experiment.tag)
     LOG_DIR = os.path.join(root_dir,"log")                      # to save training log
     PROFILE_DIR = os.path.join(root_dir,"profile")              # to save profiling result
     model_save_path = os.path.join(root_dir, prefix)
-    cfg.experiment.tensorboard_dir = os.path.join(cfg.experiment.tensorboard_dir,"%s%s"%(cfg.experiment.tag,prefix))  # to save tensorboard log
+    cfg.experiment.tensorboard_dir = os.path.join(cfg.experiment.tensorboard_dir,"%s_%s"%(cfg.experiment.tag,prefix))  # to save tensorboard log
     os.makedirs(LOG_DIR,exist_ok=True)
     os.makedirs(PROFILE_DIR,exist_ok=True) 
     os.makedirs(cfg.experiment.tensorboard_dir,exist_ok=True)

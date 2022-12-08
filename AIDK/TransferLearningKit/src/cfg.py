@@ -106,7 +106,7 @@ cfg.distiller.use_saved_logits = False
 cfg.distiller.check_logits = False
 cfg.distiller.logits_path = ""
 cfg.distiller.logits_topk = 0
-cfg.distiller.save_logits_start_epoch = 1
+cfg.distiller.save_logits_start_epoch = 0
 
 # Transfer
 cfg.adapter = CN()
@@ -117,7 +117,7 @@ cfg.adapter.feature_layer_name = "x"
 # Solver
 cfg.solver = CN()
 cfg.solver.batch_size = 128
-cfg.solver.start_epoch = 1
+cfg.solver.start_epoch = 0
 cfg.solver.epochs = 1
 cfg.solver.warmup = 0
 

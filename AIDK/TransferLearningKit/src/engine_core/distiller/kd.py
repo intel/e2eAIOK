@@ -7,7 +7,7 @@ class KD(BasicDistiller):
     ''' KD Distiller
 
     '''
-    def __init__(self, pretrained_model, temperature, is_frozen=True, use_saved_logits=False, topk=0, num_classes=10, teacher_type=None):
+    def __init__(self, pretrained_model, temperature=4.0, is_frozen=True, use_saved_logits=False, topk=0, num_classes=10, teacher_type=None):
         ''' Init method.
 
         :param pretrained_model: the pretrained model as teacher

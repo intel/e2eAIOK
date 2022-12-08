@@ -55,7 +55,7 @@ def save_logits_epoch(model, dataloader, epoch_steps, topk=0, model_type=None, d
             label = label.to(device)
             output = model(data)
             output = output[0] if isinstance(output, tuple) else output
-            output = output.logits if model_type == "vit_base_224_in21k_ft_cifar100" else output
+            output = output.logits if model_type is not None and model_type.startswith("huggingface") else output
             
             if topk == 0: # save all logits
                 values = output.detach().to(device='cpu', dtype=torch.float32)
@@ -124,7 +124,7 @@ def check_logits_epoch(model, dataloader, topk=0, num_classes=10, model_type=Non
             batch_size = inputs.size(0)
             output = model(inputs)
             output = output[0] if isinstance(output, tuple) else output
-            output = output.logits if cfg.model.type == "vit_base_224_in21k_ft_cifar100" else output
+            output = output.logits if cfg.model.type.startswith("huggingface") else output
 
             logits_value = output.detach().to(device='cpu', dtype=torch.float32)
             save_logits_value = load_logits(save_values, topk, num_classes)

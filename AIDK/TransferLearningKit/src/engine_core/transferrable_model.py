@@ -3,6 +3,10 @@
 # @Author : Hua XiaoZhuan          
 # @Time   : 7/27/2022 9:39 AM
 
+import sys
+import os
+sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import torch.nn as nn
 import torch
 import logging
@@ -562,8 +566,8 @@ def transferrable_with_finetune(loss,finetunner):
                           transfer_strategy=TransferStrategy.OnlyFinetuneStrategy,
                           enable_target_training_label=True)
 def make_transferrable_with_knowledge_distillation(model,loss,distiller,
-                                                   distiller_feature_size,distiller_feature_layer_name,
-                                                   enable_target_training_label,backbone_loss_weight,distiller_loss_weight):
+                                                   distiller_feature_size=None,distiller_feature_layer_name="x",
+                                                   enable_target_training_label=True,backbone_loss_weight=0.1,distiller_loss_weight=0.9):
     '''  make transferrable with knowledge distillation strategy
 
     :param model: the backbone model. If model does not have loss method, then use loss argument.

@@ -83,13 +83,13 @@ Training pipeline with Model Adaptor is shown as following. The colored boxes ar
  
 ### Pipeline with Model Adaptor
 
-   The general pipeline trains a resnet50 model on CIFAR100 dataset from scratch. See [【here】](./doc/general_pipeline.py).  The general pipeline can be enpowered transfer learning ability by Model Adaptor.
+   The general pipeline trains a resnet50 model on CIFAR100 dataset from scratch. See [here](./example/Basic_ResNet50_on_CIFAR100_train.ipynb).  The general pipeline can be enpowered transfer learning ability by Model Adaptor.
 
 #### Finetuning with Model Adaptor
 
 Two steps for finetuning with Model Adaptor: 
 
-1. Download the pretrained resnet50 from [【ImageNet-21K Pretraining for the Masses】](https://miil-public-eu.oss-eu-central-1.aliyuncs.com/model-zoo/ImageNet_21K_P/models/resnet50_miil_21k.pth)[4], which is pretrained on Imagenet21k.
+1. Download the pretrained resnet50 from [ImageNet-21K Pretraining for the Masses](https://miil-public-eu.oss-eu-central-1.aliyuncs.com/model-zoo/ImageNet_21K_P/models/resnet50_miil_21k.pth)[4], which is pretrained on Imagenet21k.
 
 2. Create a transferable model with Model Adaptor Unified API:
     ```python
@@ -103,13 +103,15 @@ Two steps for finetuning with Model Adaptor:
     ```
     Now, the returned model is transferable, and replaces the original model in general pipeline. 
 
-The full code see [【here】](./doc/pipeline_with_finetuner.py). 
+The full code see [here](./example/pipeline_with_finetuner.py). 
+
+**
 
 #### Distillation with Model Adaptor
 
 Two steps for distillation with Model Adaptor: 
 
-1. Using pretrained vit_base-224-in21k-ft-cifar100 as teacher, which is from [HuggingFace](https://huggingface.co/edumunozsala/vit_base-224-in21k-ft-cifar100).
+1. Prepare a teacher model, here we select pretrained vit_base-224-in21k-ft-cifar100 is from [HuggingFace](https://huggingface.co/edumunozsala/vit_base-224-in21k-ft-cifar100).
 
 2. Create a transferable model with Model Adaptor Unified API:
    ```python
@@ -121,7 +123,10 @@ Two steps for distillation with Model Adaptor:
    ```
    Now, the returned model is transferable, and replaces the original model in general pipeline. 
 
-The full code see [【here】](./doc/pipeline_with_finetuner.py). 
+The full code see [here](./example/Distiller_ResNet18_from_VIT_on_CIFAR100_train.ipynb). 
+
+** Acceleration with logits saving **
+During distillation, teacher forwarding usually takes a lot of time. To accelerate the training procedure, We can save the predicting logits from teacher in advance and reuse it in later student training. Here is the [Logits saving demo](./example/Distiller_ResNet18_from_VIT_on_CIFAR100_save_logits.ipynb) and the code for [training with saved logits](./example/Distiller_ResNet18_from_VIT_on_CIFAR100_train_with_logits.ipynb)
 
 #### Domain Adaption with Model Adaptor
 
@@ -151,13 +156,13 @@ Two steps for domain adaption with Model Adaptor:
    ```
    Now, the returned model is transferable, and replaces the original model in general pipeline.
 
-The full code see [【here】](./doc/pipeline_with_adaption.py).  
+The full code see [here](./example/pipeline_with_adaption.py).  
 
 ### Built-in Pipeline
 
 User can create and train a new built-in pipeline with Model Adaptor by a yaml configuration file. The created built-in pipeline is optimized for CPU-training, CPU-inference,  and distributed data parallel training. 
 
-There are [【demo】](./src/Transfer%20Learning%20Kit%20Demo.ipynb) about how to training with built-in pipeline with Model Adaptor. 
+There are [demo](./example/Model_Adapter_Demo.ipynb) about how to training with built-in pipeline with Model Adaptor. 
 
 ## Reference
 [1] He, K., Girshick, R., Doll´ar, P.: Rethinking imagenet pre-training. In: ICCV (2019)

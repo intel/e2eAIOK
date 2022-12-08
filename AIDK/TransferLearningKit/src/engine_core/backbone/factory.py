@@ -45,6 +45,8 @@ def createBackbone(backbone_name, num_classes, pretrain = None, **kwargs):
         model = resnet18_cifar(num_classes=num_classes)
     elif backbone_name == "resnet50_cifar":
         model = resnet50_cifar(num_classes=num_classes)
+    elif backbone_name == 'resnet18':
+        model = timm.create_model('resnet18', pretrained=pretrained_flag, num_classes=num_classes)
     elif backbone_name == 'resnet50':
         model = timm.create_model('resnet50', pretrained=pretrained_flag, num_classes=num_classes)
     elif backbone_name == 'mobilenet_v3':
@@ -64,7 +66,7 @@ def createBackbone(backbone_name, num_classes, pretrain = None, **kwargs):
         with open(args.best_model_structure, 'r') as f:
             arch = f.readlines()[-1]
         model = model_builder.create_model(arch)
-    elif backbone_name == "vit_base_224_in21k_ft_cifar100":
+    elif backbone_name == "huggingface_vit_base_224_in21k_ft_cifar100":
         from transformers import ViTForImageClassification
         model = ViTForImageClassification.from_pretrained('edumunozsala/vit_base-224-in21k-ft-cifar100')
     else:
