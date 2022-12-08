@@ -1,1 +1,1 @@
-__all__ = ['supernet_bert','supernet_train','utils', 'model_builder_nlp']
+__all__ = ['supernet_bert','supernet_train','utils', 'model_builder_denas_nlp']

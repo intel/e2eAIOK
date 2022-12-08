@@ -9,14 +9,14 @@ import sentencepiece as sp
 import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 from e2eAIOK.common.trainer.torch_trainer import TorchTrainer 
 import e2eAIOK.common.trainer.utils.utils as utils
-from asr.model_builder_asr import ModelBuilderASR
-from cv.model_builder_cv import ModelBuilderCV
-from nlp.model_builder_nlp import ModelBuilderNLP
-from e2eAIOK.common.trainer.data.data_builder_librispeech import DataBuilderLibriSpeech
-from e2eAIOK.common.trainer.data.data_builder_cifar import DataBuilderCIFAR
+from asr.model_builder_denas_asr import ModelBuilderASR
+from cv.model_builder_denas_cv import ModelBuilderCV
+from nlp.model_builder_denas_nlp import ModelBuilderNLP
+from e2eAIOK.common.trainer.data.asr.data_builder_librispeech import DataBuilderLibriSpeech
+from e2eAIOK.common.trainer.data.cv.data_builder_cifar import DataBuilderCIFAR
 from e2eAIOK.common.trainer.data.data_builder_nlp import DataBuilderNLP
 from e2eAIOK.common.trainer.data.data_builder_cv import DataBuilderCV
-from e2eAIOK.common.trainer.data.data_builder_squad import DataBuilderSQuAD
+from e2eAIOK.common.trainer.data.nlp.data_builder_squad import DataBuilderSQuAD
 from asr.asr_trainer import ASRTrainer
 from asr.trainer.schedulers import NoamScheduler
 from asr.trainer.losses import ctc_loss, kldiv_loss
