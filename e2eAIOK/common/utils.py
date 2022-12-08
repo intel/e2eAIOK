@@ -30,7 +30,7 @@ def mkdir_or_backup_then_mkdir(dest_path):
     path.mkdir(parents=True)
 
 def get_hash_string(in_str):
-    return hashlib.md5(in_str.encode()).hexdigest()
+    return hashlib.sha256(in_str.encode()).hexdigest()
 
 def timeout_input(printout, default, timeout = None, interactive = True):
     if not interactive:

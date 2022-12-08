@@ -80,8 +80,8 @@ def init_distributed(rank = -1, size = -1, backend='gloo'):
         my_local_size = env2int(['MPI_LOCALNRANKS', 'OMPI_COMM_WORLD_LOCAL_SIZE', 'MV2_COMM_WORLD_LOCAL_SIZE'], 1)
         if my_rank == 0: print("Running on %d ranks using %s backend" % (my_size, backend))
         if backend == 'ccl':
-            print("Using CCL_ATL_TRANSPORT=%s" % os.environ.get('CCL_ATL_TRANSPORT', '(default)'))
-            print("Using CCL_ATL_SHM=%s" % os.environ.get('CCL_ATL_SHM', '(default)'))
+            print(f"Using CCL_ATL_TRANSPORT={os.environ.get('CCL_ATL_TRANSPORT', '(default)')}")
+            print(f"Using CCL_ATL_SHM={os.environ.get('CCL_ATL_SHM', '(default)')}")
     else:
         my_rank = 0
         my_size = 1

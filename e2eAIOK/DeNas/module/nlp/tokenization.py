@@ -22,7 +22,7 @@ import collections
 import logging
 import os
 import unicodedata
-from io import open
+# from io import open
 
 
 logger = logging.getLogger(__name__)

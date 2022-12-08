@@ -107,9 +107,8 @@ class DLRMAdvisor(BaseModelAdvisor):
         else:
             self.dist_launch(args)
         self.training_time = time.time() - start_time
-        file1 = open("./best_auc.txt",'r')
-        lines = file1.readlines()
-        file1.close()
+        with open("./best_auc.txt",'r') as f:
+            lines = f.readlines()
         self.mean_accuracy = float(lines[-1])
         metrics = self.update_metrics()
         model_path = args['model_saved_path']
