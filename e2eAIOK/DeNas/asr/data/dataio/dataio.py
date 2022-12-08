@@ -213,7 +213,8 @@ def load_pkl(file):
             break
 
     try:
-        open(file + ".lock", "w").close()
+        with open(file + ".lock", "w"):
+            pass
         with open(file, "rb") as f:
             return pickle.load(f)
     finally:
