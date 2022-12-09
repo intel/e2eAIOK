@@ -33,7 +33,7 @@ class RandomSearchEngine(BaseSearchEngine):
             heapq.heappush(self.candidates, (nas_score, cand))
             self.update_population_pool()
         with open("best_model_structure.txt", 'w') as f:
-            f.write(str(self.get_best_structures()))
+            f.write(str(heapq.nlargest(1, self.candidates)[0][1]))
 
     '''
     Unified API to get best searched structure
