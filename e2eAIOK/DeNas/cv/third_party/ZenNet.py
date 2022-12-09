@@ -214,7 +214,7 @@ class DeSearchSpaceIDWEXKX:
                             student_sublayers)
                         student_blocks_list.append(tmp_block_str)
                     pass
-                    student_blocks_list = list(set(student_blocks_list))
+                    student_blocks_list = list(dict.fromkeys(student_blocks_list))
                     assert len(student_blocks_list) >= 1
                     student_blocks_list_list.append(student_blocks_list)
                 pass
