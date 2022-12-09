@@ -9,21 +9,19 @@ import sentencepiece as sp
 import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 from e2eAIOK.common.trainer.torch_trainer import TorchTrainer 
 import e2eAIOK.common.trainer.utils.utils as utils
-from asr.model_builder_denas_asr import ModelBuilderASRDeNas
-from cv.model_builder_denas_cv import ModelBuilderCVDeNas
-from nlp.model_builder_denas_nlp import ModelBuilderNLPDeNas
+from e2eAIOK.DeNas.asr.model_builder_denas_asr import ModelBuilderASRDeNas
+from e2eAIOK.DeNas.cv.model_builder_denas_cv import ModelBuilderCVDeNas
+from e2eAIOK.DeNas.nlp.model_builder_denas_nlp import ModelBuilderNLPDeNas
 from e2eAIOK.common.trainer.data.asr.data_builder_librispeech import DataBuilderLibriSpeech
 from e2eAIOK.common.trainer.data.cv.data_builder_cifar import DataBuilderCIFAR
-from e2eAIOK.common.trainer.data.data_builder_nlp import DataBuilderNLP
-from e2eAIOK.common.trainer.data.data_builder_cv import DataBuilderCV
 from e2eAIOK.common.trainer.data.nlp.data_builder_squad import DataBuilderSQuAD
-from asr.asr_trainer import ASRTrainer
-from asr.trainer.schedulers import NoamScheduler
-from asr.trainer.losses import ctc_loss, kldiv_loss
-from asr.utils.metric_stats import ErrorRateStats
-from cv.cv_trainer import CVTrainer
-from nlp.utils import bert_create_optimizer, bert_create_criterion, bert_create_scheduler, bert_create_metric
-from nlp.bert_trainer import BERTTrainer
+from e2eAIOK.DeNas.asr.asr_trainer import ASRTrainer
+from e2eAIOK.DeNas.asr.trainer.schedulers import NoamScheduler
+from e2eAIOK.DeNas.asr.trainer.losses import ctc_loss, kldiv_loss
+from e2eAIOK.DeNas.asr.utils.metric_stats import ErrorRateStats
+from e2eAIOK.DeNas.cv.cv_trainer import CVTrainer
+from e2eAIOK.DeNas.nlp.utils import bert_create_optimizer, bert_create_criterion, bert_create_scheduler, bert_create_metric
+from e2eAIOK.DeNas.nlp.bert_trainer import BERTTrainer
 
 
 def parse_args(args):
