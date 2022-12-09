@@ -76,9 +76,10 @@ def save_info(output_path, save_path, model_size):
     with open(save_path, "w") as f:
         f.write(dumps(data_info))
 
-def main(data_config, save_path):
-    import os
-    host_name = os.uname()[1]
+def main(data_config, save_path, spark_master_ip):
+    #import os
+    #host_name = os.uname()[1]
+    host_name = spark_master_ip
     print(host_name)
     path_prefix = f"file://"
     output_folder = data_config["output_folder"]
@@ -182,10 +183,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='manual to this script')
     parser.add_argument('--config_path', type=str, default=None)
     parser.add_argument('--save_path', type=str, default=None)
+    parser.add_argument('--spark_master_ip', type=str, default=None)
     args = parser.parse_args()
 
     with open(args.config_path, "r") as f:
         config = yaml.safe_load(f)
         data_config = config["data_preprocess"]
-        main(data_config, args.save_path)
+        main(data_config, args.save_path, args.spark_master_ip)
     

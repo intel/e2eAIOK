@@ -82,7 +82,7 @@ if [ ! -d $data_path_train ]; then
 fi
 rm -rf /home/vmagent/app/dataset/criteo/dlrm_*
 /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python -u ../data_processing/convert_to_parquet.py --config_path ${config_path} --run_mode=$1 $dlrm_extra_option 2>&1 | tee run_data_process_${seed_num}.log
-/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python -u ../data_processing/preprocessing.py --config_path ${config_path}  --save_path=${save_path} $dlrm_extra_option 2>&1 | tee -a run_data_process_${seed_num}.log
+/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python -u ../data_processing/preprocessing.py --config_path ${config_path}  --save_path=${save_path} --spark_master_ip ${2} $dlrm_extra_option 2>&1 | tee -a run_data_process_${seed_num}.log
 
 data_end=$(date +%s)
 data_spend=$(( data_end - data_start ))
