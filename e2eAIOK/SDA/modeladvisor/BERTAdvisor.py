@@ -100,13 +100,11 @@ class BERTAdvisor(BaseModelAdvisor):
             self.dist_launch(args)
         else:
             self.launch(args)
-        file1 = open(os.path.join(self.params['model_saved_path'],"best_auc.txt"),'r')
-        lines = file1.readlines()
-        file1.close()
+        with open(os.path.join(self.params['model_saved_path'],"best_auc.txt"),'r') as f:
+            lines = f.readlines()
         self.mean_accuracy = float(lines[-1])
-        file2 = open(os.path.join(self.params['model_saved_path'],"best_time.txt"),'r')
-        lines = file2.readlines()
-        file2.close()
+        with open(os.path.join(self.params['model_saved_path'],"best_time.txt"),'r') as f:
+            lines = f.readlines()
         self.training_time = float(lines[-1])
         metrics = self.update_metrics()
         return self.training_time, model_path, metrics

@@ -1,4 +1,6 @@
 import sys
+import os
+from pathlib import Path
 import argparse
 import numpy as np
 import torch
@@ -37,8 +39,9 @@ def main(args):
         random.seed(args.random_seed)
         np.random.seed(args.random_seed)
         torch.manual_seed(args.random_seed)
-    
-    with open(args.conf) as f:
+    root_dir = Path(os.getcwd()).parent.parent
+    conf_file = os.path.join(root_dir, os.path.basename(args.conf))
+    with open(conf_file) as f:
         cfg = edict(yaml.safe_load(f))
 
     ext_dist.init_distributed(backend=cfg.dist_backend)
