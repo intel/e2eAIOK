@@ -42,7 +42,7 @@ def main(args):
         np.random.seed(args.random_seed)
         torch.manual_seed(args.random_seed)
     root_dir = Path(os.getcwd()).parent.parent
-    conf_file = os.path.join(root_dir, os.path.basename(args.conf))
+    conf_file = os.path.join(root_dir, args.conf)
     with open(conf_file) as f:
         cfg = edict(yaml.safe_load(f))
 
