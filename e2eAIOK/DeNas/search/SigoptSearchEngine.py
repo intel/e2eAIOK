@@ -183,15 +183,16 @@ class SigoptSearchEngine(BaseSearchEngine):
                 self._set_sigopt_observation(experiment, suggestion.id, nas_score.item())
             best_assignments = self.conn.experiments(experiment.id).best_assignments().fetch().data[0].assignments  
             depth = int(best_assignments['DEPTH'])
-            cand_tuple.append(depth)
+            best_struct_tuple = list()
+            best_struct_tuple.append(depth)
             for i in range(depth):
                 mlp_ratio_name = f"MLP_RATIO_{i}"
-                cand_tuple.append(float(best_assignments[mlp_ratio_name]))
+                best_struct_tuple.append(float(best_assignments[mlp_ratio_name]))
             for i in range(depth):
                 num_heads_name = f"NUM_HEADS_{i}"
-                cand_tuple.append(int(best_assignments[num_heads_name]))
-            cand_tuple.append(int(best_assignments['EMBED_DIM']))
-            self.best_struct = tuple(cand_tuple)
+                best_struct_tuple.append(int(best_assignments[num_heads_name]))
+            best_struct_tuple.append(int(best_assignments['EMBED_DIM']))
+            self.best_struct = tuple(best_struct_tuple)
         elif self.params.domain == "asr":
             experiment = self.conn.experiments().create(
                 name= 'asr denas',
@@ -249,15 +250,16 @@ class SigoptSearchEngine(BaseSearchEngine):
                 self._set_sigopt_observation(experiment, suggestion.id, nas_score.item())
             best_assignments = self.conn.experiments(experiment.id).best_assignments().fetch().data[0].assignments  
             depth = int(best_assignments['DEPTH'])
-            cand_tuple.append(depth)
+            best_struct_tuple = list()
+            best_struct_tuple.append(depth)
             for i in range(depth):
                 mlp_ratio_name = f"MLP_RATIO_{i}"
-                cand_tuple.append(float(best_assignments[mlp_ratio_name]))
+                best_struct_tuple.append(float(best_assignments[mlp_ratio_name]))
             for i in range(depth):
                 num_heads_name = f"NUM_HEADS_{i}"
-                cand_tuple.append(int(best_assignments[num_heads_name]))
-            cand_tuple.append(int(best_assignments['EMBED_DIM']))
-            self.best_struct = tuple(cand_tuple)
+                best_struct_tuple.append(int(best_assignments[num_heads_name]))
+            best_struct_tuple.append(int(best_assignments['EMBED_DIM']))
+            self.best_struct = tuple(best_struct_tuple)
         else:
             raise RuntimeError(f"Domain {self.params.domain} is not supported")
         with open("best_model_structure.txt", 'w') as f:
