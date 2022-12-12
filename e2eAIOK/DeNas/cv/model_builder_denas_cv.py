@@ -1,8 +1,9 @@
-# Todo: Add common cv model features into this module in the future
-import torch
-from e2eAIOK.common.trainer.model_builder import ModelBuilder
+from e2eAIOK.DeNas.utils import decode_arch_tuple
+from e2eAIOK.DeNas.cv.third_party.ZenNet import DeMainNet
+from e2eAIOK.common.trainer.model.model_builder_cv import ModelBuilderCV
+from e2eAIOK.DeNas.cv.supernet_transformer import Vision_TransformerSuper
 
-class ModelBuilderCV(ModelBuilder):
+class ModelBuilderCVDeNas(ModelBuilderCV):
     def __init__(self, cfg):
         super().__init__(cfg)
     
@@ -34,6 +35,6 @@ class ModelBuilderCV(ModelBuilder):
             model_config['num_heads'] = num_heads
             model_config['embed_dim'] = [embed_dim]*depth
             n_parameters = model.get_sampled_params_numel(model_config)
-            print(f"model parameters size: {n_parameters}")
+            print("model parameters size: {}".format(n_parameters))
         return model
         

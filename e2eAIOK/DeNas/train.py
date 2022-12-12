@@ -11,21 +11,19 @@ import sentencepiece as sp
 import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 from e2eAIOK.common.trainer.torch_trainer import TorchTrainer 
 import e2eAIOK.common.trainer.utils.utils as utils
-from e2eAIOK.common.trainer.model.model_builder_asr import ModelBuilderASR
-from e2eAIOK.common.trainer.model.model_builder_cv import ModelBuilderCV
-from e2eAIOK.common.trainer.model.model_builder_nlp import ModelBuilderNLP
-from e2eAIOK.common.trainer.data.data_builder_librispeech import DataBuilderLibriSpeech
-from e2eAIOK.common.trainer.data.data_builder_cifar import DataBuilderCIFAR
-from e2eAIOK.common.trainer.data.data_builder_nlp import DataBuilderNLP
-from e2eAIOK.common.trainer.data.data_builder_cv import DataBuilderCV
-from e2eAIOK.common.trainer.data.data_builder_squad import DataBuilderSQuAD
-from asr.asr_trainer import ASRTrainer
-from asr.trainer.schedulers import NoamScheduler
-from asr.trainer.losses import ctc_loss, kldiv_loss
-from asr.utils.metric_stats import ErrorRateStats
-from cv.cv_trainer import CVTrainer
-from nlp.utils import bert_create_optimizer, bert_create_criterion, bert_create_scheduler, bert_create_metric
-from nlp.bert_trainer import BERTTrainer
+from e2eAIOK.DeNas.asr.model_builder_denas_asr import ModelBuilderASRDeNas
+from e2eAIOK.DeNas.cv.model_builder_denas_cv import ModelBuilderCVDeNas
+from e2eAIOK.DeNas.nlp.model_builder_denas_nlp import ModelBuilderNLPDeNas
+from e2eAIOK.common.trainer.data.asr.data_builder_librispeech import DataBuilderLibriSpeech
+from e2eAIOK.common.trainer.data.cv.data_builder_cifar import DataBuilderCIFAR
+from e2eAIOK.common.trainer.data.nlp.data_builder_squad import DataBuilderSQuAD
+from e2eAIOK.DeNas.asr.asr_trainer import ASRTrainer
+from e2eAIOK.DeNas.asr.trainer.schedulers import NoamScheduler
+from e2eAIOK.DeNas.asr.trainer.losses import ctc_loss, kldiv_loss
+from e2eAIOK.DeNas.asr.utils.metric_stats import ErrorRateStats
+from e2eAIOK.DeNas.cv.cv_trainer import CVTrainer
+from e2eAIOK.DeNas.nlp.utils import bert_create_optimizer, bert_create_criterion, bert_create_scheduler, bert_create_metric
+from e2eAIOK.DeNas.nlp.bert_trainer import BERTTrainer
 
 
 def parse_args(args):
@@ -49,7 +47,7 @@ def main(args):
     ext_dist.init_distributed(backend=cfg.dist_backend)
 
     if args.domain in ['cnn','vit']:
-        model = ModelBuilderCV(cfg).create_model()
+        model = ModelBuilderCVDeNas(cfg).create_model()
         train_dataloader, eval_dataloader = DataBuilderCIFAR(cfg).get_dataloader()
         optimizer = utils.create_optimizer(model, cfg)
         criterion = utils.create_criterion(cfg)
@@ -57,7 +55,7 @@ def main(args):
         metric = utils.create_metric(cfg)
         trainer = CVTrainer(cfg, model, train_dataloader, eval_dataloader, optimizer, criterion, scheduler, metric)
     elif args.domain == 'bert':
-        model = ModelBuilderNLP(cfg).create_model()
+        model = ModelBuilderNLPDeNas(cfg).create_model()
         train_dataloader, eval_dataloader, other_data = DataBuilderSQuAD(cfg).get_dataloader()
         optimizer = bert_create_optimizer(model, cfg)
         criterion = bert_create_criterion(cfg)
@@ -65,7 +63,7 @@ def main(args):
         metric = bert_create_metric(cfg)
         trainer = BERTTrainer(cfg, model, train_dataloader, eval_dataloader, other_data, optimizer, criterion, scheduler, metric)
     elif args.domain == 'asr':
-        model = ModelBuilderASR(cfg).create_model()
+        model = ModelBuilderASRDeNas(cfg).create_model()
         tokenizer = sp.SentencePieceProcessor()
         train_dataloader, eval_dataloader = DataBuilderLibriSpeech(cfg, tokenizer).get_dataloader()
         optimizer = torch.optim.Adam(model.parameters(), lr=cfg["lr_adam"], betas=(0.9, 0.98), eps=0.000000001)
