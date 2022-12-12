@@ -107,13 +107,28 @@ if [ $? -eq 0 ]; then
 else
     echo "start ray"
     echo "OMP_NUM_THREADS: ${omp_num_threads}"
+    echo "clean memory"
     echo never  > /sys/kernel/mm/transparent_hugepage/enabled; sleep 1
     echo never  > /sys/kernel/mm/transparent_hugepage/defrag; sleep 1
     echo always > /sys/kernel/mm/transparent_hugepage/enabled; sleep 1
     echo always > /sys/kernel/mm/transparent_hugepage/defrag; sleep 1
     echo 1 > /proc/sys/vm/compact_memory; sleep 1
     echo 3 > /proc/sys/vm/drop_caches; sleep 1
-    export OMP_NUM_THREADS=${omp_num_threads} && ray start --node-ip-address="${2}" --head --port 5678 --dashboard-host 0.0.0.0 --object-store-memory 171798691840 --system-config='{"object_spilling_threshold":0.98}'
+    need_memory_criteo_small=171798691840
+    need_memory_kaggle=10737418240
+    unit_memory=42949672960
+    avail_memory=$[ $[ $(cat /proc/meminfo | grep MemAvailable | awk -F' ' '{print $2}')*1024 ]-$unit_memory]
+    if [ $avail_memory -gt $need_memory_criteo_small ]; then
+        obj_memory=$need_memory_criteo_small
+    elif [ $avail_memory -gt $need_memory_kaggle ]; then
+        obj_memory=$avail_memory
+        echo "WARNING: Memory is not enough for 'criteo_small' mode, may cause Ray object spilling. Please use 'kaggle' mode."
+    else
+        echo "Error: Please make sure the available memory is at least greater than 50G, exit"
+        exit
+    fi
+    echo object-store-memory is $[ $obj_memory/1024/1024/1024 ] GB
+    export OMP_NUM_THREADS=${omp_num_threads} && ray start --node-ip-address="${2}" --head --port 5678 --dashboard-host 0.0.0.0 --object-store-memory $obj_memory --system-config='{"object_spilling_threshold":0.98}'
 fi
 
 retry=0
