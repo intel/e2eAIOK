@@ -9,5 +9,4 @@ class IdentityFeatureGenerator(super_class):
         return getattr(self.obj, attr)
 
     def _fit_transform(self, X, **kwargs):
-        print("overide")
         return super()._fit_transform(X, **kwargs)

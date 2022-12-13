@@ -3,13 +3,22 @@ from IPython.display import display, clear_output
 
 class BaseWidget:
 
-    def __init__(self):
+    def __init__(self, display_flag = True):
         self.view = widgets.Output(layout={'border': '1px solid black'})
-        display(self.view)
+        if display_flag:
+            display(self.view)
 
     def update(self, func, *args):
         with self.view:
             func(*args)
+
+    def display(self, content):
+        def display_func():
+            if isinstance(content, str):
+                print(content)
+            else:
+                display(content)
+        self.update(display_func)
 
     def clear(self):
         self.view.clear_output()
