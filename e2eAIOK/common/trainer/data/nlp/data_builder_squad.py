@@ -46,8 +46,8 @@ class DataBuilderSQuAD(DataBuilderNLP):
             #    dataset_val, num_replicas=num_tasks, rank=global_rank)
             sampler_val = None
         else:
-            sampler_val = None
-            sampler_train = None
+            sampler_val = torch.utils.data.SequentialSampler(dataset_val)
+            sampler_train = torch.utils.data.RandomSampler(dataset_train)
         
         shuffle = True
         if sampler_train is not None:
@@ -59,7 +59,7 @@ class DataBuilderSQuAD(DataBuilderNLP):
             batch_size=self.cfg.train_batch_size,
             num_workers=self.cfg.num_workers,
             shuffle=shuffle,
-            drop_last=False,
+            drop_last=True,
         )
 
         dataloader_val = torch.utils.data.DataLoader(

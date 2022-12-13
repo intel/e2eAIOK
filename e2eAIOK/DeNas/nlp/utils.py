@@ -160,18 +160,19 @@ def bert_create_optimizer(model, cfg):
         no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
         optimizer_grouped_parameters = [
             {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)],
-            'weight_decay': 0.01},
+            'weight_decay': cfg.weight_decay},
             {'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
         ]
         num_train_optimization_steps = int(
-            cfg.num_train_examples / cfg.train_batch_size / cfg.gradient_accumulation_steps * cfg.train_epochs)
+            cfg.num_train_steps / cfg.gradient_accumulation_steps) * cfg.train_epochs
         if ext_dist.my_size > 1:
             num_train_optimization_steps = num_train_optimization_steps // ext_dist.my_size
         optimizer = BertAdam(optimizer_grouped_parameters,
                              schedule=cfg.lr_scheduler,
                              lr=cfg.learning_rate,
                              warmup=cfg.warmup_proportion,
-                             t_total=num_train_optimization_steps)
+                             t_total=num_train_optimization_steps,
+                             weight_decay=cfg.weight_decay)
         return optimizer
 
 def bert_create_criterion(cfg):

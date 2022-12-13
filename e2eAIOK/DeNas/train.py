@@ -57,6 +57,7 @@ def main(args):
     elif args.domain == 'bert':
         model = ModelBuilderNLPDeNas(cfg).create_model()
         train_dataloader, eval_dataloader, other_data = DataBuilderSQuAD(cfg).get_dataloader()
+        cfg.num_train_steps = len(train_dataloader)
         optimizer = bert_create_optimizer(model, cfg)
         criterion = bert_create_criterion(cfg)
         scheduler = bert_create_scheduler(cfg)

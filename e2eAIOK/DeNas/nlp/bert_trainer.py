@@ -38,7 +38,7 @@ class BERTTrainer(TorchTrainer):
 
     def train_one_epoch(self, epoch):
         # set random seed
-        random.seed(epoch)
+        # random.seed(epoch)
         
         self.model.train()
 
@@ -52,7 +52,7 @@ class BERTTrainer(TorchTrainer):
             self.optimizer.step()
             self.global_step += 1
 
-            if 'eval_step' in self.cfg and self.global_step % self.cfg.eval_step == 0:
+            if ('eval_step' in self.cfg and self.global_step % self.cfg.eval_step == 0) or self.global_step >= (self.cfg.num_train_steps * self.cfg.train_epochs):
                 self.model.eval()
                 result = self.evaluate(epoch)
                 if result[self.cfg.eval_metric] > self.best_acc:
