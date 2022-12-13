@@ -1,7 +1,7 @@
-from search.RandomSearchEngine import RandomSearchEngine
-from search.EvolutionarySearchEngine import EvolutionarySearchEngine
-from search.SigoptSearchEngine import SigoptSearchEngine
-from search.MOSigoptSearchEngine import MOSigoptSearchEngine
+from e2eAIOK.DeNas.search.RandomSearchEngine import RandomSearchEngine
+from e2eAIOK.DeNas.search.EvolutionarySearchEngine import EvolutionarySearchEngine
+from e2eAIOK.DeNas.search.SigoptSearchEngine import SigoptSearchEngine
+from e2eAIOK.DeNas.search.MOSigoptSearchEngine import MOSigoptSearchEngine
 
 SEARCHER_TYPES = {
         "RandomSearchEngine": RandomSearchEngine,

@@ -1,6 +1,6 @@
 import heapq
 
-from search.BaseSearchEngine import BaseSearchEngine
+from e2eAIOK.DeNas.search.BaseSearchEngine import BaseSearchEngine
 
 class RandomSearchEngine(BaseSearchEngine):
     
