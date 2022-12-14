@@ -22,25 +22,9 @@ import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 from timm.utils import accuracy
 from collections import defaultdict, deque
 from easydict import EasyDict as edict
+from torch.utils.tensorboard import SummaryWriter
 import logging
-
-def is_main_process():
-    if ext_dist.my_size > 1:
-        return ext_dist.dist.get_rank() == 0
-    return 0
-
-def save_model(*args, **kwargs):
-    if is_main_process():
-        torch.save(*args, **kwargs)
-
-def init_log():
-    if ext_dist.my_size > 1:
-        if ext_dist.my_rank == 0:
-            logging.getLogger().setLevel(logging.INFO)
-        else:
-            logging.getLogger().setLevel(logging.WARNING)
-    else:
-        logging.getLogger().setLevel(logging.INFO)
+from torch.optim.lr_scheduler import _LRScheduler
 
 class SmoothedValue(object):
     """Track a series of values and provide access to smoothed values over a
@@ -101,7 +85,6 @@ class SmoothedValue(object):
             global_avg=self.global_avg,
             max=self.max,
             value=self.value)
-
 
 class MetricLogger(object):
     def __init__(self, delimiter="\t"):
@@ -184,13 +167,104 @@ class MetricLogger(object):
         print('{} Total time: {} ({:.4f} s / it)'.format(
             header, total_time_str, total_time / len(iterable)))
 
-    
-def create_optimizer(model, cfg):
-    print(F"model:{model}")
-    if cfg.optimizer == "SGD":
-        optimizer = torch.optim.SGD(model.parameters(), lr=cfg.learning_rate,
-                momentum=cfg.momentum, weight_decay=cfg.weight_decay)
-    return optimizer
+class EarlyStopping():
+    ''' Early Stopping
+
+    '''
+    def __init__(self, tolerance_epoch = 5, delta=0, is_max = False, metric_threshold = None):
+        ''' Init method
+
+        :param tolerance_epoch: tolarance epoch
+        :param delta: delta for difference
+        :param is_max: max or min
+        :param metric_threshold: when metric up/down limiation then stop training. None means ignore.
+        '''
+
+        self._tolerance_epoch = tolerance_epoch
+        self._delta = delta
+        self._is_max = is_max
+        self._metric_threshold = metric_threshold
+
+        self._counter = 0
+        self.early_stop = False
+
+    def __call__(self, validation_metric, optimal_metric):
+        ############## absolute level #################
+        if self._metric_threshold is not None:
+            if (self._is_max and validation_metric >= self._metric_threshold) or\
+            ((not self._is_max) and validation_metric <= self._metric_threshold):
+                self.early_stop = True
+                print("Earlystop when meet metric_threshold [%s]"%self._metric_threshold)
+                logging.info("Earlystop when meet metric_threshold [%s]"%self._metric_threshold)
+                return
+        ############## relative level #################
+        if (self._is_max and (validation_metric < optimal_metric - self._delta)) \
+                or ((not self._is_max) and (validation_metric > optimal_metric + self._delta)): # less optimal
+            self._counter += 1
+        else: # more optimal
+            logging.info("Reset earlystop counter")
+            self._counter = 0
+        if self._counter >= self._tolerance_epoch:
+            self.early_stop = True
+
+    def __str__(self):
+        _str = 'EarlyStopping:%s\n'%self._tolerance_epoch
+        _str += '\tdelta:%s\n'%self._delta
+        _str += '\tis_max:%s\n' % self._is_max
+        _str += '\tmetric_threshold:%s\n' % self._metric_threshold
+        return _str
+
+class WarmUpLR(_LRScheduler):
+    """warmup_training learning rate scheduler
+    Args:
+        optimizer: optimzier(e.g. SGD)
+        total_iters: totoal_iters of warmup phase
+    """
+    def __init__(self, optimizer, total_iters, last_epoch=-1):
+
+        self.total_iters = total_iters
+        super().__init__(optimizer, last_epoch)
+
+    def get_lr(self):
+        """we will use the first m batches, and set the learning
+        rate to base_lr * m / total_iters
+        """
+        return [base_lr * self.last_epoch / (self.total_iters + 1e-8) for base_lr in self.base_lrs]
+
+class Timer:
+    ''' Timer to stat elapsed time
+
+    '''
+    def __enter__(self):
+        self.start = datetime.datetime.now()
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.end = datetime.datetime.now()
+        total_seconds = (self.end - self.start).total_seconds()
+        _str = "Total seconds:%s" % (total_seconds)
+        print(_str)
+        logging.info(_str)
+
+def get_device(cfg):
+    device = 'cpu' if "device" not in cfg else cfg.device
+    return device
+
+def is_main_process():
+    if ext_dist.my_size > 1:
+        return ext_dist.dist.get_rank() == 0
+    return 0
+
+def save_model(*args, **kwargs):
+    if is_main_process():
+        torch.save(*args, **kwargs)
+
+def init_log():
+    if ext_dist.my_size > 1:
+        if ext_dist.my_rank == 0:
+            logging.getLogger().setLevel(logging.INFO)
+        else:
+            logging.getLogger().setLevel(logging.WARNING)
+    else:
+        logging.getLogger().setLevel(logging.INFO)
 
 def create_metric(cfg):
     if cfg.eval_metric == "accuracy":
@@ -200,9 +274,126 @@ def create_metric(cfg):
 def create_criterion(cfg):
     if cfg.criterion == "CrossEntropyLoss":
         criterion = torch.nn.CrossEntropyLoss()
+    else:
+        logging.error("[%s] is not supported"%cfg.criterion)
+        raise NotImplementedError("[%s] is not supported"%cfg.criterion)
     return criterion
 
+def create_optimizer(model=None, cfg=None, parameters=None):
+    ''' create optimizer
+
+    :param model: model, will be disabled if 'parameters' is not None
+    :param cfg: configurations
+    :param parameters: parameters for optimizer
+
+    :return: a optimizer
+    '''
+    print(F"model:{model}")
+    print(F"parameters:{parameters}")
+    parameters = parameters if parameters is not None else model.parameters()
+    if cfg.optimizer == "SGD":
+        optimizer = torch.optim.SGD(parameters, lr=cfg.learning_rate,
+                momentum=cfg.momentum, weight_decay=cfg.weight_decay)
+    else:
+        logging.error("[%s] is not supported"%cfg.optimizer)
+        raise NotImplementedError("[%s] is not supported"%cfg.optimizer)
+    return optimizer
+
 def create_scheduler(optimizer, cfg):
-    if cfg.lr_scheduler == "CosineAnnealingLR":
+    ''' create scheduler
+
+    :return: a scheduler
+    '''
+    if "lr_scheduler" not in cfg or cfg.lr_scheduler == "":
+        scheduler = None
+    elif cfg.lr_scheduler == "ExponentialLR":
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=cfg.lr_scheduler_config.decay_rate)
+    elif cfg.lr_scheduler == "MultiStepLR":
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=cfg.lr_scheduler_config.decay_stages, gamma=cfg.lr_scheduler_config.decay_rate)
+    elif cfg.lr_scheduler == "CosineAnnealingLR":
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=cfg.train_epochs)
+    elif cfg.lr_scheduler == "ReduceLROnPlateau":
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="max",factor=cfg.lr_scheduler_config.decay_rate, patience=cfg.lr_scheduler_config.decay_patience, \
+                                                        verbose=True, threshold_mode='abs')
+    else:
+        logging.error("[%s] is not supported"%cfg.lr_scheduler)
+        raise NotImplementedError("[%s] is not supported"%cfg.lr_scheduler)
     return scheduler
+
+def create_warmup_scheduler(optimizer, total_iters, cfg):
+    ''' create warm up scheduler
+
+    :return: a warm up scheduler
+    '''
+    if "warmup_scheduler" not in cfg or cfg.warmup_scheduler == "" or \
+        "warmup_scheduler_epoch" not in cfg or cfg.warmup_scheduler_epoch <= 0:
+        warmup_scheduler = None
+    elif cfg.warmup_scheduler == "WarmUpLR":
+        warmup_scheduler = WarmUpLR(optimizer, total_iters * cfg.warmup_scheduler_epoch)
+    else:
+        logging.error("[%s] is not supported"%cfg.warmup_scheduler)
+        raise NotImplementedError("[%s] is not supported"%cfg.warmup_scheduler)
+    
+    return warmup_scheduler
+
+def create_early_stopping(cfg):
+    ''' create early_stopping
+
+    :return: an early_stopping
+    '''
+    if "early_stop" not in cfg or cfg.early_stop == "":
+        early_stopping = None
+    elif cfg.early_stop == "EarlyStopping":
+        early_stopping = EarlyStopping(tolerance_epoch=cfg.early_stop_config.tolerance_epoch, delta=cfg.early_stop_config.delta, 
+                                    is_max=cfg.early_stop_config.is_max, metric_threshold=cfg.metric_threshold)
+        logging.info('early_stopping :%s' % early_stopping)
+    else:
+        logging.error("[%s] is not supported"%cfg.early_stop)
+        raise NotImplementedError("[%s] is not supported"%cfg.early_stop)
+    return early_stopping
+
+def create_tensorboard_writer(cfg):
+    ''' create tensorboard_writer
+
+    :return: a tensorboard_writer
+    '''
+    if "tensorboard_dir" not in cfg or cfg.tensorboard_dir == "":
+        tensorboard_writer  = None 
+    else:
+        tensorboard_writer = SummaryWriter(cfg.tensorboard_dir)
+        logging.info('tensorboard_writer :%s' % tensorboard_writer)
+    return tensorboard_writer
+
+def trace_handler(trace_file,p):
+    ''' profile trace handler
+
+    :param trace_file: output trace file
+    :param p: profiler
+    :return:
+    '''
+    logging.info("trace_output:%s" % p.key_averages().table(sort_by="cpu_time_total", row_limit=20))
+    p.export_chrome_trace(trace_file + str(p.step_num) + ".json")
+
+def create_profiler(cfg):
+    ''' create a profiler
+
+    :return: profiler
+    '''
+    if "profiler" not in cfg or not cfg.profiler:
+        return None
+    def parse_activities(activity_str):
+        result = set()
+        for item in activity_str.lower().split(","):
+            if item == 'cpu':
+                result.add(ProfilerActivity.CPU)
+            elif item == 'gpu' or item == 'cuda':
+                result.add(ProfilerActivity.CUDA)
+        return result
+
+    activities = parse_activities(get_device(cfg))
+    schedule = torch.profiler.schedule(skip_first=cfg.profiler_config.skip_first,wait=cfg.profiler_config.wait,
+        warmup=cfg.profiler_config.warmup,active=cfg.profiler_config.active,repeat=cfg.profiler_config.repeat)
+    profiler = profile(activities=activities,schedule=schedule,
+                        on_trace_ready=partial(trace_handler,cfg.profiler_config.trace_file))
+    logging.info("profiler:%s"%profiler)
+    return profiler

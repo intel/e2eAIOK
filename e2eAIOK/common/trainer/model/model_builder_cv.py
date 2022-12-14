@@ -3,8 +3,8 @@ import torch
 from e2eAIOK.common.trainer.model_builder import ModelBuilder
 
 class ModelBuilderCV(ModelBuilder):
-    def __init__(self, cfg):
-        super().__init__(cfg)
+    def __init__(self, cfg, model):
+        super().__init__(cfg, model)
     
     def _init_model(self):
         if self.cfg.best_model_structure != None:

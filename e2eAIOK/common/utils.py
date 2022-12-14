@@ -14,6 +14,11 @@ def update_list(orig, diff):
             orig[i] = dict_diff[orig[i]['name']]
     return orig
 
+def check_mkdir(path):
+    if not os.path.isdir(path):
+        os.makedirs(path)
+    return path
+
 def mkdir(dest_path):
     new_name = datetime.now().strftime("%Y%m%d_%H%M%S")
     new_path = os.path.join(dest_path, new_name)
