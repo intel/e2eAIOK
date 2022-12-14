@@ -1,0 +1,39 @@
+name: unittest CI
+
+on:
+  pull_request:
+    branches:
+    - main
+
+jobs:
+  unit_tests:
+    name: Unit Tests
+    runs-on: self-hosted
+    steps:
+    - name: Checkout
+      uses: actions/checkout@main
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.7'
+      
+    - name: Install Dependencies
+      run: |
+        python --version
+        pip install -U pip
+        pip install -U pytest
+        pip install codecov
+        pip install build wheel
+        
+    - name: Install package
+      run: |
+        python setup.py sdist && pip install dist/e2eAIOK-*.*.*.tar.gz
+
+    - name: Run test
+      run: |
+        pytest tests/unittest 
+
+    - name: After test summary
+      run: |
+        codecov
