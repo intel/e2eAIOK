@@ -1,48 +1,49 @@
-import heapq
 import random
 import torch
 import numpy as np
 from easydict import EasyDict as edict
-from e2eAIOK.DeNas.search.RandomSearchEngine import RandomSearchEngine
+from e2eAIOK.DeNas.search.EvolutionarySearchEngine import EvolutionarySearchEngine
 from e2eAIOK.DeNas.cv.supernet_transformer import Vision_TransformerSuper
 
-class TestDeNasRandom:
+class TestDeNasEvolutionary:
 
     '''
-    Test Unified API RandomSearchEngine.get_best_structures()
+    Test Unified API EvolutionarySearchEngine.get_best_structures()
     '''
     def test_get_best_structures(self):
-        randomSearchEngine = RandomSearchEngine()
+        params = edict({'select_num': 3})
+        evolutionarySearchEngine = EvolutionarySearchEngine(params=params)
 
         # Generate test data
         sample_cand_1 = '(15, 3.5, 3.0, 3.5, 4.0, 3.5, 3.5, 3.5, 3.5, 3.5, 4.0, 3.0, 4.0, 3.0, 3.5, 3.0, 10, 3, 7, 10, 5, 7, 9, 10, 7, 4, 5, 3, 9, 3, 10, 448)'
         sample_params_1 = 33.208394
         sample_score_1 = 224.5035858154297
-        randomSearchEngine.vis_dict[sample_cand_1] = {}
-        randomSearchEngine.vis_dict[sample_cand_1]['params'] = sample_params_1
-        randomSearchEngine.vis_dict[sample_cand_1]['score'] = sample_score_1
-        heapq.heappush(randomSearchEngine.candidates, (sample_score_1, sample_cand_1))
+        evolutionarySearchEngine.vis_dict[sample_cand_1] = {}
+        evolutionarySearchEngine.vis_dict[sample_cand_1]['params'] = sample_params_1
+        evolutionarySearchEngine.vis_dict[sample_cand_1]['score'] = sample_score_1
+        evolutionarySearchEngine.top_candidates.append(sample_cand_1)
 
         sample_cand_2 = '(15, 4.0, 3.0, 3.5, 3.5, 3.5, 4.0, 4.0, 3.0, 4.0, 3.5, 3.5, 4.0, 3.5, 3.0, 4.0, 3, 3, 9, 10, 6, 9, 10, 10, 9, 9, 3, 7, 6, 10, 10, 448)'
         sample_params_2 = 35.390666
         sample_score_2 = 137.4678497314453
-        randomSearchEngine.vis_dict[sample_cand_2] = {}
-        randomSearchEngine.vis_dict[sample_cand_2]['params'] = sample_params_2
-        randomSearchEngine.vis_dict[sample_cand_2]['score'] = sample_score_2
-        heapq.heappush(randomSearchEngine.candidates, (sample_score_2, sample_cand_2))
+        evolutionarySearchEngine.vis_dict[sample_cand_2] = {}
+        evolutionarySearchEngine.vis_dict[sample_cand_2]['params'] = sample_params_2
+        evolutionarySearchEngine.vis_dict[sample_cand_2]['score'] = sample_score_2
+        evolutionarySearchEngine.top_candidates.append(sample_cand_2)
 
         sample_cand_3 = '(13, 4.0, 3.5, 4.0, 3.0, 3.0, 4.0, 3.0, 3.0, 3.0, 4.0, 3.5, 3.0, 3.0, 5, 7, 6, 3, 5, 7, 5, 9, 3, 7, 5, 10, 7, 320)'
         sample_params_3 = 15.950218
         sample_score_3 = 203.47169494628906
-        randomSearchEngine.vis_dict[sample_cand_3] = {}
-        randomSearchEngine.vis_dict[sample_cand_3]['params'] = sample_params_3
-        randomSearchEngine.vis_dict[sample_cand_3]['score'] = sample_score_3
-        heapq.heappush(randomSearchEngine.candidates, (sample_score_3, sample_cand_3))
+        evolutionarySearchEngine.vis_dict[sample_cand_3] = {}
+        evolutionarySearchEngine.vis_dict[sample_cand_3]['params'] = sample_params_3
+        evolutionarySearchEngine.vis_dict[sample_cand_3]['score'] = sample_score_3
+        evolutionarySearchEngine.top_candidates.append(sample_cand_3)
 
-        assert randomSearchEngine.get_best_structures() == sample_cand_1
+        evolutionarySearchEngine.update_population_pool()
+        assert evolutionarySearchEngine.get_best_structures() == sample_cand_1
 
     '''
-    Test Unified API RandomSearchEngine.search()
+    Test Unified API EvolutionarySearchEngine.search()
     '''  
     def test_search(self):
         params = edict({'domain': 'vit', 'model_type': 'transformer', 
@@ -71,12 +72,12 @@ class TestDeNasRandom:
                                     change_qkv=params.change_qkv, abs_pos=params.abs_pos)
         search_space = {'num_heads': cfg.SEARCH_SPACE.NUM_HEADS, 'mlp_ratio': cfg.SEARCH_SPACE.MLP_RATIO,
                         'embed_dim': cfg.SEARCH_SPACE.EMBED_DIM , 'depth': cfg.SEARCH_SPACE.DEPTH}
-        randomSearchEngine = RandomSearchEngine(params=params, super_net=super_net, search_space=search_space)
-        randomSearchEngine.search()
+        evolutionarySearchEngine = EvolutionarySearchEngine(params=params, super_net=super_net, search_space=search_space)
+        evolutionarySearchEngine.search()
         true_candidates = [(15, 3.5, 3.0, 3.5, 4.0, 3.5, 3.5, 3.5, 3.5, 3.5, 4.0, 3.0, 4.0, 3.0, 3.5, 3.0, 10, 3, 7, 10, 5, 7, 9, 10, 7, 4, 5, 3, 9, 3, 10, 448),
                               (15, 4.0, 3.0, 3.5, 3.5, 3.5, 4.0, 4.0, 3.0, 4.0, 3.5, 3.5, 4.0, 3.5, 3.0, 4.0, 3, 3, 9, 10, 6, 9, 10, 10, 9, 9, 3, 7, 6, 10, 10, 448),
                               (13, 4.0, 3.5, 4.0, 3.0, 3.0, 4.0, 3.0, 3.0, 3.0, 4.0, 3.5, 3.0, 3.0, 5, 7, 6, 3, 5, 7, 5, 9, 3, 7, 5, 10, 7, 320)]
         generate_candidates = []
-        for candidate in randomSearchEngine.candidates:
-            generate_candidates.append(candidate[1])
+        for candidate in evolutionarySearchEngine.top_candidates:
+            generate_candidates.append(candidate)
         assert set(generate_candidates) == set(true_candidates)
