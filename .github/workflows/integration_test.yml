@@ -8,7 +8,7 @@ on:
 jobs:
   integration_test:
     name: Integration Test
-    runs-on: xeon8170
+    runs-on: sr602
     steps:
     - name: Checkout
       uses: actions/checkout@main
