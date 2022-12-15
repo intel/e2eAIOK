@@ -288,8 +288,8 @@ def create_optimizer(model=None, cfg=None, parameters=None):
 
     :return: a optimizer
     '''
-    print(F"model:{model}")
-    print(F"parameters:{parameters}")
+    logging.info(F"model:{model}")
+    logging.info(F"parameters:{parameters}")
     parameters = parameters if parameters is not None else model.parameters()
     if cfg.optimizer == "SGD":
         optimizer = torch.optim.SGD(parameters, lr=cfg.learning_rate,
