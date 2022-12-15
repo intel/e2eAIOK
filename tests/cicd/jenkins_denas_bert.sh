@@ -12,3 +12,7 @@ cd /home/vmagent/app/e2eaiok
 
 # test
 LANG=C tests/cicd/bats/bin/bats tests/cicd/test_denas.bats
+
+# train
+cd /home/vmagent/app/e2eaiok/e2eAIOK/DeNas
+python -m intel_extension_for_pytorch.cpu.launch --distributed --nproc_per_node=1 --nnodes=1 train.py --domain bert --conf /home/vmagent/app/e2eaiok/conf/denas/nlp/e2eaiok_denas_train_bert.conf

@@ -12,3 +12,7 @@ cd /home/vmagent/app/e2eaiok
 
 # test
 LANG=C tests/cicd/bats/bin/bats tests/cicd/test_denas.bats
+
+# train
+cd /home/vmagent/app/e2eaiok/e2eAIOK/DeNas
+python -m intel_extension_for_pytorch.cpu.launch train.py --domain asr --conf /home/vmagent/app/e2eaiok/conf/denas/asr/e2eaiok_denas_train_asr.conf --random_seed 74443
