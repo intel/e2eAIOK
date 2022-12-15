@@ -1,0 +1,22 @@
+name: Integration Test
+
+on:
+  pull_request:
+    branches:
+    - main
+
+jobs:
+  integration_test:
+    name: Integration Test
+    runs-on: xeon8170
+    steps:
+    - name: Checkout
+      uses: actions/checkout@main
+
+    - name: Build Docker
+      run: |
+        cd Dockerfile-ubuntu18.04 && docker build -t e2eaiok-tensorflow . -f DockerfileTensorflow && docker build -t e2eaiok-pytorch . -f DockerfilePytorch && docker build -t e2eaiok-pytorch110 . -f DockerfilePytorch110 && cd .. && yes | docker container prune && yes | docker image prune
+        
+    - name: Test Pipeline
+      run: |
+        docker run --rm --name test-workload-pipeline --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-tensorflow /bin/bash -c "USE_SIGOPT=0 . /home/vmagent/app/e2eaiok/tests/cicd/jenkins_pipeline_test.sh"
