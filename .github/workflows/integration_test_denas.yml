@@ -1,0 +1,34 @@
+name: Integration Test DeNas
+
+on:
+  pull_request:
+    branches:
+    - main
+
+jobs:
+  integration_test:
+    name: Integration Test DeNas
+    runs-on: self-hosted
+    steps:
+    - name: Checkout
+      uses: actions/checkout@main
+
+    - name: Build Docker
+      run: |
+        cd Dockerfile-ubuntu18.04 && docker build -t e2eaiok-pytorch112 . -f DockerfilePytorch112 && cd .. && yes | docker container prune && yes | docker image prune
+        
+    - name: Test CNN
+      run: |
+        docker run --rm --name test-denas-cnn --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch112 /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/cicd/jenkins_denas_cnn.sh"
+
+    - name: Test ViT
+      run: |
+        docker run --rm --name test-denas-vit --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch112 /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/cicd/jenkins_denas_vit.sh"
+
+    - name: Test NLP
+      run: |
+        docker run --rm --name test-denas-bert --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch112 /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/cicd/jenkins_denas_bert.sh"
+    
+    - name : Test ASR
+      run: |
+        docker run --rm --name test-denas-asr --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch112 /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/cicd/jenkins_denas_asr.sh"

@@ -1,4 +1,4 @@
-name: Integration Test
+name: Integration Test Workloads
 
 on:
   pull_request:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   integration_test:
-    name: Integration Test
+    name: Integration Test Workloads
     runs-on: self-hosted
     steps:
     - name: Checkout
