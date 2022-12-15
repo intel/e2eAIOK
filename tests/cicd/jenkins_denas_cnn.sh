@@ -4,6 +4,9 @@
 eval "$('/opt/intel/oneapi/intelpython/latest/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
 conda activate pytorch
 
+# reinstall e2eaiok from source
+cd /home/vmagent/app/e2eaiok
+python setup.py sdist && pip install dist/e2eAIOK-*.*.*.tar.gz
 # launch denas for cnn-based supernet
 cd /home/vmagent/app/e2eaiok/e2eAIOK/DeNas
 sed -i '/max_epochs:/ s/:.*/: 1/' ../../conf/denas/cv/e2eaiok_denas_cnn.conf
