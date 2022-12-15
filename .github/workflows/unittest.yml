@@ -1,4 +1,4 @@
-name: unittest CI
+name: Unit Test
 
 on:
   pull_request:
@@ -7,11 +7,13 @@ on:
 
 jobs:
   unit_tests:
-    name: Unit Tests
+    name: Unit Test
     runs-on: self-hosted
     steps:
     - name: Checkout
-      uses: actions/checkout@main
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
 
     - name: Set up Python
       uses: actions/setup-python@v2
