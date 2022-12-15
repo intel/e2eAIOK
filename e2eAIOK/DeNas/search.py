@@ -6,12 +6,12 @@ import yaml
 import numpy as np
 
 from easydict import EasyDict as edict
-from cv.supernet_transformer import Vision_TransformerSuper
-from nlp.supernet_bert import SuperBertModel, BertConfig
-from nlp.utils import generate_search_space
-from asr.supernet_asr import TransformerASRSuper
-from search.SearchEngineFactory import SearchEngineFactory
-from search.utils import Timer, parse_config
+from e2eAIOK.DeNas.cv.supernet_transformer import Vision_TransformerSuper
+from e2eAIOK.DeNas.nlp.supernet_bert import SuperBertModel, BertConfig
+from e2eAIOK.DeNas.nlp.utils import generate_search_space
+from e2eAIOK.DeNas.asr.supernet_asr import TransformerASRSuper
+from e2eAIOK.DeNas.search.SearchEngineFactory import SearchEngineFactory
+from e2eAIOK.DeNas.search.utils import Timer, parse_config
 
 def parse_args(args):
     parser = argparse.ArgumentParser('DE-NAS')

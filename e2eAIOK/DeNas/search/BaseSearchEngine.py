@@ -1,14 +1,14 @@
 import logging
 import gc
 import numpy as np
-import cv.benchmark_network_latency as benchmark_network_latency
+import e2eAIOK.DeNas.cv.benchmark_network_latency as benchmark_network_latency
 
 from abc import ABC, abstractmethod
-from scores.compute_de_score import do_compute_nas_score 
-from cv.utils.cnn import cnn_is_legal, cnn_populate_random_func
-from cv.utils.vit import vit_is_legal, vit_populate_random_func
-from nlp.utils import bert_is_legal, bert_populate_random_func, get_subconfig, get_bert_latency
-from asr.utils.asr_nas import asr_is_legal, asr_populate_random_func
+from e2eAIOK.DeNas.scores.compute_de_score import do_compute_nas_score 
+from e2eAIOK.DeNas.cv.utils.cnn import cnn_is_legal, cnn_populate_random_func
+from e2eAIOK.DeNas.cv.utils.vit import vit_is_legal, vit_populate_random_func
+from e2eAIOK.DeNas.nlp.utils import bert_is_legal, bert_populate_random_func, get_subconfig, get_bert_latency
+from e2eAIOK.DeNas.asr.utils.asr_nas import asr_is_legal, asr_populate_random_func
 
  
 class BaseSearchEngine(ABC):

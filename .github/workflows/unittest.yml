@@ -25,6 +25,7 @@ jobs:
         pip install -U pytest
         pip install codecov
         pip install build wheel
+        pip install -r e2eAIOK/DeNas/requirements.txt
         
     - name: Install package
       run: |

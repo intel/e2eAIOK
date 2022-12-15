@@ -1,7 +1,7 @@
 import time
 import sigopt
 
-from search.BaseSearchEngine import BaseSearchEngine
+from e2eAIOK.DeNas.search.BaseSearchEngine import BaseSearchEngine
 from e2eAIOK.common.utils import timeout_input
 
 class SigoptSearchEngine(BaseSearchEngine):
