@@ -1,0 +1,25 @@
+name: Integration Test Workload ResNet
+
+on:
+  pull_request:
+    branches:
+    - main
+
+jobs:
+  build_docker:
+    name: Build Docker
+    runs-on: 
+  integration_test:
+    name: Integration Test Workload ResNet
+    runs-on: self-hosted
+    steps:
+    - name: Checkout
+      uses: actions/checkout@main
+
+    - name: Build Docker
+      run: |
+        cd Dockerfile-ubuntu18.04 && docker build -t e2eaiok-tensorflow . -f DockerfileTensorflow && cd .. && yes | docker container prune && yes | docker image prune
+ 
+    - name: Test ResNet
+      run: |
+        cd modelzoo/resnet  && bash patch_resnet.sh && cd ../.. && docker run --rm --name test-workload-resnet --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-tensorflow /bin/bash -c "USE_SIGOPT=0 . /home/vmagent/app/e2eaiok/tests/cicd/jenkins_resnet_test.sh"
