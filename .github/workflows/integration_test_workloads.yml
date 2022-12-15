@@ -21,6 +21,14 @@ jobs:
       run: |
         docker run --rm --name test-workload-pipeline --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-tensorflow /bin/bash -c "USE_SIGOPT=0 . /home/vmagent/app/e2eaiok/tests/cicd/jenkins_pipeline_test.sh"
 
+    - name: Test Horovod
+      run: |
+        docker run --rm --name test-workload-horovod --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-tensorflow /bin/bash -c "USE_SIGOPT=0 . /home/vmagent/app/e2eaiok/tests/cicd/docker_horovod_test.sh"
+
+    - name: Test TorchCCL
+      run: |
+        docker run --rm --name test-workload-torchccl --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch110 /bin/bash -c "USE_SIGOPT=0 . /home/vmagent/app/e2eaiok/tests/cicd/docker_torchccl_test.sh"
+
     - name: Test ResNet
       run: |
         cd modelzoo/resnet  && bash patch_resnet.sh && cd ../.. && docker run --rm --name test-workload-resnet --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-tensorflow /bin/bash -c "USE_SIGOPT=0 . /home/vmagent/app/e2eaiok/tests/cicd/jenkins_resnet_test.sh"
