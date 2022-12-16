@@ -21,7 +21,8 @@ set -e
 cd modelzoo/minigo
 conda activate minigo
 printf "\n" | ./cc/configure_tensorflow.sh
-HOME=/root ./ml_perf/scripts/cc_libgen_parallel_selfplay.sh
+export HOME=/root
+./ml_perf/scripts/cc_libgen_parallel_selfplay.sh
 # make MiniGo CI/CD test process faster
 sed -i '/--winrate=/ s/=.*/=0.003/' ml_perf/flags/19/train_loop.flags
 sed -i '/--eval=/ s/=.*/=1/' ml_perf/flags/19/train_loop.flags
