@@ -10,6 +10,13 @@ jobs:
     name: Integration Test Workload BERT
     runs-on: self-hosted
     steps:
+    - name: 'Cleanup for BERT'
+      run: |
+        ls -al ./e2eAIOK/modelzoo/bert/
+        rm -rf ./e2eAIOK/modelzoo/bert/* || true
+        rm -rf ./e2eAIOK/modelzoo/bert/.??* || true
+        ls -al ./e2eAIOK/modelzoo/bert/
+
     - name: Checkout
       uses: actions/checkout@v2
       with:
