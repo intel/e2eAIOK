@@ -12,8 +12,8 @@ jobs:
     steps:
     - name: Cleanup for BERT
       run: |
-        rm -rf ./e2eAIOK/modelzoo/bert/* || true
-        rm -rf ./e2eAIOK/modelzoo/bert/.??* || true
+        rm -rf ./modelzoo/bert/* || true
+        rm -rf ./modelzoo/bert/.??* || true
 
     - name: Checkout
       uses: actions/checkout@v2
