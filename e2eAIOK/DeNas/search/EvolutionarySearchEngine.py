@@ -1,9 +1,9 @@
-import random
 from search.BaseSearchEngine import BaseSearchEngine
 from cv.utils.cnn import cnn_mutation_random_func, cnn_crossover_random_func
 from cv.utils.vit import vit_mutation_random_func, vit_crossover_random_func
 from nlp.utils import bert_mutation_random_func, bert_crossover_random_func
 from asr.utils.asr_nas import asr_mutation_random_func, asr_crossover_random_func
+
 class EvolutionarySearchEngine(BaseSearchEngine):
 
     def __init__(self, params=None, super_net=None, search_space=None):
