@@ -1,0 +1,41 @@
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title> {{ context.title }} </title>
+  {% include 'scripts.html' %}
+  {% include 'styles.html' %}
+</head>
+
+<body class="bg-container">
+  <nav class="navbar-top">
+    <a href="#overview"><span>Overview</span></a>
+    <a href="#interactions"><span>Interactions</span></a>
+  </nav>
+
+  <div class="container-main">
+    <div>
+      <a class="id-anchor" id="overview"></a>
+      <h1 class="tb-title">Overview</h1>
+    </div>
+    <section class="section">
+      <div class="section-start">
+        {% include 'overview.html' %}
+      </div>
+    </section>
+    <div>
+      <a class="id-anchor" id="interactions"></a>
+      <h1 class="tb-title">Interactions</h1>
+    </div>
+    <section class="section">
+      {% include 'interactions.html' %}
+    </section>
+  </div>
+  <footer class="footer">
+    <p>Report generated with Intel recdp</a></p>
+  </footer>
+
+</body>
+
+</html>

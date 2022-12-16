@@ -1,0 +1,204 @@
+{{ context.resources }}
+
+{% if context.components.has_variables%}
+{% for var in context.components.variables.values() %}
+{% if var.plots[0] != 0 %}
+{{ var.plots[0] }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if context.components.has_correlation and context.components.correlations[0] != 0%}
+{{ context.components.correlations[0] }}
+{% endif %}
+
+{% if context.components.has_missing and context.components.missing[0] != 0 %}
+{{ context.components.missing[0] }}
+{% endif %}
+
+<script>
+    setTimeout(init, 50);
+    function getOriginalVariables(){}
+
+    function init() {
+        const tableRows = document.querySelectorAll('.rp-table tr');
+        highlightTableValue(tableRows, '#f00');
+        scientificNotationStrip(tableRows);
+        getOriginalVariables = function(){
+            return "{{ context.components.variables|list }}";
+        }
+    }
+
+    function highlightTableValue(element, color) {
+        for (let i of element) {
+            let thValue = i.firstElementChild.innerText;
+            let tbValue = i.lastElementChild.innerText;
+            if (thValue.includes('Unique') && tbValue.replace('%',
+                '') == 100) {
+                i.style.color = color;
+            } else if (thValue.includes('Missing') && tbValue.replace('%',
+                '') != 0) {
+                i.style.color = color;
+            } else if (thValue.includes('Zeros') && tbValue.replace('%',
+                '') != 0) {
+                i.style.color = color;
+            } else if (thValue.includes('Infinite') && tbValue.replace('%',
+                '') != 0) {
+                i.style.color = color;
+            } else if (thValue.includes('Skewness' && tbValue > 20)) {
+                i.style.color = color;
+            }
+        }
+    }
+
+    function scientificNotationStrip(element) {
+        for (let i of element) {
+            let tbValue = i.lastElementChild.innerHTML;
+            if (!isNaN(tbValue)) {
+                if (tbValue.includes('e+')) {
+                    let newValue = tbValue.replace('e+', '×10<sup>') + '</sup>';
+                    i.lastElementChild.innerHTML = newValue;
+                } else if (tbValue.includes('e-')) {
+                    let newValue = tbValue.replace('e', '×10<sup>') + '</sup>';
+                    i.lastElementChild.innerHTML = newValue;
+                }
+            }
+        }
+    }
+
+    function toggleDetails(e) {
+        const plotSection = e.parentNode.parentNode.nextElementSibling;
+        const displayStyle = window.getComputedStyle(plotSection).display;
+        plotSection.style.display = (displayStyle === 'none') ? 'block' : 'none';
+        e.innerText = (e.innerText === 'Show Details') ? 'Hide Details' : 'Show Details';
+    }
+
+    function showStats(e) {
+        e.style.backgroundColor = '#b5d6ea';
+        e.nextElementSibling.style.backgroundColor = 'white';
+        e.parentNode.nextElementSibling.style.display = 'flex';
+        e.parentNode.nextElementSibling.nextElementSibling.style.display = 'none';
+    }
+
+    function showPlots(e) {
+        e.style.backgroundColor = '#b5d6ea';
+        e.previousElementSibling.style.backgroundColor = 'white';
+        e.parentNode.nextElementSibling.style.display = 'none';
+        e.parentNode.nextElementSibling.nextElementSibling.style.display = 'flex';
+    }
+
+    function hideDropdown(e) {
+        if (typeof window.ontouchstart !== 'undefined') {
+            subContent = document.getElementsByClassName('subcontent')[0];
+            const displayStyle = window.getComputedStyle(subContent).display;
+            subContent.style.display = (displayStyle === 'none') ? 'block' : 'none';
+        }
+    }
+
+    function openTab(e) {
+        const btnIndex = [...e.parentElement.children].indexOf(e);
+        const allContentEle = e.parentElement.parentElement.children;
+        for (let i of [...allContentEle].slice(1)) {
+            i.style.display = 'none';
+        }
+        allContentEle[Math.round(btnIndex/2)].style.display = (btnIndex == 1) ? 'flex' : 'block';
+    }
+
+    function switchPage(e) {
+        const pageTo = e.id.replace('switch', 'page');
+        const pageBox = document.getElementById(pageTo);
+        const pageBoxAll = document.getElementsByClassName('page-box');
+        for (let i of pageBoxAll) {
+            i.style.display = 'none';
+        }
+        for (let i of document.querySelectorAll('.page-switch li')) {
+            i.style.backgroundColor = 'white';
+        }
+        pageBox.style.display = 'block';
+        e.style.backgroundColor = '#5DADE2';
+    }
+
+    function sortBy(e){
+        const selectedOption = e.options[e.selectedIndex].value;
+        const isReverseOrder = !!document.getElementById("id-variable-reverse-order").checked;
+        let variableSection = document.getElementById("id-variable-section");
+        let variables = Array.from(document.getElementsByClassName("section-variable"));
+
+        switch (selectedOption){
+            case 'original':
+                variables.sort(originalComparator);
+                break;
+            case 'alphabetical':
+                variables.sort(alphabeticalComparator);
+                break;
+            case 'missing':
+                variables.sort(missingComparator);
+                break;
+            case 'unique':
+                variables.sort(uniqueComparator);
+                break;
+        }
+
+        if(isReverseOrder){
+            variables.reverse();
+        }
+
+        variables.forEach(v => {
+            variableSection.appendChild(v);
+        })
+    }
+
+    function originalComparator(a, b){
+        const x = alphabeticalAttributeExtractor(a);
+        const y = alphabeticalAttributeExtractor(b);
+        const originalVariables = getOriginalVariables();
+        return originalVariables.indexOf(x) - originalVariables.indexOf(y);
+    }
+
+    function alphabeticalComparator(a, b) {
+        const x = alphabeticalAttributeExtractor(a);
+        const y = alphabeticalAttributeExtractor(b);
+        if (x < y)
+            return -1;
+        if (x > y)
+            return 1;
+        return 0;
+    }
+
+    function alphabeticalAttributeExtractor(x){
+        return x.childNodes[1].id;
+    }
+
+    function missingComparator(a, b){
+        const x = missingAttributeExtractor(a);
+        const y = missingAttributeExtractor(b);
+        if (x > y)
+            return -1;
+        if (x < y)
+            return 1;
+        return 0;
+    }
+
+    function missingAttributeExtractor(x){
+        return parseFloat(x.childNodes[3].childNodes[3].childNodes[1].childNodes[1].childNodes[1].childNodes[6].childNodes[3].innerHTML);
+    }
+
+    function uniqueComparator(a, b){
+        const x = uniqueAttributeExtractor(a);
+        const y = uniqueAttributeExtractor(b);
+        if (x > y)
+            return -1;
+        if (x < y)
+            return 1;
+        return 0;
+    }
+
+    function uniqueAttributeExtractor(x){
+        return parseFloat(x.childNodes[3].childNodes[3].childNodes[1].childNodes[1].childNodes[1].childNodes[2].childNodes[3].innerHTML);
+    }
+
+    function onReverseClick(){
+        sortBy(document.getElementById("section-sort-by-list"));
+    }
+
+</script>

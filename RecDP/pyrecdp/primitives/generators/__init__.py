@@ -6,6 +6,8 @@ from .drop_duplicates import DropDuplicatesFeatureGenerator
 from .drop_unique import DropUniqueFeatureGenerator
 from .fillna import FillNaFeatureGenerator
 from .identity import IdentityFeatureGenerator
+from .statics import StatisticsFeatureGenerator
+from .type import TypeInferFeatureGenerator
 from .encoder import LabelEncoderFeatureGenerator, OneHotEncoderFeatureGenerator
 from .nlp import TextNgramFeatureGenerator, TextSpecialFeatureGenerator
 
@@ -14,9 +16,9 @@ cls_list = {
             'AsTypeFeatureGenerator': AsTypeFeatureGenerator,
             'DatetimeFeatureGenerator': DatetimeFeatureGenerator,
             'FillNaFeatureGenerator': FillNaFeatureGenerator,
+            'IdentityFeatureGenerator': IdentityFeatureGenerator,
             
             'BinnedFeatureGenerator': BinnedFeatureGenerator,
-            'IdentityFeatureGenerator': IdentityFeatureGenerator,
             'CategoryFeatureGenerator': CategoryFeatureGenerator,
 
             'LabelEncoderFeatureGenerator': LabelEncoderFeatureGenerator,

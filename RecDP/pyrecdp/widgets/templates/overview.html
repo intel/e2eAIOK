@@ -1,0 +1,36 @@
+<div class="ov-container">
+    <div class="tb-container-left">
+        <h3 class="tb-title">Dataset Statistics</h3>
+        <div>
+            <table class="rp-table">
+                {% for h, d in context.components.overview[0].items() %}
+                <tr>
+                    <th>{{ h }}</th>
+                    <td>{{ d }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div> 
+    </div>
+    <div class="tb-container-right">
+        <h3 class="tb-title">Features Statistics</h3>
+        <div>
+            <table class="rp-table">
+                <tr>
+                    <th width="15%">feature name</th>
+                    <th width="15%">feature type</th>
+                    <th width="20%">unique values</th>
+                    <th width="50%">description</th>
+                </tr>
+                {% for h, d in context.components.overview[1].items() %}
+                <tr>
+                    <th>{{ h }}</th>
+                    <td>{{ d["type"] }}</td>
+                    <td><progress id="unique_ratio" value="{{ d['unique']['u'] }}" max="{{ d['unique']['m'] }}"></progress> {{ d['unique']['u'] }}/{{ d['unique']['m'] }}</td>
+                    <td>{{ d["quantile"] }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+</div>
