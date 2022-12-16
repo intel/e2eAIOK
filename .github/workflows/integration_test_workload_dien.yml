@@ -8,6 +8,17 @@ on:
   pull_request:
     branches:
     - main
+    paths:
+    - '.github/workflows/integration_test_workload_dien.yml'
+    - 'conf/e2eaiok_defaults_dien_example.conf'
+    - 'demo/builtin/dien/**'
+    - 'Dockerfile-ubuntu18.04/DockerfileTensorflow'
+    - 'e2eAIOK/SDA/**'
+    - 'e2eAIOK/common/**'
+    - 'e2eAIOK/dataloader/**'
+    - 'e2eAIOK/utils/**'
+    - 'modelzoo/dien/**'
+    - 'tests/cicd/**'
 
 jobs:
   integration_test:

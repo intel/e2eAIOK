@@ -8,6 +8,14 @@ on:
   pull_request:
     branches:
     - main
+    paths:
+    - '.github/workflows/**'
+    - 'conf/**'
+    - 'demo/**'
+    - 'Dockerfile-ubuntu18.04/**'
+    - 'e2eAIOK/**'
+    - 'modelzoo/**'
+    - 'tests/unittest/**'
 
 jobs:
   unit_tests:
