@@ -35,4 +35,5 @@ jobs:
         
     - name: Test CNN
       run: |
+        if [[ $(docker ps -q --filter "name=test-denas-cnn" | wc -l) -ne 0 ]]; then docker ps -q --filter "name=test-denas-cnn" | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi
         docker run --rm --name test-denas-cnn --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch112 /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/cicd/jenkins_denas_cnn.sh"

@@ -36,5 +36,6 @@ jobs:
 
     - name: Test DIEN
       run: |
+        if [[ $(docker ps -q --filter "name=test-workload-dien" | wc -l) -ne 0 ]]; then docker ps -q --filter "name=test-workload-dien" | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi
         cd modelzoo/dien/train && bash patch_dien.sh && cd ../../..
         docker run --rm --name test-workload-dien --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-tensorflow /bin/bash -c "USE_SIGOPT=0 . /home/vmagent/app/e2eaiok/tests/cicd/jenkins_dien_test.sh"
