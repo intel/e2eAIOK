@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-release_version=$(cat version | head -1)
-echo ${release_version} > e2eAIOK/version
+release_version=$(cat e2eAIOK/version | head -1)
 
 python3 setup.py sdist
 twine check dist/e2eAIOK-${release_version}.tar.gz

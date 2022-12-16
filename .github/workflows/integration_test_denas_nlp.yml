@@ -1,0 +1,38 @@
+name: Integration Test DeNas NLP
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    branches:
+    - main
+    paths:
+    - '.github/workflows/integration_test_denas_nlp.yml'
+    - 'conf/denas/nlp/**'
+    - 'demo/denas/bert/**'
+    - 'Dockerfile-ubuntu18.04/DockerfilePytorch112'
+    - 'e2eAIOK/DeNas/**'
+    - 'e2eAIOK/common/**'
+    - 'e2eAIOK/dataloader/**'
+    - 'e2eAIOK/utils/**'
+    - 'tests/cicd/**'
+
+jobs:
+  integration_test:
+    name: Integration Test DeNas NLP
+    runs-on: self-hosted
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Build Docker
+      run: |
+        cd Dockerfile-ubuntu18.04 && docker build -t e2eaiok-pytorch112 . -f DockerfilePytorch112 && cd .. && yes | docker container prune && yes | docker image prune
+
+    - name: Test NLP
+      run: |
+        docker run --rm --name test-denas-bert --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch112 /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/cicd/jenkins_denas_bert.sh"
