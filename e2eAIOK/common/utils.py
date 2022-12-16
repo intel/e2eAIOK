@@ -4,6 +4,7 @@ import yaml
 import hashlib
 from pathlib import Path
 from datetime import datetime
+import torch
 
 def update_list(orig, diff):
     dict_diff = {}
@@ -93,3 +94,33 @@ def parse_size(size):
 def get_estimate_size_of_dtype(dtype_name):
     units = {'byte': 1, 'short': 2, 'int': 4, 'long': 8, 'float': 4, 'double': 8, 'string': 10}
     return units[dtype_name] if dtype_name in units else 4
+
+## Update multi-level dict, merge dict2 into dict1
+def update_dict(dict1, dict2):
+    keys = set(dict1.keys()) | set(dict2.keys())
+    dict3 = {}
+    for key in keys:
+        if key in dict1.keys() and key in dict2.keys():
+            if isinstance(dict1[key], dict) and isinstance(dict2[key], dict):
+                dict3[key] = update_dict(dict1[key],dict2[key])
+            elif (isinstance(dict1[key], dict) and not isinstance(dict2[key], dict)) or \
+                    (not isinstance(dict1[key], dict) and isinstance(dict2[key], dict)):
+                raise ValueError(f"{key} in two dicts have different types, one is dict, another is not!")
+            else:
+                dict3[key] = dict2[key]
+        elif key in dict1.keys():
+            dict3[key] = dict1[key]
+        else:
+            dict3[key] = dict2[key]
+    return dict3
+
+def accuracy(output,label):
+    pred = output.data.cpu().max(1)[1]
+    label = label.data.cpu()
+    if label.shape == output.shape:
+        label = label.max(1)[1]
+
+    if pred.shape != label.shape:
+        logging.error('pred shape[%s] and label shape[%s] not match' % (pred.shape, label.shape))
+        raise RuntimeError('pred shape[%s] and label shape[%s] not match' % (pred.shape, label.shape))
+    return torch.mean((pred == label).float())

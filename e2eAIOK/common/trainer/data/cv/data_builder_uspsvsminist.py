@@ -3,7 +3,7 @@
 import os
 import torch
 from torch.utils.data import random_split
-from .utils.image_list import ImageList
+from e2eAIOK.common.trainer.data.data_utils.image_list import ImageList
 from torchvision import transforms
 from e2eAIOK.common.trainer.data.data_builder_cv import DataBuilderCV
 

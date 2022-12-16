@@ -245,7 +245,10 @@ class Timer:
         logging.info(_str)
 
 def get_device(cfg):
-    device = 'cpu' if "device" not in cfg else cfg.device
+    if 'device' in cfg and cfg.device in ['gpu', 'cuda'] and torch.cuda.is_available():
+        device = 'cuda'
+    else:
+        device = 'cpu'
     return device
 
 def is_main_process():
@@ -311,7 +314,8 @@ def create_scheduler(optimizer, cfg):
     elif cfg.lr_scheduler == "MultiStepLR":
         scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=cfg.lr_scheduler_config.decay_stages, gamma=cfg.lr_scheduler_config.decay_rate)
     elif cfg.lr_scheduler == "CosineAnnealingLR":
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=cfg.train_epochs)
+        t_max = cfg.lr_scheduler.T_max if "T_max" in cfg.lr_scheduler and cfg.lr_scheduler.T_max > 0 else cfg.train_epochs
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=t_max)
     elif cfg.lr_scheduler == "ReduceLROnPlateau":
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="max",factor=cfg.lr_scheduler_config.decay_rate, patience=cfg.lr_scheduler_config.decay_patience, \
                                                         verbose=True, threshold_mode='abs')
@@ -323,6 +327,8 @@ def create_scheduler(optimizer, cfg):
 def create_warmup_scheduler(optimizer, total_iters, cfg):
     ''' create warm up scheduler
 
+    :param optimizer: optimizer
+    :param total_iters: iterations in one epoch
     :return: a warm up scheduler
     '''
     if "warmup_scheduler" not in cfg or cfg.warmup_scheduler == "" or \

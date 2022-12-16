@@ -3,7 +3,7 @@ import e2eAIOK.common.trainer.utils.utils as utils
 import os
 import torch
 import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
-from e2eAIOK.common.trainer.utils.utils as get_device
+from e2eAIOK.common.trainer.utils.utils import get_device
 
 class ModelBuilder():
     """

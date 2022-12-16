@@ -1,7 +1,7 @@
 import os
 import torch
 import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
-from e2eAIOK.common.trainer.utils.data_utils import channels_last_collate
+from e2eAIOK.common.trainer.data.data_utils.data_utils import channels_last_collate
 from e2eAIOK.common.trainer.data_builder import DataBuilder
 
 class DataBuilderCV(DataBuilder):
@@ -22,7 +22,6 @@ class DataBuilderCV(DataBuilder):
 
         ### check whether distributed or enable_ipex
         if ext_dist.my_size > 1:
-            train_shuffle = False
             num_tasks = ext_dist.dist.get_world_size()
             global_rank = ext_dist.dist.get_rank()
             sampler_train = torch.utils.data.DistributedSampler(
@@ -33,12 +32,11 @@ class DataBuilderCV(DataBuilder):
                 sampler_test = torch.utils.data.DistributedSampler(
                 self.dataset_test, num_replicas=num_tasks, rank=global_rank,  shuffle=False)
         else:
-            train_shuffle = True
             sampler_train = torch.utils.data.RandomSampler(self.dataset_train)
             sampler_val = torch.utils.data.SequentialSampler(self.dataset_val)
             sampler_test = torch.utils.data.SequentialSampler(self.dataset_test)
         
-        if "enable_ipex" in cfg and cfg.enable_ipex:
+        if "enable_ipex" in self.cfg and self.cfg.enable_ipex:
             collate_fn = channels_last_collate
         else:
             collate_fn = None
@@ -49,7 +47,6 @@ class DataBuilderCV(DataBuilder):
             sampler=sampler_train,
             batch_size=self.cfg.train_batch_size,
             num_workers=self.cfg.num_workers,
-            shuffle=train_shuffle,
             drop_last=drop_last,
             collate_fn=collate_fn,
             pin_memory=pin_memory
@@ -60,7 +57,6 @@ class DataBuilderCV(DataBuilder):
             batch_size=self.cfg.eval_batch_size,
             sampler=sampler_val, 
             num_workers=self.cfg.num_workers,
-            shuffle=False,
             drop_last=False,
             collate_fn=collate_fn
         )
@@ -73,7 +69,6 @@ class DataBuilderCV(DataBuilder):
                 batch_size=self.cfg.eval_batch_size,
                 sampler=sampler_test, 
                 num_workers=self.cfg.num_workers,
-                shuffle=False,
                 drop_last=False,
                 collate_fn=collate_fn
             )

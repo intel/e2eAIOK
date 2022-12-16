@@ -12,7 +12,7 @@ class DataBuilderCIFAR(DataBuilderCV):
         """
             prepare CIFAR dataset
         """
-        if self.cfg.data_set in ["CIFAR10","CIFAR100"]:
+        if self.cfg.data_set.lower() in ["cifar10","cifar100"]:
             dataset_train = self.build_dataset(is_train=True)
             dataset_val = self.build_dataset(is_train=False)
         else:
@@ -23,9 +23,9 @@ class DataBuilderCIFAR(DataBuilderCV):
     def build_dataset(self, is_train = True):
         transform = self.build_transform(is_train)
         data_folder = check_mkdir(self.cfg.data_path)
-        if self.cfg.data_set == 'CIFAR10':
+        if self.cfg.data_set.lower() == 'cifar10':
             dataset = datasets.CIFAR10(data_folder, train=is_train, transform=transform, download=True)
-        elif self.cfg.data_set == 'CIFAR100':
+        elif self.cfg.data_set.lower() == 'cifar100':
             dataset = datasets.CIFAR100(data_folder, train=is_train, transform=transform, download=True)
         return dataset
     def build_transform(self, is_train):
