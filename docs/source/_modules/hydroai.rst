@@ -1,4 +1,4 @@
-hydroai package
+e2eAIOK.utils package
 ===============
 
 Submodules
@@ -7,19 +7,19 @@ Submodules
 .. toctree::
    :maxdepth: 4
 
-   hydroai.hydroDB
-   hydroai.hydroautolearner
-   hydroai.hydroconfig
-   hydroai.hydroconnector
-   hydroai.hydromodel
-   hydroai.hydromodelzoo
-   hydroai.hydroserver
-   hydroai.hydroweblistener
+   e2eAIOK.utils.hydroDB
+   e2eAIOK.utils.hydroautolearner
+   e2eAIOK.utils.hydroconfig
+   e2eAIOK.utils.hydroconnector
+   e2eAIOK.utils.hydromodel
+   e2eAIOK.utils.hydromodelzoo
+   e2eAIOK.utils.hydroserver
+   e2eAIOK.utils.hydroweblistener
 
 Module contents
 ---------------
 
-.. automodule:: hydroai
+.. automodule:: e2eAIOK.utils
    :members:
    :undoc-members:
    :show-inheritance:

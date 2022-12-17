@@ -8,20 +8,14 @@ Coding Style
 * use yapf to do code format
 
 .. code-block:: bash
-   
-   cd SDA
-   yapf -i -r ./
 
-   cd hydroai
+   cd e2eAIOK
    yapf -i -r ./
 
 
 * Use pylint to check code Style
 
 .. code-block:: bash
-   
-   cd SDA
-   ./dev/lint-python
 
-   cd hydroai
+   cd e2eAIOK
    ./dev/lint-python

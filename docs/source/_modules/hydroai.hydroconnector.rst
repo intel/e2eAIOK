@@ -1,7 +1,7 @@
-hydroai.hydroconnector module
+e2eAIOK.utils.hydroconnector module
 =============================
 
-.. automodule:: hydroai.hydroconnector
+.. automodule:: e2eAIOK.utils.hydroconnector
    :members:
    :undoc-members:
    :show-inheritance:
