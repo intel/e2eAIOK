@@ -1,23 +1,64 @@
-from autogluon.features.generators.identity import IdentityFeatureGenerator as super_class
+from .base import BaseFeatureGenerator as super_class
 import pandas as pd
+import pyarrow as pa
 from pandas.api import types as pdt
 import numpy as np
 from collections import OrderedDict
+import inspect
+
+def convert_to_type(series, at):
+    import pyarrow.types as types
+    if types.is_timestamp(at):
+        return pd.to_datetime(series, errors='coerce')
+    elif types.is_dictionary(at):
+        #TODO: this is not working with spark, need fix
+        print("convert to categorical")
+        return pd.Categorical(series)
+    elif types.is_list(at):
+        return pd.Series(series).str.split()
+    return series
 
 class TypeInferFeatureGenerator(super_class):
     def __init__(self, **kwargs):
-        self.obj = None
         super().__init__(**kwargs)
-        self.lazy = False
+        self._astype_feature_map = None
+   
+    def is_useful(self, pa_schema):
+        return True
     
-    def _fit_transform(self, X, **kwargs):
-        new_df_list = OrderedDict()
-        for feature_name in X.columns:
-            new_df_list[feature_name] = self._infer_type(X[feature_name], self.lazy)
-        
-        return pd.DataFrame(new_df_list)
+    def fit_prepare(self, pa_schema, df):
+        self._astype_feature_map = OrderedDict()
+        ret_pa_fields = []
+        for feature_name in df.columns:
+            ret_field = self._infer_type(df[feature_name])
+            self._astype_feature_map[feature_name] = ret_field
+            ret_pa_fields.append(ret_field)
+        return pa.schema(ret_pa_fields)
+
+    def get_function_pd(self):
+        def type_infer(df):            
+            ret_list = OrderedDict()
+            pa_schema = pa.Schema.from_pandas(df)
+            for idx, feature_name in enumerate(df.columns):
+                feature = df[feature_name]
+                if pa_schema[idx] != self._astype_feature_map[feature_name]:
+                    # do convert
+                    feature = convert_to_type(feature, self._astype_feature_map[feature_name].type)
+                ret_list[feature_name] = feature
+            return pd.DataFrame(data = ret_list)
+        return type_infer
+
+    def fit_transform(self, df):
+        if not self._astype_feature_map:
+            self.fit_prepare(None, df)
+        return self.get_function_pd()(df)
+ 
+    def dump_codes(self):
+        codes = f"self._astype_feature_map = {self._astype_feature_map}\n"
+        codes += inspect.getsource(self.get_function_pd())
+        return codes
     
-    def _infer_type(self, s, lazy = False):
+    def _infer_type(self, s):
         def try_category(s):
             if pdt.is_categorical_dtype(s) and not pdt.is_bool_dtype(s):
                 return s
@@ -41,11 +82,10 @@ class TypeInferFeatureGenerator(super_class):
                 result = pd.to_datetime(result, errors='coerce')
                 if result.isnull().mean() > 0.8:  # If over 80% of the rows are NaN
                     return s
-                # Now We can think this s can be datetime
-                s = pd.to_datetime(s, errors='coerce')
+                else:
+                    return result
             except:
                 return s
-            return s
 
         def try_text(s):
             if not pdt.is_string_dtype(s):
@@ -65,18 +105,4 @@ class TypeInferFeatureGenerator(super_class):
         s = try_category(s)
         s = try_datetime(s)
         s = try_text(s)
-        return s
-
-    def is_useful(self, df):
-        return False
-
-    def update_feature_statistics(self, X, state_dict):
-        length = X.shape[0]
-        for feature_name in X.columns:
-            feature = X[feature_name]
-            unique_list = feature.unique()
-            desc_info = dict((k, v) for k, v in feature.describe().to_dict().items() if k not in ['count'])
-            stat = {'type': feature.dtype.name, 'unique': {"u": len(unique_list), "m": length}, 'quantile':desc_info}
-            if feature_name not in state_dict:
-                state_dict[feature_name] = stat
-        return state_dict
+        return pa.field(s.name, pa.Array.from_pandas(s).type)

@@ -1,24 +1,23 @@
-from autogluon.features.generators.datetime import DatetimeFeatureGenerator as super_class
+from .base import BaseFeatureGenerator as super_class
+import pyarrow.types as types
 
 class DatetimeFeatureGenerator(super_class):
-    def __init__(self, orig_generator = None, **kwargs):
-        if orig_generator:
-            self.obj = orig_generator
-        else:
-            self.obj = None
-            super().__init__(**kwargs)
-        
-    def __getattr__(self, attr):
-        if self.obj:
-            return getattr(self.obj, attr)
-        else:
-            return getattr(self, attr)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.feature_in = []
 
-    def _fit_transform(self, X, **kwargs):
-        return super()._fit_transform(X, **kwargs)
+    def is_useful(self, pa_schema):
+        found = False
+        for pa_field in pa_schema:
+            if types.is_date32(pa_field.type) or types.is_timestamp(pa_field.type):
+                self.feature_in.append(pa_field.name)
+                found = True
+        return found
+    
+    def fit_prepare(self, pa_schema):
+        return pa_schema
 
-    def is_useful(self, df):
-        return True
-
-    def update_feature_statistics(self, X, state_dict):
-        return state_dict
+    def get_function_pd(self):
+        def generate_datetime_feature(df):
+            return df
+        return generate_datetime_feature

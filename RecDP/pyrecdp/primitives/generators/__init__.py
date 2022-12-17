@@ -1,29 +1,31 @@
-from .astype import AsTypeFeatureGenerator
+from .dataframe import DataframeConvertFeatureGenerator
 from .binned import BinnedFeatureGenerator
 from .category import CategoryFeatureGenerator
 from .datetime import DatetimeFeatureGenerator
 from .drop_duplicates import DropDuplicatesFeatureGenerator
-from .drop_unique import DropUniqueFeatureGenerator
 from .fillna import FillNaFeatureGenerator
-from .identity import IdentityFeatureGenerator
 from .statics import StatisticsFeatureGenerator
 from .type import TypeInferFeatureGenerator
 from .encoder import LabelEncoderFeatureGenerator, OneHotEncoderFeatureGenerator
 from .nlp import TextNgramFeatureGenerator, TextSpecialFeatureGenerator
 
+pre_feature_generator_list = [
+    FillNaFeatureGenerator,
+    TypeInferFeatureGenerator,
+]
 
-cls_list = {
-            'AsTypeFeatureGenerator': AsTypeFeatureGenerator,
-            'DatetimeFeatureGenerator': DatetimeFeatureGenerator,
-            'FillNaFeatureGenerator': FillNaFeatureGenerator,
-            'IdentityFeatureGenerator': IdentityFeatureGenerator,
-            
-            'BinnedFeatureGenerator': BinnedFeatureGenerator,
-            'CategoryFeatureGenerator': CategoryFeatureGenerator,
+transformation_generator_list = [
+    DatetimeFeatureGenerator,
+]
 
-            'LabelEncoderFeatureGenerator': LabelEncoderFeatureGenerator,
-            'OneHotEncoderFeatureGenerator': OneHotEncoderFeatureGenerator,
-            
-            'DropDuplicatesFeatureGenerator': DropDuplicatesFeatureGenerator,
-            'DropUniqueFeatureGenerator': DropUniqueFeatureGenerator,
-        }
+index_generator_list = [
+    BinnedFeatureGenerator,
+    CategoryFeatureGenerator,
+]
+
+encode_generator_list = [
+    LabelEncoderFeatureGenerator,
+    OneHotEncoderFeatureGenerator
+]
+
+post_feature_generator_list = []

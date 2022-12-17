@@ -1,30 +1,18 @@
-from autogluon.features.generators.identity import IdentityFeatureGenerator as super_class
-from autogluon.common.features.types import R_INT, R_FLOAT
+from .base import BaseFeatureGenerator as super_class
 import pandas as pd
 import pyarrow as pa
 import numpy as np
 
 class StatisticsFeatureGenerator(super_class):
-    def __init__(self, orig_generator = None, **kwargs):
-        if orig_generator:
-            self.obj = orig_generator
-        else:
-            self.obj = None
-            super().__init__(**kwargs)
-        self.lazy = False
-        
-    def __getattr__(self, attr):
-        if self.obj:
-            return getattr(self.obj, attr)
-        else:
-            return getattr(self, attr)
-
-    def _fit_transform(self, X, **kwargs):
-        return super()._fit_transform(X, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     def is_useful(self, df):
-        return False
-
+        return True
+    
+    def fit_prepare(self, pa_schema):
+        return
+    
     def update_feature_statistics(self, X, y):
         overview_info = {}
         overview_detail = {}

@@ -1,24 +1,16 @@
-from autogluon.features.generators.binned import BinnedFeatureGenerator as super_class
+from .base import BaseFeatureGenerator as super_class
 
 class BinnedFeatureGenerator(super_class):
-    def __init__(self, orig_generator = None, **kwargs):
-        if orig_generator:
-            self.obj = orig_generator
-        else:
-            self.obj = None
-            super().__init__(**kwargs)
-        
-    def __getattr__(self, attr):
-        if self.obj:
-            return getattr(self.obj, attr)
-        else:
-            return getattr(self, attr)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
-    def _fit_transform(self, X, **kwargs):
-        return super()._fit_transform(X, **kwargs)
-
-    def is_useful(self, df):
-        return True
-
-    def update_feature_statistics(self, X, state_dict):
-        return state_dict
+    def is_useful(self, pa_schema):
+        return False
+    
+    def fit_prepare(self, pa_schema):
+        return
+    
+    def get_function_pd(self):
+        def generate_bin(df):
+            return df
+        return generate_bin

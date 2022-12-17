@@ -60,7 +60,8 @@ class FeatureProfiler:
         if self.data_stats:
             return self.data_stats
         # pre-process
-        feature_data = TypeInferFeatureGenerator()._fit_transform(self.feature_data)
+        feature_data = self.feature_data
+        feature_data = TypeInferFeatureGenerator().fit_transform(feature_data)
 
         # prepare state
         self.data_stats = StatisticsFeatureGenerator().update_feature_statistics(feature_data, self.y)

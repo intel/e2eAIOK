@@ -1,49 +1,32 @@
-from autogluon.features.generators.label_encoder import LabelEncoderFeatureGenerator as SuperLabelEncoderFeatureGenerator
-from autogluon.features.generators.one_hot_encoder import OneHotEncoderFeatureGenerator as SuperOneHotEncoderFeatureGenerator
+from .base import BaseFeatureGenerator as super_class
 
-class LabelEncoderFeatureGenerator(SuperLabelEncoderFeatureGenerator):
-    def __init__(self, orig_generator = None, **kwargs):
-        if orig_generator:
-            self.obj = orig_generator
-        else:
-            self.obj = None
-            super().__init__(**kwargs)
-        
-    def __getattr__(self, attr):
-        if self.obj:
-            return getattr(self.obj, attr)
-        else:
-            return getattr(self, attr)
+class LabelEncoderFeatureGenerator(super_class):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
-    def _fit_transform(self, X, **kwargs):
-        return super()._fit_transform(X, **kwargs)
-
-    def is_useful(self, df):
-        return True
-
-    def update_feature_statistics(self, X, state_dict):
-        return state_dict
+    def is_useful(self, pa_schema):
+        return False
+    
+    def fit_prepare(self, pa_schema):
+        return
+    
+    def get_function_pd(self):
+        def label_encode(df):
+            return df
+        return label_encode
 
 
-class OneHotEncoderFeatureGenerator(SuperOneHotEncoderFeatureGenerator):
-    def __init__(self, orig_generator):
-        if orig_generator:
-            self.obj = orig_generator
-        else:
-            self.obj = None
-            super().__init__(**kwargs)
-        
-    def __getattr__(self, attr):
-        if self.obj:
-            return getattr(self.obj, attr)
-        else:
-            return getattr(self, attr)
+class OneHotEncoderFeatureGenerator(super_class):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
-    def _fit_transform(self, X, **kwargs):
-        return super()._fit_transform(X, **kwargs)
-
-    def is_useful(self, df):
-        return True
-
-    def update_feature_statistics(self, X, state_dict):
-        return state_dict
+    def is_useful(self, pa_schema):
+        return False
+    
+    def fit_prepare(self, pa_schema):
+        return
+    
+    def get_function_pd(self):
+        def onehot_encode(df):
+            return df
+        return onehot_encode
