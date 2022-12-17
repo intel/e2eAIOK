@@ -9,10 +9,10 @@ Coding Style
 
 .. code-block:: bash
    
-   cd SDA
+   cd e2eAIOK/SDA
    yapf -i -r ./
 
-   cd hydroai
+   cd e2eAIOK/utils
    yapf -i -r ./
 
 
@@ -20,8 +20,8 @@ Coding Style
 
 .. code-block:: bash
    
-   cd SDA
+   cd e2eAIOK/SDA
    ./dev/lint-python
 
-   cd hydroai
+   cd e2eAIOK/utils
    ./dev/lint-python

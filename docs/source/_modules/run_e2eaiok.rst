@@ -1,4 +1,4 @@
-run\_hydroai module
+run\_e2eaiok module
 ===================
 
 .. automodule:: run_e2eaiok
