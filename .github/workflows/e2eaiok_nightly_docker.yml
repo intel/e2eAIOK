@@ -36,14 +36,6 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/e2eaiok-tensorflow:latest
       -
-        name: Build and Push PyTorch1.5
-        uses: docker/build-push-action@v3
-        with:
-          context: ./Dockerfile-ubuntu18.04
-          file: ./Dockerfile-ubuntu18.04/DockerfilePytorch
-          push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/e2eaiok-pytorch:latest
-      -
         name: Build and Push PyTorch1.10
         uses: docker/build-push-action@v3
         with:

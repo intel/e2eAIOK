@@ -1,0 +1,39 @@
+name: Publish e2eAIOK Stable Docker to DockerHub
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'e2eAIOK/version'
+
+jobs:
+  e2eaiok-release-docker-hub:
+    runs-on: sr602
+    if: ${{ github.repository_owner == 'intel' }}
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v2
+      -
+        name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+      -
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      -
+        name: Set up Release Version
+        run: |
+          echo RELEASE_VERSION=$(cat e2eAIOK/version | head -1) >> $GITHUB_ENV
+      -
+        name: Build and Push PyTorch1.5
+        uses: docker/build-push-action@v3
+        with:
+          context: ./Dockerfile-ubuntu18.04
+          file: ./Dockerfile-ubuntu18.04/DockerfilePytorch
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/e2eaiok-pytorch:${{ env.RELEASE_VERSION }}
