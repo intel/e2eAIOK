@@ -129,7 +129,6 @@ class TorchTrainer():
         for i in range(1, self.cfg.train_epochs+1):
             train_start = time.time()
             self.train_one_epoch(i)
-            self.scheduler.step(i)
             if i % self.cfg.eval_epochs == 0:
                 eval_start = time.time()
                 metric = self.evaluate(i)
