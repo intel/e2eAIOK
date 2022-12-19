@@ -1,3 +1,4 @@
+import time
 from e2eAIOK.common.trainer.utils import utils
 from e2eAIOK.common.trainer.torch_trainer import TorchTrainer
 import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
