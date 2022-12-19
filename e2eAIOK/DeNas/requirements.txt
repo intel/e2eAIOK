@@ -7,4 +7,7 @@ timm
 boto3
 ptflops
 sigopt
+tensorboard
+e2eAIOK
 torchaudio~=0.12.0 -f https://download.pytorch.org/whl/cpu/torch_stable.html
+oneccl_bind_pt==1.12.100 -f https://developer.intel.com/ipex-whl-stable
