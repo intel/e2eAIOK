@@ -1,16 +1,23 @@
-name: Publish e2eAIOK Stable Docker to DockerHub
+name: Publish e2eAIOK Docker PyTorch1.12
 
 on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'e2eAIOK/version'
+      - 'Dockerfile-ubuntu18.04/DockerfilePytorch'
   workflow_dispatch:
   push:
     branches:
       - main
     paths:
       - 'e2eAIOK/version'
+      - 'Dockerfile-ubuntu18.04/DockerfilePytorch112'
 
 jobs:
-  e2eaiok-release-docker-hub:
-    runs-on: ubuntu-latest
+  e2eaiok-release-docker:
+    runs-on: sr602
     if: ${{ github.repository_owner == 'intel' }}
     steps:
       -
@@ -30,23 +37,7 @@ jobs:
         run: |
           echo RELEASE_VERSION=$(cat e2eAIOK/version | head -1) >> $GITHUB_ENV
       -
-        name: Build and Push TensorFlow
-        uses: docker/build-push-action@v3
-        with:
-          context: ./Dockerfile-ubuntu18.04
-          file: ./Dockerfile-ubuntu18.04/DockerfileTensorflow
-          push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/e2eaiok-tensorflow:${{ env.RELEASE_VERSION }}
-      -
-        name: Build and Push PyTorch1.10
-        uses: docker/build-push-action@v3
-        with:
-          context: ./Dockerfile-ubuntu18.04
-          file: ./Dockerfile-ubuntu18.04/DockerfilePytorch110
-          push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/e2eaiok-pytorch110:${{ env.RELEASE_VERSION }}
-      -
-        name: Build and Push PyTorch1.12
+        name: Build and Push Docker images
         uses: docker/build-push-action@v3
         with:
           context: ./Dockerfile-ubuntu18.04
