@@ -72,6 +72,8 @@ def main(params):
         searcher.search()
     best_structure = searcher.get_best_structures()
     print(f"DE-NAS completed, best structure is {best_structure}")
+    
+    
 
 if __name__ == '__main__':
     args = parse_args(sys.argv[1:])
