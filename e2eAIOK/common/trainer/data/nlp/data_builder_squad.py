@@ -25,19 +25,21 @@ class DataBuilderSQuAD(DataBuilderNLP):
     def prepare_dataset(self):
         dataset_train, train_examples, train_dataset, labels = build_dataset(is_train=True, args=self.cfg)
         dataset_val, val_examples, val_dataset, val_features, tokenizer = build_dataset(is_train=False, args=self.cfg)
-        return dataset_train, dataset_val, (train_examples, val_examples, val_dataset, val_features, tokenizer)
+        self.dataset_train = dataset_train
+        self.dataset_val = dataset_val
+        return (train_examples, val_examples, val_dataset, val_features, tokenizer)
 
     def get_dataloader(self):
         """
             create training/evaluation dataloader
         """
-        dataset_train, dataset_val, other_data = self.prepare_dataset()
+        other_data = self.prepare_dataset()
 
         if ext_dist.my_size > 1:
             num_tasks = ext_dist.dist.get_world_size()
             global_rank = ext_dist.dist.get_rank()
             sampler_train = torch.utils.data.DistributedSampler(
-                dataset_train, num_replicas=num_tasks, rank=global_rank
+                self.dataset_train, num_replicas=num_tasks, rank=global_rank
             )
             
             #sampler_val = torch.utils.data.DistributedSampler(
@@ -52,7 +54,7 @@ class DataBuilderSQuAD(DataBuilderNLP):
             shuffle = False
 
         dataloader_train = torch.utils.data.DataLoader(
-            dataset_train, 
+            self.dataset_train, 
             sampler=sampler_train,
             batch_size=self.cfg.train_batch_size,
             num_workers=self.cfg.num_workers,
@@ -61,7 +63,7 @@ class DataBuilderSQuAD(DataBuilderNLP):
         )
 
         dataloader_val = torch.utils.data.DataLoader(
-            dataset_val, 
+            self.dataset_val, 
             batch_size=self.cfg.eval_batch_size,
             sampler=sampler_val, 
             num_workers=self.cfg.num_workers,

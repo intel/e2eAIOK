@@ -10,4 +10,5 @@ class DataBuilderLibriSpeech(DataBuilderASR):
 
     def prepare_dataset(self):
         train_data, valid_data, test_datasets = dataio_prepare(self.cfg, self.tokenizer)
-        return train_data, valid_data
+        self.dataset_train = train_data
+        self.dataset_val = valid_data

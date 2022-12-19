@@ -53,7 +53,8 @@ class TorchTrainer():
         """
             check whether training achieved pre-defined metric threshold
         """
-        return metric >= self.cfg["metric_threshold"]
+        
+        return metric >= self.cfg["metric_threshold"] if "metric_threshold" in self.cfg else False
 
     def train_one_epoch(self, epoch):
         """
@@ -111,7 +112,7 @@ class TorchTrainer():
             )
         self.logger.info(output_str)
 
-        if self.cfg.output_dir:
+        if "output_dir" in self.cfg:
             checkpoint_paths = [self.cfg.output_dir + '/checkpoint.pth']
             for checkpoint_path in checkpoint_paths:
                 utils.save_model({

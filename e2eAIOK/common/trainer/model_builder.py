@@ -3,6 +3,7 @@ import e2eAIOK.common.trainer.utils.utils as utils
 import os
 import torch
 import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
+from e2eAIOK.common.trainer.utils.utils import get_device
 
 class ModelBuilder():
     """
@@ -35,26 +36,31 @@ class ModelBuilder():
         """
         self.logger.info(f"model created: {self.model}")
 
-    def create_model(self):
+    def create_model(self,pretrain=None):
         """
             create model, load pre-trained model
+            :param pretrain: load pretrained model, if None, use cfg.pretrain as default
         """
         self._pre_process()
-        if self.model is not None and self.cfg.pretrain:
-            self.load_model()
-        else:
+        if self.model is not None:
+            ##  check if have pretrain model
+            cfg_pretrain = self.cfg.pretrain if ("pretrain" in self.cfg and self.cfg.pretrain != "") else None
+            pretrain = pretrain if pretrain is not None else cfg_pretrain
+            if pretrain:
+                self.load_model(pretrain)
+        if self.model is None:
             self.model = self._init_model()
 
         self._post_process()
         return self.model
 
-    def load_model(self):
+    def load_model(self,pretrain):
         """
             load pre-trained model
         """
-        if not os.path.exists(self.cfg.pretrain):
-            raise RuntimeError(f"Can not find {self.cfg.pretrain}!")
-        self.logger.info(f"loading pretrained model at {self.cfg.pretrain}")
-        state_dict = torch.load(self.cfg.pretrain, map_location=torch.device(self.cfg.device))
+        if not os.path.exists(pretrain):
+            raise RuntimeError(f"Can not find {pretrain}!")
+        self.logger.info(f"loading pretrained model at {pretrain}")
+        state_dict = torch.load(pretrain, map_location=torch.device(get_device(self.cfg)))
         state_dict = state_dict["state_dict"] if "state_dict" in state_dict else state_dict
         self.model.load_state_dict(state_dict, strict=True)

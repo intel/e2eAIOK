@@ -1,11 +1,8 @@
 import os
 import torch
 from torchvision import datasets, transforms
-from torchvision.datasets.folder import ImageFolder
-from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
-from timm.data import create_transform
-import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 from e2eAIOK.common.trainer.data.data_builder_cv import DataBuilderCV
+from e2eAIOK.common.utils import check_mkdir
 
 class DataBuilderCIFAR(DataBuilderCV):
     def __init__(self, cfg):
@@ -13,24 +10,26 @@ class DataBuilderCIFAR(DataBuilderCV):
     
     def prepare_dataset(self):
         """
-            prepare CV related dataset
+            prepare CIFAR dataset
         """
-        if self.cfg.data_set in ["CIFAR10","CIFAR100"]:
+        if self.cfg.data_set.lower() in ["cifar10","cifar100"]:
             dataset_train = self.build_dataset(is_train=True)
             dataset_val = self.build_dataset(is_train=False)
         else:
             raise RuntimeError(f"dataset {self.cfg.data_set} not supported")
-        return dataset_train, dataset_val
+        self.dataset_train = dataset_train
+        self.dataset_val = dataset_val
     
     def build_dataset(self, is_train = True):
         transform = self.build_transform(is_train)
-        if self.cfg.data_set == 'CIFAR10':
-            dataset = datasets.CIFAR10(self.cfg.data_path, train=is_train, transform=transform, download=True)
-        elif self.cfg.data_set == 'CIFAR100':
-            dataset = datasets.CIFAR100(self.cfg.data_path, train=is_train, transform=transform, download=True)
+        data_folder = check_mkdir(self.cfg.data_path)
+        if self.cfg.data_set.lower() == 'cifar10':
+            dataset = datasets.CIFAR10(data_folder, train=is_train, transform=transform, download=True)
+        elif self.cfg.data_set.lower() == 'cifar100':
+            dataset = datasets.CIFAR100(data_folder, train=is_train, transform=transform, download=True)
         return dataset
     def build_transform(self, is_train):
-        resize_im = self.cfg.input_size > 32
+        resize_im = "input_size" in self.cfg and self.cfg.input_size > 32
         if is_train:
             # this should always dispatch to transforms_imagenet_train
             transform = transforms.Compose([
