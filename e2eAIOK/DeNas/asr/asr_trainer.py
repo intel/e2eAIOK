@@ -145,5 +145,9 @@ class ASRTrainer(TorchTrainer):
                 avg_valid_loss = update_average(eval_loss, avg_valid_loss, step)
 
             wer = self.metric.summarize("error_rate")
+            if ext_dist.my_size > 1:
+                wer_tensor = torch.tensor(wer, dtype=torch.float)
+                ext_dist.dist.all_reduce(wer_tensor)
+                wer = wer_tensor.item()
             self.logger.info(f"epoch: {epoch}, time: {time.time()-eval_start_time}, wer: {wer}, avg_loss: {avg_valid_loss}")
         return wer
