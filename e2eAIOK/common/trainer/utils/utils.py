@@ -270,7 +270,7 @@ def init_log():
         logging.getLogger().setLevel(logging.INFO)
 
 
-def accuracy(output,label):
+def acc(output,label):
     pred = output.data.cpu().max(1)[1]
     label = label.data.cpu()
     if label.shape == output.shape:

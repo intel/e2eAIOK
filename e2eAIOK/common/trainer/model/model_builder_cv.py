@@ -3,5 +3,5 @@ import torch
 from e2eAIOK.common.trainer.model_builder import ModelBuilder
 
 class ModelBuilderCV(ModelBuilder):
-    def __init__(self, cfg, model):
+    def __init__(self, cfg, model=None):
         super().__init__(cfg, model)
