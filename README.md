@@ -38,7 +38,7 @@ Intel® End-to-End AI Optimization Kit is a composable toolkits for E2E AI optim
 
 * [Smart Democratization advisor (SDA)](e2eAIOK/SDA/README.md): A user-guided tool to facilitate automation of built-in model democratization via parameterized models, it generates yaml files based on user choice, provided build-in intelligence through parameterized models and leverage SigOpt for HPO. SDA converts the manual model tuning and optimization to assisted autoML and autoHPO. SDA provides a list of build-in optimized models ranging from RecSys, CV, NLP, ASR and RL. 
 
-* Neural network constructor: A neural architecture search technology based on component to build compact neural network models for specific domains directly. It is a multi-model, hardware aware, train-free neural architecture search approach to build models for CV, NLP, ASR directly and leverage transfer learning model adaptor to deploy the models in user’s production environment. 
+* [Neural network constructor](e2eAIOK/DeNas/README.md): A neural architecture search technology based on component to build compact neural network models for specific domains directly. It is a multi-model, hardware aware, train-free neural architecture search approach to build models for CV, NLP, ASR directly and leverage transfer learning model adaptor to deploy the models in user’s production environment. 
 
 For more information, you may [read the docs](https://github.com/intel/e2eAIOK).
 ![Architecture](./docs/source/aiok_workflow.png). 
@@ -63,6 +63,10 @@ cd e2eAIOK; python scripts/start_e2eaiok_docker.py --backend [tensorflow, pytorc
     * [BERT](demo/builtin/bert/BERT_DEMO.ipynb) - [Readme](modelzoo/bert/README.md) - Natual Language Processing, tensorflow
     * [MiniGO](demo/builtin/minigo/MiniGo_DEMO.ipynb) - [Readme](modelzoo/minigo/README.md) - minimalist engine modeled after AlphaGo Zero, tensorflow
 
+* Neural network constructor Demos
+    * [Computer Vision](demo/denas/computer_vision/DENAS_COMPUTER_VISION_DEMO.ipynb) - cnn/vit, pytorch
+    * [NLP](demo/denas/bert/DENAS_BERT_DEMO.ipynb) - bert, pytorch
+    * [Speech Recognition](demo/denas/asr/DENAS_ASR_DEMO.ipynb) - asr, pytorch
 
 ## Performance 
 ![Performance](./docs/source/Performance.png "Intel® End-to-End AI Optimization Kit Performance"). 
