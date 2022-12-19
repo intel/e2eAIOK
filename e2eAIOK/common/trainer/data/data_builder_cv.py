@@ -61,7 +61,7 @@ class DataBuilderCV(DataBuilder):
             collate_fn=collate_fn
         )
 
-        if self.dataset_test is not None:
+        if self.dataset_test is None:
             return dataloader_train, dataloader_val
         else:
             dataloader_test = torch.utils.data.DataLoader(
