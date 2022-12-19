@@ -1,7 +1,7 @@
-hydroai.hydroserver module
+e2eAIOK.utils.hydroserver module
 ==========================
 
-.. automodule:: hydroai.hydroserver
+.. automodule:: e2eAIOK.utils.hydroserver
    :members:
    :undoc-members:
    :show-inheritance:

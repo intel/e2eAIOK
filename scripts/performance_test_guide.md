@@ -1,4 +1,4 @@
-AIDK Performance Test Guide
+AIOK Performance Test Guide
 
 * How to perform test
 
