@@ -64,3 +64,4 @@ RUN echo "KMP_BLOCKTIME=1" >> /etc/bash.bashrc
 RUN echo "KMP_AFFINITY=\"granularity=fine,compact,1,0\"" >> /etc/bash.bashrc
 RUN echo "root:docker" | chpasswd
 ENTRYPOINT [""]
+
