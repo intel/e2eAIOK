@@ -3,7 +3,7 @@ from torch import nn
 from torch.nn import Parameter
 import torch.nn.functional as F
 
-from module.attention_base import AttentionBase
+from e2eAIOK.DeNas.module.attention_base import AttentionBase
 from .Linear_super import LinearSuper
 from .qkv_super import qkv_super
 from .utils import trunc_normal_

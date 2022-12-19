@@ -1,7 +1,7 @@
-hydroai.hydroautolearner module
+e2eAIOK.utils.hydroautolearner module
 ===============================
 
-.. automodule:: hydroai.hydroautolearner
+.. automodule:: e2eAIOK.utils.hydroautolearner
    :members:
    :undoc-members:
    :show-inheritance:

@@ -51,7 +51,7 @@ pipeline {
                 label 'sr612'
             }
             steps {
-               sh 'docker run --rm --name test-denas-asr --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch112 /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/cicd/jenkins_denas_asr.sh"' 
+               sh 'docker run --rm --name test-denas-asr --shm-size=10g --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch112 /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/cicd/jenkins_denas_asr.sh"' 
             }
         }
     }

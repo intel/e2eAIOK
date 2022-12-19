@@ -27,7 +27,7 @@ class RNNTAdvisor(BaseModelAdvisor):
         if len(missing_params) > 0:
             raise ValueError(
                 f"[CONFIG ERROR] Missing parameters {missing_params} in \
-                hydroai_defaults.conf when ppn is set above 1.")
+                e2eaiok_defaults.conf when ppn is set above 1.")
 
         self.train_path = train_path
         self.test_path = eval_path

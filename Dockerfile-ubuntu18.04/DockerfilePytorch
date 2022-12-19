@@ -2,7 +2,7 @@
 FROM ubuntu:18.04
 
 WORKDIR /root/
-RUN apt-get update -y && apt-get upgrade -y && apt-get install -y openjdk-8-jre build-essential cmake wget git libunwind-dev
+RUN apt-get update -y && apt-get upgrade -y && apt-get install -y openjdk-8-jre build-essential cmake wget git libunwind-dev openssh-server sshpass vim
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-py37_4.12.0-Linux-x86_64.sh -O ~/miniconda.sh && /bin/bash ~/miniconda.sh -b -p /opt/intel/oneapi/intelpython/latest
 ENV PATH /opt/intel/oneapi/intelpython/latest/condabin:$PATH
 RUN yes | conda create -n pytorch_mlperf python=3.7
@@ -11,7 +11,7 @@ RUN conda install gxx_linux-64==8.4.0
 RUN cp /opt/intel/oneapi/intelpython/latest/lib/python3.7/_sysconfigdata_x86_64_conda_cos6_linux_gnu.py /opt/intel/oneapi/intelpython/latest/lib/python3.7/_sysconfigdata_x86_64_conda_linux_gnu.py
 RUN cp /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/python3.7/_sysconfigdata_x86_64_conda_cos6_linux_gnu.py /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/python3.7/_sysconfigdata_x86_64_conda_linux_gnu.py
 RUN cp -r /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/* /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/x86_64-conda-linux-gnu/sysroot/usr/lib64/
-# install required dependencies
+# install dependencies
 RUN python -m pip install sklearn onnx tqdm lark-parser pyyaml
 RUN conda install ninja cffi typing --no-update-deps
 RUN conda install intel-openmp mkl mkl-include numpy -c intel --no-update-deps
@@ -30,10 +30,9 @@ RUN git clone https://github.com/oneapi-src/oneCCL.git && cd oneCCL && git check
 # git clone torchCCL and install
 RUN git clone https://github.com/intel/torch-ccl.git && cd torch-ccl && git checkout 2021.1-beta07-1
 RUN source /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/.local/env/setvars.sh && cd torch-ccl && python setup.py install
-# install other dependencies
+# install dependencies
 RUN python -m pip install --no-cache-dir --ignore-installed sigopt==7.5.0 pandas pytest prefetch_generator tensorboardX psutil
 RUN python -m pip install "git+https://github.com/mlperf/logging.git@1.0.0"
-# install recsys dependencies
 RUN python -m pip install lightgbm transformers xgboost
 
 SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
@@ -41,11 +40,9 @@ RUN python -m pip install --no-cache-dir --ignore-installed sigopt==7.5.0 pandas
 RUN python -m pip install pyrecdp pyarrow notebook e2eAIOK
 
 SHELL ["/bin/bash", "-c"]
-RUN apt-get update -y && apt-get install -y openssh-server sshpass vim
 RUN sed -i 's/#Port 22/Port 12346/g' /etc/ssh/sshd_config
 RUN sed -i 's/#   Port 22/    Port 12346/g' /etc/ssh/ssh_config
 RUN echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config
-# install spark
 RUN wget -qO- https://archive.apache.org/dist/spark/spark-3.2.1/spark-3.2.1-bin-hadoop3.2.tgz | tar xvz -C /home/
 ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64
 ENV SPARK_HOME /home/spark-3.2.1-bin-hadoop3.2
@@ -59,10 +56,10 @@ RUN echo "if [ -z \$SPARK_HOME ]; then source /home/spark-env.sh; fi" >> /etc/ba
 RUN mkdir -p /home/vmagent/app/e2eaiok/spark_data_processing/spark_local_dir
 RUN mkdir -p /home/mnt/applicationHistory
 RUN conda init bash
-RUN echo "source /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/.local/env/setvars.sh" >> /etc/bash.bashrc
-RUN echo "export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/python3.7/site-packages/torch_ipex-0.1-py3.7-linux-x86_64.egg/" >> /etc/bash.bashrc
-RUN echo "export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/python3.7/site-packages/torch/lib/" >> /etc/bash.bashrc
-RUN echo "KMP_BLOCKTIME=1" >> /etc/bash.bashrc
-RUN echo "KMP_AFFINITY=\"granularity=fine,compact,1,0\"" >> /etc/bash.bashrc
+RUN echo "source /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/.local/env/setvars.sh" >> /root/.bashrc
+RUN echo "export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/python3.7/site-packages/torch_ipex-0.1-py3.7-linux-x86_64.egg/" >> /root/.bashrc
+RUN echo "export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/python3.7/site-packages/torch/lib/" >> /root/.bashrc
+RUN echo "KMP_BLOCKTIME=1" >> /root/.bashrc
+RUN echo "KMP_AFFINITY=\"granularity=fine,compact,1,0\"" >> /root/.bashrc
 RUN echo "root:docker" | chpasswd
 ENTRYPOINT [""]

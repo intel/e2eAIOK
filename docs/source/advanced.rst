@@ -29,7 +29,7 @@ create new Advisor
         ----------
         params : dict
         params include dataset_path, save_path, global_configs,
-        model_parameters, passed by arguments or hydroai-defaults.conf
+        model_parameters, passed by arguments or e2eaiok_defaults.conf
         dataset_meta_path : str
         path to dataset meta
         train_path : str
