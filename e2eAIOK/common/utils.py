@@ -4,7 +4,6 @@ import yaml
 import hashlib
 from pathlib import Path
 from datetime import datetime
-import torch
 
 def update_list(orig, diff):
     dict_diff = {}
@@ -113,14 +112,3 @@ def update_dict(dict1, dict2):
         else:
             dict3[key] = dict2[key]
     return dict3
-
-def accuracy(output,label):
-    pred = output.data.cpu().max(1)[1]
-    label = label.data.cpu()
-    if label.shape == output.shape:
-        label = label.max(1)[1]
-
-    if pred.shape != label.shape:
-        logging.error('pred shape[%s] and label shape[%s] not match' % (pred.shape, label.shape))
-        raise RuntimeError('pred shape[%s] and label shape[%s] not match' % (pred.shape, label.shape))
-    return torch.mean((pred == label).float())
