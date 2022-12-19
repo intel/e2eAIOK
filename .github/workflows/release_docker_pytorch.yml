@@ -37,7 +37,7 @@ jobs:
             driver-opts: |
               env.http_proxy=${{ env.http_proxy }}
               env.https_proxy=${{ env.https_proxy }}
-              env.no_proxy=${{ env.no_proxy }}
+              "env.no_proxy='${{ env.no_proxy}}'"
       -
         name: Build and Push Docker images
         uses: docker/build-push-action@v3
