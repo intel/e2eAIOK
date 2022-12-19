@@ -35,8 +35,7 @@ pipeline {
                label 'sr613'
             }
             steps {
-               sh 'docker run -t -d --name test-tlk-multinode-baseline-r1 --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/tlk:/home/vmagent/app/data  -v `pwd`:/home/vmagent/app -w /home/vmagent/app/AIDK/TransferLearningKit/src aidk-pytorch110 /opt/intel/oneapi/intelpython/latest/envs/pytorch-1.10.0/bin/python main.py --cfg ../config/demo/baseline/cifar100_res18.yaml -s2 -r1'
-               sh 'docker run --rm --name test-tlk-multinode-baseline-r0 --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/tlk:/home/vmagent/app/data  -v `pwd`:/home/vmagent/app -w /home/vmagent/app/AIDK/TransferLearningKit/src aidk-pytorch110 /opt/intel/oneapi/intelpython/latest/envs/pytorch-1.10.0/bin/python main.py --cfg ../config/demo/baseline/cifar100_res18.yaml -s2 -r0'
+               sh 'docker run -t -d --name test-tlk-multinode-baseline-r1 --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/tlk:/home/vmagent/app/data  -v `pwd`:/home/vmagent/app -w /home/vmagent/app/AIDK/TransferLearningKit/src aidk-pytorch110 /bin/bash -c ". /home/vmagent/app/tests/cicd/jenkins_transfer_learning_basic_test_ddp.sh"'
            }
         }
         stage('Run TLK_baseline_none_DDP_test') {

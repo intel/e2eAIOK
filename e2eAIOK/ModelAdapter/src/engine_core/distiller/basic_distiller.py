@@ -1,8 +1,3 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-# @Author : Hua XiaoZhuan          
-# @Time   : 7/28/2022 10:55 AM
-
 import torch.nn as nn
 from .utils import save_check_logits, load_logits
 

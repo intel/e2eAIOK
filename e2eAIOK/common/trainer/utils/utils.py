@@ -269,6 +269,18 @@ def init_log():
     else:
         logging.getLogger().setLevel(logging.INFO)
 
+
+def accuracy(output,label):
+    pred = output.data.cpu().max(1)[1]
+    label = label.data.cpu()
+    if label.shape == output.shape:
+        label = label.max(1)[1]
+
+    if pred.shape != label.shape:
+        logging.error('pred shape[%s] and label shape[%s] not match' % (pred.shape, label.shape))
+        raise RuntimeError('pred shape[%s] and label shape[%s] not match' % (pred.shape, label.shape))
+    return torch.mean((pred == label).float())
+
 def create_metric(cfg):
     if cfg.eval_metric == "accuracy":
         metric = accuracy

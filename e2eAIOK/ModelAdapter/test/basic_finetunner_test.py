@@ -1,8 +1,3 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-# @Author : Hua XiaoZhuan          
-# @Time   : 8/8/2022 11:14 AM
-
 import pytest
 import sys
 import os

@@ -1,7 +1,6 @@
 from easydict import EasyDict as edict
 import os, time, datetime
 import yaml
-import torch.distributed as dist
 import torch
 import torch.nn as nn
 import logging
@@ -15,6 +14,7 @@ e2eaiok_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os
 sys.path.append(e2eaiok_dir)
 from e2eAIOK.ModelAdapter.src.training import ModelAdapterTask
 from e2eAIOK.common.utils import update_dict
+import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 # e2eaiok_dir = e2eAIOK.__path__[0]
 
 def objective(args,trial):
@@ -37,13 +37,6 @@ def main(args, trial):
     :return: validation metric. If has Earlystopping, using the best metric; Else, using the last metric.
     '''
     #################### merge cfg ################
-    world_size = args.world_size
-    rank = args.rank
-    if world_size <= 1:
-        world_size = 1
-        rank = -1
-    is_distributed = (world_size > 1) # distributed flag
-
     with open(os.path.join(e2eaiok_dir, "e2eAIOK/common/default.conf")) as f:
         cfg = yaml.safe_load(f)
     with open(os.path.join(e2eaiok_dir, "e2eAIOK/ModelAdapter/src/default_ma.conf")) as f:
@@ -53,13 +46,14 @@ def main(args, trial):
     torch.manual_seed(cfg.seed)
 
     #################### dir conguration ################
+    is_distributed = ext_dist.my_size > 1
     prefix = "%s%s%s%s%s"%(cfg.model_type,
                      "_%s"%cfg.experiment.strategy if cfg.experiment.strategy else "",
                      "_%s"%cfg.data_set,
                      "_trial%s" % trial.number if trial is not None else "",
-                     "_rank%s" % rank if is_distributed else "")
+                     "_rank%s" % ext_dist.my_rank if is_distributed else "")
     prefix_time = "%s_%s"%(prefix,int(time.time()))
-    cfg.experiment.tag = cfg.experiment.tag + "%s" % ("_dist%s" % world_size if is_distributed else "")
+    cfg.experiment.tag = cfg.experiment.tag + "%s" % ("_dist%s" % ext_dist.my_size if is_distributed else "")
     root_dir = os.path.join(cfg.output_dir, cfg.experiment.project,cfg.experiment.tag)
     LOG_DIR = os.path.join(root_dir,"log")                      # to save training log
     PROFILE_DIR = os.path.join(root_dir,"profile")              # to save profiling result
@@ -90,8 +84,7 @@ def main(args, trial):
                         datefmt='%m/%d/%Y %I:%M:%S %p',
                         filemode='w')
     ################ init dist ################
-    if is_distributed:
-        dist.init_process_group("gloo", rank=rank, world_size=world_size, timeout=datetime.timedelta(seconds=300))
+    ext_dist.init_distributed(backend=cfg.dist_backend)
     ##################### Optuna hyper params ################
     if trial is not None:
         cfg.learning_rate = trial.suggest_float("lr", 0.001, 0.1, log=True)
@@ -106,7 +99,7 @@ def main(args, trial):
     if trial is not None:
         logging.info("[%s]: Begin trial %s" % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), trial.number))
         print("[%s]: Begin trial %s" % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), trial.number))
-    metric = task.run(rank, eval=args.eval, resume=args.resume)
+    metric = task.run(eval=args.eval, resume=args.resume)
     ############### destroy dist ###############
     if is_distributed:
         dist.destroy_process_group()
@@ -119,12 +112,9 @@ if __name__ == '__main__':
     # usage: python main.py --cfg ../config/demo/cifar100_kd_vit_res18.yaml --opts train_epochs 1 dataset.path /xxx/yyy
     start_time = time.time()
     parser = argparse.ArgumentParser()
-    parser.description = 'Must set world_size.'
     parser.add_argument("--cfg", type=str, default="../config/baseline/cifar100_resnet18_LRdecay10.conf")
     parser.add_argument('--eval',action='store_true')
     parser.add_argument('--resume',action='store_true')
-    parser.add_argument('-s',"--world_size",default=1, help="The worker num. World_size <= 0 means no parallel.", type=int)
-    parser.add_argument('-r', "--rank", default=0, help="The current rank. Begins from 0.", type=int)
     parser.add_argument('-R', "--trial_round", default=0,help="The hyper-param tunning round. trial_round <= 0 means no tunning.", type=int)
     # parser.add_argument("--opts", default=None, nargs=argparse.REMAINDER)
     args = parser.parse_args()

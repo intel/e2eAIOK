@@ -1,7 +1,3 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-# @Author : Hua XiaoZhuan          
-# @Time   : 8/8/2022 9:19 AM
 import logging
 
 class BasicFinetunner:

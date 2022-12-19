@@ -13,6 +13,7 @@ from e2eAIOK.ModelAdapter.src.engine_core.transferrable_model import *
 from e2eAIOK.ModelAdapter.src.training import TorchTrainerMA
 from e2eAIOK.ModelAdapter.src.dataset import createDataBuilder
 from e2eAIOK.ModelAdapter.src.backbone import createBackbone
+import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 
 class ModelAdapterTask:
     ''' A Model Adapter Task
@@ -199,9 +200,8 @@ class ModelAdapterTask:
         logging.info("optimizer:%s"%optimizer)
         return optimizer
         
-    def run(self, rank, eval=False, resume=False):
+    def run(self, eval=False, resume=False):
         ''' Run task
-        :param rank: rank
         :param eval: whether only for evaluate
         :param resume: whether resume for train
         Returns: validation metric.
@@ -245,10 +245,10 @@ class ModelAdapterTask:
         trainer = TorchTrainerMA(cfg=self.cfg, model=model, metric=metric, best_metric_name=self.cfg.eval_metric, \
                         tensorboard_writer=tensorboard_writer, train_dataloader=train_loader, eval_dataloader=validate_loader, \
                         is_transferrable=is_transferrable, optimizer=optimizer, scheduler=lr_scheduler, warmup_scheduler=warmup_scheduler, \
-                        criterion=None, early_stopping=early_stopping, profiler=profiler, device=self.device,rank=rank)
+                        criterion=None, early_stopping=early_stopping, profiler=profiler, device=self.device)
         logging.info("trainer:%s" % trainer)
         ### only evaluate
-        if rank <= 0 and eval: # only non-distributed training, or rank 0 in distributed training
+        if ext_dist.my_rank <= 0 and eval: # only non-distributed training, or rank 0 in distributed training
             with utils.Timer():
                 start = time.time()
                 metric_values = trainer.evaluate(epoch_steps=len(test_loader))

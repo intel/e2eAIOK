@@ -1,8 +1,3 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-# @Author : Hua XiaoZhuan          
-# @Time   : 7/28/2022 9:43 AM
-
 from torch.utils.data import Dataset
 import logging
 

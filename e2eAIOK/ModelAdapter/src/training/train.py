@@ -16,7 +16,7 @@ class TorchTrainerMA(TorchTrainer):
                     train_dataloader=None, eval_dataloader=None, is_transferrable=False,
                     optimizer=None, scheduler=None, warmup_scheduler=None, 
                     criterion=None, early_stopping=None, 
-                    profiler=None, device='cpu',rank=-1):
+                    profiler=None, device='cpu'):
         ''' Init method
         :param cfg: configurations
         :param model: the trained model
@@ -33,7 +33,6 @@ class TorchTrainerMA(TorchTrainer):
         :param early_stopping: for early stopping, can be None
         :param profiler : training profiler
         :param device: running on cpu or gpu
-        :param rank: rank for distributed training (-1 for non-distributed training)
         '''
         super().__init__(cfg, model, train_dataloader, eval_dataloader, optimizer, criterion, scheduler, metric)
         self.best_metric_name = best_metric_name
@@ -43,7 +42,6 @@ class TorchTrainerMA(TorchTrainer):
         self.is_transferrable = is_transferrable
         self.profiler = profiler
         self.device = device
-        self.rank = rank
         self.best_metric_value = 0.0
         self.backbone = self.model.get_backbone() if self.is_transferrable else self.model
         if best_metric_name not in metric:
@@ -67,7 +65,7 @@ class TorchTrainerMA(TorchTrainer):
         _str += "\tis_transferrable:%s\n" % self.is_transferrable
         _str += "\tprofiler:%s\n" % self.profiler
         _str += "\tdevice:%s\n" % self.device
-        _str += "\trank:%s\n" % self.rank
+        _str += "\trank:%s\n" % ext_dist.my_rank
         _str += "\tbest_metric_value:%s\n" % self.best_metric_value
         _str += "\ttraining_epochs:%s\n" % self.cfg.train_epochs
         _str += "\tlogging_interval:%s\n" % self.cfg.log_interval_step
@@ -98,10 +96,10 @@ class TorchTrainerMA(TorchTrainer):
 
         metric_str = ";\t".join("{} = {:.4f}".format(metric_name, metric_value) for (metric_name, metric_value) in metric_values.items())
         if dataset_name == 'Train':
-            out_str = '[{}] {} epoch({}) step ({}/{}) {}: {}'.format(dt, "rank(%s)"%self.rank if self.rank >=0 else "",
+            out_str = '[{}] {} epoch({}) step ({}/{}) {}: {}'.format(dt, "rank(%s)"% ext_dist.my_rank if ext_dist.my_rank >=0 else "",
                                                                     cur_epoch,cur_step,epoch_steps,dataset_name,metric_str)
         else:
-            out_str = '[{}] {} epoch({}) {}: {}'.format(dt,"rank(%s)"%self.rank if self.rank >=0 else "",
+            out_str = '[{}] {} epoch({}) {}: {}'.format(dt,"rank(%s)"%ext_dist.my_rank if ext_dist.my_rank >=0 else "",
                                                         cur_epoch,dataset_name, metric_str)
         print(out_str)
         self.logger.info(out_str)
@@ -122,7 +120,7 @@ class TorchTrainerMA(TorchTrainer):
         """
             check whether training achieved pre-defined metric threshold
         """
-        if self.rank <= 0 and self.early_stopping is not None: # non distributed training, or rank 0  in distributed training
+        if ext_dist.my_rank <= 0 and self.early_stopping is not None: # non distributed training, or rank 0  in distributed training
             self.early_stopping(metrics_map[self.best_metric_name], self.best_metric_value)
             return self.early_stopping.early_stop
         else:
@@ -321,7 +319,7 @@ class TorchTrainerMA(TorchTrainer):
                 self.logger.info(f"Best Epoch: {epoch}, {self.best_metric_name}: {self.best_metric_value}")
            
             ###### save checkpoint
-            if self.rank <= 0: # non distributed training, or rank 0  in distributed training
+            if ext_dist.my_rank <= 0: # non distributed training, or rank 0  in distributed training
                 self.save_checkpoints(epoch, update_best, model_dir)
 
             print(f"Epoch {epoch} took {time.time()-start_time} seconds")

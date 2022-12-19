@@ -1,8 +1,3 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-# @Author : Hua XiaoZhuan          
-# @Time   : 7/15/2022 4:17 PM
-
 from torch.utils.data import Dataset
 from e2eAIOK.common.trainer.data.data_utils.loader import rgb_loader,l_loader
 import logging

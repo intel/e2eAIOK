@@ -1,7 +1,7 @@
 import os
 import torch
 import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
-from e2eAIOK.common.trainer.data.data_utils.data_utils import channels_last_collate
+# from e2eAIOK.common.trainer.data.data_utils.data_utils import channels_last_collate
 from e2eAIOK.common.trainer.data_builder import DataBuilder
 
 class DataBuilderCV(DataBuilder):
@@ -36,10 +36,10 @@ class DataBuilderCV(DataBuilder):
             sampler_val = torch.utils.data.SequentialSampler(self.dataset_val)
             sampler_test = torch.utils.data.SequentialSampler(self.dataset_test)
         
-        if "enable_ipex" in self.cfg and self.cfg.enable_ipex:
-            collate_fn = channels_last_collate
-        else:
-            collate_fn = None
+        # if "enable_ipex" in self.cfg and self.cfg.enable_ipex:
+        #     collate_fn = channels_last_collate
+        # else:
+        collate_fn = None
 
         ### generate dataloader
         dataloader_train = torch.utils.data.DataLoader(
@@ -61,7 +61,7 @@ class DataBuilderCV(DataBuilder):
             collate_fn=collate_fn
         )
 
-        if self.dataset_test is not None:
+        if self.dataset_test is None:
             return dataloader_train, dataloader_val
         else:
             dataloader_test = torch.utils.data.DataLoader(
