@@ -1,7 +1,3 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-# @Author : Hua XiaoZhuan          
-# @Time   : 7/18/2022 8:37 AM
 import logging
 import re
 import torch
