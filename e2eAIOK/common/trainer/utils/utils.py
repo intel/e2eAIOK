@@ -22,7 +22,6 @@ import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 from timm.utils import accuracy
 from collections import defaultdict, deque
 from easydict import EasyDict as edict
-from torch.utils.tensorboard import SummaryWriter
 import logging
 from torch.optim.lr_scheduler import _LRScheduler
 
@@ -375,6 +374,7 @@ def create_tensorboard_writer(cfg):
 
     :return: a tensorboard_writer
     '''
+    from torch.utils.tensorboard import SummaryWriter
     if "tensorboard_dir" not in cfg or cfg.tensorboard_dir == "":
         tensorboard_writer  = None 
     else:
