@@ -14,7 +14,11 @@ on:
     - 'e2eAIOK/dataloader/**'
     - 'e2eAIOK/utils/**'
     - 'modelzoo/bert/**'
-    - 'tests/cicd/**'
+    - 'tests/cicd/conf/**'
+    - 'tests/cicd/src/**'
+    - 'tests/cicd/test_*.bats'
+    - 'tests/cicd/Jenkinsfile*'
+    - 'tests/cicd/jenkins_bert_test*.sh'
 
 jobs:
   integration_test:
