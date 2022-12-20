@@ -6,12 +6,20 @@ on:
     - main
     paths:
     - '.github/workflows/integration_test_workload_pipeline.yml'
-    - 'Dockerfile-ubuntu18.04/**'
+    - 'Dockerfile-ubuntu18.04/DockerfileTensorflow'
+    - 'Dockerfile-ubuntu18.04/DockerfilePytorch110'
     - 'e2eAIOK/SDA/**'
     - 'e2eAIOK/common/**'
     - 'e2eAIOK/dataloader/**'
     - 'e2eAIOK/utils/**'
-    - 'tests/cicd/**'
+    - 'tests/cicd/conf/**'
+    - 'tests/cicd/src/**'
+    - 'tests/cicd/test_data/**'
+    - 'tests/cicd/test_*.bats'
+    - 'tests/cicd/Jenkinsfile'
+    - 'tests/cicd/jenkins_pipeline_test.sh'
+    - 'tests/cicd/docker_horovod_test.sh'
+    - 'tests/cicd/docker_torchccl_test'
 
 jobs:
   integration_test:

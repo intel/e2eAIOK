@@ -45,6 +45,6 @@ if __name__ == '__main__':
         sys.argv.remove("--denas")
     elif "--sda" in sys.argv:
         args["name"] = "e2eAIOK-sda"
-        args["packages"] = find_packages(exclude=["RecDP", "modelzoo", "example","e2eAIOK.DeNas","e2eAIOK.common"])
+        args["packages"] = find_packages(exclude=["RecDP", "modelzoo", "example","e2eAIOK.DeNas"])
         sys.argv.remove("--sda")
     setup_package(args)
