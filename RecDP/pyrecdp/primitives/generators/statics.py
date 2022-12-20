@@ -1,4 +1,5 @@
 from .base import BaseFeatureGenerator as super_class
+from pyrecdp.primitives.utils import SeriesSchema, is_text_series
 import pandas as pd
 import pyarrow as pa
 import numpy as np
@@ -29,7 +30,8 @@ class StatisticsFeatureGenerator(super_class):
             else:
                 n_unique = feature.nunique()
 
-            feature_type = pa.Array.from_pandas(feature).type
+            feature_type = SeriesSchema(feature).dtype_str
+            feature_type = "text" if is_text_series(feature) else feature_type
             
             stat = {'type': feature_type, 'unique': {"u": n_unique, "m": length}, 'quantile':desc_info}
             if feature_name not in overview_detail:
@@ -62,12 +64,18 @@ class StatisticsFeatureGenerator(super_class):
 
         for idx, c_name in enumerate(feature_data.columns):
             feature = feature_data[c_name]
-            pa_schema = str(pa.Array.from_pandas(feature).type)
-            fig = go.Scatter(x=feature[indices], y=y[indices], mode='markers', name=c_name, showlegend=False)
+            # if string, wrap when too long
+            sch = SeriesSchema(feature)
+            is_feature_string = True if sch.is_string or sch.is_categorical_and_string else False
+            
+            if is_feature_string:
+                tmp = feature[indices].str.slice(0, 12, 1)
+                fig = go.Scatter(x=tmp, y=y[indices], mode='markers', name=c_name, showlegend=False)
+            else:
+                fig = go.Scatter(x=feature[indices], y=y[indices], mode='markers', name=c_name, showlegend=False)
+
             fig_list.add_trace(fig, row = int(idx / n_plot_per_row) + 1, col = ((idx % n_plot_per_row) + 1))
 
-        # fig_list['layout']['autosize']
-        # fig_list['layout'].update(height=row_height * n_row)
         fig_list.update_layout(height=row_height * n_row, width=400 * n_col)
 
         ret = {"error": False}
