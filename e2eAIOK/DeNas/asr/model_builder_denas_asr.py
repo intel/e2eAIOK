@@ -1,4 +1,9 @@
 import torch
+import os, sys
+current_dir = os.path.split(os.path.abspath(__file__))[0]
+cls_path = current_dir.rsplit("/", 1)[0]
+sys.path.append(cls_path)
+
 from e2eAIOK.common.trainer.model.model_builder_asr import ModelBuilderASR
 from e2eAIOK.DeNas.asr.lib.convolution import ConvolutionFrontEnd
 from e2eAIOK.DeNas.module.asr.linear import Linear
