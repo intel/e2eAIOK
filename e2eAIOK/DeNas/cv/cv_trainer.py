@@ -100,3 +100,4 @@ class CVTrainer(TorchTrainer):
 
         self.logger.info(F"Total time:{time.time() - start_time}")
         self._post_process()
+        return self.best_acc

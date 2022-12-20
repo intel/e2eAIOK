@@ -21,20 +21,17 @@ class TestDeNasCVTrainer:
               'learning_rate': 0.001, 'momentum': 0.9, 'weight_decay': 0.01, 'optimizer': 'SGD',
                'criterion': 'CrossEntropyLoss', 'lr_scheduler': 'CosineAnnealingLR', 'print_freq': 10,
                 'metric_threshold': 94, 'mode': 'train'})
-        flag = True
-        try:
-            model = ModelBuilderCVDeNas(cfg).create_model()
-            train_dataloader, eval_dataloader = DataBuilderCIFAR(cfg).get_dataloader()
-            optimizer = utils.create_optimizer(model, cfg)
-            criterion = utils.create_criterion(cfg)
-            scheduler = utils.create_scheduler(optimizer, cfg)
-            metric = utils.create_metric(cfg)
-            trainer = CVTrainer(cfg, model, train_dataloader, eval_dataloader, optimizer, criterion, scheduler, metric)
-            trainer.fit()
-        except Exception:
-            flag = False
-
-        assert flag == True
+        model = ModelBuilderCVDeNas(cfg).create_model()
+        train_dataloader, eval_dataloader = DataBuilderCIFAR(cfg).get_dataloader()
+        optimizer = utils.create_optimizer(model, cfg)
+        criterion = utils.create_criterion(cfg)
+        scheduler = utils.create_scheduler(optimizer, cfg)
+        metric = utils.create_metric(cfg)
+        trainer = CVTrainer(cfg, model, train_dataloader, eval_dataloader, optimizer, criterion, scheduler, metric)
+        best_acc = 0
+        best_acc = trainer.fit()
+        
+        assert best_acc > 0
 
     '''
     Test Unified API DE-NAS ViT train
@@ -53,17 +50,14 @@ class TestDeNasCVTrainer:
                'change_qkv': True, 'relative_position': True, 'drop_path': 0.1, 'max_relative_position': 14,
                'no_abs_pos': False, 'patch_size': 16, 'drop':0.0, 'metric_threshold': 94,
                'SUPERNET': {'MLP_RATIO': 4.0, 'NUM_HEADS': 10, 'EMBED_DIM': 640, 'DEPTH': 16}})
-        flag = True
-        try:
-            model = ModelBuilderCVDeNas(cfg).create_model()
-            train_dataloader, eval_dataloader = DataBuilderCIFAR(cfg).get_dataloader()
-            optimizer = utils.create_optimizer(model, cfg)
-            criterion = utils.create_criterion(cfg)
-            scheduler = utils.create_scheduler(optimizer, cfg)
-            metric = utils.create_metric(cfg)
-            trainer = CVTrainer(cfg, model, train_dataloader, eval_dataloader, optimizer, criterion, scheduler, metric)
-            trainer.fit()
-        except Exception:
-            flag = False
-
-        assert flag == True
+        model = ModelBuilderCVDeNas(cfg).create_model()
+        train_dataloader, eval_dataloader = DataBuilderCIFAR(cfg).get_dataloader()
+        optimizer = utils.create_optimizer(model, cfg)
+        criterion = utils.create_criterion(cfg)
+        scheduler = utils.create_scheduler(optimizer, cfg)
+        metric = utils.create_metric(cfg)
+        trainer = CVTrainer(cfg, model, train_dataloader, eval_dataloader, optimizer, criterion, scheduler, metric)
+        best_acc = 0
+        best_acc = trainer.fit()
+        
+        assert best_acc > 0
