@@ -1,4 +1,5 @@
 from pyrecdp.primitives.generators import *
+from pyrecdp.primitives.utils import DataFrameSchema
 import pandas as pd
 import numpy as np
 
@@ -26,8 +27,7 @@ class FeatureWrangler():
 
     
     def fit_analyze(self, *args, **kwargs):
-        import pyarrow as pa
-        cur_feature_list = pa.Schema.from_pandas(self.feature_data)
+        cur_feature_list = DataFrameSchema(self.feature_data)
         for i in range(len(self.generators)):
             generator_group_valid = []
             for generator in self.generators[i]:

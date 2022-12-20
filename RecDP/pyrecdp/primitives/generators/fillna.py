@@ -1,31 +1,18 @@
 from .base import BaseFeatureGenerator as super_class
+from pyrecdp.primitives.utils import SeriesSchema
 import pandas as pd
 import inspect
 
-def get_default_value(at):
-    import pyarrow.types as types
-    if types.is_boolean(at):
+def get_default_value(at: SeriesSchema):
+    if at.is_boolean:
         return False
-    elif types.is_int8(at):
+    elif at.is_numeric:
         return -1
-    elif types.is_int16(at):
-        return -1
-    elif types.is_int32(at):
-        return -1
-    elif types.is_int64(at):
-        return -1
-    elif types.is_float32(at):
-        return -1
-    elif types.is_float64(at):
-        return -1
-    elif types.is_string(at):
+    elif at.is_string:
         return ""
-    elif types.is_date32(at):
-        return pd.Timestamp(0)
-    elif types.is_timestamp(at):
+    elif at.is_datetime:
         return pd.Timestamp(0)
     return None
-    
 
 class FillNaFeatureGenerator(super_class):
     def __init__(self, **kwargs):
@@ -37,7 +24,7 @@ class FillNaFeatureGenerator(super_class):
     def fit_prepare(self, pa_schema):
         self._fillna_feature_map = {}
         for field in pa_schema:
-            default_value = get_default_value(field.type)
+            default_value = get_default_value(field)
             if default_value:
                 self._fillna_feature_map[field.name] = default_value
         return pa_schema
