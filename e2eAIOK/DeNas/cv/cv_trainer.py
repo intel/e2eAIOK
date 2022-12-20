@@ -1,3 +1,4 @@
+import time
 from e2eAIOK.common.trainer.utils import utils
 from e2eAIOK.common.trainer.torch_trainer import TorchTrainer
 import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
@@ -78,3 +79,24 @@ class CVTrainer(TorchTrainer):
                     'optimizer': self.optimizer.state_dict(),
                     'epoch': epoch,
                 }, checkpoint_path)
+    def fit(self):
+        """
+            trainint and evaluation
+        """
+        self._pre_process()
+        start_time = time.time()
+        for i in range(1, self.cfg.train_epochs+1):
+            train_start = time.time()
+            self.train_one_epoch(i)
+            self.scheduler.step(i)
+            if i % self.cfg.eval_epochs == 0:
+                eval_start = time.time()
+                metric = self.evaluate(i)
+                self.logger.info(F"Evaluate time:{time.time() - eval_start}")
+                if self._is_early_stop(metric):
+                    self.logger.info(f"Metric {metric} got threshold {self.cfg['metric_threshold']}, early stop")
+                    break
+            self.logger.info(F"Epoch {i} training time:{time.time() - train_start}")
+
+        self.logger.info(F"Total time:{time.time() - start_time}")
+        self._post_process()
