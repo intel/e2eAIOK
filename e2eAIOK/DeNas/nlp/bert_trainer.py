@@ -1,10 +1,14 @@
 import os
 import sys
 import time
-from tqdm import tqdm
 import torch
 import random
+import logging
+from tqdm import tqdm
+from thop import profile
 
+from e2eAIOK.DeNas.nlp.utils import customer_ops_map_thop
+import e2eAIOK.common.trainer.utils.utils as utils
 import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 from e2eAIOK.common.trainer.torch_trainer import TorchTrainer
 
@@ -14,6 +18,23 @@ class BERTTrainer(TorchTrainer):
         self.other_data = other_data
         self.best_acc = -1
         self.is_stop = False
+
+    def _pre_process(self):
+        """
+            trainer pre process to prepare trainer environment
+        """
+        utils.init_log()
+        self.logger = logging.getLogger('Trainer')
+        self.logger.info(f"Trainer config: {self.cfg}")
+        self._dist_wrapper()
+        if 'profile_flops' in self.cfg and self.cfg.profile_flops:
+            inputs_id = torch.randint(1, 100, (1, self.cfg.max_seq_length, 1), dtype=torch.long)
+            inputs_mask = torch.ones((1, self.cfg.max_seq_length, 1), dtype=torch.long)
+            inputs_segment = torch.zeros((1, self.cfg.max_seq_length, 1), dtype=torch.long)
+            inputs = torch.concat((inputs_id, inputs_mask, inputs_segment), -1)
+            custom_ops_thop = customer_ops_map_thop()
+            macs_thop, _ = profile(self.model, inputs=(inputs,), custom_ops=custom_ops_thop)
+            logging.info("(THOP) MACs: %.2f" % (macs_thop/(1000**3)))
 
     def _is_early_stop(self, metric):
         return super()._is_early_stop(metric)

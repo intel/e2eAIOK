@@ -14,6 +14,15 @@ from module.nlp.optimization import BertAdam
 from nlp.supernet_bert import CrossEntropyQALoss
 from nlp.utils_eval import do_qa_eval
 
+from module.nlp.layernorm_super import LayerNormSuper
+from module.nlp.Linear_super import LinearSuper
+from thop.vision.basic_hooks import count_normalization, count_linear
+from ptflops.pytorch_ops import linear_flops_counter_hook
+
+def customer_ops_map_thop():
+    customer_ops_map = {LayerNormSuper: count_normalization,
+                        LinearSuper: count_linear}
+    return customer_ops_map
 
 def generate_search_space(search_space_config):
         # build arch space
