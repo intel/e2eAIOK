@@ -6,7 +6,8 @@ on:
     - main
     paths:
     - '.github/workflows/integration_test_workload_pipeline.yml'
-    - 'Dockerfile-ubuntu18.04/**'
+    - 'Dockerfile-ubuntu18.04/DockerfileTensorflow'
+    - 'Dockerfile-ubuntu18.04/DockerfilePytorch110'
     - 'e2eAIOK/SDA/**'
     - 'e2eAIOK/common/**'
     - 'e2eAIOK/dataloader/**'
