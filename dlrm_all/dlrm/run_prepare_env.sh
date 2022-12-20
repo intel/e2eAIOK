@@ -50,9 +50,18 @@ config_path_infer="../data_processing/config_infer.yaml"
 save_path="../data_processing/data_info.txt"
 HADOOP_PATH="/home/hadoop-3.3.1"
 data_path="/home/vmagent/app/dataset/criteo"
-model_path="./result/"
+echo "set output path"
+echo "output_dir=$OUTPUT_DIR"
+if [ ! -d $OUTPUT_DIR ]; then
+  mkdir $OUTPUT_DIR
+fi
+model_path="$OUTPUT_DIR/result/"
 if [ ! -d $model_path ]; then
   mkdir $model_path
+fi
+log_path="$OUTPUT_DIR/logs"
+if [ ! -d $log_path ]; then
+  mkdir $log_path
 fi
 
 # set hosts file

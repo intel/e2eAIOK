@@ -1,6 +1,6 @@
-# bash run_aiokray_dlrm.sh criteo_small node_ip
-# bash run_aiokray_dlrm.sh kaggle node_ip
-# bash run_aiokray_dlrm.sh criteo_full head_node_ip worker_node_ip...
+# bash run_train.sh criteo_small node_ip
+# bash run_train.sh kaggle node_ip
+# bash run_train.sh criteo_full head_node_ip worker_node_ip...
 #!/bin/bash
 set -e
 seed_num=$(date +%s)
@@ -53,6 +53,13 @@ fi
 hosts_file="../hosts"
 config_path="../data_processing/config.yaml"
 save_path="../data_processing/data_info.txt"
+if [ ! -d $OUTPUT_DIR ]; then
+  mkdir $OUTPUT_DIR
+fi
+log_path="$OUTPUT_DIR/logs"
+if [ ! -d $log_path ]; then
+  mkdir $log_path
+fi
 
 # check ray
 set +e
@@ -92,7 +99,7 @@ fi
 echo "start model training"
 cd ./dlrm
 train_start=$(date +%s)
-/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python -u ./launch.py --distributed --config-path=${config_path} --save-path=${save_path} --ncpu_per_proc=${ncpu_per_proc} --nproc_per_node=${nproc_per_node} --nnodes=${nnodes} --world_size=${world_size} --hostfile ${hosts_file} --master_addr=${2} $dlrm_extra_option 2>&1 | tee run_train_${seed_num}.log
+/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python -u ./launch.py --distributed --config-path=${config_path} --save-path=${save_path} --ncpu_per_proc=${ncpu_per_proc} --nproc_per_node=${nproc_per_node} --nnodes=${nnodes} --world_size=${world_size} --hostfile ${hosts_file} --master_addr=${2} $dlrm_extra_option 2>&1 | tee $log_path/run_train_${seed_num}.log
 
 train_end=$(date +%s)
 train_spend=$(( train_end - train_start ))

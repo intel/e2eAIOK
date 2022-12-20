@@ -50,9 +50,18 @@ config_path_infer="../data_processing/config_infer.yaml"
 save_path="../data_processing/data_info.txt"
 HADOOP_PATH="/home/hadoop-3.3.1"
 data_path="/home/vmagent/app/dataset/criteo"
-model_path="./result/"
+echo "set output path"
+echo "output_dir=$OUTPUT_DIR"
+if [ ! -d $OUTPUT_DIR ]; then
+  mkdir $OUTPUT_DIR
+fi
+model_path="$OUTPUT_DIR/result/"
 if [ ! -d $model_path ]; then
   mkdir $model_path
+fi
+log_path="$OUTPUT_DIR/logs"
+if [ ! -d $log_path ]; then
+  mkdir $log_path
 fi
 
 # set hosts file
@@ -171,7 +180,7 @@ if [ -d $data_path_train ]; then
   rm -rf $data_path_train
 fi
 rm -rf /home/vmagent/app/dataset/criteo/dlrm_*
-/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python -u ../data_processing/convert_to_parquet.py --config_path=${config_path} --run_mode=$1 $dlrm_extra_option 2>&1 | tee run_data_process_${seed_num}.log
+/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python -u ../data_processing/convert_to_parquet.py --config_path=${config_path} --run_mode=$1 $dlrm_extra_option 2>&1 | tee $log_path/run_data_process_${seed_num}.log
 # set ray cluster if criteo_full mode is set
 if [ "${1}" = "criteo_full" ]; then
     index=1
@@ -185,7 +194,7 @@ if [ "${1}" = "criteo_full" ]; then
         let index+=1
     done
 fi
-/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python -u ../data_processing/preprocessing.py --config_path=${config_path} --save_path=${save_path} --spark_master_ip ${2} $dlrm_extra_option 2>&1 | tee -a run_data_process_${seed_num}.log
+/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python -u ../data_processing/preprocessing.py --config_path=${config_path} --save_path=${save_path} --spark_master_ip ${2} $dlrm_extra_option 2>&1 | tee -a $log_path/run_data_process_${seed_num}.log
 
 data_end=$(date +%s)
 data_spend=$(( data_end - data_start ))
@@ -194,7 +203,7 @@ echo Dataset process time is ${data_spend} seconds.
 # model training
 echo "start model training"
 train_start=$(date +%s)
-/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python -u ./launch.py --distributed --config-path=${config_path} --save-path=${save_path} --ncpu_per_proc=${ncpu_per_proc} --nproc_per_node=${nproc_per_node} --nnodes=${nnodes} --world_size=${world_size} --hostfile ${hosts_file} --master_addr=${2} $dlrm_extra_option 2>&1 | tee run_train_${seed_num}.log
+/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python -u ./launch.py --distributed --config-path=${config_path} --save-path=${save_path} --ncpu_per_proc=${ncpu_per_proc} --nproc_per_node=${nproc_per_node} --nnodes=${nnodes} --world_size=${world_size} --hostfile ${hosts_file} --master_addr=${2} $dlrm_extra_option 2>&1 | tee $log_path/run_train_${seed_num}.log
 
 train_end=$(date +%s)
 train_spend=$(( train_end - train_start ))
@@ -203,7 +212,7 @@ echo training time is ${train_spend} seconds.
 # model inference
 echo "start model inference"
 infer_start=$(date +%s)
-/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python -u ./launch_inference.py --distributed --config-path=${config_path_infer} --save-path=${save_path}  --ncpu_per_proc=${ncpu_per_proc} --nproc_per_node=${nproc_per_node} --nnodes=${nnodes} --world_size=${world_size} --hostfile ${hosts_file} --master_addr=${2} $dlrm_extra_option 2>&1 | tee run_inference_${seed_num}.log
+/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python -u ./launch_inference.py --distributed --config-path=${config_path_infer} --save-path=${save_path}  --ncpu_per_proc=${ncpu_per_proc} --nproc_per_node=${nproc_per_node} --nnodes=${nnodes} --world_size=${world_size} --hostfile ${hosts_file} --master_addr=${2} $dlrm_extra_option 2>&1 | tee $log_path/run_inference_${seed_num}.log
 
 infer_end=$(date +%s)
 infer_spend=$(( infer_end - infer_start ))

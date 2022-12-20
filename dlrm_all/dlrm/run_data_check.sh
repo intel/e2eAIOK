@@ -1,6 +1,6 @@
-# bash run_train.sh criteo_small
-# bash run_train.sh kaggle
-# bash run_train.sh criteo_full
+# bash run_data_check.sh criteo_small
+# bash run_data_check.sh kaggle
+# bash run_data_check.sh criteo_full
 #!/bin/bash
 set -e
 
@@ -76,5 +76,5 @@ else
 fi
 
 cd $pre_dir
-pwd
+echo "cd work_dir: $(pwd)"
 

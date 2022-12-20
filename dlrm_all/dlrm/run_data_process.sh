@@ -1,6 +1,6 @@
-# bash run_aiokray_dlrm.sh criteo_small node_ip
-# bash run_aiokray_dlrm.sh kaggle node_ip
-# bash run_aiokray_dlrm.sh criteo_full head_node_ip worker_node_ip...
+# bash run_data_process.sh criteo_small node_ip
+# bash run_data_process.sh kaggle node_ip
+# bash run_data_process.sh criteo_full head_node_ip worker_node_ip...
 #!/bin/bash
 set -eo pipefail
 seed_num=$(date +%s)
@@ -39,6 +39,13 @@ for arg in "$@"
 # set files path
 config_path="../data_processing/config.yaml"
 save_path="../data_processing/data_info.txt"
+if [ ! -d $OUTPUT_DIR ]; then
+  mkdir $OUTPUT_DIR
+fi
+log_path="$OUTPUT_DIR/logs"
+if [ ! -d $log_path ]; then
+  mkdir $log_path
+fi
 
 # set parameters
 nproc_per_node=2
@@ -96,8 +103,8 @@ if [ ! -d $data_path_train ]; then
   rm -rf $data_path_train
 fi
 rm -rf /home/vmagent/app/dataset/criteo/dlrm_*
-/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python -u ../data_processing/convert_to_parquet.py --config_path ${config_path} --run_mode=$1 $dlrm_extra_option 2>&1 | tee run_data_process_${seed_num}.log
-/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python -u ../data_processing/preprocessing.py --config_path ${config_path}  --save_path=${save_path} --spark_master_ip ${2} $dlrm_extra_option 2>&1 | tee -a run_data_process_${seed_num}.log
+/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python -u ../data_processing/convert_to_parquet.py --config_path ${config_path} --run_mode=$1 $dlrm_extra_option 2>&1 | tee $log_path/run_data_process_${seed_num}.log
+/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python -u ../data_processing/preprocessing.py --config_path ${config_path}  --save_path=${save_path} --spark_master_ip ${2} $dlrm_extra_option 2>&1 | tee -a $log_path/run_data_process_${seed_num}.log
 
 data_end=$(date +%s)
 data_spend=$(( data_end - data_start ))
