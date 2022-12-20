@@ -23,4 +23,4 @@ LANG=C tests/cicd/bats/bin/bats tests/cicd/test_denas.bats
 # train
 cd /home/vmagent/app/e2eaiok/e2eAIOK/DeNas
 sed -i '/train_epochs:/ s/:.*/: 1/' ../../conf/denas/cv/e2eaiok_denas_train_vit.conf
-python -m intel_extension_for_pytorch.cpu.launch --distributed --nproc_per_node=2 --nnodes=1 train.py --domain vit --conf /home/vmagent/app/e2eaiok/e2eAIOK/conf/denas/cv/e2eaiok_denas_train_vit.conf
+python -m intel_extension_for_pytorch.cpu.launch --distributed --nproc_per_node=2 --nnodes=1 train.py --domain vit --conf /home/vmagent/app/e2eaiok/conf/denas/cv/e2eaiok_denas_train_vit.conf
