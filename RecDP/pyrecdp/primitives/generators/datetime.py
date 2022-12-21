@@ -1,7 +1,5 @@
-from .base import BaseFeatureGenerator as super_class
+from .featuretools_adaptor import FeaturetoolsBasedFeatureGenerator
 from pyrecdp.primitives.utils import SeriesSchema
-from pyrecdp.primitives import utils
-import pyarrow.types as types
 from featuretools.primitives import (
     Day,
     Month,
@@ -11,11 +9,9 @@ from featuretools.primitives import (
     PartOfDay
 )
 
-class DatetimeFeatureGenerator(super_class):
+class DatetimeFeatureGenerator(FeaturetoolsBasedFeatureGenerator):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.feature_in = []
-        self.feature_in_out_map = {}
         self.op_list = [
             Day(),
             Month(),
@@ -24,7 +20,7 @@ class DatetimeFeatureGenerator(super_class):
             Hour(),
             PartOfDay()
         ]
-
+    
     def is_useful(self, pa_schema):
         found = False
         for pa_field in pa_schema:
@@ -32,20 +28,3 @@ class DatetimeFeatureGenerator(super_class):
                 self.feature_in.append(pa_field.name)
                 found = True
         return found
-    
-    def fit_prepare(self, pa_schema):
-        for in_feat_name in self.feature_in:
-            self.feature_in_out_map[in_feat_name] = []
-            for op in self.op_list:
-                out_feat_name = f"{in_feat_name}.{op.name}"
-                out_feat_type = op.return_type
-                self.feature_in_out_map[in_feat_name].append((SeriesSchema(out_feat_name, out_feat_type), op))
-        return pa_schema
-
-    def get_function_pd(self):
-        def generate_datetime_feature(df):
-            for in_feat_name in self.feature_in:
-                for op in self.feature_in_out_map[in_feat_name]:
-                    df[op[0].name] = op[1](df[in_feat_name])
-            return df
-        return generate_datetime_feature

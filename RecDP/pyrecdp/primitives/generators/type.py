@@ -13,8 +13,6 @@ def convert_to_type(series, expected_schema: SeriesSchema):
     elif expected_schema.is_categorical:
         #TODO: this is not working with spark, need fix
         return pd.Categorical(series)
-    elif expected_schema.is_list:
-        return pd.Series(series).str.split()
     return series
 
 class TypeInferFeatureGenerator(super_class):
@@ -88,8 +86,6 @@ class TypeInferFeatureGenerator(super_class):
         if not type_change:
             s, type_change = try_category(s)
         if not type_change:
-            s, type_change = try_datetime(s)
-        # if not type_change:
-        #     s, type_change = try_text(s)
+            s, type_change = try_datetime(s)    
             
         return SeriesSchema(s), type_change
