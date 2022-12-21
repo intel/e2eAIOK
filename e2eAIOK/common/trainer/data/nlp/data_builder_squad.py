@@ -46,8 +46,8 @@ class DataBuilderSQuAD(DataBuilderNLP):
             #    dataset_val, num_replicas=num_tasks, rank=global_rank)
             sampler_val = None
         else:
-            sampler_val = torch.utils.data.SequentialSampler(dataset_val)
-            sampler_train = torch.utils.data.RandomSampler(dataset_train)
+            sampler_val = torch.utils.data.SequentialSampler(self.dataset_val)
+            sampler_train = torch.utils.data.RandomSampler(self.dataset_train)
         
         shuffle = True
         if sampler_train is not None:
