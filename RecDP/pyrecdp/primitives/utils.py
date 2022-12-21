@@ -30,12 +30,14 @@ class SeriesSchema:
             s = args[0]
             self.name = s.name
             self.type = s.dtype
+            self.actual_type = type(s.loc[s.first_valid_index()]) if s.first_valid_index() >= 0 else None
         elif len(args) == 2:
             s_name = args[0]
             s_dtype = args[1]
             # s_dtype is possible to be pandas.dtype or woodwork.dtype       
             self.name = s_name
             self.type = s_dtype
+            self.actual_type = None
         else:
             raise ValueError("SeriesSchema unsupport input arguments more than 2")
    
@@ -123,10 +125,12 @@ class SeriesSchema:
     
     @property
     def is_coordinates(self):
+        if self.actual_type is tuple:
+            return True
         if not isinstance(self.type, ColumnSchema):
             return False
         return self.type.is_latlong
-
+    
 
 class DataFrameSchema(list):
     def __init__(self, df):

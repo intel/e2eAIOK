@@ -65,7 +65,10 @@ class Point:
         if self.point:
             def process(df):
                 # convert string to latlong
-                if SeriesSchema(df[self.point]).is_string:
+                sch = SeriesSchema(df[self.point])
+                if sch.is_coordinates:
+                    return df
+                elif sch.is_string:
                     def convert_to_point(x):
                         import re
                         ret = re.findall(r'\d+', x)

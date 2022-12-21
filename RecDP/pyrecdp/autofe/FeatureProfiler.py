@@ -55,6 +55,7 @@ class FeatureProfiler:
         self.feature_data = X[to_select]
         self.y = y
         self.data_stats = None
+        self._processed_data = self.feature_data
         
     def fit_analyze(self, *args, **kwargs) -> dict():
         if self.data_stats:
@@ -62,6 +63,9 @@ class FeatureProfiler:
         # pre-process
         feature_data = self.feature_data
         feature_data = TypeInferFeatureGenerator().fit_transform(feature_data)
+        feature_data = CoordinatesInferFeatureGenerator().fit_transform(feature_data)
+        
+        self._processed_data = feature_data
 
         # prepare state
         self.data_stats = StatisticsFeatureGenerator().update_feature_statistics(feature_data, self.y)
@@ -70,3 +74,6 @@ class FeatureProfiler:
     
     def visualize_analyze(self, display = True):
         return FeatureVisulizer(self.fit_analyze())
+
+    def _debug_get_processed_data(self):
+        return self._processed_data
