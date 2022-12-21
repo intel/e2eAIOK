@@ -1,5 +1,7 @@
 from woodwork.column_schema import ColumnSchema
-
+from pandas import StringDtype
+class TextDtype(StringDtype):
+    pass
 
 def is_text_series(s):
     from pandas.api import types as pdt
@@ -31,6 +33,7 @@ class SeriesSchema:
             self.name = s.name
             self.type = s.dtype
             self.actual_type = type(s.loc[s.first_valid_index()]) if s.first_valid_index() >= 0 else None
+            self.is_text_flag = is_text_series(s)
         elif len(args) == 2:
             s_name = args[0]
             s_dtype = args[1]
@@ -38,6 +41,7 @@ class SeriesSchema:
             self.name = s_name
             self.type = s_dtype
             self.actual_type = None
+            self.is_text_flag = isinstance(self.type, TextDtype)
         else:
             raise ValueError("SeriesSchema unsupport input arguments more than 2")
    
@@ -130,6 +134,10 @@ class SeriesSchema:
         if not isinstance(self.type, ColumnSchema):
             return False
         return self.type.is_latlong
+    
+    @property
+    def is_text(self):
+        return self.is_text_flag
     
 
 class DataFrameSchema(list):

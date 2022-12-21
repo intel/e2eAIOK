@@ -13,7 +13,8 @@ class FeaturetoolsBasedFeatureGenerator(super_class):
             for op in self.op_list:
                 out_feat_name = f"{in_feat_name}.{op.name}"
                 out_feat_type = op.return_type
-                self.feature_in_out_map[in_feat_name].append((SeriesSchema(out_feat_name, out_feat_type), op))
+                out_schema = SeriesSchema(out_feat_name, out_feat_type)
+                self.feature_in_out_map[in_feat_name].append((out_schema, op))
         return pa_schema
 
     def get_function_pd(self):

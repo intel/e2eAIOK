@@ -139,11 +139,13 @@ class StatisticsFeatureGenerator(super_class):
         ret = {"error": False}
 
         # draw xy scatter
-        fig_list = draw_xy_scatter_plot(xy_scatter_features, feature_data, y, row_height, n_plot_per_row)
-        ret['html'] = plot(fig_list, output_type='div')
+        if len(xy_scatter_features) > 0:
+            fig_list = draw_xy_scatter_plot(xy_scatter_features, feature_data, y, row_height, n_plot_per_row)
+            ret['html'] = plot(fig_list, output_type='div')
         
         # draw mapbox
-        fig_list = draw_mapbox_plot(mapbox_scatter_features, feature_data)
-        ret['html'] += plot(fig_list, output_type='div')
+        if len(mapbox_scatter_features) > 0:
+            fig_list = draw_mapbox_plot(mapbox_scatter_features, feature_data)
+            ret['html'] += plot(fig_list, output_type='div')
         
         return ret
