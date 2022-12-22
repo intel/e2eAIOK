@@ -8,15 +8,14 @@ This workflow trying to address those pain points: unifies both data processing 
 > Important: original source disclose - https://github.com/facebookresearch/dlrm
 
 ## How it works 
-![image](https://github.com/intel-innersource/frameworks.bigdata.AIDK/assets/6396930/fb9ada53-ca84-4158-9562-261b6933dfe0)
+![image](assets/200213919-fb9ada53-ca84-4158-9562-261b6933dfe0.png)
 
 ## Get Started
 
 ### Prerequisites
 ```
-git clone https://github.com/intel-innersource/frameworks.bigdata.AIDK.git
-cd frameworks.bigdata.AIDK
-git checkout AIDK_Ray
+git clone --branch AIOK_Ray https://github.com/intel/e2eAIOK
+cd e2eAIOK
 git submodule update --init --recursive
 sh dlrm_all/dlrm/patch_dlrm.sh
 ```
@@ -24,7 +23,7 @@ sh dlrm_all/dlrm/patch_dlrm.sh
 ### Docker
 ```
 # prepare a folder for dataset
-cd frameworks.bigdata.AIDK
+cd e2eAIOK
 mkdir -p ../e2eaiok_dataset
 cur_path=`pwd`
 
