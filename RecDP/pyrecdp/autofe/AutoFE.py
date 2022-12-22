@@ -18,8 +18,7 @@ class AutoFE:
         # prepare main view
         self.original_df_view = BaseWidget(display_flag=False)
         self.log_view = BaseWidget(display_flag=False)
-        tab_children = [('log', self.log_view), ('original_df', self.original_df_view)]
-        self.main_view = TabWidget(tab_children)
+        self.main_view = TabWidget([('log', self.log_view), ('original_df', self.original_df_view)])
         Timer.viewer = self.log_view
 
         # prepare pipeline        
@@ -37,11 +36,6 @@ class AutoFE:
             with Timer("Analysis Original DataFrame"):
                 self.feature_generator.fit_analyze()
                 self.log_view.display(f"feature engineering pipeline after analysis:\n{self.get_transform_pipeline()}")
-            with Timer("Prepare profiling view"):
-                self.original_df_profile = FeatureProfiler(self.data, self.label).visualize_analyze()
-                self.original_df_profile_view = BaseWidget(display_flag=False)
-                self.main_view.append('profiler-original', self.original_df_profile_view)
-                self.original_df_profile_view.display(self.original_df_profile)
 
             # auto feature engineering
             with Timer("Auto Feature Engineering on dataset"):
@@ -54,10 +48,7 @@ class AutoFE:
 
             # profile transformed dataframe
             with Timer("profiling transformed dataset"):
-                self.transformed_df_profile = FeatureProfiler(self.transformed_feature, self.data[self.label]).visualize_analyze()
-                self.transformed_df_profile_view = BaseWidget(display_flag=False)
-                self.main_view.append('profiler-transformed', self.transformed_df_profile_view)
-                self.transformed_df_profile_view.display(self.transformed_df_profile)
+                self.transformed_df_profile = FeatureProfiler(self.transformed_feature, self.data[self.label]).visualize_analyze().show()
             
 
     def get_transform_pipeline(self):
