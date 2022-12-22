@@ -489,8 +489,8 @@ def do_qa_eval(args, model, *inputs):
             start = datetime.now()
             total_logits = model(batch_)
             batch_start_logits, batch_end_logits = total_logits.split(1, dim=-1)
-            batch_start_logits = batch_start_logits.squeeze()
-            batch_end_logits = batch_end_logits.squeeze()
+            batch_start_logits = batch_start_logits.squeeze(-1)
+            batch_end_logits = batch_end_logits.squeeze(-1)
             infer_times.append((datetime.now() - start).microseconds / 1000)
         for i, example_index in enumerate(example_indices):
             start_logits = batch_start_logits[i].detach().cpu().tolist()
