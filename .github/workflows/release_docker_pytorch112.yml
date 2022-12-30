@@ -45,7 +45,7 @@ jobs:
           context: ./Dockerfile-ubuntu18.04
           file: ./Dockerfile-ubuntu18.04/DockerfilePytorch112
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/e2eaiok-pytorch112:${{ env.RELEASE_VERSION }}
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/e2eaiok-pytorch112:${{ env.RELEASE_VERSION }} , ${{ secrets.DOCKER_HUB_USERNAME }}/e2eaiok-pytorch112:latest
           build-args: |
             "http_proxy=${{ env.http_proxy }}"
             "https_proxy=${{ env.https_proxy }}"

@@ -45,7 +45,7 @@ jobs:
           context: ./Dockerfile-ubuntu18.04
           file: ./Dockerfile-ubuntu18.04/DockerfileTensorflow
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/e2eaiok-tensorflow:${{ env.RELEASE_VERSION }}
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/e2eaiok-tensorflow:${{ env.RELEASE_VERSION }} , ${{ secrets.DOCKER_HUB_USERNAME }}/e2eaiok-tensorflow:latest
           build-args: |
             "http_proxy=${{ env.http_proxy }}"
             "https_proxy=${{ env.https_proxy }}"
