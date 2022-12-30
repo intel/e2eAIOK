@@ -8,6 +8,7 @@ on:
     paths:
       - 'e2eAIOK/version'
       - 'Dockerfile-ubuntu18.04/DockerfilePytorch110'
+      - '.github/workflows/release_docker_pytorch110.yml'
 
 jobs:
   e2eaiok-release-docker:

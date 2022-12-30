@@ -8,6 +8,7 @@ on:
     paths:
       - 'e2eAIOK/version'
       - 'Dockerfile-ubuntu18.04/DockerfileTensorflow'
+      - '.github/workflows/release_docker_tensorflow.yml'
 
 jobs:
   e2eaiok-release-docker:
