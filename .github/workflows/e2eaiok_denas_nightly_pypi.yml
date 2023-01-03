@@ -1,0 +1,52 @@
+name: Publish e2eAIOK-denas Nightly Release to PyPI
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'e2eAIOK/version'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  e2eaiok-release-python-pypi:
+    runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'intel' }}
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.7'
+
+    - name: days since the commit date
+      run: |
+          :
+          timestamp=$(git log --no-walk --date=unix --format=%cd $GITHUB_SHA)
+          days=$(( ( $(date --utc +%s) - $timestamp ) / 86400 ))
+          if [ $days -eq 0 ]; then
+              echo COMMIT_TODAY=true >> $GITHUB_ENV
+          fi
+
+    - name: Build Package
+      run: |
+        pip install build wheel
+        release_version=$(cat e2eAIOK/version | head -1)
+        next_release_version=$(echo ${release_version} | awk -F. -v OFS=. 'NF==1{print ++$NF}; NF>1{$NF=sprintf("%0*d", length($NF), ($NF+1)); print}')
+        nightly_build_date=`date '+%Y%m%d%H'`
+        nightly_version=${next_release_version}b${nightly_build_date}
+        echo $nightly_version > e2eAIOK/version
+        python3 setup.py bdist_wheel --denas
+
+    - name: Upload Package
+      if: env.COMMIT_TODAY == 'true'
+      uses: pypa/gh-action-pypi-publish@master
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}
