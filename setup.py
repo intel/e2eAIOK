@@ -38,14 +38,14 @@ def setup_package(args):
 if __name__ == '__main__':
     args = dict(
         name = "e2eAIOK",
-        packages = find_packages(exclude=["RecDP", "modelzoo", "example"])
+        packages = find_packages(exclude=["RecDP", "RecDP.*", "modelzoo", "example"])
     )
     if "--denas" in sys.argv:
         args["name"] = "e2eAIOK-denas"
-        args["packages"] = find_packages(exclude=["RecDP", "modelzoo", "example","e2eAIOK.SDA","e2eAIOK.dataloader","e2eAIOK.utils"])
+        args["packages"] = find_packages(exclude=["RecDP", "RecDP.*", "modelzoo", "example", "e2eAIOK.SDA", "e2eAIOK.SDA.*", "e2eAIOK.dataloader", "e2eAIOK.utils"])
         sys.argv.remove("--denas")
     elif "--sda" in sys.argv:
         args["name"] = "e2eAIOK-sda"
-        args["packages"] = find_packages(exclude=["RecDP", "modelzoo", "example","e2eAIOK.DeNas"])
+        args["packages"] = find_packages(exclude=["RecDP", "RecDP.*", "modelzoo", "example", "e2eAIOK.DeNas", "e2eAIOK.DeNas.*"])
         sys.argv.remove("--sda")
     setup_package(args)
