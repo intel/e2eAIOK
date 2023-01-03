@@ -24,6 +24,7 @@ from e2eAIOK.DeNas.asr.utils.metric_stats import ErrorRateStats
 from e2eAIOK.DeNas.cv.cv_trainer import CVTrainer
 from e2eAIOK.DeNas.nlp.utils import bert_create_optimizer, bert_create_criterion, bert_create_scheduler, bert_create_metric
 from e2eAIOK.DeNas.nlp.bert_trainer import BERTTrainer
+from e2eAIOK.DeNas.search.utils import parse_config
 
 
 def parse_args(args):
@@ -31,22 +32,20 @@ def parse_args(args):
     parser.add_argument('--domain', type=str, default=None, choices=['cnn','vit','bert','asr'], help='training model domain')
     parser.add_argument('--conf', type=str, default=None, help='training or evluation conf file')
     parser.add_argument('--random_seed', type=int, default=12345, help='Random seed for consistent training')
-    train_args = parser.parse_args(args)
-    return train_args
+    cfg = {}
+    cfg.update(parser.parse_args(args).__dict__)
+    cfg.update(parse_config(cfg['conf']))
+    return edict(cfg)
 
-def main(args):
-    if args.random_seed:
-        random.seed(args.random_seed)
-        np.random.seed(args.random_seed)
-        torch.manual_seed(args.random_seed)
-    root_dir = Path(os.getcwd()).parent.parent
-    conf_file = os.path.join(root_dir, args.conf)
-    with open(conf_file) as f:
-        cfg = edict(yaml.safe_load(f))
+def main(cfg):
+    if cfg.random_seed:
+        random.seed(cfg.random_seed)
+        np.random.seed(cfg.random_seed)
+        torch.manual_seed(cfg.random_seed)
 
     ext_dist.init_distributed(backend=cfg.dist_backend)
 
-    if args.domain in ['cnn','vit']:
+    if cfg.domain in ['cnn','vit']:
         model = ModelBuilderCVDeNas(cfg).create_model()
         train_dataloader, eval_dataloader = DataBuilderCIFAR(cfg).get_dataloader()
         optimizer = utils.create_optimizer(model, cfg)
@@ -54,7 +53,7 @@ def main(args):
         scheduler = utils.create_scheduler(optimizer, cfg)
         metric = utils.create_metric(cfg)
         trainer = CVTrainer(cfg, model, train_dataloader, eval_dataloader, optimizer, criterion, scheduler, metric)
-    elif args.domain == 'bert':
+    elif cfg.domain == 'bert':
         model = ModelBuilderNLPDeNas(cfg).create_model()
         train_dataloader, eval_dataloader, other_data = DataBuilderSQuAD(cfg).get_dataloader()
         cfg.num_train_steps = len(train_dataloader)
@@ -63,7 +62,7 @@ def main(args):
         scheduler = bert_create_scheduler(cfg)
         metric = bert_create_metric(cfg)
         trainer = BERTTrainer(cfg, model, train_dataloader, eval_dataloader, other_data, optimizer, criterion, scheduler, metric)
-    elif args.domain == 'asr':
+    elif cfg.domain == 'asr':
         model = ModelBuilderASRDeNas(cfg).create_model()
         tokenizer = sp.SentencePieceProcessor()
         train_dataloader, eval_dataloader = DataBuilderLibriSpeech(cfg, tokenizer).get_dataloader()
@@ -73,7 +72,7 @@ def main(args):
         metric = ErrorRateStats()
         trainer = ASRTrainer(cfg, model, train_dataloader, eval_dataloader, optimizer, criterion, scheduler, metric, tokenizer)
     else:
-        raise RuntimeError(f"Domain {args.domain} is not supported")
+        raise RuntimeError(f"Domain {cfg.domain} is not supported")
     trainer.fit()
 
 if __name__ == '__main__':
