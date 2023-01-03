@@ -14,6 +14,7 @@ def setup_package(args):
         version=VERSION,
         author="INTEL AIA BDF",
         author_email="chendi.xue@intel.com",
+        license='Apache License',
         description="Intel® End-to-End AI Optimization Kit",
         long_description=long_description,
         long_description_content_type="text/markdown",
