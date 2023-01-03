@@ -148,6 +148,6 @@ class ASRTrainer(TorchTrainer):
             if ext_dist.my_size > 1:
                 wer_tensor = torch.tensor(wer, dtype=torch.float)
                 ext_dist.dist.all_reduce(wer_tensor)
-                wer = wer_tensor.item()
+                wer = wer_tensor.item() / ext_dist.my_size
             self.logger.info(f"epoch: {epoch}, time: {time.time()-eval_start_time}, wer: {wer}, avg_loss: {avg_valid_loss}")
         return wer
