@@ -1,4 +1,1 @@
-__all__ = [
-    "BAseModelAdvisor", "DIENAdvisor", "TestAdvisor", "WnDAdvisor",
-    "DLRMAdvisor"
-]
+__all__ = ['BaseModelAdvisor', 'BERTAdvisor', 'DIENAdvisor', 'DLRMAdvisor', 'MiniGoAdvisor', 'RegisteredAdvisor', 'ResNetAdvisor', 'RNNTAdvisor', 'TestAdvisor', 'TwitterRecSysAdvisor', 'UPMAdvisor', 'WnDAdvisor']
