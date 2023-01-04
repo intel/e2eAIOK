@@ -59,7 +59,7 @@ class EvolutionarySearchEngine(BaseSearchEngine):
     '''
     def get_populate(self):
         res = []
-        max_iters = 10 * self.params.population_num 
+        max_iters = self.params.scale_factor * self.params.population_num 
         cand_iter = self.stack_random_cand(self.populate_random_func)
         while len(res) < self.params.population_num and max_iters > 0:
             max_iters -= 1
@@ -79,7 +79,7 @@ class EvolutionarySearchEngine(BaseSearchEngine):
     '''
     def get_mutation(self):
         res = []
-        max_iters = 10 * self.params.mutation_num  
+        max_iters = self.params.scale_factor * self.params.mutation_num  
         cand_iter = self.stack_random_cand(self.mutation_random_func)
         while len(res) < self.params.mutation_num and max_iters > 0:
             max_iters -= 1
@@ -99,7 +99,7 @@ class EvolutionarySearchEngine(BaseSearchEngine):
     '''
     def get_crossover(self):
         res = []
-        max_iters = 10 * self.params.crossover_num
+        max_iters = self.params.scale_factor * self.params.crossover_num
         cand_iter = self.stack_random_cand(self.crossover_random_func)
         while len(res) < self.params.crossover_num and max_iters > 0:
             max_iters -= 1
