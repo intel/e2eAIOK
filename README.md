@@ -72,7 +72,7 @@ cd e2eAIOK; python scripts/start_e2eaiok_docker.py --backend [tensorflow, pytorc
 
 ## Performance
 
-![Performance](./docs/source/Performance.png "Intel® End-to-End AI Optimization Kit Performance").
+![Performance](./docs/source/Performance.png "Intel® End-to-End AI Optimization Kit Performance")
 
 ## Getting Support
 
