@@ -86,7 +86,7 @@ class MOSigoptSearchEngine(BaseSearchEngine):
                 name= 'bert denas',
                 project='denas',
                 type="offline",
-                observation_budget=1000,
+                observation_budget=self.params.sigopt_max_epochs,
                 metrics=[dict(name='Score', objective='maximize'),dict(name='Latency', objective='minimize')],
                 parameters=[
                     dict(name="LAYER_NUM", type="int", bounds=dict(min=self.params.cfg["SEARCH_SPACE"]['LAYER_NUM']['bounds']['min'], max=self.params.cfg["SEARCH_SPACE"]['LAYER_NUM']['bounds']['max'])),
@@ -123,7 +123,7 @@ class MOSigoptSearchEngine(BaseSearchEngine):
                 name= 'vit denas',
                 project='denas',
                 type="offline",
-                observation_budget=1000,
+                observation_budget=self.params.sigopt_max_epochs,
                 metrics=[dict(name='Score', objective='maximize'),dict(name='Latency', objective='minimize')],
                 conditionals=[dict(name="DEPTH",values=["12","13","14","15","16"])],
                 parameters=[
@@ -204,7 +204,7 @@ class MOSigoptSearchEngine(BaseSearchEngine):
                 name= 'asr denas',
                 project='denas',
                 type="offline",
-                observation_budget=1000,
+                observation_budget=self.params.sigopt_max_epochs,
                 metrics=[dict(name='Score', objective='maximize'),dict(name='Latency', objective='minimize')],
                 conditionals=[dict(name="DEPTH",values=["9","10","11","12"])],
                 parameters=[
