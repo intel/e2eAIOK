@@ -37,12 +37,12 @@ Intel® End-to-End AI Optimization Kit is a composable toolkits for E2E AI optim
 
 * [RecDP](RecDP/README.md):  A parallel data processing and feature engineering lib on top of Spark, and extensible to other data processing tools. It provides abstraction API to hide Spark programming complexity, delivers optimized performance through adaptive query plan & strategy, supports critical feature engineering functions on Tabular dataset, and can be easily integrated to third party solutions.  
 
-* [Smart Democratization advisor (SDA)](e2eAIOK/SDA/README.md): A user-guided tool to facilitate automation of built-in model democratization via parameterized models, it generates yaml files based on user choice, provided build-in intelligence through parameterized models and leverage SigOpt for HPO. SDA converts the manual model tuning and optimization to assisted autoML and autoHPO. SDA provides a list of build-in optimized models ranging from RecSys, CV, NLP, ASR and RL.
+* [Smart Democratization Advisor (SDA)](e2eAIOK/SDA/README.md): A user-guided tool to facilitate automation of built-in model democratization via parameterized models, it generates yaml files based on user choice, provided build-in intelligence through parameterized models and leverage SigOpt for HPO. SDA converts the manual model tuning and optimization to assisted autoML and autoHPO. SDA provides a list of build-in optimized models ranging from RecSys, CV, NLP, ASR and RL.
 
-* [Neural network constructor](e2eAIOK/DeNas/README.md): A neural architecture search technology based on component to build compact neural network models for specific domains directly. It is a multi-model, hardware aware, train-free neural architecture search approach to build models for CV, NLP, ASR directly and leverage transfer learning model adaptor to deploy the models in user’s production environment.
+* [Neural Network Constructor](e2eAIOK/DeNas/README.md): A neural architecture search technology based on component to build compact neural network models for specific domains directly. It is a multi-model, hardware aware, train-free neural architecture search approach to build models for CV, NLP, ASR directly and leverage transfer learning model adaptor to deploy the models in user’s production environment.
 
 For more information, you may [read the docs](https://github.com/intel/e2eAIOK).
-![Architecture](./docs/source/aiok_workflow.png).
+![Architecture](./docs/source/aiok_workflow.png)
 
 # Getting Started
 
@@ -72,7 +72,14 @@ cd e2eAIOK; python scripts/start_e2eaiok_docker.py --backend [tensorflow, pytorc
 
 ## Performance
 
-![Performance](./docs/source/Performance.png "Intel® End-to-End AI Optimization Kit Performance")
+Performance is evaluated on Intel Ice Lake Platform, for MiniGO, BERT, ResNet, RNN-T respectively, E2E democratization delivered 13.06x, 10.10x, 8.77x and 14.19x training time speedup, with 5% accuracy loss for ResNet and 1% F1 score loss for BERT.
+
+![Performance](./docs/source/e2eaiok_v02_performance.png "Intel® End-to-End AI Optimization Kit Performance")
+
+Performance is evaluated on Intel Ice Lake Platform, for WnD, DIEN and DLRM respectively, E2E democratization delivered 51.01x(5.02x ELT & 113.03x training), 12.67x(14.86x ELT & 11.91x training) and 71.16x(86.40x ELT & 42.31x training) E2E time speedup, 21.18x, 14.11x and 124.98x inference throughput speedup
+
+![Performance](./docs/source/e2eaiok_v01_performance.png "Intel® End-to-End AI Optimization Kit Performance")
+
 
 ## Getting Support
 
