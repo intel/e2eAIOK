@@ -57,18 +57,18 @@ cd e2eAIOK; python scripts/start_e2eaiok_docker.py --backend [tensorflow, pytorc
 ## Demos
 
 * Built-in Models
-  * [DLRM](demo/builtin/dlrm/DLRM_DEMO.ipynb) - [Readme](modelzoo/dlrm/README.md) - recsys, facebook, pytorch_mlperf
-  * [DIEN](demo/builtin/dien/DIEN_DEMO.ipynb) - [Readme](modelzoo/dien/README.md) - recsys, alibaba, tensorflow
-  * [WnD](demo/builtin/wnd/WND_DEMO.ipynb) - [Readme](modelzoo/WnD/README.md) - recsys, google, tensorflow
-  * [RNNT](demo/builtin/rnnt/RNNT_DEMO.ipynb) - [Readme](modelzoo/rnnt/README.md) - speech recognition, pytorch
-  * [RESNET](demo/builtin/resnet/RESNET_DEMO.ipynb) - [Readme](modelzoo/resnet/README.md) - computer vision, tensorflow
-  * [BERT](demo/builtin/bert/BERT_DEMO.ipynb) - [Readme](modelzoo/bert/README.md) - Natual Language Processing, tensorflow
-  * [MiniGO](demo/builtin/minigo/MiniGo_DEMO.ipynb) - [Readme](modelzoo/minigo/README.md) - minimalist engine modeled after AlphaGo Zero, tensorflow
+  * [DLRM](demo/builtin/dlrm/DLRM_DEMO.ipynb) - [Readme](modelzoo/dlrm/README.md) - RecSys, PyTorch
+  * [DIEN](demo/builtin/dien/DIEN_DEMO.ipynb) - [Readme](modelzoo/dien/README.md) - RecSys, TensorFlow
+  * [WnD](demo/builtin/wnd/WND_DEMO.ipynb) - [Readme](modelzoo/WnD/README.md) - RecSys, TensorFlow
+  * [RNNT](demo/builtin/rnnt/RNNT_DEMO.ipynb) - [Readme](modelzoo/rnnt/README.md) - Speech Recognition, PyTorch
+  * [RESNET](demo/builtin/resnet/RESNET_DEMO.ipynb) - [Readme](modelzoo/resnet/README.md) - Computer vision, TensorFlow
+  * [BERT](demo/builtin/bert/BERT_DEMO.ipynb) - [Readme](modelzoo/bert/README.md) - Natual Language Processing, TensorFlow
+  * [MiniGO](demo/builtin/minigo/MiniGo_DEMO.ipynb) - [Readme](modelzoo/minigo/README.md) - minimalist engine modeled after AlphaGo Zero, TensorFlow
 
-* Neural network constructor Demos
-  * [Computer Vision](demo/denas/computer_vision/DENAS_COMPUTER_VISION_DEMO.ipynb) - cnn/vit, pytorch
-  * [NLP](demo/denas/bert/DENAS_BERT_DEMO.ipynb) - bert, pytorch
-  * [Speech Recognition](demo/denas/asr/DENAS_ASR_DEMO.ipynb) - asr, pytorch
+* Neural network constructor with DE-NAS demos: 
+  * [Computer Vision](demo/denas/computer_vision/DENAS_COMPUTER_VISION_DEMO.ipynb) - CNN/Vit, PyTorch
+  * [NLP](demo/denas/bert/DENAS_BERT_DEMO.ipynb) - BERT, PyTorch
+  * [Speech Recognition](demo/denas/asr/DENAS_ASR_DEMO.ipynb) - ASR, PyTorch
 
 ## Performance
 
