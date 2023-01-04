@@ -47,7 +47,7 @@ class TestDeNasEvolutionary:
     '''  
     def test_search(self):
         params = edict({'domain': 'vit', 'model_type': 'transformer', 
-                'batch_size': 64, 'random_max_epochs': 3, 'max_epochs': 1, 
+                'batch_size': 64, 'random_max_epochs': 3, 'max_epochs': 1, 'scale_factor': 10, 
                 'select_num': 3, 'population_num': 3, 'm_prob': 0.2, 's_prob': 0.4, 
                 'crossover_num': 0, 'mutation_num': 0, 'max_param_limits': 100, 
                 'min_param_limits': 1, 'img_size': 224, 'patch_size': 16, 'drop_rate': 0.0, 
