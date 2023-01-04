@@ -13,7 +13,7 @@ This multi-model, hardware-aware train-free NAS solution is targeting for citize
 ## Details 
 
 ### Architecture 
-![image](https://user-images.githubusercontent.com/6396930/204731145-b213da18-b4cb-4bca-8285-061e279fef84.png)
+![image](../../docs/source/DENAS_architecture.png)
 
 DE-NAS: Multi-model, hardware-aware train-free neural architecture search 
 One key component of DE-NAS is multi-model and unified search space. Currently Compute Vision (CV), Natural Language Processing (NLP), and Automatic Speech Recognition (ASR) search spaces are supported.
