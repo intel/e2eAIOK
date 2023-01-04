@@ -86,7 +86,7 @@ class SigoptSearchEngine(BaseSearchEngine):
                 name= 'bert denas',
                 project='denas',
                 type="offline",
-                observation_budget=1000,
+                observation_budget=self.params.sigopt_max_epochs,
                 metrics=[dict(name='DeScore', objective='maximize')],
                 parameters=[
                     dict(name="LAYER_NUM", type="int", bounds=dict(min=self.params.cfg["SEARCH_SPACE"]['LAYER_NUM']['bounds']['min'], max=self.params.cfg["SEARCH_SPACE"]['LAYER_NUM']['bounds']['max'])),
@@ -120,7 +120,7 @@ class SigoptSearchEngine(BaseSearchEngine):
                 name= 'vit denas',
                 project='denas',
                 type="offline",
-                observation_budget=1000,
+                observation_budget=self.params.sigopt_max_epochs,
                 metrics=[dict(name='DeScore', objective='maximize')],
                 conditionals=[dict(name="DEPTH",values=["12","13","14","15","16"])],
                 parameters=[
@@ -198,7 +198,7 @@ class SigoptSearchEngine(BaseSearchEngine):
                 name= 'asr denas',
                 project='denas',
                 type="offline",
-                observation_budget=1000,
+                observation_budget=self.params.sigopt_max_epochs,
                 metrics=[dict(name='DeScore', objective='maximize')],
                 conditionals=[dict(name="DEPTH",values=["9","10","11","12"])],
                 parameters=[
