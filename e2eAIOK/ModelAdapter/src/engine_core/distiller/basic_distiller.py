@@ -48,13 +48,13 @@ class BasicDistiller(nn.Module):
         '''
         if not self.use_saved_logits:
             output = self.pretrained_model(x)
-            output = (output.logits,None) if self.pretrained_model_type is not None and self.pretrained_model_type.startswith("huggingface") else output
+            output = output.logits if self.pretrained_model_type is not None and self.pretrained_model_type.startswith("huggingface") else output
             return output
         else:
             if not isinstance(x, list) or len(x)!=2:
                 raise RuntimeError("need saved logits for distiller")
             output = load_logits(x[1],topk=self.topk,num_classes=self.num_classes)
-            return (output,None)
+            return output
 
     def loss(self,teacher_logits, student_logits,**kwargs):
         ''' Loss function.

@@ -10,12 +10,12 @@ from optuna.trial import TrialState
 import argparse
 from functools import partial
 import sys
-e2eaiok_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
-sys.path.append(e2eaiok_dir)
+import e2eAIOK
 from e2eAIOK.ModelAdapter.src.training import ModelAdapterTask
 from e2eAIOK.common.utils import update_dict
 import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
-# e2eaiok_dir = e2eAIOK.__path__[0]
+e2eaiok_dir = e2eAIOK.__path__[0]
+
 
 def objective(args,trial):
     ''' Optuna optimize objective
@@ -37,9 +37,9 @@ def main(args, trial):
     :return: validation metric. If has Earlystopping, using the best metric; Else, using the last metric.
     '''
     #################### merge cfg ################
-    with open(os.path.join(e2eaiok_dir, "e2eAIOK/common/default.conf")) as f:
+    with open(os.path.join(e2eaiok_dir, "common/default.conf")) as f:
         cfg = yaml.safe_load(f)
-    with open(os.path.join(e2eaiok_dir, "e2eAIOK/ModelAdapter/src/default_ma.conf")) as f:
+    with open(os.path.join(e2eaiok_dir, "ModelAdapter/src/default_ma.conf")) as f:
         cfg = update_dict(cfg, yaml.safe_load(f))
     with open(args.cfg) as f:
         cfg = edict(update_dict(cfg, yaml.safe_load(f)))

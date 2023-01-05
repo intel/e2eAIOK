@@ -5,8 +5,6 @@ import torch
 import torchvision
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
-e2eaiok_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
-sys.path.append(e2eaiok_dir)
 from e2eAIOK.ModelAdapter.src.engine_core.distiller import BasicDistiller, KD, DKD
 from e2eAIOK.ModelAdapter.src.engine_core.distiller.utils import logits_wrap_dataset
 from torch.utils.data import Subset
@@ -85,7 +83,7 @@ class TestBasicDistiller:
         distiller = BasicDistiller(**kwargs)
 
         for (idx, (data, label)) in enumerate(dataloader):
-            y = distiller(data)[0]
+            y = distiller(data)
             assert y.shape == torch.Size([data[0].shape[0],100])
             break
 

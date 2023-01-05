@@ -49,6 +49,18 @@ def createBackbone(cfg, model_type, num_classes, initial_pretrain=False, pretrai
     elif backbone_name == "huggingface_vit_base_224_in21k_ft_cifar100":
         from transformers import ViTForImageClassification
         model = ViTForImageClassification.from_pretrained('edumunozsala/vit_base-224-in21k-ft-cifar100')
+    elif backbone_name == "unet":
+        from .unet.generic_UNet_DA import Generic_UNet_DA
+        args_dict = {
+            "threeD": True, 
+            "input_channels": 1, 
+            "base_num_features": 30, 
+            "num_classes": num_classes, 
+            "num_conv_per_stage": 2,  
+            "pool_op_kernel_sizes": None,
+            "conv_kernel_sizes": None
+        }
+        model = Generic_UNet_DA(**args_dict)
     else:
         logging.error("[%s] is not supported"%backbone_name)
         raise NotImplementedError("[%s] is not supported"%backbone_name)

@@ -90,6 +90,7 @@ class TorchTrainerMA(TorchTrainer):
                 self.tensorboard_writer.add_scalar('{}/{}_{}'.format(metric_name,dataset_name,metric_name), metric_value, cur_epoch * epoch_steps + cur_step)
             if cur_step in [0, epoch_steps - 1] or  cur_step % (self.cfg.log_interval_step * 10) == 0: # first iter, last iter and several middle iter.
                 for (name, parameter) in self.model.named_parameters():
+                    # if torch.isnan(parameter).int().sum() > 0 : continue
                     self.tensorboard_writer.add_histogram(name, parameter, cur_epoch * epoch_steps + cur_step)
                     if parameter.requires_grad:
                         self.tensorboard_writer.add_histogram("%s_Grad"%name, parameter.grad, cur_epoch * epoch_steps + cur_step)

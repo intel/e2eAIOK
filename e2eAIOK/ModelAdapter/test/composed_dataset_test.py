@@ -2,8 +2,6 @@ import pytest
 import sys
 import os
 import sys
-e2eaiok_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
-sys.path.append(e2eaiok_dir)
 from torch.utils.data import Dataset
 from e2eAIOK.ModelAdapter.src.dataset.composed_dataset import ComposedDataset
 

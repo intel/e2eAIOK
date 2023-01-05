@@ -41,10 +41,10 @@ class TestMakeTransferrable:
             'finetunner':BasicFinetunner(torchvision.models.resnet18(pretrained=True),True),
             'distiller': BasicDistiller(teacher_model, True),
             'adapter': DANNAdapter(512, 8, 0.0, 5.0, 1.0, 100),
-            # 'training_dataloader': torch.utils.data.DataLoader(
-            #     Office31("/home/vmagent/app/data/dataset/office31/amazon", self.label_map, None, 'RGB'),
-            #     batch_size=self.batch_size, shuffle=True, num_workers=1, drop_last=True),
-            # 'adaption_source_domain_training_dataset': Office31("/home/vmagent/app/data/dataset/office31/webcam", self.label_map, None, 'RGB'),
+            'training_dataloader': torch.utils.data.DataLoader(
+                Office31("/home/vmagent/app/data/dataset/office31/amazon", self.label_map, None, 'RGB'),
+                batch_size=self.batch_size, shuffle=True, num_workers=1, drop_last=True),
+            'adaption_source_domain_training_dataset': Office31("/home/vmagent/app/data/dataset/office31/webcam", self.label_map, None, 'RGB'),
             'transfer_strategy': TransferStrategy.DistillationAndDomainAdaptionStrategy,
             'enable_target_training_label': True,
             'backbone_loss_weight': 1.0,
@@ -65,6 +65,7 @@ class TestMakeTransferrable:
         assert tensor_near_equal(new_model.backbone.loss(tensor1, tensor0), kwargs['loss'](tensor1, tensor0))
         assert new_model.adapter is kwargs['adapter']
         assert new_model.distiller is kwargs['distiller']
+        assert type(kwargs['training_dataloader'].dataset) is ComposedDataset
 
     def test_valid_decorator(self):
         ''' test valid _transferrable
@@ -93,7 +94,27 @@ class TestMakeTransferrable:
         assert tensor_near_equal(new_model.backbone.loss(tensor1, tensor0), kwargs['loss'](tensor1, tensor0))
         assert new_model.adapter is kwargs['adapter']
         assert new_model.distiller is kwargs['distiller']
+        assert type(kwargs['training_dataloader'].dataset) is ComposedDataset
 
+    def test_return_ComposedDataset(self):
+        ''' test return ComposedDataset or not
+
+        :return:
+        '''
+        for transfer_strategy in [TransferStrategy.OnlyFinetuneStrategy,
+                                  TransferStrategy.OnlyDistillationStrategy]:
+            kwargs = self._create_kwargs()
+            kwargs['transfer_strategy'] = transfer_strategy
+            _make_transferrable(**kwargs)
+            assert type(kwargs['training_dataloader'].dataset) is not ComposedDataset
+
+        for transfer_strategy in [TransferStrategy.OnlyDomainAdaptionStrategy,
+                                  TransferStrategy.FinetuneAndDomainAdaptionStrategy,
+                                  TransferStrategy.DistillationAndDomainAdaptionStrategy]:
+            kwargs = self._create_kwargs()
+            kwargs['transfer_strategy'] = transfer_strategy
+            _make_transferrable(**kwargs)
+            assert type(kwargs['training_dataloader'].dataset) is ComposedDataset
     def test_invalid_loss_call(self):
         ''' test call of invalid loss
 
@@ -109,7 +130,8 @@ class TestMakeTransferrable:
 
         :return:
         '''
-        for transfer_strategy in [TransferStrategy.OnlyDistillationStrategy]:
+        for transfer_strategy in [TransferStrategy.OnlyDistillationStrategy,
+                                  TransferStrategy.DistillationAndDomainAdaptionStrategy]:
             for name in ["distiller"]:
                 with pytest.raises(RuntimeError) as e:
                     kwargs = self._create_kwargs()
@@ -117,7 +139,22 @@ class TestMakeTransferrable:
                     kwargs[name] = None
                     _make_transferrable(**kwargs)
                 assert e.value.args[0] == "Need %s for Distillation" % name
-    
+    def test_invalid_adapter_call(self):
+        ''' test call of invalid adapter
+
+        :return:
+        '''
+        for transfer_strategy in [TransferStrategy.OnlyDomainAdaptionStrategy,
+                                  TransferStrategy.FinetuneAndDomainAdaptionStrategy,
+                                  TransferStrategy.DistillationAndDomainAdaptionStrategy]:
+            for name in ["adapter"]:
+                with pytest.raises(RuntimeError) as e:
+                    kwargs = self._create_kwargs()
+                    kwargs['transfer_strategy'] = transfer_strategy
+                    kwargs[name] = None
+                    _make_transferrable(**kwargs)
+                assert e.value.args[0] == "Need %s for Adaption" % name
+
     def test_invalid_enable_target_training_label_call(self):
         ''' test call of invalid enable_target_training_label
 
@@ -137,7 +174,10 @@ class TestMakeTransferrable:
         '''
         kwargs = self._create_kwargs()
         kwargs['transfer_strategy'] = TransferStrategy.OnlyDomainAdaptionStrategy
-        _make_transferrable(**kwargs)
+        _make_transferrable(**kwargs)  # dataset_loader is ComposedDataset
+        with pytest.raises(RuntimeError) as e:
+            _make_transferrable(**kwargs)
+        assert e.value.args[0] == "training_dataloader should not be ComposedDataset"
     def test_make_transferrable_with_finetune(self):
         ''' test make_transferrable_with_finetune
 
@@ -153,6 +193,7 @@ class TestMakeTransferrable:
 
         assert new_model.transfer_strategy == TransferStrategy.OnlyFinetuneStrategy
         assert new_model.enable_target_training_label == True
+        assert type(kwargs['training_dataloader'].dataset) is not ComposedDataset
     def test_make_transferrable_with_knowledge_distillation(self):
         ''' test make_transferrable_with_knowledge_distillation
 
@@ -172,6 +213,29 @@ class TestMakeTransferrable:
 
         assert new_model.transfer_strategy == TransferStrategy.OnlyDistillationStrategy
         assert new_model.enable_target_training_label == kwargs['enable_target_training_label']
+        assert type(kwargs['training_dataloader'].dataset) is not ComposedDataset
+    def test_make_transferrable_with_domain_adaption(self):
+        ''' test make_transferrable_with_domain_adaption
+
+        :return:
+        '''
+        kwargs = self._create_kwargs()
+        new_model = make_transferrable_with_domain_adaption(
+            model=kwargs['model'], loss=kwargs['loss'],
+            adapter=kwargs['adapter'],
+            training_dataloader=kwargs['training_dataloader'],
+            adaption_source_domain_training_dataset=kwargs['adaption_source_domain_training_dataset'],
+            enable_target_training_label=kwargs['enable_target_training_label'],
+            backbone_loss_weight=kwargs['backbone_loss_weight'],
+            adapter_loss_weight=kwargs['adapter_loss_weight'])
+
+        assert type(new_model) == TransferrableModel
+        assert new_model.adapter is kwargs['adapter']
+        assert new_model.distiller is None
+
+        assert new_model.transfer_strategy == TransferStrategy.OnlyDomainAdaptionStrategy
+        assert new_model.enable_target_training_label == kwargs['enable_target_training_label']
+        assert type(kwargs['training_dataloader'].dataset) is ComposedDataset
 class TestTransferrableModel:
     ''' Test TransferrableModel
 
@@ -191,11 +255,11 @@ class TestTransferrableModel:
             'finetunner': BasicFinetunner(torchvision.models.resnet18(pretrained=True), True),
             'distiller': BasicDistiller(teacher_model, True),
             'adapter': DANNAdapter(512, 8, 0.0, 5.0, 1.0, 100),
-            # 'training_dataloader': torch.utils.data.DataLoader(
-            #     Office31("/home/vmagent/app/data/dataset/office31/amazon", self.label_map, None, 'RGB'),
-            #     batch_size=self.batch_size, shuffle=True, num_workers=1, drop_last=True),
-            # 'adaption_source_domain_training_dataset': Office31("/home/vmagent/app/data/dataset/office31/webcam", self.label_map, None,
-            #                                                     'RGB'),
+            'training_dataloader': torch.utils.data.DataLoader(
+                Office31("/home/vmagent/app/data/dataset/office31/amazon", self.label_map, None, 'RGB'),
+                batch_size=self.batch_size, shuffle=True, num_workers=1, drop_last=True),
+            'adaption_source_domain_training_dataset': Office31("/home/vmagent/app/data/dataset/office31/webcam", self.label_map, None,
+                                                                'RGB'),
             'transfer_strategy': TransferStrategy.OnlyDistillationStrategy,
             'enable_target_training_label': True,
             'backbone_loss_weight': 1.0,
@@ -287,10 +351,11 @@ class TestTransferrableModel:
         model.train()
         for i in range(0, 10):
             x = torch.randn_like(self.input)
+            distiller_input = model.backbone(x)[1][0]
             new_output = model._distillation_forward(x)
             assert type(new_output) == TransferrableModelOutput
             assert tensor_near_equal(new_output.backbone_output, kwargs['model'](x))
-            assert tensor_near_equal(new_output.distiller_output, kwargs['distiller'](x))
+            assert tensor_near_equal(new_output.distiller_output, kwargs['distiller'](distiller_input)[0])
             assert new_output.adapter_output is None
     def test_distillation_loss(self):
         ''' test _distillation_loss
@@ -311,6 +376,71 @@ class TestTransferrableModel:
         assert tensor_near_equal(new_loss.backbone_loss, kwargs['loss'](student_output,student_label))
         assert tensor_near_equal(new_loss.distiller_loss, kwargs['distiller'].loss(teacher_output,student_output))
         assert new_loss.adapter_loss is None
+    def test_adaption_forward(self):
+        ''' test _adaption_forward
+
+        :return:
+        '''
+        kwargs = self._create_kwargs()
+        model = _make_transferrable(**kwargs)
+        model.train()
+        for i in range(0, 10):
+            x1 = torch.randn_like(self.input)
+            x2 = torch.randn_like(self.input)
+            adapter_input1 = model.backbone(x1)[1][1] # target
+            adapter_input2 = model.backbone(x2)[1][1] # source
+            new_output = model._adaption_forward(x1,x2)
+            assert type(new_output) == tuple
+            assert type(new_output[0]) == TransferrableModelOutput
+            assert type(new_output[1]) == TransferrableModelOutput
+            assert tensor_near_equal(new_output[0].backbone_output, kwargs['model'](x1))
+            assert tensor_near_equal(new_output[1].backbone_output, kwargs['model'](x2))
+            assert new_output[0].distiller_output is None
+            assert new_output[1].distiller_output is None
+            assert tensor_near_equal(new_output[0].adapter_output, kwargs['adapter'](adapter_input1))
+            assert tensor_near_equal(new_output[1].adapter_output, kwargs['adapter'](adapter_input2))
+    def test_adaption_loss(self):
+        ''' test _adaption_loss
+
+        :return:
+        '''
+        for enable_target_training_label in [True,False]:
+            kwargs = self._create_kwargs()
+            kwargs['enable_target_training_label'] = enable_target_training_label
+            model = _make_transferrable(**kwargs)
+            model.train()
+
+            backbone_output_tgt = torch.ones([self.batch_size,self.num_class]) * 0.1
+            backbone_output_src = torch.ones([self.batch_size,self.num_class]) * 0.2
+            adapter_output_tgt  = torch.ones([self.batch_size,1]) * 0.7
+            adapter_output_src  = torch.ones([self.batch_size,1]) * 0.5
+            if enable_target_training_label:
+                backbone_label_tgt  = torch.ones([self.batch_size,self.num_class])
+            else:
+                backbone_label_tgt = None
+            backbone_label_src  = torch.zeros([self.batch_size,self.num_class])
+
+            new_loss = model._adaption_loss(backbone_output_tgt, backbone_output_src,
+                           adapter_output_tgt, adapter_output_src,
+                           backbone_label_tgt,backbone_label_src)
+
+            assert type(new_loss) == TransferrableModelLoss
+            assert tensor_near_equal(new_loss.total_loss,new_loss.backbone_loss + new_loss.adapter_loss)
+            if enable_target_training_label:
+                assert tensor_near_equal(new_loss.backbone_loss,
+                                     kwargs['loss'](backbone_output_tgt,backbone_label_tgt) +
+                                     kwargs['loss'](backbone_output_src, backbone_label_src)
+                                     )
+            else:
+                assert tensor_near_equal(new_loss.backbone_loss,
+                                         kwargs['loss'](backbone_output_src, backbone_label_src))
+            assert new_loss.distiller_loss is None
+            adapter_label_tgt = AdversarialAdapter.make_label(adapter_output_tgt.size(0), is_source=False).view(-1, 1)
+            adapter_label_src = AdversarialAdapter.make_label(adapter_output_src.size(0), is_source=True).view(-1, 1)
+            assert tensor_near_equal(new_loss.adapter_loss,
+                                     kwargs['adapter'].loss(adapter_output_tgt, adapter_label_tgt) +
+                                     kwargs['adapter'].loss(adapter_output_src, adapter_label_src)
+                                     )
     def test_forward_OnlyFinetuneStrategy(self):
         ''' test forward with OnlyFinetuneStrategy
 
@@ -357,6 +487,86 @@ class TestTransferrableModel:
         # assert tensor_near_equal(output.backbone_output, kwargs['model'](_input[0]))
         # assert output.distiller_output is not None
         # assert output.adapter_output is None
+    def test_forward_OnlyDomainAdaptionStrategy(self):
+        ''' test forward with OnlyDomainAdaptionStrategy
+
+        :return:
+        '''
+        kwargs = self._create_kwargs()
+        kwargs['transfer_strategy'] = TransferStrategy.OnlyDomainAdaptionStrategy
+        model = _make_transferrable(**kwargs)
+        model.train()
+        ############ single input #########
+        _input = self.input
+        with pytest.raises(RuntimeError) as e:
+            model(_input)
+        assert e.value.args[0].startswith("TransferrableModel forward for OnlyDomainAdaptionStrategy should be tuple or list")
+        ########### double input ############
+        _input = (self.input, torch.ones_like(self.input))
+        output = model(_input)
+        assert type(output) == tuple
+        assert type(output[0]) == TransferrableModelOutput
+        assert type(output[1]) == TransferrableModelOutput
+        assert tensor_near_equal(output[0].backbone_output, kwargs['model'](_input[0]))
+        assert tensor_near_equal(output[1].backbone_output, kwargs['model'](_input[1]))
+        assert output[0].distiller_output is None
+        assert output[1].distiller_output is None
+        assert output[0].adapter_output is not None
+        assert output[1].adapter_output is not None
+    def test_forward_FinetuneAndDomainAdaptionStrategy(self):
+        ''' test forward with FinetuneAndDomainAdaptionStrategy
+
+        :return:
+        '''
+        kwargs = self._create_kwargs()
+        kwargs['transfer_strategy'] = TransferStrategy.FinetuneAndDomainAdaptionStrategy
+        model = _make_transferrable(**kwargs)
+        model.train()
+        ############ single input #########
+        _input = self.input
+        with pytest.raises(RuntimeError) as e:
+            model(_input)
+        assert e.value.args[0].startswith(
+            "TransferrableModel forward for FinetuneAndDomainAdaptionStrategy should be tuple or list")
+        ########### double input ############
+        _input = (self.input, torch.ones_like(self.input))
+        output = model(_input)
+        assert type(output) == tuple
+        assert type(output[0]) == TransferrableModelOutput
+        assert type(output[1]) == TransferrableModelOutput
+        assert tensor_near_equal(output[0].backbone_output, kwargs['model'](_input[0]))
+        assert tensor_near_equal(output[1].backbone_output, kwargs['model'](_input[1]))
+        assert output[0].distiller_output is None
+        assert output[1].distiller_output is None
+        assert output[0].adapter_output is not None
+        assert output[1].adapter_output is not None
+    def test_forward_DistillationAndDomainAdaptionStrategy(self):
+        ''' test forward DistillationAndDomainAdaptionStrategy
+
+        :return:
+        '''
+        kwargs = self._create_kwargs()
+        kwargs['transfer_strategy'] = TransferStrategy.DistillationAndDomainAdaptionStrategy
+        model = _make_transferrable(**kwargs)
+        model.train()
+        ############ single input #########
+        _input = self.input
+        with pytest.raises(RuntimeError) as e:
+            model(_input)
+        assert e.value.args[0].startswith(
+            "TransferrableModel forward for DistillationAndDomainAdaptionStrategy should be tuple or list")
+        ########### double input ############
+        _input = (self.input, torch.ones_like(self.input))
+        output = model(_input)
+        assert type(output) == tuple
+        assert type(output[0]) == TransferrableModelOutput
+        assert type(output[1]) == TransferrableModelOutput
+        assert tensor_near_equal(output[0].backbone_output, kwargs['model'](_input[0]))
+        assert tensor_near_equal(output[1].backbone_output, kwargs['model'](_input[1]))
+        assert output[0].distiller_output is not None
+        assert output[1].distiller_output is not None
+        assert output[0].adapter_output is not None
+        assert output[1].adapter_output is not None
     def test_loss_OnlyFinetuneStrategy(self):
         ''' test loss with OnlyFinetuneStrategy
 
@@ -391,13 +601,64 @@ class TestTransferrableModel:
         assert tensor_near_equal(loss.total_loss, loss.backbone_loss + loss.distiller_loss)
         assert loss.distiller_loss is not None
         assert loss.adapter_loss is None
+    def test_loss_OnlyDomainAdaptionStrategy(self):
+        ''' test loss with OnlyDomainAdaptionStrategy
+
+        :return:
+        '''
+        kwargs = self._create_kwargs()
+        kwargs['transfer_strategy'] = TransferStrategy.OnlyDomainAdaptionStrategy
+        model = _make_transferrable(**kwargs)
+        model.train()
+
+        output = model((self.input,self.input+1))
+        label = (torch.ones([self.batch_size,self.num_class]),torch.zeros([self.batch_size,self.num_class]))
+        loss = model.loss(output,label)
+        assert type(loss) == TransferrableModelLoss
+        assert tensor_near_equal(loss.total_loss, loss.backbone_loss + loss.adapter_loss)
+        assert loss.distiller_loss is None
+        assert loss.adapter_loss is not None
+    def test_loss_FinetuneAndDomainAdaptionStrategy(self):
+        ''' test loss with FinetuneAndDomainAdaptionStrategy
+
+        :return:
+        '''
+        kwargs = self._create_kwargs()
+        kwargs['transfer_strategy'] = TransferStrategy.FinetuneAndDomainAdaptionStrategy
+        model = _make_transferrable(**kwargs)
+        model.train()
+
+        output = model((self.input,self.input+1))
+        label = (torch.ones([self.batch_size,self.num_class]),torch.zeros([self.batch_size,self.num_class]))
+        loss = model.loss(output,label)
+        assert type(loss) == TransferrableModelLoss
+        assert tensor_near_equal(loss.total_loss, loss.backbone_loss + loss.adapter_loss)
+        assert loss.distiller_loss is None
+        assert loss.adapter_loss is not None
+    def test_loss_DistillationAndDomainAdaptionStrategy(self):
+        ''' test loss with DistillationAndDomainAdaptionStrategy
+
+        :return:
+        '''
+        kwargs = self._create_kwargs()
+        kwargs['transfer_strategy'] = TransferStrategy.DistillationAndDomainAdaptionStrategy
+        model = _make_transferrable(**kwargs)
+        model.train()
+
+        output = model((self.input,self.input+1))
+        label = (torch.ones([self.batch_size,self.num_class]),torch.zeros([self.batch_size,self.num_class]))
+        loss = model.loss(output,label)
+        assert type(loss) == TransferrableModelLoss
+        assert tensor_near_equal(loss.total_loss, loss.backbone_loss + loss.distiller_loss + loss.adapter_loss )
+        assert loss.total_loss is not None
+        assert loss.distiller_loss is not None
+        assert loss.adapter_loss is not None
     def test_get_training_metrics(self):
         ''' test get_training_metrics
 
         :return:
         '''
-        for transfer_strategy in [TransferStrategy.OnlyFinetuneStrategy,
-                                  TransferStrategy.OnlyDistillationStrategy]:
+        for transfer_strategy in ALL_STRATEGIES:
             if transfer_strategy in [TransferStrategy.OnlyDomainAdaptionStrategy,
                                   TransferStrategy.FinetuneAndDomainAdaptionStrategy,
                                   TransferStrategy.DistillationAndDomainAdaptionStrategy]:

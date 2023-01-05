@@ -1,8 +1,6 @@
 import pytest
 import sys
 import os
-e2eaiok_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
-sys.path.append(e2eaiok_dir)
 from e2eAIOK.ModelAdapter.src.engine_core.adapter.factory import createAdapter
 from e2eAIOK.ModelAdapter.src.engine_core.adapter.adversarial.adversarial_adapter import AdversarialAdapter
 from e2eAIOK.ModelAdapter.src.engine_core.adapter.adversarial.dann_adapter import DANNAdapter
@@ -11,7 +9,7 @@ from e2eAIOK.ModelAdapter.src.engine_core.adapter.adversarial.grl import Gradien
 import torch
 import numpy as np
 
-from utils import tensor_near_equal
+from e2eAIOK.common.trainer.utils.utils import tensor_near_equal
 
 class TestAdapterFactory:
     ''' Test Adapter

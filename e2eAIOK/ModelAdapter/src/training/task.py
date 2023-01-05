@@ -103,8 +103,6 @@ class ModelAdapterTask:
         else:
             teacher_model = createBackbone(self.cfg, self.cfg.distiller.teacher.type, num_classes = self.num_classes, \
                                 initial_pretrain=self.cfg.distiller.teacher.initial_pretrain, pretrain = self.cfg.distiller.teacher.pretrain)
-            if not self.cfg.distiller.teacher.type.startswith("huggingface"):
-                teacher_model = extract_distiller_adapter_features(teacher_model,self.cfg.distiller.feature_layer_name,self.cfg.adapter.feature_layer_name)
             if self.cfg.distiller.type == "kd":
                 distiller = KD(pretrained_model = teacher_model, 
                                 temperature = self.cfg.kd.temperature,
@@ -135,17 +133,29 @@ class ModelAdapterTask:
         :return an adapter
         '''
         if self.cfg.adapter.type == "":
-            adapter = None
-        elif self.cfg.adapter.type == "CDAN":
-            adapter = createAdapter('CDAN', input_size=self.cfg.adapter.feature_size * self.num_classes, hidden_size=self.cfg.adapter.feature_size,
-                                    dropout=0.0, grl_coeff_alpha=5.0, grl_coeff_high=1.0, max_iter=self.epoch_steps,
-                                    backbone_output_size=self.num_classes, enable_random_layer=0, enable_entropy_weight=0)
+            self.adapter = None
+            return None
+        
+        if self.cfg.adapter.type == "CDAN":
+            args_dict = {
+                'input_size': self.cfg.adapter.feature_size * self.num_classes, 'hidden_size': self.cfg.adapter.feature_size,
+                'dropout': 0.0, 'grl_coeff_alpha': 5.0, 'grl_coeff_high': 1.0, 'max_iter': self.epoch_steps, 'backbone_output_size': self.num_classes, 
+                'enable_random_layer': False, 'enable_entropy_weight': False
+            }
+        elif self.cfg.adapter.type == "CAC_UNet":
+            args_dict = {
+                'input_channels': self.cfg.adapter.encoder_channels,
+                'threeD': True,
+                'pool_op_kernel_sizes': self.cfg.adapter.pool_op_kernel_sizes,
+                'loss_weights': [self.cfg.adapter.encoder_weight, self.cfg.adapter.decoder_weight, 0]
+            }
         else:
             logging.error("[%s] is not supported"%self.cfg.adapter.type)
             raise NotImplementedError("[%s] is not supported"%self.cfg.adapter.type)
-        self.adapter = adapter
-        logging.info('adapter:%s' % adapter)
-        return adapter
+        
+        self.adapter = createAdapter(self.cfg.adapter.type, **args_dict)
+        logging.info('adapter:%s' % self.adapter)
+        return self.adapter
 
     def create_transfer_model(self, backbone, finetuner, distiller, adapter):
         ''' create transferrable model
@@ -161,10 +171,15 @@ class ModelAdapterTask:
         elif self.cfg.experiment.strategy == "OnlyDistillationStrategy":
             strategy = TransferStrategy.OnlyDistillationStrategy
             model = make_transferrable_with_knowledge_distillation(backbone,self.loss,distiller,
-                                                   self.cfg.distiller.feature_size,self.cfg.distiller.feature_layer_name,
                                                    True,self.cfg.loss_weight.backbone,self.cfg.loss_weight.distiller)
         elif self.cfg.experiment.strategy == "OnlyDomainAdaptionStrategy":
             strategy = TransferStrategy.OnlyDomainAdaptionStrategy
+            model = make_transferrable_with_domain_adaption(
+                backbone, self.loss, adapter,
+                False,
+                self.cfg.loss_weight.backbone,
+                self.cfg.loss_weight.adapter
+            )
         elif self.cfg.experiment.strategy == "FinetuneAndDomainAdaptionStrategy":
             strategy = TransferStrategy.FinetuneAndDomainAdaptionStrategy
         elif self.cfg.experiment.strategy == "DistillationAndDomainAdaptionStrategy":

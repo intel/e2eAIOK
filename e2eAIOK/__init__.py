@@ -1,1 +1,1 @@
-__all__ = ["hydroai", "common", "dataloader"]
+__all__ = ["hydroai", "common", "dataloader", "ModelAdapter"]

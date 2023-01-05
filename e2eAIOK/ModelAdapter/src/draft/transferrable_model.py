@@ -202,6 +202,65 @@ class TransferrableModel(nn.Module):
 
         return TransferrableModelLoss(total_loss,backbone_loss,None,adv_loss)
 
+    def _distillation_and_adaption_forward(self,x_tgt,x_src):
+        ''' forward for DistillationAndAdaptionStrategy
+
+        :param x_tgt: target domain data
+        :param x_src: source domain data
+        :return:  (TransferrableModelOutput for x_tgt, TransferrableModelOutput for x_src)
+        '''
+        x_src_input = x_src[0] if self.distiller.use_saved_logits else x_src
+        backbone_output_src,others_src= self.backbone(x_src_input)
+        distiller_output_src,distiller_output_src_others = self.distiller(x_src)
+        adapter_output_src = self.adapter(others_src[1])
+
+        x_tgt_input = x_tgt[0] if self.distiller.use_saved_logits else x_tgt
+        backbone_output_tgt,others_tgt = self.backbone(x_tgt_input)
+        distiller_output_tgt,distiller_output_tgt_others = self.distiller(x_tgt)
+        adapter_output_tgt = self.adapter(others_tgt[1])
+
+        return TransferrableModelOutput(backbone_output_tgt,distiller_output_tgt,adapter_output_tgt), \
+               TransferrableModelOutput(backbone_output_src,distiller_output_src,adapter_output_src)
+
+    def _distillation_and_adaption_loss(self,backbone_output_tgt, backbone_output_src,
+                       teacher_output_tgt, teacher_output_src,
+                       adapter_output_tgt, adapter_output_src,
+                       backbone_label_tgt,backbone_label_src):
+        ''' loss for DistillationAndAdaptionStrategy
+
+        :param backbone_output_tgt: student backbone main output of target domain
+        :param backbone_output_src: student backbone main output of source domain
+        :param teacher_output_tgt: teacher output of target domain
+        :param teacher_output_src: teacher output of source domain
+        :param adapter_output_tgt: adapter output of target domain
+        :param adapter_output_src: adapter output of source domain
+        :param backbone_label_tgt: student backbone label of target domain
+        :param backbone_label_src: student backbone label of source domain
+        :return: TransferrableModelLoss
+        '''
+        if self.enable_target_training_label:
+            target_loss = self.backbone.loss(backbone_output_tgt, backbone_label_tgt)
+        else:
+            target_loss = 0.0
+        src_loss = self.backbone.loss(backbone_output_src, backbone_label_src)
+
+        backbone_loss = target_loss + src_loss
+
+        adapter_label_tgt = AdversarialAdapter.make_label(adapter_output_tgt.size(0), is_source=False).view(-1, 1)
+        adapter_label_src = AdversarialAdapter.make_label(adapter_output_src.size(0), is_source=True).view(-1, 1)
+
+        distiller_loss = self.distiller.loss(teacher_output_tgt, backbone_output_tgt,target=backbone_label_tgt) + \
+                         self.distiller.loss(teacher_output_src, backbone_output_src,target=backbone_label_src)
+
+        adapter_loss = self.adapter.loss(adapter_output_tgt, adapter_label_tgt) + \
+                       self.adapter.loss(adapter_output_src, adapter_label_src)
+        
+        total_loss = self.backbone_loss_weight * backbone_loss + \
+                     self.distiller_loss_weight * distiller_loss + \
+                     self.adapter_loss_weight * adapter_loss
+
+        return TransferrableModelLoss(total_loss,backbone_loss,distiller_loss,adapter_loss)
+
     def forward(self,x):
         ''' forward
 

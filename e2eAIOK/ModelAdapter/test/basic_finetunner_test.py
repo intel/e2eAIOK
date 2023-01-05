@@ -1,12 +1,10 @@
 import pytest
 import sys
 import os
-e2eaiok_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
-sys.path.append(e2eaiok_dir)
 import torch
 import torchvision
 from e2eAIOK.ModelAdapter.src.engine_core.finetunner.basic_finetunner import BasicFinetunner
-from utils import tensor_near_equal
+from e2eAIOK.common.trainer.utils.utils import tensor_near_equal
 from copy import deepcopy
 
 class TestBasicFinetunner:
