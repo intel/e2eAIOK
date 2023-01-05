@@ -72,11 +72,19 @@ cd e2eAIOK; python scripts/start_e2eaiok_docker.py --backend [tensorflow, pytorc
 
 ## Performance
 
-Performance is evaluated on Intel Ice Lake Platform, for MiniGO, BERT, ResNet, RNN-T respectively, E2E democratization delivered 13.06x, 10.10x, 8.77x and 14.19x training time speedup, with 5% accuracy loss for ResNet and 1% F1 score loss for BERT.
+Performance results are evaluated on 4-node cluster configured with Intel(R) Xeon(R) Platinum 8358 Scalable processor.
+For [MiniGO](modelzoo/minigo/README.md), [BERT](modelzoo/bert/README.md), [ResNet](modelzoo/resnet/README.md), [RNN-T](modelzoo/rnnt/README.md) respectively, E2E democratization delivered 13.06x, 10.10x, 8.77x and 14.19x training time speedup. 
+
+Please click corresponding model link for detailed test dataset and test method.
+
+> Noted: Democratized ResNet has -5% accuracy regression, Democratized BERT has -1% F1 score regression.
 
 ![Performance](./docs/source/e2eaiok_v02_performance.png "Intel® End-to-End AI Optimization Kit Performance")
 
-Performance is evaluated on Intel Ice Lake Platform, for WnD, DIEN and DLRM respectively, E2E democratization delivered 51.01x(5.02x ELT & 113.03x training), 12.67x(14.86x ELT & 11.91x training) and 71.16x(86.40x ELT & 42.31x training) E2E time speedup, 21.18x, 14.11x and 124.98x inference throughput speedup
+Performance results are evaluated on 4-node cluster configured with Intel(R) Xeon(R) Platinum 8358 Scalable processor.
+For [WnD](modelzoo/WnD/README.md), [DIEN](modelzoo/dien/README.md) and [DLRM](modelzoo/dlrm/README.md) respectively, E2E democratization delivered 51.01x(5.02x ELT & 113.03x training), 12.67x(14.86x ELT & 11.91x training) and 71.16x(86.40x ELT & 42.31x training) E2E time speedup, 21.18x, 14.11x and 124.98x inference throughput speedup.
+
+Please click corresponding model link for detailed test dataset and test method.
 
 ![Performance](./docs/source/e2eaiok_v01_performance.png "Intel® End-to-End AI Optimization Kit Performance")
 
