@@ -1,16 +1,17 @@
 import math
 import os, sys
-import numpy as np
+sys.path.append(os.path.dirname(".."))
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from e2eAIOK.DeNas.module.cv.Linear_super import LinearSuper
-from e2eAIOK.DeNas.module.cv.layernorm_super import LayerNormSuper
-from e2eAIOK.DeNas.module.cv.multihead_super import AttentionSuper
-from e2eAIOK.DeNas.module.cv.embedding_super import PatchembedSuper
-from e2eAIOK.DeNas.module.cv.utils import trunc_normal_
-from e2eAIOK.DeNas.module.cv.utils import DropPath
-
+from module.cv.Linear_super import LinearSuper
+from module.cv.layernorm_super import LayerNormSuper
+from module.cv.multihead_super import AttentionSuper
+from module.cv.embedding_super import PatchembedSuper
+from module.cv.utils import trunc_normal_
+from module.cv.utils import DropPath
+import numpy as np
 
 
 def gelu(x: torch.Tensor) -> torch.Tensor:

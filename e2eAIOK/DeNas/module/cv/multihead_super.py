@@ -4,9 +4,9 @@ from torch.nn import Parameter
 import torch.nn.functional as F
 
 from e2eAIOK.DeNas.module.attention_base import AttentionBase
-from e2eAIOK.DeNas.module.cv.Linear_super import LinearSuper
-from e2eAIOK.DeNas.module.cv.qkv_super import qkv_super
-from e2eAIOK.DeNas.module.cv.utils import trunc_normal_
+from .Linear_super import LinearSuper
+from .qkv_super import qkv_super
+from .utils import trunc_normal_
 
 
 def softmax(x, dim, onnx_trace=False):

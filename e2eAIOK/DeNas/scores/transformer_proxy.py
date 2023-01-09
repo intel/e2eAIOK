@@ -1,15 +1,24 @@
+import os, sys, time, math
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import torch
 from torch import nn
-from torchsummary import summary
+import numpy as np
+import gc
+import torch
+# TODO: separate domain specific ops
+from module.cv.Linear_super import LinearSuper
+from module.cv.layernorm_super import LayerNormSuper
+from module.cv.multihead_super import AttentionSuper
+from module.cv.embedding_super import PatchembedSuper
+from cv.supernet_transformer import TransformerEncoderLayer
+from cv.benchmark_network_latency import get_model_latency
+from nlp.supernet_bert import SuperBertEncoder
+from nlp.utils import get_bert_latency
+from module.asr.encoder import TransformerEncoder
+from module.asr.attention import MultiheadAttention
+from module.asr.linear import Linear
 
-from e2eAIOK.DeNas.module.cv.Linear_super import LinearSuper
-from e2eAIOK.DeNas.module.cv.layernorm_super import LayerNormSuper
-from e2eAIOK.DeNas.module.cv.embedding_super import PatchembedSuper
-from e2eAIOK.DeNas.cv.supernet_transformer import TransformerEncoderLayer
-from e2eAIOK.DeNas.cv.benchmark_network_latency import get_model_latency
-from e2eAIOK.DeNas.nlp.supernet_bert import SuperBertEncoder
-from e2eAIOK.DeNas.nlp.utils import get_bert_latency
-from e2eAIOK.DeNas.module.asr.encoder import TransformerEncoder
+from torchsummary import summary
 
 def network_weight_gaussian_init(net, model_type):
     with torch.no_grad():
