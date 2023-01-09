@@ -13,7 +13,7 @@ RUN apt-get update -y && apt-get install -y git openssh-server gcc-8 g++-8 \
         && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 8
 
 SHELL ["conda", "run", "-n", "tensorflow", "/bin/bash", "-c"]
-RUN python -m pip install --no-cache-dir --ignore-installed psutil==5.9.0 sklearn \
+RUN python -m pip install --no-cache-dir --ignore-installed psutil==5.9.0 \
         tqdm prefetch_generator absl-py pydot dill typing-extensions \
         six h5py grpcio pandas future sigopt pytest
 RUN source /opt/intel/oneapi/setvars.sh --force \
