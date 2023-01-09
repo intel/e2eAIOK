@@ -21,8 +21,8 @@ RUN python -m pip install torchvision torchsummary easydict opencv-python scikit
 RUN python -m pip install torchaudio==0.10.0 -f https://download.pytorch.org/whl/cpu/torch_stable.html
 
 SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
-RUN python -m pip install sigopt pytest pyarrow notebook
-RUN python -m pip install pyrecdp e2eAIOK
+RUN python -m pip install sigopt pytest pyarrow notebook pyrecdp
+RUN python -m pip install e2eAIOK --pre
 
 SHELL ["/bin/bash", "-c"]
 RUN sed -i 's/#Port 22/Port 12345/g' /etc/ssh/sshd_config

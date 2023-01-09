@@ -28,7 +28,8 @@ RUN python -m pip install "git+https://github.com/mlperf/logging.git@1.0.0"
 
 SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
 RUN python -m pip install --no-cache-dir --ignore-installed sigopt pytest
-RUN python -m pip install pyrecdp pyarrow notebook e2eAIOK
+RUN python -m pip install pyrecdp pyarrow notebook
+RUN python -m pip install e2eAIOK --pre
 
 SHELL ["/bin/bash", "-c"]
 RUN sed -i 's/#Port 22/Port 12344/g' /etc/ssh/sshd_config
