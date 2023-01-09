@@ -1,6 +1,19 @@
 import os
 import sys
 from setuptools import setup, find_packages
+try:
+    # pip >=20
+    from pip._internal.network.session import PipSession
+    from pip._internal.req import parse_requirements
+except ImportError:
+    try:
+        # 10.0.0 <= pip <= 19.3.1
+        from pip._internal.download import PipSession
+        from pip._internal.req import parse_requirements
+    except ImportError:
+        # pip <= 9.0.3
+        from pip.download import PipSession
+        from pip.req import parse_requirements
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
@@ -31,21 +44,26 @@ def setup_package(args):
         package_data = {'e2eAIOK': ['version']},
         python_requires=">=3.6",
         zip_safe=False,
-        install_requires=[]
+        install_requires=args["install_requires"]
     )
     setup(**metadata)
 
 if __name__ == '__main__':
     args = dict(
         name = "e2eAIOK",
-        packages = find_packages(exclude=["RecDP", "RecDP.*", "modelzoo", "example"])
+        packages = find_packages(exclude=["RecDP", "RecDP.*", "modelzoo", "example"]),
+        install_requires = []
     )
     if "--denas" in sys.argv:
         args["name"] = "e2eAIOK-denas"
         args["packages"] = find_packages(exclude=["RecDP", "RecDP.*", "modelzoo", "example", "e2eAIOK.SDA", "e2eAIOK.SDA.*", "e2eAIOK.dataloader", "e2eAIOK.utils"])
+        install_reqs = parse_requirements("e2eAIOK/DeNas/requirements.txt")
+        args["install_requires"] = [str(ir.req) for ir in install_reqs]
         sys.argv.remove("--denas")
     elif "--sda" in sys.argv:
         args["name"] = "e2eAIOK-sda"
         args["packages"] = find_packages(exclude=["RecDP", "RecDP.*", "modelzoo", "example", "e2eAIOK.DeNas", "e2eAIOK.DeNas.*"])
+        install_reqs = parse_requirements("e2eAIOK/SDA/requirements.txt")
+        args["install_requires"] = [str(ir.req) for ir in install_reqs]
         sys.argv.remove("--sda")
     setup_package(args)

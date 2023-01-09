@@ -117,8 +117,8 @@ class TestAdvisor(BaseModelAdvisor):
             'min_split_loss']
         model_saved_path = args['model_saved_path']
         cmd = []
-        cmd.append(f"/opt/intel/oneapi/intelpython/latest/bin/python")
-        cmd.append(f"/home/vmagent/app/e2eaiok/example/sklearn_train.py")
+        cmd.append(f"python")
+        cmd.append(f"example/sklearn_train.py")
         cmd.append(f"--max_depth")
         cmd.append(f"{max_depth}")
         cmd.append(f"--learning_rate")

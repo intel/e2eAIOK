@@ -2,7 +2,7 @@
 FROM ubuntu:18.04
 
 WORKDIR /root/
-RUN apt-get update -y && apt-get upgrade -y && apt-get install -y openjdk-8-jre build-essential cmake wget git libunwind-dev openssh-server sshpass vim
+RUN apt-get update -y && apt-get install -y openjdk-8-jre build-essential cmake wget git libunwind-dev openssh-server sshpass vim
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-py37_4.12.0-Linux-x86_64.sh -O ~/miniconda.sh && /bin/bash ~/miniconda.sh -b -p /opt/intel/oneapi/intelpython/latest
 ENV PATH /opt/intel/oneapi/intelpython/latest/condabin:$PATH
 RUN yes | conda create -n pytorch_mlperf python=3.7
@@ -12,7 +12,7 @@ RUN cp /opt/intel/oneapi/intelpython/latest/lib/python3.7/_sysconfigdata_x86_64_
 RUN cp /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/python3.7/_sysconfigdata_x86_64_conda_cos6_linux_gnu.py /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/python3.7/_sysconfigdata_x86_64_conda_linux_gnu.py
 RUN cp -r /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/* /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/x86_64-conda-linux-gnu/sysroot/usr/lib64/
 # install dependencies
-RUN python -m pip install sklearn onnx tqdm lark-parser pyyaml
+RUN python -m pip install onnx tqdm lark-parser pyyaml
 RUN conda install ninja cffi typing --no-update-deps
 RUN conda install intel-openmp mkl mkl-include numpy -c intel --no-update-deps
 RUN conda install -c conda-forge gperftools
@@ -31,13 +31,14 @@ RUN git clone https://github.com/oneapi-src/oneCCL.git && cd oneCCL && git check
 RUN git clone https://github.com/intel/torch-ccl.git && cd torch-ccl && git checkout 2021.1-beta07-1
 RUN source /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/.local/env/setvars.sh && cd torch-ccl && python setup.py install
 # install dependencies
-RUN python -m pip install --no-cache-dir --ignore-installed sigopt==7.5.0 pandas pytest prefetch_generator tensorboardX psutil
+RUN python -m pip install --no-cache-dir --ignore-installed sigopt pandas pytest prefetch_generator tensorboardX psutil
 RUN python -m pip install "git+https://github.com/mlperf/logging.git@1.0.0"
 RUN python -m pip install lightgbm transformers xgboost
 
 SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
-RUN python -m pip install --no-cache-dir --ignore-installed sigopt==7.5.0 pandas pytest
-RUN python -m pip install pyrecdp pyarrow notebook e2eAIOK
+RUN python -m pip install --no-cache-dir --ignore-installed sigopt pandas pytest
+RUN python -m pip install pyrecdp pyarrow notebook
+RUN python -m pip install e2eAIOK --pre
 
 SHELL ["/bin/bash", "-c"]
 RUN sed -i 's/#Port 22/Port 12346/g' /etc/ssh/sshd_config

@@ -1,12 +1,15 @@
 name: Publish e2eAIOK Docker PyTorch1.5
 
 on:
+  workflow_run:
+    workflows: ["Publish e2eAIOK-sda Nightly Release to PyPI", "Publish e2eAIOK Nightly Release to PyPI"]
+    types:
+      - completed
   workflow_dispatch:
   push:
     branches:
       - main
     paths:
-      - 'e2eAIOK/version'
       - 'Dockerfile-ubuntu18.04/DockerfilePytorch'
       - '.github/workflows/release_docker_pytorch.yml'
 
