@@ -1,12 +1,6 @@
-
-import os, sys, time
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import torch
-from torch import nn
 import numpy as np
-import gc
-
-import torch
+from torch import nn
 
 def network_weight_gaussian_init(net: nn.Module):
     with torch.no_grad():
