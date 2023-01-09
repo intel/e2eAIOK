@@ -66,14 +66,14 @@ class DataBuilderCIFARMA(DataBuilderCIFAR):
                 transform_list.append(transforms.RandomHorizontalFlip())
             if "RandomRotation" in transform_opt["random"]:
                 transform_list.append(transforms.RandomRotation(15))
-        if self.cfg.img_size > 32:
-            transform_list.append(transforms.Resize(self.cfg.img_size))
+        if self.cfg.input_size > 32:
+            transform_list.append(transforms.Resize(self.cfg.input_size))
         transform_list.append(transforms.ToTensor())
         transform_list.append(transforms.Normalize(transform_opt["norm_mean"], transform_opt["norm_std"]))
         transform_com = transforms.Compose(transform_list)
         return transform_com    
 
-    def build_transfrom(self, is_train):
+    def build_transform(self, is_train):
         if is_train:
             transform = self.get_transfrom(self.train_transform_dict[self.cfg.train_transform])
         else:
