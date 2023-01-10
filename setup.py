@@ -57,13 +57,21 @@ if __name__ == '__main__':
     if "--denas" in sys.argv:
         args["name"] = "e2eAIOK-denas"
         args["packages"] = find_packages(exclude=["RecDP", "RecDP.*", "modelzoo", "example", "e2eAIOK.SDA", "e2eAIOK.SDA.*", "e2eAIOK.dataloader", "e2eAIOK.utils"])
-        install_reqs = parse_requirements("e2eAIOK/DeNas/requirements.txt")
-        args["install_requires"] = [str(ir.req) for ir in install_reqs]
+        install_reqs = parse_requirements("e2eAIOK/DeNas/requirements.txt", session=False)
+        # handle pip version compatibility
+        try:
+            args["install_requires"] = [str(ir.req) for ir in install_reqs]
+        except AttributeError:
+            args["install_requires"] = [str(ir.requirement) for ir in install_reqs]        
         sys.argv.remove("--denas")
     elif "--sda" in sys.argv:
         args["name"] = "e2eAIOK-sda"
         args["packages"] = find_packages(exclude=["RecDP", "RecDP.*", "modelzoo", "example", "e2eAIOK.DeNas", "e2eAIOK.DeNas.*"])
         install_reqs = parse_requirements("e2eAIOK/SDA/requirements.txt")
-        args["install_requires"] = [str(ir.req) for ir in install_reqs]
+        # handle pip version compatibility
+        try:
+            args["install_requires"] = [str(ir.req) for ir in install_reqs]
+        except AttributeError:
+            args["install_requires"] = [str(ir.requirement) for ir in install_reqs] 
         sys.argv.remove("--sda")
     setup_package(args)
