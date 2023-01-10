@@ -1,6 +1,6 @@
 import torch
 
-from asr.supernet_asr import TransformerASRSuper
+from e2eAIOK.DeNas.asr.supernet_asr import TransformerASRSuper
 
 
 def gen_transformer(
