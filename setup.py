@@ -67,7 +67,7 @@ if __name__ == '__main__':
     elif "--sda" in sys.argv:
         args["name"] = "e2eAIOK-sda"
         args["packages"] = find_packages(exclude=["RecDP", "RecDP.*", "modelzoo", "example", "e2eAIOK.DeNas", "e2eAIOK.DeNas.*"])
-        install_reqs = parse_requirements("e2eAIOK/SDA/requirements.txt")
+        install_reqs = parse_requirements("e2eAIOK/SDA/requirements.txt", session=False)
         # handle pip version compatibility
         try:
             args["install_requires"] = [str(ir.req) for ir in install_reqs]
