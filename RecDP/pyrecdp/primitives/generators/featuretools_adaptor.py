@@ -1,5 +1,5 @@
 from .base import BaseFeatureGenerator as super_class
-from pyrecdp.primitives.utils import SeriesSchema
+from pyrecdp.core import SeriesSchema
 
 class FeaturetoolsBasedFeatureGenerator(super_class):
     def __init__(self, **kwargs):

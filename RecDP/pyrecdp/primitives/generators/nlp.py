@@ -1,6 +1,7 @@
 from .base import BaseFeatureGenerator as super_class
 from .featuretools_adaptor import FeaturetoolsBasedFeatureGenerator
-from pyrecdp.primitives.utils import SeriesSchema, DataFrameSchema, TextDtype
+from pyrecdp.core import SeriesSchema, DataFrameSchema
+from pyrecdp.core.schema import TextDtype
 
 from featuretools.primitives.base import TransformPrimitive
 

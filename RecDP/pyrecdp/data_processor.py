@@ -1,4 +1,5 @@
-from pyrecdp.utils import create_spark_context
+from .utils import create_spark_context
+
 import uuid
 from pyrecdp.utils import *
 from pyspark.ml.feature import *
@@ -17,7 +18,6 @@ from timeit import default_timer as timer
 import logging
 import shutil
 import random
-
 
 class Operation:
     '''
@@ -252,6 +252,7 @@ class Operation:
         else:
             return True
 
+
 class FeatureModification(Operation):
     '''
     Operation to modify feature column in-place, support build-in function and udf
@@ -399,6 +400,7 @@ class Distinct(Operation):
     def process(self, df, spark, df_cnt, enable_scala=True, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
         return df.distinct()
 
+
 class SelectFeature(Operation):
     '''
     Operation to select and rename columns
@@ -430,6 +432,7 @@ class Sort(Operation):
 
     def process(self, df, spark, df_cnt, enable_scala=True, save_path="", per_core_memory_size=0, flush_threshold = 0, enable_gazelle=False):
         return df.orderBy(*self.args)
+
 
 class Categorify(Operation):
     '''
@@ -986,10 +989,8 @@ class CollapseByHist(Operation):
 class DataProcessor:
     def __init__(self, spark = None, path_prefix="hdfs://", current_path="", shuffle_disk_capacity="unlimited", dicts_path="dicts", spark_mode='local', enable_gazelle=False):
         self.ops = []
-        self.stop_spark_in_del = False
         if not spark:
             spark = create_spark_context()
-            self.stop_spark_in_del = True
         self.spark = spark
         self.uuid = uuid.uuid1()
         self.tmp_id = 0

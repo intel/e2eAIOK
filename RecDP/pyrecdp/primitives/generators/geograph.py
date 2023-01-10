@@ -1,6 +1,6 @@
 from .base import BaseFeatureGenerator as super_class
 from .featuretools_adaptor import FeaturetoolsBasedFeatureGenerator
-from pyrecdp.primitives.utils import SeriesSchema, DataFrameSchema
+from pyrecdp.core import SeriesSchema, DataFrameSchema
 
 class GeoFeatureGenerator(FeaturetoolsBasedFeatureGenerator):
     def __init__(self, **kwargs):

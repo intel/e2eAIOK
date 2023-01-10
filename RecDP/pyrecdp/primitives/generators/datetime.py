@@ -1,5 +1,5 @@
 from .featuretools_adaptor import FeaturetoolsBasedFeatureGenerator
-from pyrecdp.primitives.utils import SeriesSchema
+from pyrecdp.core import SeriesSchema
 from featuretools.primitives import (
     Day,
     Month,

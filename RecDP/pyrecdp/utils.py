@@ -1,4 +1,3 @@
-from pyrecdp.init_spark import *
 import os
 import re
 from pyspark import *
@@ -34,6 +33,23 @@ def create_spark_context():
     spark.sparkContext.setLogLevel("ERROR")
     return spark
 
+from pathlib import Path
+pathlib = Path(__file__).parent.resolve()
+
+def create_spark_context():
+    hname = os.uname()[1]
+    spark = SparkSession.builder.master(f'local[48]')\
+                .appName("pyrecdp_spark_local")\
+                .getOrCreate()
+    # try:
+    #     spark = SparkSession.builder.master(f'spark://{hname}:7077')\
+    #             .appName("pyrecdp_spark_standalone").getOrCreate()
+    #     SparkContext.addPyFile() //this need to be zip, implement later
+    # except:
+    #     spark = SparkSession.builder.master(f'local[*]')\
+    #             .appName("pyrecdp_spark_local").getOrCreate()
+    return spark
+    
 def convert_to_spark_dict(orig_dict, schema=['dict_col', 'dict_col_id']):
     ret = []
     for row_k, row_v in orig_dict.items():

@@ -1,5 +1,6 @@
 from .base import BaseFeatureGenerator as super_class
-from pyrecdp.primitives.utils import SeriesSchema, is_text_series
+from pyrecdp.core import SeriesSchema
+from pyrecdp.core.utils import is_text_series
 import pandas as pd
 import pyarrow as pa
 import numpy as np
