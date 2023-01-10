@@ -10,12 +10,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
-from module.nlp.optimization import BertAdam
-from nlp.supernet_bert import CrossEntropyQALoss
-from nlp.utils_eval import do_qa_eval
+from e2eAIOK.DeNas.module.nlp.optimization import BertAdam
+from e2eAIOK.DeNas.nlp.supernet_bert import CrossEntropyQALoss
+from e2eAIOK.DeNas.nlp.utils_eval import do_qa_eval
 
-from module.nlp.layernorm_super import LayerNormSuper
-from module.nlp.Linear_super import LinearSuper
+from e2eAIOK.DeNas.module.nlp.layernorm_super import LayerNormSuper
+from e2eAIOK.DeNas.module.nlp.Linear_super import LinearSuper
 from thop.vision.basic_hooks import count_normalization, count_linear
 from ptflops.pytorch_ops import linear_flops_counter_hook
 

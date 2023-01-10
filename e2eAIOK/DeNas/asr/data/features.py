@@ -1,5 +1,5 @@
 import torch
-from asr.data.processing.features import (
+from e2eAIOK.DeNas.asr.data.processing.features import (
     STFT,
     spectral_magnitude,
     Filterbank,

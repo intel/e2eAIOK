@@ -1,7 +1,7 @@
 import torch
-from asr.lib.CNN import Conv2d
-from asr.lib.containers import Sequential
-from module.asr.normalization import LayerNorm
+from e2eAIOK.DeNas.asr.lib.CNN import Conv2d
+from e2eAIOK.DeNas.asr.lib.containers import Sequential
+from e2eAIOK.DeNas.module.asr.normalization import LayerNorm
 
 
 class ConvolutionFrontEnd(Sequential):

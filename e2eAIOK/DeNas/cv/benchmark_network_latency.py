@@ -6,7 +6,6 @@ import os
 import sys
 import time
 import torch
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def get_model_latency(model, batch_size, resolution, in_channels, gpu, repeat_times, fp16):
     if gpu is not None:

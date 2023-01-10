@@ -1,6 +1,6 @@
 import torch.nn.functional as F
 
-from module.embedding_base import EmbeddingBase
+from e2eAIOK.DeNas.module.embedding_base import EmbeddingBase
 
 
 class Embedding(EmbeddingBase):

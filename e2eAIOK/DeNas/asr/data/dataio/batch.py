@@ -5,9 +5,9 @@ from torch.utils.data._utils.pin_memory import (
     pin_memory as recursive_pin_memory,
 )
 
-from asr.utils.data_utils import mod_default_collate
-from asr.utils.data_utils import recursive_to
-from asr.utils.data_utils import batch_pad_right
+from e2eAIOK.DeNas.asr.utils.data_utils import mod_default_collate
+from e2eAIOK.DeNas.asr.utils.data_utils import recursive_to
+from e2eAIOK.DeNas.asr.utils.data_utils import batch_pad_right
 
 
 PaddedData = collections.namedtuple("PaddedData", ["data", "lengths"])

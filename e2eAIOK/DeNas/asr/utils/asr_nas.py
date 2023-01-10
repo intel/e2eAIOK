@@ -1,13 +1,9 @@
 import random
 
 import os, sys
-current_dir = os.path.split(os.path.abspath(__file__))[0]
-cls_path = current_dir.rsplit("/", 1)[0]
-print(f"paths: {current_dir}, {cls_path}")
-sys.path.append(cls_path)
-print(sys.path)
 
-from module.asr.utils import gen_transformer
+
+from e2eAIOK.DeNas.module.asr.utils import gen_transformer
 
 def asr_decode_cand_tuple(cand):
     depth = cand[0]

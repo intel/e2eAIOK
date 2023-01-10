@@ -1,7 +1,6 @@
 
 
 import os, sys, time
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import torch
 from torch import nn
 import numpy as np
@@ -9,8 +8,8 @@ import gc
 
 import torch
 
-from scores.basic_utils import *
-from scores.transformer_proxy import do_compute_nas_score_transformer
+from e2eAIOK.DeNas.scores.basic_utils import network_weight_gaussian_init, get_ntk_n, compute_synflow_per_weight
+from e2eAIOK.DeNas.scores.transformer_proxy import do_compute_nas_score_transformer
 
 def do_compute_nas_score_cnn(model_type, model, resolution, batch_size, mixup_gamma, expressivity_weight=0, complexity_weight=0, diversity_weight=0, saliency_weight=0, latency_weight=0):
     disversity_score = 0

@@ -5,8 +5,8 @@ from typing import Optional
 import torch.nn.functional as F
 import math
 
-from module.asr.linear import Linear
-from module.attention_base import AttentionBase
+from e2eAIOK.DeNas.module.asr.linear import Linear
+from e2eAIOK.DeNas.module.attention_base import AttentionBase
 
 
 logger = logging.getLogger(__name__)

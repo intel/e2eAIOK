@@ -3,20 +3,17 @@ from torch import nn
 from typing import Optional
 
 import os, sys
-current_dir = os.path.split(os.path.abspath(__file__))[0]
-cls_path = current_dir.rsplit("/", 1)[0]
-sys.path.append(cls_path)
 
-from module.asr.linear import Linear
-from asr.TransformerBase import (
+from e2eAIOK.DeNas.module.asr.linear import Linear
+from e2eAIOK.DeNas.asr.TransformerBase import (
     get_lookahead_mask,
     get_key_padding_mask,
     NormalizedEmbedding,
     PositionalEncoding
 )
-from module.asr.encoder import TransformerEncoder
-from module.asr.decoder import TransformerDecoder
-from asr.data.dataio.dataio import length_to_mask
+from e2eAIOK.DeNas.module.asr.encoder import TransformerEncoder
+from e2eAIOK.DeNas.module.asr.decoder import TransformerDecoder
+from e2eAIOK.DeNas.asr.data.dataio.dataio import length_to_mask
 
 
 class TransformerASRSuper(nn.Module):
