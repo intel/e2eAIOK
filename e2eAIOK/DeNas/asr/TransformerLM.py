@@ -1,10 +1,10 @@
 import torch
 from torch import nn
 
-from module.asr.linear import Linear
-from module.asr.normalization import LayerNorm
-from lib.containers import ModuleList
-from TransformerBase import (
+from e2eAIOK.DeNas.module.asr.linear import Linear
+from e2eAIOK.DeNas.module.asr.normalization import LayerNorm
+from e2eAIOK.DeNas.asr.lib.containers import ModuleList
+from e2eAIOK.DeNas.asr.TransformerBase import (
     TransformerBase,
     get_lookahead_mask,
     get_key_padding_mask,

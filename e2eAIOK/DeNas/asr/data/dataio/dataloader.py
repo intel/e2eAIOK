@@ -5,10 +5,10 @@ import logging
 from torch.utils.data import DistributedSampler
 import torch.distributed as dist
 
-from asr.data.dataio.batch import PaddedBatch
-from asr.data.dataio.dataset import DynamicItemDataset
-from asr.data.dataio.sampler import ReproducibleRandomSampler, DistributedSamplerWrapper
-from asr.utils.checkpoints import (
+from e2eAIOK.DeNas.asr.data.dataio.batch import PaddedBatch
+from e2eAIOK.DeNas.asr.data.dataio.dataset import DynamicItemDataset
+from e2eAIOK.DeNas.asr.data.dataio.sampler import ReproducibleRandomSampler, DistributedSamplerWrapper
+from e2eAIOK.DeNas.asr.utils.checkpoints import (
     mark_as_saver,
     mark_as_loader,
 )

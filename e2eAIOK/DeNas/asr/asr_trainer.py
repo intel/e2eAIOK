@@ -1,8 +1,5 @@
 import os
 import sys
-current_dir = os.path.split(os.path.abspath(__file__))[0]
-cls_path = current_dir.rsplit("/", 3)[0]
-sys.path.append(cls_path)
 import sys
 import torch
 import logging
@@ -11,16 +8,16 @@ import yaml
 import sentencepiece as sp
 import torch.distributed as dist
 
-from asr.data.dataio.dataloader import get_dataloader, make_dataloader
-from asr.data.dataio.dataset import dataio_prepare
-from asr.utils.utils import check_gradients, update_average, create_experiment_directory, init_log
-from asr.utils.parameter_transfer import load_torch_model, load_spm
-from asr.trainer.losses import ctc_loss, kldiv_loss
-from asr.trainer.schedulers import NoamScheduler
-from asr.data.augment import SpecAugment
-from asr.data.features import Fbank
-from asr.utils.Accuracy import AccuracyStats
-from asr.utils.metric_stats import ErrorRateStats
+from e2eAIOK.DeNas.asr.data.dataio.dataloader import get_dataloader, make_dataloader
+from e2eAIOK.DeNas.asr.data.dataio.dataset import dataio_prepare
+from e2eAIOK.DeNas.asr.utils.utils import check_gradients, update_average, create_experiment_directory, init_log
+from e2eAIOK.DeNas.asr.utils.parameter_transfer import load_torch_model, load_spm
+from e2eAIOK.DeNas.asr.trainer.losses import ctc_loss, kldiv_loss
+from e2eAIOK.DeNas.asr.trainer.schedulers import NoamScheduler
+from e2eAIOK.DeNas.asr.data.augment import SpecAugment
+from e2eAIOK.DeNas.asr.data.features import Fbank
+from e2eAIOK.DeNas.asr.utils.Accuracy import AccuracyStats
+from e2eAIOK.DeNas.asr.utils.metric_stats import ErrorRateStats
 from e2eAIOK.common.trainer.torch_trainer import TorchTrainer
 import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 

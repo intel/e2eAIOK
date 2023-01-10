@@ -7,7 +7,7 @@ import torch
 import tqdm
 import pathlib
 
-from asr.utils.utils import is_main_process, ddp_barrier
+from e2eAIOK.DeNas.asr.utils.utils import is_main_process, ddp_barrier
 
 
 def undo_padding(batch, lengths):

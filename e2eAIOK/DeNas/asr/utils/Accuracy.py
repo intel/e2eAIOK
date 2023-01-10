@@ -1,5 +1,5 @@
 import torch
-from asr.data.dataio.dataio import length_to_mask
+from e2eAIOK.DeNas.asr.data.dataio.dataio import length_to_mask
 
 
 def Accuracy(log_probabilities, targets, length=None):

@@ -5,11 +5,9 @@ from collections import Counter
 import logging
 import torchaudio
 import os, sys
-current_dir = os.path.split(os.path.abspath(__file__))[0]
-cls_path = current_dir.rsplit("/", 2)[0]
-sys.path.append(cls_path)
-from asr.utils.data_utils import download_file, get_all_files
-from asr.data.dataio.dataio import (
+
+from e2eAIOK.DeNas.asr.utils.data_utils import download_file, get_all_files
+from e2eAIOK.DeNas.asr.data.dataio.dataio import (
     load_pkl,
     save_pkl,
     merge_csvs,
