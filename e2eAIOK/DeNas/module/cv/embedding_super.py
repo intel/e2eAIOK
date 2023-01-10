@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .utils import to_2tuple
+from e2eAIOK.DeNas.module.cv.utils import to_2tuple
 import numpy as np
 
 

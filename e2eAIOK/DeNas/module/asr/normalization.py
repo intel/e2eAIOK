@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 
-from module.layernorm_base import LayerNormBase
+from e2eAIOK.DeNas.module.layernorm_base import LayerNormBase
 
 
 class LayerNorm(LayerNormBase):
