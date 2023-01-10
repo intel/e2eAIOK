@@ -2,7 +2,7 @@ name: Publish e2eAIOK Docker PyTorch1.12
 
 on:
   workflow_run:
-    workflows: ["Publish e2eAIOK-denas Nightly Release to PyPI", "Publish e2eAIOK Nightly Release to PyPI"]
+    workflows: ["Publish e2eAIOK Nightly Release to PyPI"]
     types:
       - completed
   workflow_dispatch:
@@ -15,7 +15,7 @@ on:
 
 jobs:
   e2eaiok-release-docker:
-    runs-on: sr602
+    runs-on: self-hosted
     if: ${{ github.repository_owner == 'intel' }}
     steps:
       -
