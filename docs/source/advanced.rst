@@ -1,7 +1,7 @@
 create new Advisor
 =============================
 
-* How to define a new Advisor under hydro.ai/SDA/modeladvisor, follow below template
+* How to define a new Advisor under e2eaiok/SDA/modeladvisor, follow below template
 
 .. code-block:: python
 
@@ -29,7 +29,7 @@ create new Advisor
         ----------
         params : dict
         params include dataset_path, save_path, global_configs,
-        model_parameters, passed by arguments or hydroai-defaults.conf
+        model_parameters, passed by arguments or e2eaiok_defaults.conf
         dataset_meta_path : str
         path to dataset meta
         train_path : str
@@ -113,7 +113,7 @@ create new Advisor
             # This function is used to init parameter for sigopt
             config = {}
             # modify based on your model
-            config['project'] = 'hydro.ai'
+            config['project'] = 'e2eaiok'
             config['experiment'] = 'sklearn'
             parameters = [{'name': 'max_depth', 'bounds': {'min': 3, 'max': 12}, 'type': 'int'},
                         {'name': 'learning_rate', 'bounds': {'min': 0.0, 'max': 1.0}, 'type': 'double'},
@@ -161,7 +161,7 @@ create new Advisor
             model_saved_path = args['model_saved_path']
             cmd = []
             cmd.append(f"/opt/intel/oneapi/intelpython/latest/bin/python")
-            cmd.append(f"/home/vmagent/app/hydro.ai/example/sklearn_train.py")
+            cmd.append(f"/home/vmagent/app/e2eaiok/example/sklearn_train.py")
             cmd.append(f"--max_depth")
             cmd.append(f"{max_depth}")
             cmd.append(f"--learning_rate")
@@ -189,7 +189,7 @@ create new Advisor
     # below is for system configuration
     # use self.params['ppn'] to get configuration in your own advisor
     observation_budget: 1
-    save_path: /home/vmagent/app/hydro.ai/result/
+    save_path: /home/vmagent/app/e2eaiok/result/
     ppn: 1
     # you can add more here
     #
@@ -197,7 +197,7 @@ create new Advisor
     # below is for sigopt or w/ sigopt model_parameter configuration
     # use self.params['model_parameter']['parameters'] to get in your own advisor
     model_parameter:
-    project: hydro.ai
+    project: e2eaiok
     experiment: sklearn
     # parameters will be used to submit to sigopt
     # please follow [https://app.sigopt.com/docs/api_reference/object_parameter]
@@ -221,7 +221,7 @@ create new Advisor
         - name: training_time
         objective: minimize
     # tuned_parameter is required to be pre-defined in without sigopt scenario through Advisor.initialize_model_parameter(self, assignments = None) method
-    # for with sigopt scenario, tuned_parameter will be set by hydro.ai after it received sigopt suggestion
+    # for with sigopt scenario, tuned_parameter will be set by e2eaiok after it received sigopt suggestion
     # Advisor should expect self.params['model_parameter']['tuned_parameters'] is ready in Advisor.train_model(self, args) method
     tuned_parameter:
         max_depth: 11

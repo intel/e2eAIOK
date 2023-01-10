@@ -1,0 +1,41 @@
+name: Integration Test Workload WnD
+
+on:
+  pull_request:
+    branches:
+    - main
+    paths:
+    - '.github/workflows/integration_test_workload_wnd.yml'
+    - 'conf/e2eaiok_defaults_wnd_example.conf'
+    - 'demo/builtin/wnd/**'
+    - 'Dockerfile-ubuntu18.04/DockerfileTensorflow'
+    - 'e2eAIOK/SDA/**'
+    - 'e2eAIOK/common/**'
+    - 'e2eAIOK/dataloader/**'
+    - 'e2eAIOK/utils/**'
+    - 'modelzoo/WnD/**'
+    - 'tests/cicd/conf/**'
+    - 'tests/cicd/src/**'
+    - 'tests/cicd/test_*.bats'
+    - 'tests/cicd/Jenkinsfile*'
+    - 'tests/cicd/jenkins_wnd_test*.sh'
+
+jobs:
+  integration_test:
+    name: Integration Test Workload WnD
+    runs-on: xeon8170
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Build Docker
+      run: |
+        cd Dockerfile-ubuntu18.04 && docker build -t e2eaiok-tensorflow . -f DockerfileTensorflow && cd .. && yes | docker container prune && yes | docker image prune
+
+    - name: Test WnD
+      run: |
+        if [[ $(docker ps -q --filter "name=test-workload-wnd" | wc -l) -ne 0 ]]; then docker ps -q --filter "name=test-workload-wnd" | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi
+        cd modelzoo/WnD/TensorFlow2 && bash patch_wnd.sh && cd ../../..
+        docker run --rm --name test-workload-wnd --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-tensorflow /bin/bash -c "USE_SIGOPT=0 . /home/vmagent/app/e2eaiok/tests/cicd/jenkins_wnd_test.sh"

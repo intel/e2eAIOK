@@ -2,8 +2,8 @@ import logging
 import subprocess
 import yaml
 
-from AIDK.common.utils import *
-from AIDK.SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
+from e2eAIOK.common.utils import *
+from e2eAIOK.SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
 
 class DIENAdvisor(BaseModelAdvisor):
     def __init__(self, dataset_meta_path, train_path, eval_path, settings):
@@ -31,14 +31,16 @@ class DIENAdvisor(BaseModelAdvisor):
         if len(missing_params) > 0:
             raise ValueError(
                 f"[CONFIG ERROR] Missing parameters {missing_params} in \
-                hydroai_defaults.conf when ppn is set above 1.")
+                e2eaiok_defaults.conf when ppn is set above 1.")
 
         self.train_path = train_path
         self.test_path = eval_path
         self.dataset_meta_path = dataset_meta_path
         # self.saved_path = settings['model_saved_path']
-        self.train_python = "/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python"
-        self.train_script = "/home/vmagent/app/hydro.ai/modelzoo/dien/train/ai-matrix/script/train.py"
+        self.python_path = "/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/"
+        self.train_python = f"{self.python_path}/python"
+        self.horovodrun_path = f"{self.python_path}/horovodrun"
+        self.train_script = "/home/vmagent/app/e2eaiok/modelzoo/dien/train/ai-matrix/script/train.py"
 
     def get_cpu_info(self):
         # get cpu physical cores and virtual cores per core as return
@@ -83,7 +85,7 @@ class DIENAdvisor(BaseModelAdvisor):
 
     def generate_sigopt_yaml(self, file='test_sigopt.yaml'):
         config = {}
-        config['project'] = 'hydro.ai'
+        config['project'] = 'e2eaiok'
         config['experiment'] = 'dien'
         parameters = [{
             'name': 'batch_size',
@@ -133,13 +135,9 @@ class DIENAdvisor(BaseModelAdvisor):
 
     def dist_launch(self, args):
         cmd = []
-        # mpirun -n 1 -hosts 172.16.8.30 -ppn 1 -iface ens21f1 -print-rank-map
-        # -prepend-rank -verbose
-        cmd.extend([
-            "mpirun", "-n", f"{args['ppn']}", "-hosts", f"{args['hosts']}",
-            "-iface", f"{args['iface']}"
-        ])
-        cmd.extend(["-print-rank-map", "-prepend-rank", "-verbose"])
+        hosts = [f"{h}:1" for h in args['hosts']]
+        cmd.extend([self.horovodrun_path, "-np", f"{args['ppn']}", "-H",  f"{','.join(hosts)}", "--network-interface", f"{args['iface']}"])
+        cmd.extend(["--verbose"])
         cmd.extend(self.prepare_cmd(args))
 
         self.logger.info(f'training launch command: {" ".join(cmd)}')
@@ -156,7 +154,7 @@ class DIENAdvisor(BaseModelAdvisor):
     def prepare_cmd(self, args):
         cmd = []
         cmd.extend([
-            f"{self.train_python}", f"{self.train_script}", "--train_path",
+            f"{self.train_python}", "-u", f"{self.train_script}", "--train_path",
             f"{self.train_path}", "--test_path", f"{self.test_path}",
             "--meta_path", f"{self.dataset_meta_path}"
         ])

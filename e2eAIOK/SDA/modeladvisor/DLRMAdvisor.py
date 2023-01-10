@@ -4,8 +4,8 @@ import logging
 import time
 import os
 
-from AIDK.common.utils import *
-from AIDK.SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
+from e2eAIOK.common.utils import *
+from e2eAIOK.SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
 
 class DLRMAdvisor(BaseModelAdvisor):
     '''
@@ -19,7 +19,7 @@ class DLRMAdvisor(BaseModelAdvisor):
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         self.logger = logging.getLogger('sigopt')
         self.train_python = "/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python"
-        self.train_script = "/home/vmagent/app/hydro.ai/modelzoo/dlrm/dlrm/launch.py"
+        self.train_script = "/home/vmagent/app/e2eaiok/modelzoo/dlrm/dlrm/launch.py"
         self.train_path = train_path
         self.test_path = eval_path
         self.dataset_meta_path = dataset_meta_path
@@ -34,27 +34,29 @@ class DLRMAdvisor(BaseModelAdvisor):
         if assignments:
             mlp_top_size = ["1024-1024-512-256-1","512-512-256-128-1","512-256-128-1","512-256-1","256-128-1","128-64-1","256-1","128-1"]
             mlp_bot_size = ["13-512-256-","13-512-256-","13-256-","13-128-"]
+            tuned_parameters['mlp_top_size'] = assignments["mlp_top_size"]
+            tuned_parameters['mlp_bot_size'] = assignments["mlp_bot_size"]
             tuned_parameters['lamb_lr'] = str(assignments['lamb_lr'])
             tuned_parameters['learning_rate'] = str(assignments['learning_rate'])
             tuned_parameters['lr_num_warmup_steps'] = str(assignments['lr_num_warmup_steps'])
             tuned_parameters['lr_decay_start_step'] = str(assignments['lr_decay_start_step'])
             tuned_parameters['lr_num_decay_steps'] = str(assignments['lr_num_decay_steps'])
             tuned_parameters['arch_sparse_feature_size'] = str(assignments["arch_sparse_feature_size"])
-            tuned_parameters['arch_mlp_top'] = str(mlp_top_size[assignments["mlp_top_size"]])
-            tuned_parameters['arch_mlp_bot'] = str(mlp_bot_size[assignments["mlp_bot_size"]])+str(assignments["arch_sparse_feature_size"])
+            tuned_parameters['arch_mlp_top'] = str(mlp_top_size[tuned_parameters["mlp_top_size"]])
+            tuned_parameters['arch_mlp_bot'] = str(mlp_bot_size[tuned_parameters["mlp_bot_size"]])+str(assignments["arch_sparse_feature_size"])
         else:
             mlp_top_size = ["1024-1024-512-256-1","512-512-256-128-1","512-256-128-1","512-256-1","256-128-1","128-64-1","256-1","128-1"]
             mlp_bot_size = ["13-512-256-","13-512-256-","13-256-","13-128-"]
-            tuned_parameters['mlp_top_size'] = 0
-            tuned_parameters['mlp_bot_size'] = 0
+            tuned_parameters['mlp_top_size'] = 4
+            tuned_parameters['mlp_bot_size'] = 3
             tuned_parameters['lamb_lr'] = "16"
-            tuned_parameters['learning_rate'] = "30"
+            tuned_parameters['learning_rate'] = "16"
             tuned_parameters['lr_num_warmup_steps'] = "4000"
-            tuned_parameters['lr_decay_start_step'] = "5000"
-            tuned_parameters['lr_num_decay_steps'] = "5000"
+            tuned_parameters['lr_decay_start_step'] = "5760"
+            tuned_parameters['lr_num_decay_steps'] = "17000"
             tuned_parameters['arch_sparse_feature_size'] = 128
-            tuned_parameters['arch_mlp_top'] = str(mlp_top_size[0])
-            tuned_parameters['arch_mlp_bot'] = str(mlp_bot_size[0])+str(128)
+            tuned_parameters['arch_mlp_top'] = str(mlp_top_size[tuned_parameters['mlp_top_size']])
+            tuned_parameters['arch_mlp_bot'] = str(mlp_bot_size[tuned_parameters['mlp_bot_size']])+str(128)
         config['tuned_parameters'] = tuned_parameters
         self.params['model_parameter'] = config
         self.params['model_saved_path'] = os.path.join(
@@ -105,9 +107,8 @@ class DLRMAdvisor(BaseModelAdvisor):
         else:
             self.dist_launch(args)
         self.training_time = time.time() - start_time
-        file1 = open("/home/vmagent/app/hydro.ai/modelzoo/dlrm/dlrm/best_auc.txt",'r')
-        lines = file1.readlines()
-        file1.close()
+        with open("./best_auc.txt",'r') as f:
+            lines = f.readlines()
         self.mean_accuracy = float(lines[-1])
         metrics = self.update_metrics()
         model_path = args['model_saved_path']
@@ -117,7 +118,7 @@ class DLRMAdvisor(BaseModelAdvisor):
         # construct WnD launch command
         cmd = f"{self.train_python} -u {self.train_script} "
         model_saved_path = args['model_saved_path']
-        cmd +=f"/home/vmagent/app/hydro.ai/modelzoo/dlrm/dlrm/dlrm_s_pytorch.py --mini-batch-size={args['train_batch_size']} --print-freq=16  " \
+        cmd +=f"/home/vmagent/app/e2eaiok/modelzoo/dlrm/dlrm/dlrm_s_pytorch.py --mini-batch-size={args['train_batch_size']} --print-freq=16  " \
             + f"--test-mini-batch-size={args['test_batch_size']} --test-freq=800 " \
             + f"--train-data-path={self.train_path} --eval-data-path={self.test_path} " \
             + f"--nepochs=1 --day-feature-count={args['data_path'] + '/day_fea_count.npz'} " \
@@ -146,7 +147,7 @@ class DLRMAdvisor(BaseModelAdvisor):
         else:
             hostfile = args['hostfile']
             cmd = f"{self.train_python} -u {self.train_script}  --distributed --nproc_per_node={ppn} --nnodes={len(hosts)} --hostfile {hostfile} "  
-        cmd +=f"/home/vmagent/app/hydro.ai/modelzoo/dlrm/dlrm/dlrm_s_pytorch.py --mini-batch-size={args['train_batch_size']} --print-freq=16  " \
+        cmd +=f"/home/vmagent/app/e2eaiok/modelzoo/dlrm/dlrm/dlrm_s_pytorch.py --mini-batch-size={args['train_batch_size']} --print-freq=16  " \
             + f"--test-mini-batch-size={args['test_batch_size']} --test-freq=800 " \
             + f"--train-data-path={self.train_path} --eval-data-path={self.test_path} " \
             + f"--nepochs=1 --day-feature-count={args['data_path'] + '/day_fea_count.npz'} " \

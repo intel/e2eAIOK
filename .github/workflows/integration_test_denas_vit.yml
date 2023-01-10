@@ -1,0 +1,35 @@
+name: Integration Test DeNas ViT
+
+on:
+  pull_request:
+    branches:
+    - main
+    paths:
+    - '.github/workflows/integration_test_denas_vit.yml'
+    - 'conf/denas/cv/**'
+    - 'demo/denas/computer_vision/**'
+    - 'Dockerfile-ubuntu18.04/DockerfilePytorch112'
+    - 'e2eAIOK/DeNas/**'
+    - 'e2eAIOK/common/**'
+    - 'tests/cicd/DeNasJenkinsfile'
+    - 'tests/cicd/test_denas.bats'
+    - 'tests/cicd/jenkins_denas_vit.sh'
+
+jobs:
+  integration_test:
+    name: Integration Test DeNas ViT
+    runs-on: self-hosted
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Build Docker
+      run: |
+        cd Dockerfile-ubuntu18.04 && docker build -t e2eaiok-pytorch112 . -f DockerfilePytorch112 && cd .. && yes | docker container prune && yes | docker image prune
+
+    - name: Test ViT
+      run: |
+        if [[ $(docker ps -q --filter "name=test-denas-vit" | wc -l) -ne 0 ]]; then docker ps -q --filter "name=test-denas-vit" | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi
+        docker run --rm --name test-denas-vit --shm-size=10g --privileged --network host --device=/dev/dri -v /root/data:/root/data -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch112 /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/cicd/jenkins_denas_vit.sh"

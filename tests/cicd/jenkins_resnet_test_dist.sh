@@ -3,16 +3,16 @@
 # set vars
 MODEL_NAME="resnet"
 DATA_PATH="/home/vmagent/app/dataset/resnet"
-CONF_FILE="tests/cicd/conf/hydroai_defaults_resnet_dist_example.conf"
+CONF_FILE="tests/cicd/conf/e2eaiok_defaults_resnet_dist_example.conf"
 
+# init conda
+eval "$('/opt/intel/oneapi/intelpython/latest/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
 # enable oneAPI
-source /opt/intel/oneapi/setvars.sh --ccl-configuration=cpu_icc --force
-
-conda activate tensorflow
+source /opt/intel/oneapi/setvars.sh --force
 
 # create ci log dir
 hashstr_id=$(date +%Y-%m-%d)_$(echo $RANDOM | md5sum | head -c 8)
-tmp_dir="/home/vmagent/app/cicd_logs/aidk_cicd_"$MODEL_NAME"_"$hashstr_id
+tmp_dir="/home/vmagent/app/cicd_logs/e2eaiok_cicd_"$MODEL_NAME"_"$hashstr_id
 mkdir -p $tmp_dir
 
 # config passwordless ssh
@@ -21,12 +21,21 @@ ssh-keyscan -p 12344 -H 10.1.2.208 >> /root/.ssh/known_hosts
 ssh-keyscan -p 12344 -H 10.1.2.213 >> /root/.ssh/known_hosts
 
 set -e
+<<<<<<< HEAD
 # lauch AIDK wnd
 cd /home/vmagent/app/hydro.ai
 if [ $USE_SIGOPT == 1 ]; then
   SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN python run_hydroai.py --data_path $DATA_PATH --model_name $MODEL_NAME --conf $CONF_FILE --custom_result_path $tmp_dir 2>&1 | tee $tmp_dir/aidk_cicd.log
 else
   python run_hydroai.py --data_path $DATA_PATH --model_name $MODEL_NAME --conf $CONF_FILE --no_sigopt --custom_result_path $tmp_dir 2>&1 | tee $tmp_dir/aidk_cicd.log
+=======
+# lauch e2eaiok wnd
+cd /home/vmagent/app/e2eaiok
+if [ $USE_SIGOPT == 1 ]; then
+  SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN python run_e2eaiok.py --data_path $DATA_PATH --model_name $MODEL_NAME --conf $CONF_FILE --enable_sigopt --custom_result_path $tmp_dir 2>&1 | tee $tmp_dir/e2eaiok_cicd.log
+else
+  python run_e2eaiok.py --data_path $DATA_PATH --model_name $MODEL_NAME --conf $CONF_FILE  --custom_result_path $tmp_dir 2>&1 | tee $tmp_dir/e2eaiok_cicd.log
+>>>>>>> main
 fi
 
 # test

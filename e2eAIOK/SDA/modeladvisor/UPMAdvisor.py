@@ -3,8 +3,8 @@ import yaml
 import logging
 import time
 
-from AIDK.common.utils import *
-from AIDK.SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
+from e2eAIOK.common.utils import *
+from e2eAIOK.SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
 
 class UPMAdvisor(BaseModelAdvisor):
     def __init__(self, dataset_meta_path, train_path, eval_path, settings):
@@ -38,7 +38,7 @@ class UPMAdvisor(BaseModelAdvisor):
         if len(missing_params) > 0:
             raise ValueError(
                 f"[CONFIG ERROR] Missing parameters {missing_params} in \
-                hydroai_defaults.conf when ppn is set above 1.")
+                e2eaiok_defaults.conf when ppn is set above 1.")
 
         self.train_path = train_path
         self.test_path = eval_path
@@ -48,7 +48,7 @@ class UPMAdvisor(BaseModelAdvisor):
             self.train_python = "/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python"
         elif self.params['platform'] == 'pytorch':
             self.train_python = "/opt/intel/oneapi/intelpython/latest/envs/pytorch_1.10/bin/python"
-        self.train_script = "/home/vmagent/app/hydro.ai/modelzoo/upm/main.py"
+        self.train_script = "/home/vmagent/app/e2eaiok/modelzoo/upm/main.py"
 
     def update_metrics(self):
         result_metrics_file = os.path.join(self.saved_path, "metric.txt")

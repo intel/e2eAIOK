@@ -1,0 +1,99 @@
+ckpt_interval_minutes: 30 # save checkpoint every N min
+
+# Training parameters
+epochs: 60
+batch_size: &batch_size 32
+ctc_weight: 0.3
+grad_accumulation_factor: 1
+max_grad_norm: 5.0
+loss_reduction: 'batchmean'
+sorting: random
+metric_threshold: 25
+
+dynamic_batching: False
+
+dynamic_batch_sampler:
+    feats_hop_size: 0.01
+    max_batch_len: 100000 # in terms of frames
+    num_buckets: 200
+    shuffle_ex: False # if true re-creates batches at each epoch shuffling examples.
+    batch_ordering: descending
+    max_batch_ex: -1
+
+lr_adam: 0.001
+
+# Feature parameters
+sample_rate: &sample_rate 16000
+n_fft: &n_fft 400
+n_mels: &n_mels 80
+
+# Dataloader options
+train_dataloader_opts:
+    batch_size: *batch_size
+    shuffle: True
+    num_workers: 1
+
+valid_dataloader_opts:
+    batch_size: 1
+
+test_dataloader_opts:
+    batch_size: 1
+
+####################### Model parameters ###########################
+# CNN
+input_shape: [8, 10, 80]
+num_blocks: 3
+num_layers_per_block: 1
+out_channels: [64, 64, 64]
+kernel_sizes: [5, 5, 1]
+strides: [2, 2, 1]
+residuals: [False, False, True]
+
+# Transformer
+input_size: 1280 #n_mels/strides * out_channels
+d_model: 512
+encoder_heads: [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4] #embed_dim must be divisible by num_heads
+nhead: 4
+num_encoder_layers: 12
+num_decoder_layers: 6
+mlp_ratio: [4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0]
+d_ffn: 2048
+transformer_dropout: 0.1
+output_neurons: 5000
+
+# Outputs
+blank_index: 0
+label_smoothing: 0.0
+pad_index: 0
+bos_index: 1
+eos_index: 2
+
+# Decoding parameters
+min_decode_ratio: 0.0
+max_decode_ratio: 1.0
+valid_search_interval: 10
+valid_beam_size: 10
+test_beam_size: 66
+lm_weight: 0.60
+ctc_weight_decode: 0.40
+
+n_warmup_steps: 2500
+
+augmentation:
+    time_warp: False
+    time_warp_window: 5
+    time_warp_mode: bicubic
+    freq_mask: True
+    n_freq_mask: 4
+    time_mask: True
+    n_time_mask: 4
+    replace_with_zero: False
+    freq_mask_width: 15
+    time_mask_width: 20
+
+speed_perturb: True
+
+compute_features:
+    sample_rate: *sample_rate
+    n_fft: *n_fft
+    n_mels: *n_mels

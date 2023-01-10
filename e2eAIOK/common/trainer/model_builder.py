@@ -34,7 +34,8 @@ class ModelBuilder():
         """
             post work after create model
         """
-        self.logger.info(f"model created: {self.model}")
+        #self.logger.info(f"model created: {self.model}")
+        self.logger.info(f"model created")
 
     def create_model(self,pretrain=None):
         """

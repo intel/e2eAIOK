@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.abspath('../../'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'Hydro.ai'
+project = 'e2eaiok'
 copyright = '2021, Intel AIA BDF'
 author = 'Intel AIA BDF'
 

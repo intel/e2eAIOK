@@ -5,6 +5,5 @@ Components
    :maxdepth: 4
 
    RecDP
-   SDA
-   hydroai
+   e2eAIOK
    modelzoo

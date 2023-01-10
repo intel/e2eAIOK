@@ -3,21 +3,21 @@ import pathlib
 import sys
 
 import yaml
-from AIDK.dataloader.hydrodataloader import *
-from AIDK.hydroai.hydroconfig import *
-from AIDK.hydroai.hydromodel import *
+from e2eAIOK.dataloader.hydrodataloader import *
+from e2eAIOK.utils.hydroconfig import *
+from e2eAIOK.utils.hydromodel import *
 
-from AIDK.SDA.modeladvisor.DIENAdvisor import *
-from AIDK.SDA.modeladvisor.TestAdvisor import *
-from AIDK.SDA.modeladvisor.DLRMAdvisor import *
-from AIDK.SDA.modeladvisor.ResNetAdvisor import *
-from AIDK.SDA.modeladvisor.WnDAdvisor import *
-from AIDK.SDA.modeladvisor.TwitterRecSysAdvisor import *
-from AIDK.SDA.modeladvisor.MiniGoAdvisor import *
-from AIDK.SDA.modeladvisor.RNNTAdvisor import *
-from AIDK.SDA.modeladvisor.UPMAdvisor import *
-from AIDK.SDA.modeladvisor.BERTAdvisor import *
-from AIDK.SDA.modeladvisor.RegisteredAdvisor import *
+from e2eAIOK.SDA.modeladvisor.DIENAdvisor import *
+from e2eAIOK.SDA.modeladvisor.TestAdvisor import *
+from e2eAIOK.SDA.modeladvisor.DLRMAdvisor import *
+from e2eAIOK.SDA.modeladvisor.WnDAdvisor import *
+from e2eAIOK.SDA.modeladvisor.TwitterRecSysAdvisor import *
+from e2eAIOK.SDA.modeladvisor.MiniGoAdvisor import *
+from e2eAIOK.SDA.modeladvisor.RNNTAdvisor import *
+from e2eAIOK.SDA.modeladvisor.BERTAdvisor import *
+from e2eAIOK.SDA.modeladvisor.ResNetAdvisor import *
+from e2eAIOK.SDA.modeladvisor.UPMAdvisor import *
+from e2eAIOK.SDA.modeladvisor.RegisteredAdvisor import *
 
 class SDA:
     """
@@ -51,7 +51,7 @@ class SDA:
             parameter configuration
         hydro_model: HydroModel
             history best model object, this parameter will only be
-            used with hydro.ai, optional.
+            used with e2eaiok, optional.
         """
         self.model = model
         if data_loader is None and 'data_path' in settings:
@@ -72,7 +72,7 @@ class SDA:
         logging.basicConfig(
             level=logging.INFO,
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        self.logger = logging.getLogger('HYDRO.AI.SDA')
+        self.logger = logging.getLogger('E2EAIOK.SDA')
         self.logger.info("""### Ready to submit current task  ###""")
 
     def __del__(self):
@@ -99,7 +99,7 @@ class SDA:
             return TestAdvisor(self.dataset_meta, self.dataset_train,
                                self.dataset_valid, self.settings)
         elif self.model.lower() == "minigo":
-            return MiniGoAdvisor(self.dataset_meta, self.dataset_train,
+                return MiniGoAdvisor(self.dataset_meta, self.dataset_train,
                                    self.dataset_valid, self.settings)
         elif self.model.lower() == 'rnnt':
             return RNNTAdvisor(self.dataset_meta, self.dataset_train,
@@ -115,7 +115,7 @@ class SDA:
 
     @staticmethod
     def get_model_zoo_list():
-        return ['wnd', 'dlrm', 'dien', 'twitter_recsys', 'pipeline_test', 'rnnt', 'minigo', 'upm', 'bert', 'resnet']
+        return ['wnd', 'dlrm', 'dien', 'twitter_recsys', 'rnnt', 'minigo', 'bert', 'resnet', 'pipeline_test', 'upm']
 
     def launch(self):
         """
@@ -190,18 +190,18 @@ def parse_args(args):
         required=True,
         help='Dataset path')
     parser.add_argument('--conf',
-        type=str,
-        default='conf/hydroai_defaults.conf',
-        help='hydroai defaults configuration')
+                        type=str,
+                        default='conf/e2eaiok_defaults.conf',
+                        help='e2eaiok defaults configuration')
     parser.add_argument('--custom_result_path',
         type=str,
         default=str(pathlib.Path(__file__).parent.absolute()),
         help='custom result path')
-    parser.add_argument('--no_sigopt',
+    parser.add_argument('--enable_sigopt',
         dest="enable_sigopt",
-        action="store_false",
-        default=True,
-        help='if disable sigopt')
+        action="store_true",
+        default=False,
+        help='if enable sigopt')
     parser.add_argument('--no_model_cache',
         dest="enable_model_cache",
         action="store_false",

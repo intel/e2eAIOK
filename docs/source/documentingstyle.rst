@@ -18,7 +18,7 @@ In order to pass pep8, please keep comments line-width below 72
       ----------
       params : dict
           params include dataset_path, save_path, global_configs,
-          model_parameters, passed by arguments or hydroai-defaults.conf
+          model_parameters, passed by arguments or e2eaiok_defaults.conf
       assignment_model_tracker : dict
           a tracker map of assigned_parameters and its corresponding
           model path

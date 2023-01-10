@@ -6,8 +6,8 @@ from collections import OrderedDict
 import yaml
 from sigopt import Connection
 
-from AIDK.common.utils import *
-from AIDK.hydroai.hydroconfig import *
+from e2eAIOK.common.utils import *
+from e2eAIOK.utils.hydroconfig import *
 
 class BaseModelAdvisor:
     """Model Advisor Base, Model Advisor is used to create w/wo sigopt
@@ -22,7 +22,7 @@ class BaseModelAdvisor:
         fetched by history experiment id
     params : dict
         params include dataset_path, save_path, global_configs,
-        model_parameters, passed by arguments or hydroai-defaults.conf
+        model_parameters, passed by arguments or e2eaiok-defaults.conf
     assignment_model_tracker : dict
         a tracker map of assigned_parameters and its corresponding
         model path

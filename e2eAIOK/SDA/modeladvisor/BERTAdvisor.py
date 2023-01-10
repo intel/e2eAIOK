@@ -3,8 +3,8 @@ import yaml
 import logging
 import os
 
-from AIDK.common.utils import *
-from AIDK.SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
+from e2eAIOK.common.utils import *
+from e2eAIOK.SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
 
 class BERTAdvisor(BaseModelAdvisor):
     '''
@@ -16,11 +16,14 @@ class BERTAdvisor(BaseModelAdvisor):
             level=logging.INFO,
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         self.logger = logging.getLogger('sigopt')
-        self.train_python = "/opt/intel/oneapi/intelpython/latest/envs/tensorflow-2.5.0/bin/python"
+        self.python_path = "/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/"
+        self.train_python = f"{self.python_path}/python"
         self.train_script = os.path.join(os.getcwd(),"modelzoo/bert/benchmarks/launch_benchmark.py")
         self.train_path = train_path
         self.test_path = eval_path
         self.dataset_meta_path = dataset_meta_path
+        self.current_path = os.getcwd()
+        self.extra_pythonpath = f"{self.current_path}/modelzoo/bert/benchmarks/"
 
     def initialize_model_parameter(self, assignments=None):
         '''
@@ -34,8 +37,12 @@ class BERTAdvisor(BaseModelAdvisor):
             tuned_parameters["learning_rate"] = str(assignments['learning_rate'])
             tuned_parameters["warmup_proportion"] = str(assignments['warmup_proportion'])
             tuned_parameters["num_hidden_layers"] = str(assignments['num_hidden_layers'])
-            tuned_parameters["attention_probs_dropout_prob"] = str(assignments['dropout_prob'])
-            tuned_parameters["hidden_dropout_prob"] = str(assignments['dropout_prob'])
+            if 'dropout_prob' in assignments:
+                tuned_parameters["attention_probs_dropout_prob"] = str(assignments['dropout_prob'])
+                tuned_parameters["hidden_dropout_prob"] = str(assignments['dropout_prob'])
+            else:
+                tuned_parameters["attention_probs_dropout_prob"] = str(assignments['attention_probs_dropout_prob'])
+                tuned_parameters["hidden_dropout_prob"] = str(assignments['hidden_dropout_prob'])
         else:
             tuned_parameters["train_batch_size"] = "24"
             tuned_parameters["learning_rate"] = "3e-5"
@@ -93,13 +100,11 @@ class BERTAdvisor(BaseModelAdvisor):
             self.dist_launch(args)
         else:
             self.launch(args)
-        file1 = open(os.path.join(self.params['model_saved_path'],"best_auc.txt"),'r')
-        lines = file1.readlines()
-        file1.close()
+        with open(os.path.join(self.params['model_saved_path'],"best_auc.txt"),'r') as f:
+            lines = f.readlines()
         self.mean_accuracy = float(lines[-1])
-        file2 = open(os.path.join(self.params['model_saved_path'],"best_time.txt"),'r')
-        lines = file2.readlines()
-        file2.close()
+        with open(os.path.join(self.params['model_saved_path'],"best_time.txt"),'r') as f:
+            lines = f.readlines()
         self.training_time = float(lines[-1])
         metrics = self.update_metrics()
         return self.training_time, model_path, metrics
@@ -122,7 +127,8 @@ class BERTAdvisor(BaseModelAdvisor):
         if not os.path.exists(os.environ["OUTPUT_DIR"]):
             os.makedirs(os.environ["OUTPUT_DIR"])
 
-        cmd = f"{self.train_python} "
+        cmd = f"PYTHONPATH=$PYTHONPATH:{self.extra_pythonpath} "
+        cmd += f"{self.train_python} "
         cmd += f"{MODEL_DIR}/benchmarks/launch_benchmark.py " \
         + f"--model-name=bert_large " \
         + f"--precision=fp32 " \
@@ -143,7 +149,9 @@ class BERTAdvisor(BaseModelAdvisor):
         + f"do_predict=True " \
         + f"predict_file=$DATASET_DIR/dev-v1.1.json " \
         + f"test_file=$DATASET_DIR/test-v1.1.json " \
+        + f"data_dir=$DATASET_DIR " \
         + f"num_to_evaluate=50 " \
+        + f"step_threshold={args['step_threshold']} " \
         + f"f1_threshold=90.87 " \
         + f"num_train_epochs=2 " \
         + f"max_seq_length=384 " \
@@ -172,7 +180,8 @@ class BERTAdvisor(BaseModelAdvisor):
         if not os.path.exists(os.environ["OUTPUT_DIR"]):
             os.makedirs(os.environ["OUTPUT_DIR"])
 
-        cmd = f"{self.train_python} "
+        cmd = f"PYTHONPATH=$PYTHONPATH:{self.extra_pythonpath} "
+        cmd += f"{self.train_python} "
         cmd += f"{MODEL_DIR}/benchmarks/launch_benchmark.py " \
         + f"--model-name=bert_large " \
         + f"--precision=fp32 " \
@@ -192,7 +201,9 @@ class BERTAdvisor(BaseModelAdvisor):
         + f"do_predict=True " \
         + f"predict_file=$DATASET_DIR/dev-v1.1.json " \
         + f"test_file=$DATASET_DIR/test-v1.1.json " \
+        + f"data_dir=$DATASET_DIR " \
         + f"num_to_evaluate=50 " \
+        + f"step_threshold={args['step_threshold']} " \
         + f"f1_threshold=90.87 " \
         + f"num_train_epochs=2 " \
         + f"max_seq_length=384 " \

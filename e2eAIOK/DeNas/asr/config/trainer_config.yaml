@@ -1,0 +1,17 @@
+seed: "74443"
+output_folder: "results/transformer/74443"
+save_folder: "results/transformer/74443/save"
+param_file: asr/config/transformer.yaml
+device: cpu
+
+# Data files
+data_folder: "/home/vmagent/app/dataset/LibriSpeech"
+# train_splits="train-clean-100 train-clean-360 train-other-500"
+# dev_splits="dev-clean"
+# test_splits="test-clean test-other"
+skip_prep: false
+train_csv: "/home/vmagent/app/dataset/LibriSpeech/train-clean-100.csv"
+valid_csv: "/home/vmagent/app/dataset/LibriSpeech/dev-clean.csv"
+test_csv: "/home/vmagent/app/dataset/LibriSpeech/test-clean.csv"
+
+tokenizer_ckpt: "/home/vmagent/app/dataset/LibriSpeech/tokenizer.ckpt"

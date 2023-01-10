@@ -3,8 +3,8 @@ import yaml
 import logging
 import time
 
-from AIDK.common.utils import *
-from AIDK.SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
+from e2eAIOK.common.utils import *
+from e2eAIOK.SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
 
 class RNNTAdvisor(BaseModelAdvisor):
     def __init__(self, dataset_meta_path, train_path, eval_path, settings):
@@ -27,7 +27,7 @@ class RNNTAdvisor(BaseModelAdvisor):
         if len(missing_params) > 0:
             raise ValueError(
                 f"[CONFIG ERROR] Missing parameters {missing_params} in \
-                hydroai_defaults.conf when ppn is set above 1.")
+                e2eaiok_defaults.conf when ppn is set above 1.")
 
         self.train_path = train_path
         self.test_path = eval_path
@@ -35,7 +35,7 @@ class RNNTAdvisor(BaseModelAdvisor):
         self.parse_meta_file(self.dataset_meta_path)
         self.saved_path = self.params['save_path']
         self.train_python = "/opt/intel/oneapi/intelpython/latest/envs/pytorch-1.10.0/bin/python"
-        self.train_script = "/home/vmagent/app/hydro.ai/modelzoo/rnnt/pytorch/train.py"
+        self.train_script = "/home/vmagent/app/e2eaiok/modelzoo/rnnt/pytorch/train.py"
 
     def init_default_params(self):
         self.params[

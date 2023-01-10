@@ -1,7 +1,7 @@
-hydroai.hydromodelzoo module
+e2eAIOK.utils.hydromodelzoo module
 ============================
 
-.. automodule:: hydroai.hydromodelzoo
+.. automodule:: e2eAIOK.utils.hydromodelzoo
    :members:
    :undoc-members:
    :show-inheritance:

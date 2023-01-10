@@ -4,9 +4,9 @@ import logging
 import time
 
 
-from AIDK.common.utils import *
-from AIDK.hydroai.hydroconfig import default_settings
-from AIDK.SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
+from e2eAIOK.common.utils import *
+from e2eAIOK.utils.hydroconfig import default_settings
+from e2eAIOK.SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
 
 class TestAdvisor(BaseModelAdvisor):
     def __init__(self, dataset_meta_path, train_path, eval_path, settings):
@@ -44,7 +44,7 @@ class TestAdvisor(BaseModelAdvisor):
 
     def generate_sigopt_yaml(self, file='test_sigopt.yaml'):
         config = {}
-        config['project'] = 'hydro.ai'
+        config['project'] = 'e2eaiok'
         config['experiment'] = 'sklearn'
         parameters = [{
             'name': 'max_depth',
@@ -117,8 +117,8 @@ class TestAdvisor(BaseModelAdvisor):
             'min_split_loss']
         model_saved_path = args['model_saved_path']
         cmd = []
-        cmd.append(f"/opt/intel/oneapi/intelpython/latest/bin/python")
-        cmd.append(f"/home/vmagent/app/hydro.ai/example/sklearn_train.py")
+        cmd.append(f"python")
+        cmd.append(f"example/sklearn_train.py")
         cmd.append(f"--max_depth")
         cmd.append(f"{max_depth}")
         cmd.append(f"--learning_rate")

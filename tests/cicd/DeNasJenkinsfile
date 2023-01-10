@@ -1,0 +1,77 @@
+pipeline {
+    agent {
+        label 'sr612'
+    }
+    stages {
+        stage('Prepare') {
+            steps {
+                script {
+                    def labels = ['sr612']
+                    def builders = [: ]
+                    for (x in labels) {
+                        def label = x
+                        builders[label] = {
+                            node(label) {
+                                cleanWs()
+                                checkout scm
+                                sh 'cd Dockerfile-ubuntu18.04 && docker build -t e2eaiok-pytorch112 . -f DockerfilePytorch112 && cd .. && yes | docker container prune && yes | docker image prune'
+                            }
+                        }
+                    }
+                    parallel builders
+                }
+            }
+        }
+        stage('Run DeNas CNN') {
+            agent {
+                label 'sr612'
+            }
+            steps {
+                sh 'docker run --rm --name test-denas-cnn --shm-size=10g --privileged --network host --device=/dev/dri -v /root/data:/root/data -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch112 /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/cicd/jenkins_denas_cnn.sh"'
+            }
+        }
+        stage('Run DeNas ViT') {
+            agent {
+                label 'sr612'
+            }
+            steps {
+                sh 'docker run --rm --name test-denas-vit --shm-size=10g --privileged --network host --device=/dev/dri -v /root/data:/root/data -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch112 /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/cicd/jenkins_denas_vit.sh"'
+            }
+        }
+        stage('Run DeNas Bert') {
+            agent {
+                label 'sr612'
+            }
+            steps {
+               sh 'docker run --rm --name test-denas-bert --shm-size=10g --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch112 /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/cicd/jenkins_denas_bert.sh"' 
+            }
+        }
+        stage('Run DeNas ASR') {
+            agent {
+                label 'sr612'
+            }
+            steps {
+               sh 'docker run --rm --name test-denas-asr --shm-size=10g --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset/LibriSpeech-denas:/home/vmagent/app/dataset/LibriSpeech -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch112 /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/cicd/jenkins_denas_asr.sh"' 
+            }
+        }
+    }
+    post {
+        always {
+            echo 'One way or another, I have finished'
+            deleteDir()
+            sh 'if [[ $(docker ps -q --filter "name=test-denas-*" | wc -l) -ne 0 ]]; then docker ps -q --filter "name=test-denas-*" | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi'
+        }
+        success {
+            echo 'I succeeded!'
+        }
+        unstable {
+            echo 'I am unstable :/'
+        }
+        failure {
+            echo 'I failed :('
+        }
+        changed {
+            echo 'Things were different before...'
+        }
+    }
+}

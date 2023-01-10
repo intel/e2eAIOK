@@ -3,8 +3,8 @@ import yaml
 import logging
 import time
 
-from AIDK.common.utils import *
-from AIDK.SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
+from e2eAIOK.common.utils import *
+from e2eAIOK.SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
 
 class TwitterRecSysAdvisor(BaseModelAdvisor):
     def __init__(self, dataset_meta_path, train_path, eval_path, settings):
@@ -17,7 +17,7 @@ class TwitterRecSysAdvisor(BaseModelAdvisor):
         self.dataset_meta_path = dataset_meta_path
         self.saved_path = self.params['save_path']
         self.train_python = "/opt/intel/oneapi/intelpython/latest/bin/python"
-        self.train_script = "/home/vmagent/app/hydro.ai/modelzoo/TwitterRecSys2021/model_hydroai/xgboost/train.py"
+        self.train_script = "/home/vmagent/app/e2eaiok/modelzoo/TwitterRecSys2021/model_e2eaiok/xgboost/train.py"
 
     def update_metrics(self):
         result_metrics_path = os.path.join(self.params['model_saved_path'],
@@ -58,7 +58,7 @@ class TwitterRecSysAdvisor(BaseModelAdvisor):
 
     def generate_sigopt_yaml(self, file='RecSys_sigopt.yaml'):
         config = {}
-        config['project'] = 'hydro.ai'
+        config['project'] = 'e2eaiok'
         config['experiment'] = 'RecSys'
         parameters = [{'name': 'max_depth', 'bounds': {'min': 5, 'max': 20}, 'type': 'int'},
                     {'name': 'learning_rate', 'bounds': {'min': 0.0, 'max': 1.0}, 'type': 'double'},

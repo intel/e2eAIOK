@@ -16,7 +16,7 @@ time mpirun -genv OMP_NUM_THREADS=16 -map-by socket -n 2 -ppn 2 -hosts sr112 -pr
 /opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python -u main.py \
   --train_data_pattern '/home/vmagent/app/dataset/criteo/train/train_data.bin' \
   --eval_data_pattern '/home/vmagent/app/dataset/criteo/valid/test_data.bin' \
-  --model_dir /home/vmagent/app/hydro.ai/modelzoo/upm/model/tensorflow \
+  --model_dir /home/vmagent/app/e2eaiok/modelzoo/upm/model/tensorflow \
   --dataset_meta_file tf/data/criteo_meta.yaml \
   --global_batch_size 32 \
   --eval_batch_size 32 \

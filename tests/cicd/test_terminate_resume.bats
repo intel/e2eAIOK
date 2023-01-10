@@ -8,7 +8,7 @@ setup() {
     PATH="$DIR/src:$PATH"
 }
 
-@test 'Check AIDK CI/CD Terminate Pipeline and Resume Context' {
-    run aidk_terminate_resume.sh
+@test 'Check e2eAIOK CI/CD Terminate Pipeline and Resume Context' {
+    run e2eaiok_terminate_resume.sh
     assert_success
 }

@@ -4,8 +4,8 @@ import logging
 import time
 import os
 
-from AIDK.common.utils import *
-from AIDK.SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
+from e2eAIOK.common.utils import *
+from e2eAIOK.SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
 
 class MiniGoAdvisor(BaseModelAdvisor):
     def __init__(self, dataset_meta_path, train_path, eval_path, settings):
@@ -22,9 +22,8 @@ class MiniGoAdvisor(BaseModelAdvisor):
         self.target=f"{settings['data_path']}/target/target.minigo"
 
     def update_metrics(self):
-        metric_file = open("result/metric.txt", "r")
-        self.winrate = float(metric_file.read())
-        metric_file.close()
+        with open("result/metric.txt", "r") as f:
+            self.winrate = float(f.read())
         metrics = []
         metrics.append({'name': 'winrate', 'value': self.winrate})
         metrics.append({'name': 'training_time', 'value': self.training_time})
@@ -50,7 +49,7 @@ class MiniGoAdvisor(BaseModelAdvisor):
         config['project'] = self.params['model_parameter']['project']
         config['experiment'] = self.params['model_parameter']['experiment']
         parameters = [
-        {'name':'train_batch_size','grid':[512,1024,2048,4196,8192],'type':'int'}
+        {'name':'train_batch_size','grid':[512,1024,2048,4096,8192],'type':'int'}
         ]
         config['parameters'] = parameters
         config['metrics'] = [{

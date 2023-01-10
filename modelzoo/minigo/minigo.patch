@@ -16,10 +16,10 @@ index 0000000..e544eb5
 +try-import %workspace%/tf_configure.bazelrc
 +try-import %workspace%/tensorflow.bazelrc
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/README.md b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/README.md
-index f1b8a64..3d6eaca 100644
+index f1b8a64..d3b71fe 100644
 --- a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/README.md
 +++ b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/README.md
-@@ -1,3 +1,19 @@
+@@ -1,3 +1,21 @@
 -### Please read ml_perf/README.md for running the benchmark ###
 -This code is adapted from MLPerf reference SW at https://github.com/mlcommons/training/tree/master/reinforcement/tensorflow/minigo/cc
 +## For baremetal env build from scratch, please read ml_perf/README.md ###
@@ -30,10 +30,12 @@ index f1b8a64..3d6eaca 100644
 +# export gcc8.4.0 to PATH and LD_LIBRARY_PATH if not exported
 +export PATH=path/to/gcc8.4.0/bin:$PATH
 +export LD_LIBRARY_PATH=/usr/local/gcc-8.4.0/lib64/${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
-+conda activate minigo_xeon_opt
++conda activate minigo
  
++# Get processed target model and bootstrap checkpoint (See the freeze target model section and convert selfplay data format section).
++# Reference https://github.com/mlcommons/training_results_v1.0/tree/master/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf#steps-to-run-minigo
 +# for quickly do performance validate, you can build env more quickly
-+copy the ml_perf/checkpoints, ml_perf/target dirs, and run ./cc/configure_tensorflow.sh (build options are all defaults) with bazel-0.24.1
++copy the ml_perf/checkpoints, ml_perf/target dirs, and run ./cc/configure_tensorflow.sh (build options are all defaults) ./ml_perf/scripts/cc_libgen_parallel_selfplay.sh with bazel-0.24.1
 +
 +# Please confirm that your passwordless ssh is started before running minigo
 +# Launch the following command to run the minigo workload
@@ -43,15 +45,11 @@ index f1b8a64..3d6eaca 100644
 +```
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/build_gcc.sh b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/build_gcc.sh
 new file mode 100755
-index 0000000..04ba5d7
+index 0000000..0283ccc
 --- /dev/null
 +++ b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/build_gcc.sh
-@@ -0,0 +1,28 @@
+@@ -0,0 +1,24 @@
 +#!/bin/bash
-+
-+export http_proxy="http://proxy-prc.intel.com:912"
-+export https_proxy="http://proxy-prc.intel.com:912"
-+export ftp_proxy="http://proxy-prc.intel.com:912"
 +
 +[ -d "$HOME/src/" ] || mkdir "$HOME/src/"
 +GCC_VERSION="8.4.0"
@@ -98,9 +96,43 @@ new mode 100755
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/cluster/utils.sh b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/cluster/utils.sh
 old mode 100644
 new mode 100755
+diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/dual_net.py b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/dual_net.py
+index bb4d02b..7fbf453 100644
+--- a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/dual_net.py
++++ b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/dual_net.py
+@@ -30,7 +30,6 @@ import numpy as np
+ import random
+ 
+ import tensorflow as tf
+-from tensorflow.distribute import cluster_resolver as contrib_cluster_resolver
+ from tensorflow.quantization import quantize as contrib_quantize
+ from tensorflow import summary as contrib_summary
+ #from tensorflow import tpu as contrib_tpu
+@@ -176,7 +175,7 @@ flags.DEFINE_string(
+     help='Layout of input features: "nhwc" or "nchw"')
+ 
+ flags.DEFINE_bool(
+-    'use_bfloat16', True,
++    'use_bfloat16', False,
+     help='Choose whether to use bfloat16 in training.')
+ 
+ # TODO(seth): Verify if this is still required.
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/freeze_graph.sh b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/freeze_graph.sh
 old mode 100644
 new mode 100755
+diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/intel_quantization/graph_converter.py b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/intel_quantization/graph_converter.py
+index 1f800f7..a993a76 100644
+--- a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/intel_quantization/graph_converter.py
++++ b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/intel_quantization/graph_converter.py
+@@ -89,7 +89,7 @@ class GraphConverter:
+             if (hasattr(python, "pywrap_tensorflow") and hasattr(python.pywrap_tensorflow, "IsMklEnabled")):
+                 from tensorflow.python.pywrap_tensorflow import IsMklEnabled
+             else:
+-                from tensorflow.python._pywrap_util_port import IsMklEnabled
++                from tensorflow.python.util._pywrap_util_port import IsMklEnabled
+             if IsMklEnabled() and (TF_SUPPORTED_MIN_VERSION <= tf.__version__ <= TF_SUPPORTED_MAX_VERSION):
+                 is_supported_version = True
+         except Exception as e:
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/minigui/edgetpu/install_requirements.sh b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/minigui/edgetpu/install_requirements.sh
 old mode 100644
 new mode 100755
@@ -124,10 +156,10 @@ diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/minigui/unset-
 old mode 100644
 new mode 100755
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/README.md b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/README.md
-index f089e5e..0dc31c8 100644
+index f089e5e..517cc60 100644
 --- a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/README.md
 +++ b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/README.md
-@@ -1,39 +1,57 @@
+@@ -1,95 +1,83 @@
 -# MLPerf Training v1.0 Intel Submission
 +# Preliminary
 +This repo is a staging ground for the new [MLPerf](http://mlperf.org) reinforcement model.
@@ -141,7 +173,7 @@ index f089e5e..0dc31c8 100644
  # 2. Directions
 -### Steps to run MiniGo
 +### Steps to configure machine
-+Tested OS: Ubuntu18.04LTS, CentOS7.9
++Tested OS: Ubuntu18.04LTS, CentOS7.9, RedHat8.6
  
  ```
 -    # Set WORKSPACE as /path/to/Intel/benchmarks/minigo/<system_desc_id>
@@ -156,8 +188,8 @@ index f089e5e..0dc31c8 100644
 -    source /path/to/compilers_and_libraries/linux/mpi/intel64/bin/mpivars.sh intel64
 +    # Install dependencies (for Ubuntu18.04LTS)
 +    apt-get install -y python3 python3-pip rsync git wget pkg-config zip g++ zlib1g-dev unzip numactl flex
-+    # Install dependencies (for CentOS7.9)
-+    yum install zip unzip rsync git wget curl numactl flex zlib-devel pkgconfig gcc-c++ patch bison patchelf
++    # Install dependencies (for CentOS7.9, RedHat8.6)
++    yum install zip unzip rsync git wget curl numactl flex zlib-devel pkgconfig gcc-c++ patch bison make
 +    
 +    # (Ubuntu18.04LTS) change sh default program from dash to bash
 +    dpkg-reconfigure dash
@@ -166,7 +198,7 @@ index f089e5e..0dc31c8 100644
 +    https://cloud.google.com/sdk/docs/install#deb
 +    https://cloud.google.com/sdk/docs/install#rpm
 +    
-+    # Install Anaconda
++    # Install Anaconda/Miniconda
 +    
 +    # Install Intel oneAPI HPC toolkit
 +    source /opt/intel/oneapi/setvars.sh
@@ -179,62 +211,79 @@ index f089e5e..0dc31c8 100644
 -    # download mlperf logging package
 -    git clone https://github.com/mlperf/logging.git mlperf-logging
 -    pip install -e mlperf-logging
-+    # Clone repository
-+    cd <WORKSPACE>
-+    git clone https://github.com/intel-innersource/frameworks.bigdata.bluewhale.git aidk
-+
-+    cd aidk/modelzoo/minigo
- 
+-
      # Install anaconda and create an anaconda env (this step is optional but highly recommended).
-     conda create -n minigo_xeon_opt python=3.6
-     conda activate minigo_xeon_opt
+-    conda create -n minigo_xeon_opt python=3.6
+-    conda activate minigo_xeon_opt
++    conda create -n minigo python=3.10
++    conda activate minigo
 +    # Also, noted that if your system glibc version < 2.27 (such as CentOS7.9)
 +    # you need to build glibc from source and install it, and then use patchelf to patch your conda env python binaries
-+    # patchelf --set-interpreter /usr/local/glibc-2.27/lib/ld-linux-x86-64.so.2 --set-rpath /usr/local/glibc-2.27/lib/ /usr/local/anaconda3/envs/minigo_xeon_opt/bin/python
++    # patchelf --set-interpreter /usr/local/glibc-2.27/lib/ld-linux-x86-64.so.2 --set-rpath /usr/local/glibc-2.27/lib/ /usr/local/anaconda3/envs/minigo/bin/python
 +    
++    # Install intel-tensorflow
++    pip install intel-tensorflow==2.10
++
 +    # Install mlperf-logging
 +    pip install "git+https://github.com/mlperf/logging.git@1.0.0"
  
      # Install Python dependencies
 -    pip3 install -r requirements.txt
-+    pip install -r requirements.txt
+-
+-    # Download & extract bootstrap checkpoint
+-    gsutil cp gs://minigo-pub/ml_perf/0.7/checkpoint.tar.gz .
+-    tar xfz checkpoint.tar.gz -C ml_perf/
++    pip install absl-py autopep8 fire numpy google.cloud.logging google.cloud.bigtable grpcio-tools keras numpy protobuf sgf six tqdm pyasn1
  
-     # Download & extract bootstrap checkpoint
-     gsutil cp gs://minigo-pub/ml_perf/0.7/checkpoint.tar.gz .
-@@ -49,16 +67,14 @@ The model plays games against itself and uses these games to improve play.
-     BAZEL_VERSION=3.0.0
-     wget https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
-     chmod 755 bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
+-    # Download and freeze the target model
+-    mkdir -p ml_perf/target/
+-    gsutil cp gs://minigo-pub/ml_perf/0.7/target.* ml_perf/target/
+-    # Note, freeze_graph.sh will install tensorflow-1.15 temporarily
+-    sh freeze_graph.sh
+-
+-    # Install bazel 3.0.0
+-    BAZEL_VERSION=3.0.0
+-    wget https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
+-    chmod 755 bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
 -    sh ./bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh --user
-+    ./bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
++    # Install tensorflow-io
++    pip install tensorflow-io
  
-     # Build and install specified Intel-Tensorflow
+-    # Build and install specified Intel-Tensorflow
 -    # NOTE: Requires numpy version < 1.19.0 (verified with 1.18.5)
 -    cd <WORKSPACE>
-     git clone https://github.com/Intel-tensorflow/tensorflow.git
-     cd tensorflow
-     git checkout 896a070312136fe944fd7a905e72f86dee9771f6
-     # Apply compatibility patch for tensorflow-io
+-    git clone https://github.com/Intel-tensorflow/tensorflow.git
+-    cd tensorflow
+-    git checkout 896a070312136fe944fd7a905e72f86dee9771f6
+-    # Apply compatibility patch for tensorflow-io
 -    git apply <WORKSPACE>/patches/compat.patch
-+    git apply <WORKSPACE>/aidk/modelzoo/minigo/patches/compat.patch
-     # Use all defaults
-     ./configure
-     bazel build --cxxopt=-D_GLIBCXX_USE_CXX11_ABI=0 --copt=-O3 --copt=-Wformat \
-@@ -70,20 +86,20 @@ The model plays games against itself and uses these games to improve play.
-     bazel-bin/tensorflow/tools/pip_package/build_pip_package ./tensorflow_pkg/
-     pip install ./tensorflow_pkg/tensorflow-2.2.0-cp36-cp36m-linux_x86_64.whl
- 
--    cd <WORKSPACE>
+-    # Use all defaults
+-    ./configure
+-    bazel build --cxxopt=-D_GLIBCXX_USE_CXX11_ABI=0 --copt=-O3 --copt=-Wformat \
+-    --copt=-Wformat-security --copt=-fstack-protector --copt=-fPIC --copt=-fpic \
+-    --linkopt=-znoexecstack --linkopt=-zrelro --linkopt=-znow --linkopt=-fstack-protector \
+-    --config=mkl --define build_with_mkl_dnn_v1_only=true --copt=-DENABLE_INTEL_MKL_BFLOAT16 \
+-    --copt=-march=haswell //tensorflow/tools/pip_package:build_pip_package
+-    # Build and install python wheel
+-    bazel-bin/tensorflow/tools/pip_package/build_pip_package ./tensorflow_pkg/
+-    pip install ./tensorflow_pkg/tensorflow-2.2.0-cp36-cp36m-linux_x86_64.whl
 -
-     # Install Tensorflow-io
+-    cd <WORKSPACE>
++    # Install Python dependencies
++    pip install --upgrade pip
++    pip install scikit-build
++    pip install cmake --upgrade
+ 
+-    # Install Tensorflow-io
 -    pip3 install "tensorflow-io==0.13.0" --no-deps
-+    pip install "tensorflow-io==0.13.0" --no-deps
++    # Reinstall protobuf==3.20
++    pip install --force-reinstall --no-cache-dir protobuf==3.20
  
      # Install horovod
      # Note, please ensure that Intel MPI and GCC have been configured correctly before compling horovod
-     pip --no-cache-dir install horovod==0.19.1
- 
-+    cd <WORKSPACE>/aidk/modelzoo/minigo
+-    pip --no-cache-dir install horovod==0.19.1
+-
++    HOROVOD_WITH_TENSORFLOW=1 pip install --no-cache-dir horovod[intel-tensorflow]
 +    
      # Install bazel 0.24.1
      BAZEL_VERSION=0.24.1
@@ -245,19 +294,181 @@ index f089e5e..0dc31c8 100644
  
      # Compile TensorFlow C++ libraries (enter to use default config)
      ./cc/configure_tensorflow.sh
-@@ -106,11 +122,10 @@ The model plays games against itself and uses these games to improve play.
-     # Running the benchmark creates two log files in <WORKSPACE>: train.log and eval.stdout
-     # train.log captures MLPerf logging events, and eval.stdout contains std output from ml_perf/eval_models.py
-     # Correct logging errors for compliance
--    python postprocessing.py --in-file train.log --out-file train_postprocess.log
-+    python postprocess.py --in-file train.log --out-file train_postprocess.log
-     # Update run_stop timestamp using the TTT from eval.stdout, and save as result.txt
-     ./logging_postprocess.sh train_postprocess.log eval.stdout result.txt
++    # Compile parallel selfplay C++ libraries
++    ./ml_perf/scripts/cc_libgen_parallel_selfplay.sh
  
+-    # Convert selfplay data format from NCHW to NHWC
+-    ./ml_perf/scripts/convert_data_format.sh
++    # Install sigopt
++    pip install sigopt
+ 
+     # Configure nopassword SSH on host machines
+     # Launch the following command to run the workload
+@@ -97,162 +85,4 @@ The model plays games against itself and uses these games to improve play.
+     # rootnode=node0
+     HOSTLIST=hostlist ROOTNODE=rootnode ml_perf/scripts/run_minigo.sh 19
+ 
+-    # Optionally, set host list use for train stage only (K<=N)
+-    # trainhostlist=node0,node1...nodeK
+-    HOSTLIST=hostlist TRAINHOSTLIST=trainhostlist ROOTNODE=rootnode ml_perf/scripts/run_minigo.sh 19
+-    # Note, $TRAINHOSTLIST could overlap with $HOSTLIST
 -
-     # Run MLPerf logging compliance checker
-     python -m mlperf_logging.compliance_checker --config 0.7.0/closed_minigo.yaml --ruleset 0.7.0 result.txt
- ```
+-    # Log post-processing
+-    # Running the benchmark creates two log files in <WORKSPACE>: train.log and eval.stdout
+-    # train.log captures MLPerf logging events, and eval.stdout contains std output from ml_perf/eval_models.py
+-    # Correct logging errors for compliance
+-    python postprocessing.py --in-file train.log --out-file train_postprocess.log
+-    # Update run_stop timestamp using the TTT from eval.stdout, and save as result.txt
+-    ./logging_postprocess.sh train_postprocess.log eval.stdout result.txt
+-
+-
+-    # Run MLPerf logging compliance checker
+-    python -m mlperf_logging.compliance_checker --config 0.7.0/closed_minigo.yaml --ruleset 0.7.0 result.txt
+-```
+-
+-### Tunable hyperparameters
+-
+-The following flags are allowed to be modified by entrants:
+-Flags that don't directly affect convergence:
+- - _all flags related to file paths & device IDs_
+- - `bool_features`
+- - `input_layout`
+- - `summary_steps`
+- - `cache_size_mb`
+- - `num_read_threads`
+- - `num_write_threads`
+- - `output_threads`
+- - `selfplay_threads`
+- - `parallel_search`
+- - `parallel_inference`
+- - `concurrent_games_per_thread`
+- - `validate`
+- - `holdout_pct`
+-
+-Flags that directly affect convergence:
+- - `train_batch_size`
+- - `lr_rates`
+- - `lr_boundaries`
+-
+-Entrants are also free to replace the code responsible for writing, shuffling
+-and sampling training examples with equivalent functionality (e.g. replacing the
+-use of `sample_records` and a file system with a different storage solution).
+-
+-### Selfplay threading model
+-
+-The selfplay C++ binary (`//cc:concurrent_selfplay`) has multiple flags that control its
+-threading:
+-
+-- `selfplay_threads` controls the number of threads that play selfplay games.
+-- `concurrent_games_per_thread` controls how many games are played on each thread. All games
+-  on a selfplay thread have their inferences batched together and dispatched at the same time.
+-- `parallel_search` controls the size of the thread pool shared between all selfplay threads
+-  that are used to parallelise tree search. Since the selfplay thread also performs tree
+-  search, the thread pool size is `parallel_search - 1` and a value of `1` disables the thread
+-  pool entirely.
+-
+-To get a better understanding of the threading model, we recommend running a trace of the selfplay
+-code as described below.
+-
+-### Profiling
+-
+-The selfplay C++ binary can output traces of the host CPU using Google's
+-[Tracing Framework](https://google.github.io/tracing-framework/). Compile the
+-`//cc:concurrent_selfplay` binary with tracing support by passing `--copt=-DWTF_ENABLE` to
+-`bazel build`. Then run `//cc:concurrent_selfplay`, passing `--wtf_trace=$TRACE_PATH` to specify
+-the trace output path. The trace is appended to peridically, so the `//cc:concurrent_selfplay`
+-binary can be killed after 20 or so seconds and the trace file written so far will be valid.
+-
+-Install the Tracing Framework [Chrome extension](https://google.github.io/tracing-framework/) to
+-view the trace.
+-
+-Note that the amount of CPU time spent performing tree search changes over the lifetime of the
+-benchmark: initially, the models tend to read very deeply, which takes more CPU time.
+-
+-Here is an example of building and running selfplay with tracing enabled on a single GPU:
+-
+-```
+-bazel build -c opt --copt=-O3 --define=tf=1 --copt=-DWTF_ENABLE cc:concurrent_selfplay
+-CUDA_VISIBLE_DEVICES=0 ./bazel-bin/cc/concurrent_selfplay \
+-    --flagfile=ml_perf/flags/19/selfplay.flags \
+-    --wtf_trace=$HOME/mlperf07.wtf-trace \
+-    --model=$BASE_DIR/models/000001.minigo
+-```
+-
+-### Steps to download and verify data
+-Unlike other benchmarks, there is no data to download. All training data comes from games played
+-during benchmarking.
+-
+-# 3. Model
+-### Publication/Attribution
+-
+-This benchmark is based on the [Minigo](https://github.com/tensorflow/minigo) project,
+-which is and inspired by the work done by Deepmind with
+-["Mastering the Game of Go with Deep Neural Networks and Tree Search"](https://www.nature.com/articles/nature16961),
+-["Mastering the Game of Go without Human Knowledge"](https://www.nature.com/articles/nature24270), and
+-["Mastering Chess and Shogi by Self-Play with a General Reinforcement Learning Algorithm"](https://arxiv.org/abs/1712.01815).
+-
+-Minigo is built on top of Brian Lee's [MuGo](https://github.com/brilee/MuGo), a pure Python
+-implementation of the first AlphaGo paper.
+-
+-Note that Minigo is an independent effort from AlphaGo.
+-
+-### Reinforcement Setup
+-This benchmark includes both the environment and training for 19x19 Go. There are three primary
+-parts to this benchmark.
+-
+- - Selfplay: the *latest trained* model plays games with itself as both black and white to produce
+-   board positions for training.
+- - Training: waits for selfplay to play a specified number of games with the latest model, then
+-   trains the next model generation, updating the neural network waits. Selfplay constantly monitors
+-   the training output directory and loads the new weights when as they are produced by the trainer.
+- - Target Evaluation: The training loop runs for a preset number of iterations, producing a new
+-   model generation each time. Once finished, target evaluation relplays the each trained model
+-   until it finds the first one that is able to beat a target model in at least 50% of the games.
+-   The time from training start to when this generation was produced is taken as the benchmark
+-   execution time.
+-
+-### Structure
+-This task has a non-trivial network structure, including a search tree. A good overview of the
+-structure can be found here: https://medium.com/applied-data-science/alphago-zero-explained-in-one-diagram-365f5abf67e0.
+-
+-### Weight and bias initialization and Loss Function
+-Network weights are initialized randomly. Initialization and loss are described here;
+-["Mastering the Game of Go with Deep Neural Networks and Tree Search"](https://www.nature.com/articles/nature16961)
+-
+-### Optimizer
+-We use a MomentumOptimizer to train the network.
+-
+-# 4. Quality
+-Due to the difficulty of training a highly proficient Go model, our quality metric and termination
+-criteria is based on winning against a model of only intermediate amateur strength.
+-
+-### Quality metric
+-The quality of a model is measured as the number of games won in a playoff (alternating colors)
+-of 100 games against a previously trained model.
+-
+-### Quality target
+-The quality target is to win 50% of the games.
+-
+-### Quality Progression
+-Informally, we have observed that quality should improve roughly linearly with time.  We observed
+-roughly 0.5% improvement in quality per hour of runtime. An example of approximately how we've seen
+-quality progress over time:
+-
+-```
+-    Approx. Hours to Quality
+-     1h           TDB%
+-     2h           TDB%
+-     4h           TDB%
+-     8h           TDB%
+-```
+-
+-Note that quality does not necessarily monotonically increase.
+-
+-### Target evaluation frequency
+-Target evaluation only needs to be performed for models which pass model evaluation.
++```
+\ No newline at end of file
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/flags/19/selfplay.flags b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/flags/19/selfplay.flags
 index 9d49f1f..a69a642 100644
 --- a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/flags/19/selfplay.flags
@@ -292,7 +503,7 @@ index 9d49f1f..a69a642 100644
  --target_pruning=1
 +
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/flags/19/train_loop.flags b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/flags/19/train_loop.flags
-index d469db9..6ae9101 100644
+index d469db9..4f3f978 100644
 --- a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/flags/19/train_loop.flags
 +++ b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/flags/19/train_loop.flags
 @@ -1,4 +1,4 @@
@@ -301,21 +512,22 @@ index d469db9..6ae9101 100644
  
  --window_size=5
  --train_filter=0.3
-@@ -9,3 +9,5 @@
+@@ -8,4 +8,6 @@
+ # --num_games in bootstrap.flags must be >= --min_games_per_iteration.
  --min_games_per_iteration=8192
  
- --use_bfloat16=true
+---use_bfloat16=true
++--use_bfloat16=false
 +--winrate=0.5
 +--eval=0
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/cc_libgen_parallel_selfplay.sh b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/cc_libgen_parallel_selfplay.sh
 new file mode 100755
-index 0000000..b8840e0
+index 0000000..27f3d3f
 --- /dev/null
 +++ b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/cc_libgen_parallel_selfplay.sh
-@@ -0,0 +1,8 @@
+@@ -0,0 +1,7 @@
 +#!/bin/bash
 +source ml_perf/scripts/common.sh
-+echo `hostname`
 +bazel build $BAZEL_OPTS \
 +    --copt=-O3 \
 +    --define=board_size="${board_size}" \
@@ -375,27 +587,24 @@ index 523a705..bbee33a 100755
  }
  
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/init_from_checkpoint.sh b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/init_from_checkpoint.sh
-index e89c6de..abcd5d2 100755
+index e89c6de..e1bdf7d 100755
 --- a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/init_from_checkpoint.sh
 +++ b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/init_from_checkpoint.sh
-@@ -25,12 +25,11 @@
+@@ -24,14 +24,6 @@
+ 
  source ml_perf/scripts/common.sh
  
- 
+-
 -# Build the C++ binaries
 -bazel build $BAZEL_OPTS \
 -  --copt=-O3 \
 -  --define=board_size="${board_size}" \
 -  --define=tf=1 \
 -  cc:concurrent_selfplay cc:sample_records cc:eval
-+if [[ -v HOSTLIST ]]
-+then
-+  # Generate cc parallel lib
-+  mpirun -bootstrap ssh -ppn 1 -hosts $HOSTLIST ml_perf/scripts/cc_libgen_parallel_selfplay.sh --base_dir=$base_dir --board_size=$board_size
-+fi
- 
+-
  # Initialize a clean directory structure.
  for var_name in flag_dir golden_chunk_dir golden_chunk_tmp_dir holdout_dir \
+                 log_dir model_dir selfplay_dir sgf_dir work_dir signal_dir; do
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/run_minigo.sh b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/run_minigo.sh
 index 9d841aa..b1b3c12 100755
 --- a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/ml_perf/scripts/run_minigo.sh
@@ -14870,18 +15079,29 @@ index 98b1952..0000000
 -  "background_color": "#ffffff"
 -}
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/requirements.txt b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/requirements.txt
-index f7b1409..9eb4a35 100644
+index f7b1409..524411b 100644
 --- a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/requirements.txt
 +++ b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/requirements.txt
-@@ -5,7 +5,7 @@ google.cloud.logging
+@@ -1,13 +1,13 @@
+ absl-py
+-autopep8>=1.3
++autopep8
+ fire
+ google.cloud.logging
  google.cloud.bigtable
  grpcio-tools
  keras
 -numpy>=1.14.0
-+numpy==1.18.5
++numpy
  protobuf
- sgf==0.5
+-sgf==0.5
++sgf
  six
+-tqdm>=4.17
+-pyasn1>=0.4.1
++tqdm
++pyasn1
+\ No newline at end of file
 diff --git a/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/testing/bootstrap_v2.sh b/Intel/benchmarks/minigo/8-nodes-64s-8376H-tensorflow/testing/bootstrap_v2.sh
 old mode 100644
 new mode 100755

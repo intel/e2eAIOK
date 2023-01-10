@@ -1,0 +1,12 @@
+torchsummary
+easydict
+sentencepiece
+opencv-python
+scikit-image
+timm
+boto3
+ptflops
+sigopt
+tensorboard
+thop
+torchaudio~=0.12.0 -f https://download.pytorch.org/whl/cpu

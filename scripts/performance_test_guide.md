@@ -1,4 +1,4 @@
-AIDK Performance Test Guide
+AIOK Performance Test Guide
 
 * How to perform test
 
@@ -15,7 +15,7 @@ Prepare performance kit
 
 Put workload execution script in pat-suite/workload
 ``` bash
-SIGOPT_API_TOKEN=${TOKEN} python SDA/SDA.py --data_path "/home/vmagent/app/dataset/amazon_reviews" --model_name {name} --no_sigopt
+SIGOPT_API_TOKEN=${TOKEN} python SDA/SDA.py --data_path "/home/vmagent/app/dataset/amazon_reviews" --model_name {name} 
 ```
 
 Modify benchmark suit configuration, including node IP to collect system metric data, metric sample rate, which metric to collect etc.

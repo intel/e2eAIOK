@@ -3,9 +3,9 @@ import yaml
 import logging
 import time
 
-from AIDK.common.utils import *
-from AIDK.hydroai.hydroconfig import default_settings
-from AIDK.SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
+from e2eAIOK.common.utils import *
+from e2eAIOK.utils.hydroconfig import default_settings
+from e2eAIOK.SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
 
 class RegisteredAdvisor(BaseModelAdvisor):
     def __init__(self, dataset_meta_path=None, train_path=None, eval_path=None, settings={'model_name':'custom_registered'}):
@@ -31,7 +31,7 @@ class RegisteredAdvisor(BaseModelAdvisor):
             },
             'type': 'double'
         }]
-        self.execute_cmd_base = "/opt/intel/oneapi/intelpython/latest/bin/python /home/vmagent/app/hydro.ai/example/sklearn_train.py"
+        self.execute_cmd_base = "/opt/intel/oneapi/intelpython/latest/bin/python /home/vmagent/app/e2eaiok/example/sklearn_train.py"
         self.result_file_name = "result"
         self.observation_budget = 1
         self.sigopt_enable_parameters = []
@@ -84,7 +84,7 @@ class RegisteredAdvisor(BaseModelAdvisor):
 
     def generate_sigopt_yaml(self, file='test_sigopt.yaml'):
         config = {}
-        config['project'] = 'hydro.ai'
+        config['project'] = 'e2eaiok'
         config['experiment'] = self.experiment_name
         config['parameters'] = self.__fix(self.sigopt_config)
         config['metrics'] = []

@@ -3,9 +3,9 @@ import yaml
 import logging
 import time
 import sys
-from AIDK.common.utils import *
 
-from AIDK.SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
+from e2eAIOK.common.utils import *
+from e2eAIOK.SDA.modeladvisor.BaseModelAdvisor import BaseModelAdvisor
 
 
 class ResNetAdvisor(BaseModelAdvisor):
@@ -15,8 +15,10 @@ class ResNetAdvisor(BaseModelAdvisor):
             level=logging.INFO,
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         self.logger = logging.getLogger('sigopt')
-        self.train_python = "/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python"
-        self.train_script = "/home/vmagent/app/hydro.ai/modelzoo/resnet/mlperf_resnet/imagenet_main.py"
+        self.train_script = "/home/vmagent/app/e2eaiok/modelzoo/resnet/mlperf_resnet/imagenet_main.py"
+        self.python_path = "/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/"
+        self.train_python = f"{self.python_path}/python"
+        self.horovodrun_path = f"{self.python_path}/horovodrun"
 
 
     def update_metrics(self):
@@ -85,9 +87,8 @@ class ResNetAdvisor(BaseModelAdvisor):
         else:
             self.dist_launch(args)
         self.training_time = time.time() - start_time
-        file1 = open("/home/vmagent/app/hydro.ai/modelzoo/resnet/mlperf_resnet/metric.txt",'r')
-        lines = file1.readlines()
-        file1.close()
+        with open("/home/vmagent/app/e2eaiok/modelzoo/resnet/mlperf_resnet/metric.txt",'r') as f:
+            lines = f.readlines()
         self.mean_accuracy = float(lines[-1])
         metrics = self.update_metrics()
         model_path = self.model_saved_path
@@ -115,7 +116,7 @@ class ResNetAdvisor(BaseModelAdvisor):
         hosts = ",".join(str(i)+":"+str(ppn) for i in args['hosts']) 
         self.model_saved_path = args['model_saved_path']
         ranks = len(args['hosts']) * ppn
-        cmd = f"horovodrun -n {ranks} -H {hosts} HOROVOD_CPU_OPERATIONS=CCL CCL_ATL_TRANSPORT=mpi "
+        cmd = f"{self.horovodrun_path} -n {ranks} -H {hosts} HOROVOD_CPU_OPERATIONS=CCL CCL_ATL_TRANSPORT=mpi "
         cmd += f"{self.train_python} -u {self.train_script} '123456' "
         cmd += f"--label_smoothing '{args['model_parameter']['tuned_parameters']['label_smoothing']}' --num_filters '{args['model_parameter']['tuned_parameters']['num_filters']}' --data_dir '{args['train_dataset_path']}' " \
             + f"--model_dir '{self.model_saved_path}' --train_epochs '{args['num_epochs']}' " \

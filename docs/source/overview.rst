@@ -1,4 +1,4 @@
-Hydro.ai Overview
+e2eaiok Overview
 =================
 
 End-to-End AI democratization
@@ -16,7 +16,7 @@ Key architecture
 Below firgure showed the architecture diagram of Bluewhale.
 
 .. image:: architecture.jpg
-    :alt: Hydro.ai overview
+    :alt: e2eaiok overview
 
 Major componments
 -----------------
