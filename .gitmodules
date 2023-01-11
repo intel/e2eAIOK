@@ -25,6 +25,6 @@
 [submodule "modelzoo/third_party/IntelAI_models"]
 	path = modelzoo/third_party/IntelAI_models
 	url = https://github.com/IntelAI/models.git
-[submodule "e2eAIOK/ModelAdapter/src/task/medical_segmentation/third_party/nnUNet"]
-	path = e2eAIOK/ModelAdapter/src/task/medical_segmentation/third_party/nnUNet
-	url = https://github.com/MIC-DKFZ/nnUNet.git
+[submodule "modelzoo/third_party/nnUNet"]
+   path = modelzoo/third_party/nnUNet
+   url = https://github.com/MIC-DKFZ/nnUNet.git
