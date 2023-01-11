@@ -39,6 +39,16 @@ transformed_train_data = pipeline.fit_transform(engine_type = 'spark')
 # transformed_train_data = pipeline.fit_transform(engine_type = 'pandas')
 ```
 ```
+After analysis, we detect and decided to include below steps in pipeline:
+"Stage 0: [<class 'pyrecdp.primitives.generators.dataframe.DataframeConvertFeatureGenerator'>]", 
+"Stage 1: [<class 'pyrecdp.primitives.generators.fillna.FillNaFeatureGenerator'>, <class 'pyrecdp.primitives.generators.type.TypeInferFeatureGenerator'>, <class 'pyrecdp.primitives.generators.nlp.DecodedTextFeatureGenerator'>]", 
+"Stage 2: [<class 'pyrecdp.primitives.generators.datetime.DatetimeFeatureGenerator'>, <class 'pyrecdp.primitives.generators.nlp.TextFeatureGenerator'>]", 
+"Stage 3: [<class 'pyrecdp.primitives.generators.dataframe.DataframeTransformFeatureGenerator'>]", 
+'Stage 4: []', 
+'Stage 5: []', 
+'Stage 6: []'
+```
+```
 # output log, spark based
 # enriched from 21 features to 41 features
 train_data shape is (14461760, 21)
