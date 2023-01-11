@@ -3,6 +3,7 @@ from pyrecdp.core import DataFrameAPI, DataFrameSchema, SparkDataProcessor
 import pandas as pd
 import numpy as np
 import logging
+import time
 
 logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', level=logging.ERROR, datefmt='%I:%M:%S')
 logger = logging.getLogger(__name__)
@@ -52,17 +53,21 @@ class FeatureWrangler():
     def display_transform_pipeline(self):
         return [f"Stage {i}: {[g.__class__ for g in stage]}" for i, stage in enumerate(self.generators)]
 
-    def generate_pipeline_code(self, engine_type = 'pandas', *args, **kwargs):
-        if engine_type == 'spark':
-            return self._generate_pipeline_code_pd(*args, **kwargs)
-        else:
+    def generate_pipeline_code(self, engine_type = "pandas", *args, **kwargs):
+        if engine_type == "spark":
             return self._generate_pipeline_code_spark(*args, **kwargs)
+        else:
+            return self._generate_pipeline_code_pd(*args, **kwargs)
 
     def fit_transform(self, engine_type = 'pandas', *args, **kwargs):
         func_chain = self.generate_pipeline_code(engine_type)
         ret = self.feature_data
         for func in func_chain:
+            start_time = time.time()
             ret = func(ret)
+            end_time = time.time()
+            if engine_type == "pandas":
+                print(f"Transformation of {func} took {(end_time - start_time):.3f} secs")
         return ret
 
     def dump_pipeline_codes(self):

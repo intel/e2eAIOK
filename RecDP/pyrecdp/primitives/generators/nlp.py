@@ -18,6 +18,8 @@ class BertTokenizerDecode(TransformPrimitive):
             from transformers import BertTokenizer
             import os
             os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
+            os.environ['TRANSFORMERS_OFFLINE'] = "1"
+            os.environ['HF_DATASETS_OFFLINE'] = "1"
             tokenizer = BertTokenizer.from_pretrained(self.pretrained_model, do_lower_case=(not self.case_sensitive))
             
             return array.str.split().apply(lambda x: tokenizer.decode([int(n) for n in x]))

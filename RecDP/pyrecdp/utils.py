@@ -40,6 +40,9 @@ def create_spark_context():
     hname = os.uname()[1]
     spark = SparkSession.builder.master(f'local[48]')\
                 .appName("pyrecdp_spark_local")\
+                .config("spark.executorEnv.HF_DATASETS_OFFLINE", "1")\
+                .config("spark.executorEnv.TRANSFORMERS_OFFLINE", "1")\
+                .config("spark.executorEnv.TF_CPP_MIN_LOG_LEVEL", "2")\
                 .getOrCreate()
     # try:
     #     spark = SparkSession.builder.master(f'spark://{hname}:7077')\

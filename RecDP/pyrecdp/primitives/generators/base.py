@@ -19,9 +19,9 @@ class BaseFeatureGenerator:
         actual_func = self.get_function_pd()
         def transform(iter, *args):
             for x in iter:
-                yield actual_func(x, *args)
+                yield actual_func(x[0], *args), x[1]
         def base_spark_feature_generator(df):
-            return df.mapPartitions(lambda iter: transform(iter))
+            return df.mapPartitions(transform)
         return base_spark_feature_generator
 
     def fit_transform(self, df):

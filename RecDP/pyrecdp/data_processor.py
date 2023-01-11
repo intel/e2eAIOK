@@ -989,8 +989,10 @@ class CollapseByHist(Operation):
 class DataProcessor:
     def __init__(self, spark = None, path_prefix="hdfs://", current_path="", shuffle_disk_capacity="unlimited", dicts_path="dicts", spark_mode='local', enable_gazelle=False):
         self.ops = []
+        self.stop_spark_in_del = False
         if not spark:
             spark = create_spark_context()
+            self.stop_spark_in_del = True
         self.spark = spark
         self.uuid = uuid.uuid1()
         self.tmp_id = 0
