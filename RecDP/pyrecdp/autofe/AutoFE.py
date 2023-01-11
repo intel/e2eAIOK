@@ -1,6 +1,5 @@
 import logging
 from pyrecdp.widgets.utils import Timer
-from autogluon.core.utils import infer_problem_type
 
 from pyrecdp.widgets import BaseWidget, TabWidget
 from pyrecdp.autofe import FeatureProfiler, FeatureWrangler
@@ -26,11 +25,6 @@ class AutoFE:
 
         # start data analysis and transform
         with Timer("AutoFE Data Wrangling"):
-            # detect problem type
-            with Timer("Detecting problem type"):
-                self.problem_type = infer_problem_type(y=self.data[self.label], silent=False)
-                self.log_view.display(f"Detected Problem Type is: {self.problem_type}")
-
             # profile original dataframe
             self.original_df_view.display(self.data)
             with Timer("Analysis Original DataFrame"):

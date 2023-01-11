@@ -19,9 +19,10 @@ RecDP v2.0 is aiming to provide auto Data Prepartion upon spark and pandas.
 ## use docker to setup pyrecdp
 ```
 git clone --single-branch --branch RecDP_v2.0 https://github.com/intel-innersource/frameworks.bigdata.AIDK.git
-python3 RecDP/scripts/start_e2eaiok_docker.py
-sshpass -p docker ssh sr414 -p 12349
-jupyter-lab --allow-root --ip 0.0.0.0 --NotebookApp.token= --NotebookApp.password= --notebook-dir /home/vmagent/app/recdp/examples/notebooks
+cd frameworks.bigdata.AIDK/RecDP
+python3 scripts/start_e2eaiok_docker.py
+#python3 scripts/start_e2eaiok_docker.py --proxy "http://ip:port"
+# open browser with http://hostname:8888
 ```
 
 ## Quick Example (same data, Spark took 240s and pandas took 1967s)
@@ -72,16 +73,16 @@ transformed shape is (14461760, 41)
 
 # More Examples
 ## Auto Feature Enrich Examples
-* [NYC Taxi fare auto data prepration](examples/notebooks/autofe/FeatureWrangleronSpark.ipynb): An example to show how RecDP_v2.0 automatically generating datetime and geo features upon 55M records. Tested with both Spark and Pandas(featuretools) as compute engine, show 21x speedup by spark.
+* [NYC Taxi fare auto data prepration](examples/notebooks/autofe/FeatureWrangler.ipynb): An example to show how RecDP_v2.0 automatically generating datetime and geo features upon 55M records. Tested with both Spark and Pandas(featuretools) as compute engine, show 21x speedup by spark.
 
-* [twitter auto data prepration](examples/notebooks/autofe/FeatureWrangleronSpark.ipynb): An example to show how RecDP_v2.0 automatically generating datetime, nlp features upon 14M records. Tested with both Spark and Pandas(featuretools) as compute engine, show 10x speedup by spark.
+* [twitter auto data prepration](examples/notebooks/autofe/FeatureWrangler-recsys.ipynb): An example to show how RecDP_v2.0 automatically generating datetime, nlp features upon 14M records. Tested with both Spark and Pandas(featuretools) as compute engine, show 10x speedup by spark.
 
 * amazon products review: To be added in near future
 
 ## Data Profiler Examples
-* [NYC Taxi fare Profiler](examples/notebooks/autofe/FeatureProfiler.ipynb): An example to show RecDP_v2.0 to profile data, including infer the potential data type, generate data distribution charts.
+* [NYC Taxi fare Profiler](examples/notebooks/autofe/FeatureProfiler.ipynb)[snapshot](resources/FeatureProfiler_NYC.png): An example to show RecDP_v2.0 to profile data, including infer the potential data type, generate data distribution charts.
 
-* [twitter Profiler](examples/notebooks/autofe/FeatureProfiler_recsys.ipynb): An example to show RecDP_v2.0 to profile data, including infer the potential data type, generate data distribution charts.
+* [twitter Profiler](examples/notebooks/autofe/FeatureProfiler_recsys.ipynb)[snapshot](resources/FeatureProfiler_recsys.png): An example to show RecDP_v2.0 to profile data, including infer the potential data type, generate data distribution charts.
 
 ## Feature Cross
 

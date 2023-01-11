@@ -34,7 +34,7 @@ def create_spark_context():
     return spark
 
 from pathlib import Path
-pathlib = Path(__file__).parent.resolve()
+pathlib = Path(__file__).parent.parent.resolve()
 
 def create_spark_context():
     hname = os.uname()[1]
@@ -43,6 +43,7 @@ def create_spark_context():
                 .config("spark.executorEnv.HF_DATASETS_OFFLINE", "1")\
                 .config("spark.executorEnv.TRANSFORMERS_OFFLINE", "1")\
                 .config("spark.executorEnv.TF_CPP_MIN_LOG_LEVEL", "2")\
+                .config("spark.executorEnv.PYTHONPATH", pathlib)\
                 .getOrCreate()
     # try:
     #     spark = SparkSession.builder.master(f'spark://{hname}:7077')\
