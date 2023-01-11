@@ -68,7 +68,7 @@ pipeline {
                 sh 'SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN USE_SIGOPT=$USE_SIGOPT bash tests/cicd/jenkins_minigo_test.sh'
             }
         }
-        stage('Run wnd') {
+        stage('Run rnnt') {
             agent {
                 label 'sr602'
             }

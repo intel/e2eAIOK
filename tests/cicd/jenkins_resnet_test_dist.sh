@@ -21,21 +21,12 @@ ssh-keyscan -p 12344 -H 10.1.2.208 >> /root/.ssh/known_hosts
 ssh-keyscan -p 12344 -H 10.1.2.213 >> /root/.ssh/known_hosts
 
 set -e
-<<<<<<< HEAD
-# lauch AIDK wnd
-cd /home/vmagent/app/hydro.ai
-if [ $USE_SIGOPT == 1 ]; then
-  SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN python run_hydroai.py --data_path $DATA_PATH --model_name $MODEL_NAME --conf $CONF_FILE --custom_result_path $tmp_dir 2>&1 | tee $tmp_dir/aidk_cicd.log
-else
-  python run_hydroai.py --data_path $DATA_PATH --model_name $MODEL_NAME --conf $CONF_FILE --no_sigopt --custom_result_path $tmp_dir 2>&1 | tee $tmp_dir/aidk_cicd.log
-=======
 # lauch e2eaiok wnd
 cd /home/vmagent/app/e2eaiok
 if [ $USE_SIGOPT == 1 ]; then
   SIGOPT_API_TOKEN=$SIGOPT_API_TOKEN python run_e2eaiok.py --data_path $DATA_PATH --model_name $MODEL_NAME --conf $CONF_FILE --enable_sigopt --custom_result_path $tmp_dir 2>&1 | tee $tmp_dir/e2eaiok_cicd.log
 else
   python run_e2eaiok.py --data_path $DATA_PATH --model_name $MODEL_NAME --conf $CONF_FILE  --custom_result_path $tmp_dir 2>&1 | tee $tmp_dir/e2eaiok_cicd.log
->>>>>>> main
 fi
 
 # test
