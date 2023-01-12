@@ -44,6 +44,8 @@ def create_spark_context():
                 .config("spark.executorEnv.TRANSFORMERS_OFFLINE", "1")\
                 .config("spark.executorEnv.TF_CPP_MIN_LOG_LEVEL", "2")\
                 .config("spark.executorEnv.PYTHONPATH", pathlib)\
+                .config("spark.driver.memory", '500g')\
+                .config("spark.driver.maxResultSize","16g")\
                 .getOrCreate()
     # try:
     #     spark = SparkSession.builder.master(f'spark://{hname}:7077')\

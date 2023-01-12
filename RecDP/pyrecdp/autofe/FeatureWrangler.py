@@ -32,6 +32,7 @@ class FeatureWrangler():
         self.generators.append([cls() for cls in post_feature_generator_list])
 
         self.fit_analyze()
+        print(f"pipeline includes below steps:\n{self.display_transform_pipeline()}")
 
     
     def fit_analyze(self, *args, **kwargs):

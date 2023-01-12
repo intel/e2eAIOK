@@ -25,10 +25,12 @@ python3 scripts/start_e2eaiok_docker.py
 # open browser with http://hostname:8888
 ```
 
-## Quick Example (same data, Spark took 240s and pandas took 1967s)
+## Quick Example
+> NYC Taxi fare 55M records, RecDP took 350secs and featuretools took 2908secs
+> Below is RecDP codes and output, for featuretools script, please see [NYC Taxi fare auto data prepration](examples/notebooks/autofe/FeatureWrangler.ipynb)
 ```
 import pandas as pd
-train_data = pd.read_csv("twitter_recsys_cleaned.csv")
+train_data = pd.read_csv("nyc_taxi_fare_cleaned.csv")
 
 # use recdp to do auto feature wrangling
 from pyrecdp.autofe import FeatureWrangler
@@ -36,49 +38,28 @@ pipeline = FeatureWrangler(dataset=train_data, label="reply")
 
 # switch between spark or pandas
 transformed_train_data = pipeline.fit_transform(engine_type = 'spark')
-# transformed_train_data = pipeline.fit_transform(engine_type = 'pandas')
 ```
 ```
 After analysis, we detect and decided to include below steps in pipeline:
-"Stage 0: [<class 'pyrecdp.primitives.generators.dataframe.DataframeConvertFeatureGenerator'>]", 
-"Stage 1: [<class 'pyrecdp.primitives.generators.fillna.FillNaFeatureGenerator'>, <class 'pyrecdp.primitives.generators.type.TypeInferFeatureGenerator'>, <class 'pyrecdp.primitives.generators.nlp.DecodedTextFeatureGenerator'>]", 
-"Stage 2: [<class 'pyrecdp.primitives.generators.datetime.DatetimeFeatureGenerator'>, <class 'pyrecdp.primitives.generators.nlp.TextFeatureGenerator'>]", 
-"Stage 3: [<class 'pyrecdp.primitives.generators.dataframe.DataframeTransformFeatureGenerator'>]", 
-'Stage 4: []', 
-'Stage 5: []', 
+"Stage 0: [<class 'pyrecdp.primitives.generators.dataframe.DataframeConvertFeatureGenerator'>]",
+"Stage 1: [<class 'pyrecdp.primitives.generators.fillna.FillNaFeatureGenerator'>, <class 'pyrecdp.primitives.generators.type.TypeInferFeatureGenerator'>, <class 'pyrecdp.primitives.generators.geograph.CoordinatesInferFeatureGenerator'>]"
+"Stage 2: [<class 'pyrecdp.primitives.generators.datetime.DatetimeFeatureGenerator'>, <class 'pyrecdp.primitives.generators.geograph.GeoFeatureGenerator'>]"
+"Stage 3: [<class 'pyrecdp.primitives.generators.dataframe.DataframeTransformFeatureGenerator'>]",
+'Stage 4: []',
+'Stage 5: []',
 'Stage 6: []'
 ```
 ```
 # output log, spark based
 # enriched from 21 features to 41 features
-train_data shape is (14461760, 21)
-read train data from csv took 97.07148390542716 sec
-initiate autofe pipeline took 2.740308342501521 sec
-Setting default log level to "WARN".
-To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
-23/01/11 17:13:24 WARN Utils: Service 'SparkUI' could not bind on port 4040. Attempting port 4041.
-per core memory size is 1.250 GB and shuffle_disk maximum capacity is 500.0 GB                                                                               
-DataframeConvert partition pandas dataframe to spark RDD took 70.351 secs
-DataframeTransform took 152.755 secs, processed 14461760 rows with num_partitions as 200
-DataframeTransform combine to one pandas dataframe took 10.626 secs
-transform took 244.88301383145154 sec
-transformed shape is (14461760, 41)
-```
-```
-# output log, pandas based
-# enriched from 21 features to 41 features
-train_data shape is (14461760, 21)
-read train data from csv took 102.69935449492186 sec
-initiate autofe pipeline took 3.083546308800578 sec
-Transformation of <function DataframeConvertFeatureGenerator.get_function_pd.<locals>.convert_df at 0x7f1cd541d940> took 0.000 secs
-Transformation of <function FillNaFeatureGenerator.get_function_pd.<locals>.fill_na at 0x7f111dad1160> took 0.596 secs
-Transformation of <function TypeInferFeatureGenerator.get_function_pd.<locals>.type_infer at 0x7f111dad1430> took 39.585 secs
-Transformation of <function DecodedTextFeatureGenerator.get_function_pd.<locals>.generate_ft_feature at 0x7f111dad10d0> took 1539.168 secs
-Transformation of <function DatetimeFeatureGenerator.get_function_pd.<locals>.generate_ft_feature at 0x7f111dad14c0> took 34.373 secs
-Transformation of <function TextFeatureGenerator.get_function_pd.<locals>.generate_ft_feature at 0x7f111dad1550> took 353.720 secs
-Transformation of <function DataframeTransformFeatureGenerator.get_function_pd.<locals>.transform_df at 0x7f111dad15e0> took 0.000 secs
-transform took 1967.4441721253097 sec
-transformed shape is (14461760, 41)
+train_data shape is (54315955, 7)
+read train data from csv took 45.0155632654205 sec
+initiate autofe pipeline took 3.5842366172000766 sec
+DataframeConvert partition pandas dataframe to spark RDD took 42.148 secs
+DataframeTransform took 292.536 secs, processed 54315955 rows with num_partitions as 200
+DataframeTransform combine to one pandas dataframe took 6.072 secs
+transform took 348.05814038962126 sec
+transformed shape is (54315955, 15)
 ```
 
 # More Examples
@@ -90,9 +71,9 @@ transformed shape is (14461760, 41)
 * amazon products review: To be added in near future
 
 ## Data Profiler Examples
-* [NYC Taxi fare Profiler](examples/notebooks/autofe/FeatureProfiler.ipynb)[snapshot](resources/FeatureProfiler_NYC.png): An example to show RecDP_v2.0 to profile data, including infer the potential data type, generate data distribution charts.
+* [NYC Taxi fare Profiler](examples/notebooks/autofe/FeatureProfiler.ipynb), [snapshot](resources/FeatureProfiler_NYC.png): An example to show RecDP_v2.0 to profile data, including infer the potential data type, generate data distribution charts.
 
-* [twitter Profiler](examples/notebooks/autofe/FeatureProfiler_recsys.ipynb)[snapshot](resources/FeatureProfiler_recsys.png): An example to show RecDP_v2.0 to profile data, including infer the potential data type, generate data distribution charts.
+* [twitter Profiler](examples/notebooks/autofe/FeatureProfiler_recsys.ipynb), [snapshot](resources/FeatureProfiler_recsys.png): An example to show RecDP_v2.0 to profile data, including infer the potential data type, generate data distribution charts.
 
 ## Feature Cross
 
