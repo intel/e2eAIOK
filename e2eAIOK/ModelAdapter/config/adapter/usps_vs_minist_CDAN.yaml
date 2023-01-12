@@ -1,0 +1,28 @@
+experiment:
+  project: "adapter"
+  tag: "usps_vs_mnist_CDAN"
+  strategy: "OnlyDomainAdaptionStrategy"
+  model_save: '/home/vmagent/app/data/model'
+  loss:
+    backbone: 1.0
+    adapter: 1.0
+dataset:
+  type: "USPS_vs_MNIST"
+  path: "/home/vmagent/app/data/dataset/USPS_vs_MNIST"
+  num_workers: 1
+source_dataset:
+  type: "USPS_vs_MNIST"
+  path: "/home/vmagent/app/data/dataset/USPS_vs_MNIST"
+model:
+  type: "LeNet"
+adapter:
+  type: "CDAN"
+  feature_size: 500
+  feature_layer_name: "fc_layers_2"
+solver:
+  batch_size: 128
+  epochs: 2
+  lr: 0.002
+  weight_decay: 0.0005
+  momentum: 0.9
+  type: "SGD"

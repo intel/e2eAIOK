@@ -1,0 +1,40 @@
+experiment:
+  project: "distiller"
+  tag: "cifar100_kd_vitPretrainI21k"
+  strategy: "OnlyDistillationStrategy"
+  model_save:  "/home/vmagent/app/data/model"
+  seed: 0
+  loss:
+    backbone: 0.1
+    distiller: 0.9
+dataset:
+  type: "cifar100"
+  num_workers: 4
+  path:  "/home/vmagent/app/data/dataset/cifar"
+  train_transform: "vit"
+  test_transform: "vit"
+model:
+  type: "resnet18_cifar"
+distiller:
+  type: "kd"
+  teacher: 
+      type: "huggingface_vit_base_224_in21k_ft_cifar100"
+      pretrain: "true"
+  save_logits: True
+  # use_saved_logits: True
+  # check_logits: True
+  logits_path:  "/home/vmagent/app/data/model/distiller/cifar100_kd_vitPretrainI21k/logits"
+  logits_topk: 0
+solver:
+  batch_size: 128
+  epochs: 200
+  optimizer:
+    type: "SGD"
+    lr: 0.1
+    weight_decay: 5e-4
+    momentum: 0.9
+  scheduler:
+    type: "ReduceLROnPlateau"
+    lr_decay_rate: 0.2
+    ReduceLROnPlateau:
+      patience: 10

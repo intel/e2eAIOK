@@ -1,0 +1,28 @@
+experiment:
+  project: "baselines"
+  tag: "cifar100_res50PretrainI21k"
+  model_save: "/home/vmagent/app/dataset/model"
+dataset:
+  type: "cifar100"
+  num_workers: 4
+  path: "/home/vmagent/app/dataset/dataset/cifar"
+  train_transform: "pretrainI21k"
+  test_transform: "pretrainI21k"
+model:
+  type: "resnet50_timm"
+  pretrain: "/home/vmagent/app/dataset/model/baselines/cifar100_res50PretrainI21k/cifar100_res50_pretrain_imagenet21k.pth"
+solver:
+  batch_size: 128
+  epochs: 200
+  optimizer:
+    type: "SGD"
+    lr: 0.1
+    weight_decay: 5e-4
+    momentum: 0.9
+  scheduler:
+    type: "MultiStepLR"
+    lr_decay_rate: 0.2
+    MultiStepLR:
+      lr_decay_stages:  [60, 120, 160]
+  early_stop:
+    flag: False

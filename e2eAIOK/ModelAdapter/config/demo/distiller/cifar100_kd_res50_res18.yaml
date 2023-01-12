@@ -1,0 +1,47 @@
+experiment:
+  project: "demo"
+  tag: "cifar100_kd_res50_res18"
+  strategy: "OnlyDistillationStrategy"
+  
+output_dir: "/home/vmagent/app/data/model"
+train_epochs: 1
+
+### dataset
+data_set: "cifar100"
+data_path:  "/home/vmagent/app/data/dataset/cifar"
+num_workers: 4
+
+### model
+model_type: "resnet18_cifar"
+
+# loss
+loss_weight:
+    backbone: 0.1
+    distiller: 0.9
+
+## distiller
+distiller:
+    type: "kd"
+    teacher: 
+        type: "resnet50"
+        pretrain: "/home/vmagent/app/data/model/demo/baseline/cifar100_res50PretrainI21k/cifar100_res50_pretrain_imagenet21k.pth"
+    use_saved_logits: True
+    logits_path: "/home/vmagent/app/data/model/demo/distiller/cifar100_kd_res50PretrainI21k/logits"
+    logits_topk: 0
+
+## optimizer
+optimizer: "SGD"
+learning_rate: 0.1
+weight_decay: 0.0001
+momentum: 0.9
+
+### scheduler
+lr_scheduler: "ReduceLROnPlateau"
+lr_scheduler_config:
+    decay_rate: 0.2
+    decay_patience: 10 # for ReduceLROnPlateau
+  
+### early stop
+early_stop: "EarlyStopping"
+early_stop_config:
+    tolerance_epoch: 15

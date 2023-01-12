@@ -1,0 +1,27 @@
+experiment:
+  project: "baselines"
+  tag: "cifar10_res50_pretrainI21k"
+  model_save: "/home/vmagent/app/data/model"
+dataset:
+  type: "cifar10"
+  num_workers: 10
+  path: "/home/vmagent/app/data/dataset"
+  train_transform: "pretrainI12k"
+  test_transform: "pretrainI12k"
+model:
+  type: "resnet50"
+  pretrain: "/home/vmagent/app/data/model/baselines/cifar10_res50PretrainI21k/pretrained/resnet50_miil_21k.pth"
+solver:
+  batch_size: 128
+  epochs: 200
+  optimizer:
+    type: "SGD"
+    lr: 0.1
+    weight_decay: 5e-4
+    momentum: 0.9
+  scheduler:
+    type: "CosineAnnealingLR"
+    CosineAnnealingLR:
+      T_max: 200
+  early_stop:
+    flag: False

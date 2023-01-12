@@ -1,0 +1,26 @@
+experiment:
+    project: "demo"
+    tag: "cifar100_res18"
+
+output_dir: "/home/vmagent/app/data/model"
+train_epochs: 1
+
+data_set: "cifar100"
+data_path:  "/home/vmagent/app/data/dataset/cifar"
+num_workers: 4
+
+model_type: "resnet18_cifar"
+
+optimizer: "SGD"
+learning_rate: 0.1
+weight_decay: 0.0001
+momentum: 0.9
+
+lr_scheduler: "ReduceLROnPlateau"
+lr_scheduler_config:
+    decay_rate: 0.2
+    decay_patience: 10 # for ReduceLROnPlateau
+  
+early_stop: "EarlyStopping"
+early_stop_config:
+    tolerance_epoch: 15

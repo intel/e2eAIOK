@@ -1,0 +1,40 @@
+experiment:
+  project: "distiller"
+  tag: "cifar100_kd_res50_pretrainI21k_denascnn_bin_e200"
+  strategy: "OnlyDistillationStrategy"
+  model_save: "/home/vmagent/app/data/model"
+  loss:
+    backbone: 0.1
+    distiller: 0.9
+dataset:
+  type: "cifar100"
+  num_workers: 4
+  path: "/home/vmagent/app/data/dataset"
+  train_transform: "denascnn"
+model:
+  type: "denas_cnn"
+distiller:
+  type: "kd"
+  teacher: 
+      type: "resnet50_timm"
+      pretrain: "/home/vmagent/app/data/model/baselines/cifar100_res50PretrainI21k/cifar100_res50_pretrain_imagenet21k.pth"
+  # save_logits: True
+  use_saved_logits: True
+  # check_logits: True
+  logits_path: "/home/vmagent/app/data/model/distiller/cifar100_kd_res50PretrainI21k_res18_lrdecay10/logits"
+  logits_topk: 0
+solver:
+  batch_size: 128
+  epochs: 200
+  optimizer:
+    type: "SGD"
+    lr: 0.1
+    weight_decay: 5e-4
+    momentum: 0.9
+  scheduler:
+    type: "CosineAnnealingLR"
+    CosineAnnealingLR:
+      T_max: 200
+  early_stop:
+    flag: False
+    tolerance_epoch: 15

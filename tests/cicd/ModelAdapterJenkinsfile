@@ -1,0 +1,93 @@
+pipeline {
+    agent {
+        label 'sr613'
+    }
+    stages {
+        stage('Prepare') {
+            steps {
+                script {
+                    def labels = ['sr613']
+                    def builders = [: ]
+                    for (x in labels) {
+                        def label = x
+                        builders[label] = {
+                            node(label) {
+                                cleanWs()
+                                checkout scm
+                                sh 'cd Dockerfile-ubuntu18.04 && docker build -t e2eaiok-pytorch120 . -f DockerfilePytorch120 && cd .. && yes | docker container prune && yes | docker image prune'
+                            }
+                        }
+                    }
+                    parallel builders
+                }
+            }
+        }
+        stage('Run model_adapter_unittest') {
+            agent {
+                label 'sr613'
+            }
+            steps {
+                sh 'docker run --rm --name test-ma-singlenode --privileged --network host --device=/dev/dri --shm-size="2g"  -v /mnt/DP_disk1/tlk:/home/vmagent/app/data  -v `pwd`:/home/vmagent/app -w /home/vmagent/app/test/cicd e2eaiok-pytorch120 /bin/bash -c ". /home/vmagent/app/tests/cicd/jenkins_model_adapter_unittest.sh"'
+            }
+        }
+        stage('Run model_adapter_DDP_baseline_test') {
+            agent {
+               label 'sr613'
+            }
+            steps {
+               sh 'docker run -t -d --name test-ma-multinode-baseline-r1 --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/tlk:/home/vmagent/app/data  -v `pwd`:/home/vmagent/app -w /home/vmagent/app/e2eaiok/e2eAIOK/ModelAdapter/src e2eaiok-pytorch120 /bin/bash -c ". /home/vmagent/app/tests/cicd/jenkins_model_adapter_basic_test_ddp.sh"'
+           }
+        }
+        stage('Run model_adapter_baseline_none_DDP_test') {
+            agent {
+                label 'sr613'
+            }
+            steps {
+                sh 'docker run --rm --name test-ma-singlenode --privileged --network host --device=/dev/dri --shm-size="2g"  -v /mnt/DP_disk1/tlk:/home/vmagent/app/data  -v `pwd`:/home/vmagent/app -w /home/vmagent/app/test/cicd e2eaiok-pytorch120 /bin/bash -c ". /home/vmagent/app/tests/cicd/jenkins_model_adapter_basic_test.sh"'
+            }
+        }
+        stage('Run model_adapter_finetuner_none_DDP_test') {
+            agent {
+                label 'sr613'
+            }
+            steps {
+                sh 'docker run --rm --name test-ma-singlenode --privileged --network host --device=/dev/dri --shm-size="2g"  -v /mnt/DP_disk1/tlk:/home/vmagent/app/data  -v `pwd`:/home/vmagent/app -w /home/vmagent/app/test/cicd e2eaiok-pytorch120 /bin/bash -c ". /home/vmagent/app/tests/cicd/jenkins_model_adapter_finetuner_test.sh"'
+            }
+        }
+        stage('Run model_adapter_distiller_none_DDP_test') {
+            agent {
+                label 'sr613'
+            }
+            steps {
+                sh 'docker run --rm --name test-ma-singlenode --privileged --network host --device=/dev/dri --shm-size="2g"  -v /mnt/DP_disk1/tlk:/home/vmagent/app/data  -v `pwd`:/home/vmagent/app -w /home/vmagent/app/test/cicd e2eaiok-pytorch120 /bin/bash -c ". /home/vmagent/app/tests/cicd/jenkins_model_adapter_distiller_test.sh"'
+            }
+        }
+        stage('Run model_adapter_finetuner_auto_tunning_test') {
+            agent {
+                label 'sr613'
+            }
+            steps {
+                sh 'docker run --rm --name test-ma-singlenode --privileged --network host --device=/dev/dri --shm-size="2g"  -v /mnt/DP_disk1/tlk:/home/vmagent/app/data  -v `pwd`:/home/vmagent/app -w /home/vmagent/app/test/cicd e2eaiok-pytorch120 /bin/bash -c ". /home/vmagent/app/tests/cicd/jenkins_model_adapter_finetuner_autotuning_test.sh"'   
+            }
+        }
+    }
+    post {
+        always {
+            echo 'One way or another, I have finished'
+            deleteDir()
+            sh 'if [[ $(docker ps -a -q --filter "name=test-ma-*" | wc -l) -ne 0 ]]; then docker ps -a -q --filter "name=test-ma-*" | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi'
+        }
+        success {
+            echo 'I succeeded!'
+        }
+        unstable {
+            echo 'I am unstable :/'
+        }
+        failure {
+            echo 'I failed :('
+        }
+        changed {
+            echo 'Things were different before...'
+        }
+    }
+}

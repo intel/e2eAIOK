@@ -1,0 +1,39 @@
+experiment:
+  project: "finetuner"
+  tag: "cifar100_mobilenetv3_PretrainI21k"
+  strategy: "OnlyFinetuneStrategy"
+  model_save: "/home/vmagent/app/data/model"
+optimize:
+  enable_ipex: True
+dataset:
+  type: "cifar100"
+  num_workers: 8
+  path: "/home/vmagent/app/data/dataset"
+  train_transform: "pretrainI21k"
+  test_transform: "pretrainI21k"
+  data_drop_last: False
+model:
+  type: "mobilenet_v3"
+finetuner:
+  type: "Basic"
+  pretrain: '/home/vmagent/app/data/pretrained/mobilenetv3_large_100_miil_21k.pth'
+  pretrained_num_classes: 11221
+  finetuned_lr: 0.00445
+  is_frozen: False
+solver:
+  batch_size: 128
+  epochs: 1
+  optimizer:
+    type: "SGD"
+    lr: 0.00753
+    weight_decay: 0.00115
+    momentum: 0.9
+  scheduler:
+    type: "CosineAnnealingLR"
+    T_max: 200
+  early_stop:
+    flag: True
+    tolerance_epoch: 200
+    delta: 0.001
+    is_max: True
+    limitation: 1.0

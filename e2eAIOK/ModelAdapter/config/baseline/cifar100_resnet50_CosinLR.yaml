@@ -1,0 +1,32 @@
+experiment:
+  project: "finetuner"
+  tag: "cifar100_res50_PretrainI21k"
+  model_save: "/home/vmagent/app/data/model"
+optimize:
+  enable_ipex: True
+dataset:
+  type: "cifar100"
+  num_workers: 1
+  path: "/home/vmagent/app/data/dataset"
+  train_transform: "pretrainI21k"
+  test_transform: "pretrainI21k"
+  data_drop_last: False
+model:
+  type: "resnet50"
+solver:
+  batch_size: 128
+  epochs: 1
+  optimizer:
+    type: "SGD"
+    lr: 0.00753
+    weight_decay: 0.00115
+    momentum: 0.9
+  scheduler:
+    type: "CosineAnnealingLR"
+    T_max: 200
+  early_stop:
+    flag: True
+    tolerance_epoch: 200
+    delta: 0.001
+    is_max: True
+    limitation: 1.0
