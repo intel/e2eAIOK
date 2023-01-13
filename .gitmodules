@@ -26,5 +26,5 @@
 	path = modelzoo/third_party/IntelAI_models
 	url = https://github.com/IntelAI/models.git
 [submodule "modelzoo/third_party/nnUNet"]
-   path = modelzoo/third_party/nnUNet
-   url = https://github.com/MIC-DKFZ/nnUNet.git
+	path = modelzoo/third_party/nnUNet
+	url = https://github.com/MIC-DKFZ/nnUNet.git
