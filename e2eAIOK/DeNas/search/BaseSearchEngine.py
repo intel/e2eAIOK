@@ -108,7 +108,7 @@ class BaseSearchEngine(ABC):
         elif self.params.domain == "bert":
             return bert_populate_random_func(self.search_space)
         elif self.params.domain == "asr":
-            return asr_populate_random_func(self.search_space)
+            return asr_populate_random_func(self.search_space, self.params.pruner)
         elif self.params.domain == "hf":
             return hf_populate_random_func(self.search_space)
         else:

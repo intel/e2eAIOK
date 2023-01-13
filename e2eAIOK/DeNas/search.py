@@ -55,8 +55,11 @@ def main(params):
         search_space = generate_search_space(params["SEARCH_SPACE"])
     elif params.domain == 'asr':
         super_net = TransformerASRSuper
-        search_space = {'num_heads': params.SEARCH_SPACE.NUM_HEADS, 'mlp_ratio': params.SEARCH_SPACE.MLP_RATIO,
-                        'embed_dim': params.SEARCH_SPACE.EMBED_DIM , 'depth': params.SEARCH_SPACE.DEPTH}
+        if params.pruner:
+            search_space = {'sparsity': np.arange(cfg["sparsity"]["min"], cfg["sparsity"]["max"], cfg["sparsity"]["step"])}
+        else:
+            search_space = {'num_heads': cfg.SEARCH_SPACE.NUM_HEADS, 'mlp_ratio': cfg.SEARCH_SPACE.MLP_RATIO,
+                        'embed_dim': cfg.SEARCH_SPACE.EMBED_DIM , 'depth': cfg.SEARCH_SPACE.DEPTH}
     elif params.domain == 'hf':
         if params.model_name is not None:
             params.supernet = params.model_name
