@@ -57,7 +57,10 @@ def main(params):
         with open(params.supernet_cfg) as f:
             cfg = edict(yaml.safe_load(f))
         super_net = TransformerASRSuper
-        search_space = {'num_heads': cfg.SEARCH_SPACE.NUM_HEADS, 'mlp_ratio': cfg.SEARCH_SPACE.MLP_RATIO,
+        if params.pruner:
+            search_space = {'sparsity': np.arange(cfg["sparsity"]["min"], cfg["sparsity"]["max"], cfg["sparsity"]["step"])}
+        else:
+            search_space = {'num_heads': cfg.SEARCH_SPACE.NUM_HEADS, 'mlp_ratio': cfg.SEARCH_SPACE.MLP_RATIO,
                         'embed_dim': cfg.SEARCH_SPACE.EMBED_DIM , 'depth': cfg.SEARCH_SPACE.DEPTH}
     else:
         raise RuntimeError(f"Domain {params.domain} is not supported")
