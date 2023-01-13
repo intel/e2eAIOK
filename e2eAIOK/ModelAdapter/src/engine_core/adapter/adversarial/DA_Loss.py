@@ -17,7 +17,7 @@ from typing import Optional, List
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from nnunet.network_architecture.DA.discriminator import SegDiscriminator, FCDiscriminator
+from .discriminator import SegDiscriminator, FCDiscriminator
 
 from tllib.modules.grl import GradientReverseLayer, WarmStartGradientReverseLayer
 from tllib.utils.metric import binary_accuracy, accuracy
