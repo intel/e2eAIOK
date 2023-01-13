@@ -1,0 +1,4 @@
+supernet:
+  bert-base-uncased
+search_space:
+  intermediate_size: 3072

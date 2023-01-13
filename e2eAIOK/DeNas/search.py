@@ -9,13 +9,16 @@ from easydict import EasyDict as edict
 from e2eAIOK.DeNas.cv.supernet_transformer import Vision_TransformerSuper
 from e2eAIOK.DeNas.nlp.supernet_bert import SuperBertModel, BertConfig
 from e2eAIOK.DeNas.nlp.utils import generate_search_space
+from e2eAIOK.DeNas.thirdparty.supernet_hf import SuperHFModel
 from e2eAIOK.DeNas.asr.supernet_asr import TransformerASRSuper
 from e2eAIOK.DeNas.search.SearchEngineFactory import SearchEngineFactory
 from e2eAIOK.DeNas.search.utils import Timer, parse_config
+from transformers import logging
+logging.set_verbosity_error()
 
 def parse_args(args):
     parser = argparse.ArgumentParser('DE-NAS')
-    parser.add_argument('--domain', type=str, default=None, choices=['cnn', 'vit', 'bert', 'asr'], help='DE-NAS search domain')
+    parser.add_argument('--domain', type=str, default=None, choices=['cnn', 'vit', 'bert', 'asr', 'thirdparty'], help='DE-NAS search domain')
     parser.add_argument('--conf', type=str, default=None, help='DE-NAS conf file')
     settings = {}
     settings.update(parser.parse_args(args).__dict__)
@@ -59,6 +62,15 @@ def main(params):
         super_net = TransformerASRSuper
         search_space = {'num_heads': cfg.SEARCH_SPACE.NUM_HEADS, 'mlp_ratio': cfg.SEARCH_SPACE.MLP_RATIO,
                         'embed_dim': cfg.SEARCH_SPACE.EMBED_DIM , 'depth': cfg.SEARCH_SPACE.DEPTH}
+    elif params.domain == 'thirdparty':
+        with open(params.supernet_cfg) as f:
+            cfg = edict(yaml.safe_load(f))
+            params.cfg = cfg
+        super_net = SuperHFModel.from_pretrained(params.pretrained_model)
+        if "search_space" in cfg:
+            search_space = SuperHFModel.search_space_generation(params.pretrained_model, **cfg.search_space)
+        else:
+            search_space = SuperHFModel.search_space_generation(params.pretrained_model)
     else:
         raise RuntimeError(f"Domain {params.domain} is not supported")
 
