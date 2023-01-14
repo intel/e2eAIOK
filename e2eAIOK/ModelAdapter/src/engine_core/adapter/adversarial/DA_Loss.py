@@ -18,8 +18,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from .discriminator import SegDiscriminator, FCDiscriminator
-
-from tllib.modules.grl import GradientReverseLayer, WarmStartGradientReverseLayer
+from tllib.modules.grl import WarmStartGradientReverseLayer
 from tllib.utils.metric import binary_accuracy, accuracy
 
 
