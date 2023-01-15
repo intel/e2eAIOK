@@ -119,7 +119,7 @@ class SegOutDomainAdversarialLoss(nn.Module):
 class CACDomainAdversarialLoss(nn.Module):
     def __init__(self, **kwargs):
         super().__init__()
-        self.loss_weights = kwargs.pop("loss_weights")
+        self.loss_weights = kwargs.pop("loss_weight")
 
         self.encoder_domain_adv = self.decoder_domain_adv = self.seg_domain_adv = None
 
