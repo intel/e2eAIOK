@@ -1,11 +1,6 @@
-import sys
-import os
 import torch.nn as nn
 import torch
-from torch.cuda.amp import autocast
-import logging
 import torch.fx
-from .adapter.adversarial.adversarial_adapter import AdversarialAdapter
 
 from enum import Enum
 class TransferStrategy(Enum):
@@ -162,8 +157,8 @@ class TransferrableModel(nn.Module):
         :param x_src: source domain data
         :return: (TransferrableModelOutput for x_tgt, TransferrableModelOutput for x_src)
         '''
-        backbone_output_src, *src_feat = self.backbone(x_src)
-        backbone_output_tgt, *tgt_feat = self.backbone(x_tgt)
+        backbone_output_tgt = self.backbone(x_tgt)
+        backbone_output_src = self.backbone(x_src)
         return (
             TransferrableModelOutput(backbone_output_tgt,None, None),
             TransferrableModelOutput(backbone_output_src, None, None),
@@ -202,7 +197,7 @@ class TransferrableModel(nn.Module):
             total_loss += adv_loss
 
         # return (total_loss, adv_loss, source_loss, target_loss)
-        return TransferrableModelLoss(total_loss,source_loss,None,adv_loss)
+        return TransferrableModelLoss(total_loss,source_loss * self.backbone_loss_weight,None,adv_loss)
 
     def forward(self,x):
         ''' forward
