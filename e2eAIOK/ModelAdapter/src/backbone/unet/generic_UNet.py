@@ -276,6 +276,9 @@ class Generic_UNet(SegmentationNetwork):
         if self._deep_supervision:
             logits = tuple([seg_outputs[-1]] + [i(j) for i, j in
                                               zip(list(self.upscale_logits_ops)[::-1], seg_outputs[:-1][::-1])])
+        else:
+            logits = tuple([seg_outputs[-1]])
+            
         if self.training:
             return logits
         else:
