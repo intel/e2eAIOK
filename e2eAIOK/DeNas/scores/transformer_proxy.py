@@ -70,6 +70,15 @@ def get_linear_layer_metric_array(model_type, net, metric):
                 for sub_layer in layer.layers:
                     metric_array.append(metric(sub_layer.pos_ffn.fc1))
                     metric_array.append(metric(sub_layer.pos_ffn.fc2))
+        elif model_type == "hf":
+            if "output" in type(layer).__name__.lower() or "intermediate" in type(layer).__name__.lower():
+                for sub_layer in layer.modules():
+                    if isinstance(sub_layer, linear.Linear):
+                        metric_array.append(metric(sub_layer))
+            if "mlp" in type(layer).__name__.lower():
+                for sub_layer in layer.modules():
+                    if isinstance(sub_layer, pytorch_utils.Conv1D):
+                        metric_array.append(metric(sub_layer))
     return metric_array
 
 def get_attn_layer_metric_array(model_type, net, metric):
@@ -98,12 +107,13 @@ def get_attn_layer_metric_array(model_type, net, metric):
                     metric_array.append(func(sub_layer.self_att.att.in_proj_weight))
                     metric_array.append(metric(sub_layer.self_att.att.out_proj))
         elif model_type == 'hf':
-            if "att" in type(layer).__name__.lower() and "selfatt" not in type(layer).__name__.lower():
+            if "selfatt" in type(layer).__name__.lower():
                 for sub_layer in layer.modules():
-                    if isinstance(sub_layer, linear.Linear) or isinstance(sub_layer, pytorch_utils.Conv1D):
+                    if isinstance(sub_layer, linear.Linear):
                         metric_array.append(metric(sub_layer))
-                        metric_array.append(metric(sub_layer))
-                        metric_array.append(metric(sub_layer))
+            if "att" in type(layer).__name__.lower():
+                for sub_layer in layer.modules():
+                    if isinstance(sub_layer, pytorch_utils.Conv1D):
                         metric_array.append(metric(sub_layer))
     return metric_array
 

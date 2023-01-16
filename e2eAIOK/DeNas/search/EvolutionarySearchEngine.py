@@ -3,6 +3,7 @@ from e2eAIOK.DeNas.cv.utils.cnn import cnn_mutation_random_func, cnn_crossover_r
 from e2eAIOK.DeNas.cv.utils.vit import vit_mutation_random_func, vit_crossover_random_func
 from e2eAIOK.DeNas.nlp.utils import bert_mutation_random_func, bert_crossover_random_func
 from e2eAIOK.DeNas.asr.utils.asr_nas import asr_mutation_random_func, asr_crossover_random_func
+from e2eAIOK.DeNas.thirdparty.utils import hf_mutation_random_func, hf_crossover_random_func
 
 class EvolutionarySearchEngine(BaseSearchEngine):
 
@@ -36,6 +37,8 @@ class EvolutionarySearchEngine(BaseSearchEngine):
             return asr_mutation_random_func(self.params.m_prob, self.params.s_prob, self.search_space, self.top_candidates)
         elif self.params.domain == "cnn":
             return cnn_mutation_random_func(self.candidates, self.super_net, self.search_space, self.params.num_classes, self.params.plainnet_struct)
+        elif self.params.domain == "thirdparty":
+            return hf_mutation_random_func(self.params.m_prob, self.params.s_prob, self.search_space, self.top_candidates)
         else:
             raise RuntimeError(f"Domain {self.params.domain} is not supported")
 
@@ -51,6 +54,8 @@ class EvolutionarySearchEngine(BaseSearchEngine):
             return asr_crossover_random_func(self.top_candidates)
         elif self.params.domain == "cnn":
             return cnn_crossover_random_func(self.super_net, self.search_space, self.params.num_classes, self.params.plainnet_struct, self.params.no_reslink, self.params.no_BN, self.params.use_se)
+        elif self.params.domain == "thirdparty":
+            return hf_crossover_random_func(self.top_candidates)
         else:
             raise RuntimeError(f"Domain {self.params.domain} is not supported")
 
