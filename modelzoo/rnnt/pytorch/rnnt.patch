@@ -931,7 +931,7 @@ index 3d313a0..e448c3e 100644
 +
          return loss
 diff --git a/modelzoo/rnnt/pytorch/common/rnn.py b/modelzoo/rnnt/pytorch/common/rnn.py
-index 393a276..a6a9f55 100644
+index 393a276..1d5f1b3 100644
 --- a/modelzoo/rnnt/pytorch/common/rnn.py
 +++ b/modelzoo/rnnt/pytorch/common/rnn.py
 @@ -19,10 +19,9 @@ import torch
@@ -942,36 +942,50 @@ index 393a276..a6a9f55 100644
  def rnn(input_size, hidden_size, num_layers,
          forget_gate_bias=1.0, dropout=0.0,
 -        decoupled=False, **kwargs):
-+        decoupled=False, rnn_type='lstm', **kwargs):
++        decoupled=False, rnn_type='lstm', normalization=True, **kwargs):
  
      kwargs = dict(
          input_size=input_size,
-@@ -36,7 +35,10 @@ def rnn(input_size, hidden_size, num_layers,
+@@ -34,16 +33,19 @@ def rnn(input_size, hidden_size, num_layers,
+     )
+ 
      if decoupled:
-         return DecoupledLSTM(**kwargs)
+-        return DecoupledLSTM(**kwargs)
++        return DecoupledLSTM(normalization=normalization, **kwargs)
      else:
 -        return LSTM(**kwargs)
 +        if rnn_type == 'lstm':
-+            return LSTM(**kwargs)
++            return LSTM(normalization=normalization, **kwargs)
 +        else:
 +            return GRU(**kwargs)
  
  
  class LSTM(torch.nn.Module):
-@@ -65,6 +67,7 @@ class LSTM(torch.nn.Module):
+ 
+     def __init__(self, input_size, hidden_size, num_layers, dropout,
+                  forget_gate_bias, weights_init_scale=1.0,
+-                 hidden_hidden_bias_scale=0.0, **kwargs):
++                 hidden_hidden_bias_scale=0.0, normalization=True, **kwargs):
+         """Returns an LSTM with forget gate bias init to `forget_gate_bias`.
+ 
+         Args:
+@@ -65,6 +67,9 @@ class LSTM(torch.nn.Module):
              num_layers=num_layers,
              dropout=dropout,
          )
-+        self.layer_norm = torch.nn.LayerNorm(hidden_size)
++        self.normalization = normalization
++        if normalization:
++            self.layer_norm = torch.nn.LayerNorm(hidden_size)
  
          self.dropout = torch.nn.Dropout(dropout) if dropout else None
  
-@@ -102,10 +105,77 @@ class LSTM(torch.nn.Module):
+@@ -102,10 +107,78 @@ class LSTM(torch.nn.Module):
              if self.dropout:
                  y0 = self.dropout(y0)
                  y1 = self.dropout(y1)
-+            y0 = self.layer_norm(y0)
-+            y1 = self.layer_norm(y1)
++            if self.normalization:
++                y0 = self.layer_norm(y0)
++                y1 = self.layer_norm(y1)
              # h will not be used in training any way. Return None.
              # We guarantee this path will only be taken by training
              return [y0, y1], None
@@ -3169,7 +3183,7 @@ index b833b61..a045ef2 100644
 +#                             max_f_len=dict_meta_data["max_f_len"]).mean()
 +#         return loss
 diff --git a/modelzoo/rnnt/pytorch/rnnt/model.py b/modelzoo/rnnt/pytorch/rnnt/model.py
-index f052a53..4315e6a 100644
+index f052a53..9313ac5 100644
 --- a/modelzoo/rnnt/pytorch/rnnt/model.py
 +++ b/modelzoo/rnnt/pytorch/rnnt/model.py
 @@ -20,16 +20,15 @@ import torch
@@ -3218,43 +3232,54 @@ index f052a53..4315e6a 100644
                   enc_lr_factor=1.0, pred_lr_factor=1.0, joint_lr_factor=1.0,
                   fuse_relu_dropout=False, apex_transducer_joint=None,
 -                 min_lstm_bs=8, apex_mlp=False):
-+                 min_lstm_bs=8, apex_mlp=False, rnn_type='lstm'):
++                 min_lstm_bs=8, apex_mlp=False, rnn_type='lstm', normalization=True):
          super(RNNT, self).__init__()
  
          self.enc_lr_factor = enc_lr_factor
-@@ -123,6 +122,7 @@ class RNNT(nn.Module):
+@@ -117,12 +116,15 @@ class RNNT(nn.Module):
+         self.joint_lr_factor = joint_lr_factor
+ 
+         self.pred_n_hid = pred_n_hid
++        self.normalization = normalization
+ 
+         pre_rnn_input_size = in_feats
+ 
          post_rnn_input_size = enc_stack_time_factor * enc_n_hid
  
          enc_mod = {}
-+        enc_mod["batch_norm"] = nn.BatchNorm1d(pre_rnn_input_size)
++        if self.normalization:
++            enc_mod["batch_norm"] = nn.BatchNorm1d(pre_rnn_input_size)
          enc_mod["pre_rnn"] = rnn(input_size=pre_rnn_input_size,
                                   hidden_size=enc_n_hid,
                                   num_layers=enc_pre_rnn_layers,
-@@ -131,6 +131,7 @@ class RNNT(nn.Module):
+@@ -131,6 +133,8 @@ class RNNT(nn.Module):
                                   weights_init_scale=weights_init_scale,
                                   dropout=enc_dropout,
                                   decoupled=decoupled_rnns,
 +                                 rnn_type=rnn_type,
++                                 normalization=normalization,
                                   tensor_name='pre_rnn',
                                  )
  
-@@ -144,6 +145,7 @@ class RNNT(nn.Module):
+@@ -144,6 +148,8 @@ class RNNT(nn.Module):
                                    weights_init_scale=weights_init_scale,
                                    dropout=enc_dropout,
                                    decoupled=decoupled_rnns,
 +                                  rnn_type=rnn_type,
++                                  normalization=normalization,
                                    tensor_name='post_rnn',
                                  )
  
-@@ -163,6 +165,7 @@ class RNNT(nn.Module):
+@@ -163,6 +169,8 @@ class RNNT(nn.Module):
                  weights_init_scale=weights_init_scale,
                  dropout=pred_dropout,
                  decoupled=decoupled_rnns,
 +                rnn_type=rnn_type,
++                normalization=normalization,
                  tensor_name='dec_rnn',
              ),
          })
-@@ -178,16 +181,7 @@ class RNNT(nn.Module):
+@@ -178,16 +186,7 @@ class RNNT(nn.Module):
          logging.log_event(logging.constants.WEIGHTS_INITIALIZATION,
                            metadata=dict(tensor='joint_enc'))
  
@@ -3272,7 +3297,7 @@ index f052a53..4315e6a 100644
  
          if fuse_relu_dropout:
              self.joint_net = nn.Sequential(
-@@ -204,9 +198,6 @@ class RNNT(nn.Module):
+@@ -204,9 +203,6 @@ class RNNT(nn.Module):
                                metadata=dict(tensor='joint_net'))
          self.apex_transducer_joint = apex_transducer_joint
  
@@ -3282,7 +3307,7 @@ index f052a53..4315e6a 100644
          self.min_lstm_bs = min_lstm_bs
  
      def forward(self, x, x_lens, y, y_lens, dict_meta_data=None, state=None):
-@@ -221,15 +212,12 @@ class RNNT(nn.Module):
+@@ -221,15 +217,12 @@ class RNNT(nn.Module):
  
          return out, x_lens
  
@@ -3301,24 +3326,25 @@ index f052a53..4315e6a 100644
          return f, g, x_lens
  
      def _seq_merge(self, x):
-@@ -253,6 +241,16 @@ class RNNT(nn.Module):
+@@ -253,6 +246,17 @@ class RNNT(nn.Module):
          if require_padding:
              bs = x.size(1)
              x = torch.nn.functional.pad(x, (0, 0, 0, self.min_lstm_bs - bs))
-+        if type(x) is not list:
-+            x = x.transpose(1, 2)
-+            x = self.encoder["batch_norm"](x)
-+            x = x.transpose(1, 2)
-+        else:
-+            x[0] = x[0].transpose(1, 2)
-+            x[1] = x[1].transpose(1, 2)
-+            x = [self.encoder["batch_norm"](x[0]), self.encoder["batch_norm"](x[1])]
-+            x[0] = x[0].transpose(1, 2)
-+            x[1] = x[1].transpose(1, 2)
++        if self.normalization:
++            if type(x) is not list:
++                x = x.transpose(1, 2)
++                x = self.encoder["batch_norm"](x)
++                x = x.transpose(1, 2)
++            else:
++                x[0] = x[0].transpose(1, 2)
++                x[1] = x[1].transpose(1, 2)
++                x = [self.encoder["batch_norm"](x[0]), self.encoder["batch_norm"](x[1])]
++                x[0] = x[0].transpose(1, 2)
++                x[1] = x[1].transpose(1, 2)
          x, _ = self.encoder["pre_rnn"](x, None)
          x, x_lens = self.encoder["stack_time"](x, x_lens)
          x, _ = self.encoder["post_rnn"](x, None)
-@@ -354,19 +352,12 @@ class RNNT(nn.Module):
+@@ -354,19 +358,12 @@ class RNNT(nn.Module):
          """
          # Combine the input states and the output states
  
@@ -3344,7 +3370,7 @@ index f052a53..4315e6a 100644
  
          del f, g
          return res
-@@ -429,7 +420,7 @@ class RNNTPredict(nn.Module):
+@@ -429,7 +426,7 @@ class RNNTPredict(nn.Module):
  
          if require_padding:
              g = g[:bs]
@@ -3686,10 +3712,10 @@ index e9ac375..dbdb707 100755
 \ No newline at end of file
 diff --git a/modelzoo/rnnt/pytorch/scripts/train.sh b/modelzoo/rnnt/pytorch/scripts/train.sh
 new file mode 100644
-index 0000000..758849c
+index 0000000..1539787
 --- /dev/null
 +++ b/modelzoo/rnnt/pytorch/scripts/train.sh
-@@ -0,0 +1,211 @@
+@@ -0,0 +1,212 @@
 +#!/bin/bash
 +
 +# Copyright (c) 2018-2021, NVIDIA CORPORATION. All rights reserved.
@@ -3771,7 +3797,7 @@ index 0000000..758849c
 +
 +MODEL_ARGS="--enc_n_hid 1024 \
 +  --enc_pre_rnn_layers 2 \
-+  --enc_stack_time_factor 8 \
++  --enc_stack_time_factor 2 \
 +  --enc_post_rnn_layers 3 \
 +  --enc_dropout 0.1 \
 +  --pred_n_hid 512 \
@@ -3779,7 +3805,8 @@ index 0000000..758849c
 +  --pred_dropout 0.3 \
 +  --joint_n_hid 512 \
 +  --joint_dropout 0.3 \
-+  --rnn_type lstm"
++  --rnn_type lstm \
++  --normalization"
 +# run training
 +ARGS="train.py \
 +  --batch_size=$BATCHSIZE \
@@ -3902,7 +3929,7 @@ index 0000000..758849c
 +
 +echo "RESULT,$result_name,,$result,nvidia,$start_fmt"
 diff --git a/modelzoo/rnnt/pytorch/train.py b/modelzoo/rnnt/pytorch/train.py
-index de45eb0..8bb5542 100644
+index de45eb0..3ef9289 100644
 --- a/modelzoo/rnnt/pytorch/train.py
 +++ b/modelzoo/rnnt/pytorch/train.py
 @@ -21,14 +21,12 @@ import time
@@ -4012,7 +4039,7 @@ index de45eb0..8bb5542 100644
                              help='Store and output seq len stats')
      io.add_argument('--vectorized_sa', action='store_true',
                      help='Vectorized implementation of SpecAugment')
-@@ -201,40 +204,32 @@ def parse_args():
+@@ -201,40 +204,33 @@ def parse_args():
                      help='just-in-time tensor formation. Form the input txt tensor on the fly.')
      io.add_argument('--dali_dont_use_mmap', action='store_true',
                      help='Disable mmap for DALI')
@@ -4030,6 +4057,7 @@ index de45eb0..8bb5542 100644
 +    io.add_argument('--joint_n_hid', type=int, default=512)
 +    io.add_argument('--joint_dropout', type=float, default=0.3)
 +    io.add_argument('--rnn_type', type=str, default='lstm')
++    io.add_argument('--normalization', action='store_true')
 +
      return parser.parse_args()
  
@@ -4072,7 +4100,7 @@ index de45eb0..8bb5542 100644
  
  
  @torch.no_grad()
-@@ -246,14 +241,15 @@ def evaluate(epoch, step, val_loader, val_feat_proc, detokenize,
+@@ -246,14 +242,15 @@ def evaluate(epoch, step, val_loader, val_feat_proc, detokenize,
      greedy_decoder.update_ema_model_eval(ema_model)
  
      for i, batch in enumerate(val_loader):
@@ -4092,7 +4120,7 @@ index de45eb0..8bb5542 100644
          pred = greedy_decoder.decode(feats, feat_lens)
          agg['preds'] += helpers.gather_predictions([pred], detokenize)
          agg['txts'] += helpers.gather_transcripts([txt.cpu()], [txt_lens.cpu()], detokenize)
-@@ -268,15 +264,12 @@ def evaluate(epoch, step, val_loader, val_feat_proc, detokenize,
+@@ -268,15 +265,12 @@ def evaluate(epoch, step, val_loader, val_feat_proc, detokenize,
      return wer
  
  
@@ -4111,7 +4139,7 @@ index de45eb0..8bb5542 100644
              log_probs, log_prob_lens = model(feats, feat_lens, txt, txt_lens, meta_data[0])
  
          loss = loss_fn(log_probs, log_prob_lens, txt, txt_lens, meta_data[0])
-@@ -286,96 +279,83 @@ def train_step( model, loss_fn, args, batch_size, feats, feat_lens, txt, txt_len
+@@ -286,96 +280,84 @@ def train_step( model, loss_fn, args, batch_size, feats, feat_lens, txt, txt_len
              train_loader.data_iterator().prefetch()
          loss /= args.grad_accumulation_steps
  
@@ -4213,6 +4241,7 @@ index de45eb0..8bb5542 100644
 +    cfg['rnnt']['joint_dropout'] = args.joint_dropout
 +    cfg['rnnt']['forget_gate_bias'] = 1.0
 +    cfg['rnnt']['decoupled_rnns'] = True
++    cfg['rnnt']['normalization'] = args.normalization
  
  def main():
      args = parse_args()
@@ -4250,7 +4279,7 @@ index de45eb0..8bb5542 100644
      if args.seed is not None:
          logging.log_event(logging.constants.SEED, value=args.seed)
          torch.manual_seed(args.seed + args.local_rank)
-@@ -383,13 +363,14 @@ def main():
+@@ -383,13 +365,14 @@ def main():
          random.seed(args.seed + args.local_rank)
          # np_rng is used for buckets generation, and needs the same seed on every worker
          sampler_seed = args.seed
@@ -4267,7 +4296,7 @@ index de45eb0..8bb5542 100644
      config.apply_duration_flags(cfg, args.max_duration)
  
      assert args.grad_accumulation_steps >= 1
-@@ -400,12 +381,11 @@ def main():
+@@ -400,12 +383,11 @@ def main():
          assert batch_size % args.batch_split_factor == 0, f'{batch_size} % {args.batch_split_factor} != 0'
          assert args.dist_lamb, "dist LAMB must be used when batch split is enabled"
  
@@ -4282,7 +4311,7 @@ index de45eb0..8bb5542 100644
  
      # set up the model
      tokenizer_kw = config.tokenizer(cfg)
-@@ -415,26 +395,22 @@ def main():
+@@ -415,26 +397,22 @@ def main():
      logging.log_event(logging.constants.MODEL_WEIGHTS_INITIALIZATION_SCALE, value=args.weights_init_scale)
      if args.fuse_relu_dropout:
          rnnt_config["fuse_relu_dropout"] = True
@@ -4317,7 +4346,7 @@ index de45eb0..8bb5542 100644
  
      # set up evaluation
      logging.log_event(logging.constants.EVAL_MAX_PREDICTION_SYMBOLS, value=args.max_symbol_per_sample)
-@@ -448,63 +424,33 @@ def main():
+@@ -448,63 +426,33 @@ def main():
      print_once(f'Model size: {num_weights(model) / 10**6:.1f}M params\n')
  
      if args.ema > 0:
@@ -4395,7 +4424,7 @@ index de45eb0..8bb5542 100644
      print_once('Setting up datasets...')
      (
          train_dataset_kw,
-@@ -544,7 +490,7 @@ def main():
+@@ -544,7 +492,7 @@ def main():
  
      class PermuteAudio(torch.nn.Module):
          def forward(self, x):
@@ -4404,7 +4433,7 @@ index de45eb0..8bb5542 100644
  
      if not train_specaugm_kw:
          train_specaugm = torch.nn.Identity()
-@@ -577,9 +523,6 @@ def main():
+@@ -577,9 +525,6 @@ def main():
      train_feat_proc = train_augmentations
      val_feat_proc   = val_augmentations
  
@@ -4414,7 +4443,7 @@ index de45eb0..8bb5542 100644
      train_preproc = Preproc(train_feat_proc, args.dist_lamb, args.apex_transducer_joint, args.batch_split_factor, cfg)
  
  
-@@ -591,10 +534,10 @@ def main():
+@@ -591,10 +536,10 @@ def main():
              raise NotImplementedError("Currently CUDA graph training does not work with batch split")
  
          max_seq_len = math.ceil(train_preproc.audio_duration_to_seq_len(
@@ -4427,7 +4456,7 @@ index de45eb0..8bb5542 100644
                          * cfg["input_train"]["audio_dataset"]["speed_perturbation"]["max_rate"])
  
          print_once(f'Graph with max_seq_len of %d' % max_seq_len)
-@@ -605,50 +548,18 @@ def main():
+@@ -605,50 +550,18 @@ def main():
  
      # capture CG for eval
      if type(args.batch_eval_mode) == str and args.batch_eval_mode.startswith("cg"):
@@ -4483,7 +4512,7 @@ index de45eb0..8bb5542 100644
          torch.distributed.barrier()
  
      if args.pre_sort_for_seq_split and not args.vectorized_sampler:
-@@ -676,10 +587,10 @@ def main():
+@@ -676,10 +589,10 @@ def main():
  
      eval_sampler = dali_sampler.SimpleSampler(val_dataset_kw)
  
@@ -4496,7 +4525,7 @@ index de45eb0..8bb5542 100644
                          in_mem_file_list=args.in_mem_file_list,
                          tokenized_transcript=args.tokenized_transcript)
  
-@@ -691,8 +602,8 @@ def main():
+@@ -691,8 +604,8 @@ def main():
          synthetic_seq_len = [args.synthetic_audio_seq_len, args.synthetic_text_seq_len]
      else:
          raise Exception("synthetic seq length for both text and audio need to be specified")
@@ -4507,7 +4536,7 @@ index de45eb0..8bb5542 100644
                                    config_data=train_dataset_kw,
                                    config_features=train_features_kw,
                                    json_names=args.train_manifests,
-@@ -715,8 +626,8 @@ def main():
+@@ -715,8 +628,8 @@ def main():
                                    dont_use_mmap=args.dali_dont_use_mmap)
  
  
@@ -4518,7 +4547,7 @@ index de45eb0..8bb5542 100644
                                  config_data=val_dataset_kw,
                                  config_features=val_features_kw,
                                  json_names=args.val_manifests,
-@@ -729,6 +640,7 @@ def main():
+@@ -729,6 +642,7 @@ def main():
                                  seed=dali_seed,
                                  tokenized_transcript=args.tokenized_transcript,
                                  in_mem_file_list=args.in_mem_file_list,
@@ -4526,7 +4555,7 @@ index de45eb0..8bb5542 100644
                                  dont_use_mmap=args.dali_dont_use_mmap)
  
  
-@@ -771,189 +683,145 @@ def main():
+@@ -771,189 +685,145 @@ def main():
  
      # training loop
      model.train()
@@ -4596,42 +4625,20 @@ index de45eb0..8bb5542 100644
  
 -        if args.enable_prefetch:
 -            train_loader.data_iterator().prefetch()
- 
+-
 -        step_start_time = time.time()
-+            if args.enable_prefetch:
-+                train_loader.data_iterator().prefetch()
- 
+-
 -        for batch in train_loader:
 -            if accumulated_batches == 0:
 -                if not args.dist_lamb:
-+            step_start_time = time.time()
-+
-+            for batch in train_loader:
-+                if accumulated_batches == 0:
-                     optimizer.zero_grad()
-+                    adjust_lr(step, epoch)
-+                    step_utts = 0
-+                    all_feat_lens = []
-+                # feature proc
-+                if args.enable_prefetch:
-+                    # when prefetch is enabled, train_feat_proc at prefetch time
-+                    feats, feat_lens, txt, txt_lens = batch
-+                    meta_data = train_preproc.meta_data
-                 else:
+-                    optimizer.zero_grad()
+-                else:
 -                    optimizer.zero_grad(set_to_none=True)
 -                adjust_lr(step, epoch)
 -                step_utts = 0
 -                all_feat_lens = []
-+                    audio, audio_lens, txt, txt_lens = batch
-+                    feats, feat_lens = train_feat_proc([audio, audio_lens])
-+                    meta_data = []
-+                    B_split = batch_size // args.batch_split_factor
-+                    for i in range(args.batch_split_factor):
-+                        meta_data.append(train_preproc.get_packing_meta_data(   feats.size(0),
-+                                                                                feat_lens[i*B_split:(i+1)*B_split],
-+                                                                                txt_lens[i*B_split:(i+1)*B_split]))
  
--            if args.enable_prefetch:
+             if args.enable_prefetch:
 -                # when prefetch is enabled, train_feat_proc at prefetch time
 -                feats, feat_lens, txt, txt_lens = batch
 -                meta_data = train_preproc.meta_data
@@ -4666,15 +4673,26 @@ index de45eb0..8bb5542 100644
 -                    optimizer.set_global_scale(grad_scaler._get_scale_async())
 -                    grad_scaler.step(optimizer)
 -                    grad_scaler.update()
-+                if args.enable_seq_len_stats:
-+                    all_feat_lens += feat_lens
++                train_loader.data_iterator().prefetch()
  
 -                else:
 -                    optimizer.step()
++            step_start_time = time.time()
  
 -                if args.multi_tensor_ema == True:
 -                    apply_multi_tensor_ema(model_weight_list, ema_model_weight_list, args.ema, overflow_buf_for_ema)
--                else:
++            for batch in train_loader:
++                if accumulated_batches == 0:
++                    optimizer.zero_grad()
++                    adjust_lr(step, epoch)
++                    step_utts = 0
++                    all_feat_lens = []
++                # feature proc
++                if args.enable_prefetch:
++                    # when prefetch is enabled, train_feat_proc at prefetch time
++                    feats, feat_lens, txt, txt_lens = batch
++                    meta_data = train_preproc.meta_data
+                 else:
 -                    apply_ema(optimizer, ema_model, args.ema)
 -
 -                if step % args.log_frequency == 0:
@@ -4749,14 +4767,28 @@ index de45eb0..8bb5542 100644
 -            print_once(f'Finished after {args.epochs_this_job} epochs.')
 -            break
 -        # end of epoch
- 
+-
++                    audio, audio_lens, txt, txt_lens = batch
++                    feats, feat_lens = train_feat_proc([audio, audio_lens])
++                    meta_data = []
++                    B_split = batch_size // args.batch_split_factor
++                    for i in range(args.batch_split_factor):
++                        meta_data.append(train_preproc.get_packing_meta_data(   feats.size(0),
++                                                                                feat_lens[i*B_split:(i+1)*B_split],
++                                                                                txt_lens[i*B_split:(i+1)*B_split]))
++
++                if args.enable_seq_len_stats:
++                    all_feat_lens += feat_lens
++
++
++
 +                loss_item= train_step( model, loss_fn, args, batch_size, feats, feat_lens, txt, txt_lens,
 +                                        meta_data, train_loader, rnnt_graph)
 +                step_utts += txt_lens.size(0) * world_size
 +                epoch_utts += txt_lens.size(0) * world_size
 +                accumulated_batches += 1
 +                if accumulated_batches % args.grad_accumulation_steps == 0:
-+
++                    torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip_norm)
 +                    optimizer.step()
 +                    apply_ema(model, ema_model, args.ema)
 +
@@ -4841,7 +4873,7 @@ index de45eb0..8bb5542 100644
  
      training_time = time.time() - training_start_time
      log((), None, 'train_avg', {'throughput': training_utts / training_time})
-@@ -968,6 +836,10 @@ def main():
+@@ -968,6 +838,10 @@ def main():
      flush_log()
      if args.save_at_the_end:
          checkpointer.save(model, ema_model, optimizer, epoch, step, best_wer)
