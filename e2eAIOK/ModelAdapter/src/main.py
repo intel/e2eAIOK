@@ -45,6 +45,11 @@ def main(args, trial):
         cfg = edict(update_dict(cfg, yaml.safe_load(f)))
     torch.manual_seed(cfg.seed)
 
+    ## To be fix
+    if cfg.num_workers > 0:
+        raise RuntimeError("Do not support dataloader number of workers > 0, will be fixed later.")
+        sys.exit(0)
+
     #################### dir conguration ################
     is_distributed = ext_dist.my_size > 1
     prefix = "%s%s%s%s%s"%(cfg.model_type,

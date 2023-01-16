@@ -9,7 +9,7 @@ train_epochs: 1
 ### dataset
 data_set: "cifar100"
 data_path:  "/home/vmagent/app/data/dataset/cifar"
-num_workers: 4
+num_workers: 0
 
 ### model
 model_type: "resnet18_cifar"

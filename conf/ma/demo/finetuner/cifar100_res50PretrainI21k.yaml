@@ -10,7 +10,7 @@ enable_ipex: True
 ### dataset
 data_set: "cifar100"
 data_path:  "/home/vmagent/app/data/dataset/cifar"
-num_workers: 4
+num_workers: 0
 input_size: 112
 
 ### model

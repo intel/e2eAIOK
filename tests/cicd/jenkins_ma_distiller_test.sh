@@ -5,5 +5,4 @@ eval "$('/opt/intel/oneapi/intelpython/latest/bin/conda' 'shell.bash' 'hook' 2> 
 # activate conda
 conda activate pytorch-1.12.0
 # run main.py
-cd /home/vmagent/app/e2eaiok/e2eAIOK/ModelAdapter/src
-python main.py -R1 --cfg ../config/demo/finetuner/cifar100_res50PretrainI21k.yaml
+python /home/vmagent/app/e2eaiok/e2eAIOK/ModelAdapter/src/main.py --cfg /home/vmagent/app/e2eaiok/conf/ma/demo/distiller/cifar100_kd_res50_res18.yaml
