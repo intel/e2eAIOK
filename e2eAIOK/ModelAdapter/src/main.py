@@ -16,6 +16,8 @@ from e2eAIOK.common.utils import update_dict
 import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 e2eaiok_dir = e2eAIOK.__path__[0]
 
+def is_safe_path(basedir, path):
+    return os.path.abspath(path).startwith(basedir)
 
 def objective(args,trial):
     ''' Optuna optimize objective
@@ -41,6 +43,12 @@ def main(args, trial):
         cfg = yaml.safe_load(f)
     with open(os.path.join(e2eaiok_dir, "ModelAdapter/src/default_ma.conf")) as f:
         cfg = update_dict(cfg, yaml.safe_load(f))
+    if not is_safe_path("/home/vmagent/app/e2eaiok", args.cfg):
+        print(f"{args.cfg} is not safe.")
+        sys.exit()      
+    if os.access(args.cfg, os.R_OK):
+        with open(args.cfg) as f:
+            cfg = edict(update_dict(cfg, yaml.safe_load(f)))
     with open(args.cfg) as f:
         cfg = edict(update_dict(cfg, yaml.safe_load(f)))
     torch.manual_seed(cfg.seed)
@@ -65,6 +73,18 @@ def main(args, trial):
     model_save_path = os.path.join(root_dir, prefix)
     cfg.tensorboard_dir = os.path.join(cfg.tensorboard_dir,"%s_%s"%(cfg.experiment.tag,prefix))  # to save tensorboard log
     cfg.profiler_config.trace_file = os.path.join(PROFILE_DIR,"profile_%s"%prefix_time)
+    if not is_safe_path("/home/vmagent/app/data", LOG_DIR):
+        print(f"{LOG_DIR} is not safe.")
+        sys.exit()
+    if not is_safe_path("/home/vmagent/app/data", PROFILE_DIR):
+        print(f"{PROFILE_DIR} is not safe.")
+        sys.exit()
+    if not is_safe_path("/home/vmagent/app/data", cfg.tensorboard_dir):
+        print(f"{cfg.tensorboard_dir} is not safe.")
+        sys.exit()
+    if not is_safe_path("/home/vmagent/app/data", model_save_path):
+        print(f"{model_save_path} is not safe.")
+        sys.exit()    
     os.makedirs(LOG_DIR,exist_ok=True)
     os.makedirs(PROFILE_DIR,exist_ok=True) 
     os.makedirs(cfg.tensorboard_dir,exist_ok=True)
@@ -98,7 +118,6 @@ def main(args, trial):
     ##################### show conguration ################
     print("configurations:")
     print(cfg)
-    logging.info(cfg)
     ###################### create task ###############
     task = ModelAdapterTask(cfg, model_save_path, is_distributed)
     if trial is not None:

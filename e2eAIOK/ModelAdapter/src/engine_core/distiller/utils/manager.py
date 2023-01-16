@@ -78,20 +78,25 @@ class _Writer:
         values_file = open(values_fname, 'wb')
         keys = dict()
 
-        while 1:
-            item = msg_queue.get()
-            if item == _Writer._WORKER_MSG.KILL:
-                break
-            key, value = item
-            if key in keys:
-                continue
-            idx = len(keys)
-            keys[key] = idx
-            keys_file.write(key + '\n')
-            values_file.write(value)
-
-        keys_file.close()
-        values_file.close()
+        try:
+            while 1:
+                item = msg_queue.get()
+                if item == _Writer._WORKER_MSG.KILL:
+                    break
+                key, value = item
+                if key in keys:
+                    continue
+                idx = len(keys)
+                keys[key] = idx
+                keys_file.write(key + '\n')
+                values_file.write(value)
+        except Exception as e:
+            print(e)
+        finally:
+            if hasattr(keys_file, "close"):
+                keys_file.close()
+            if hasattr(values_file, "close"):
+                values_file.close()
 
         os.makedirs(path, exist_ok=True)
         os.system(f'mv {temp_dirname}/* {path}/')
@@ -165,7 +170,14 @@ class _Reader:
         def __getitem__(self, idx: int):
             self._ensure_handle_created()
             self.values_file.seek(self.item_size * idx)
-            return self.values_file.read(self.item_size)
+            try:
+                values_content = self.values_file.read(self.item_size)
+            except Exception as e:
+                print(e)
+            finally:
+                if hasattr(self.values_file, 'close'):
+                    self.values_file.close()
+            return values_content
 
         def _ensure_handle_created(self):
             if self.values_file is None:
