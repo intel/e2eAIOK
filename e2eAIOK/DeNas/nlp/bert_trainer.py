@@ -60,10 +60,11 @@ class BERTTrainer(TorchTrainer):
     def train_one_epoch(self, epoch):
         # set random seed
         # random.seed(epoch)
-        
-        self.model.train()
+        if self.train_dataloader.sampler is not None and hasattr(self.train_dataloader.sampler, "set_epoch"):
+            self.train_dataloader.sampler.set_epoch(epoch)
 
         for step, batch in enumerate(tqdm(self.train_dataloader, desc="Iteration", ascii=True)):
+            self.model.train()
             inputs, targets = batch
             outputs = self.model(inputs)
             loss = self.criterion(outputs, targets)

@@ -175,7 +175,7 @@ def bert_create_optimizer(model, cfg):
         num_train_optimization_steps = int(
             cfg.num_train_steps / cfg.gradient_accumulation_steps) * cfg.train_epochs
         if ext_dist.my_size > 1:
-            num_train_optimization_steps = num_train_optimization_steps // ext_dist.my_size
+            num_train_optimization_steps = num_train_optimization_steps * ext_dist.my_size
         optimizer = BertAdam(optimizer_grouped_parameters,
                              schedule=cfg.lr_scheduler,
                              lr=cfg.learning_rate,
