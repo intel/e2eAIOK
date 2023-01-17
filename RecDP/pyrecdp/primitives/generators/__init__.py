@@ -10,6 +10,11 @@ from .encoder import LabelEncoderFeatureGenerator, OneHotEncoderFeatureGenerator
 from .nlp import DecodedTextFeatureGenerator, TextFeatureGenerator
 from .geograph import GeoFeatureGenerator, CoordinatesInferFeatureGenerator
 
+feature_infer_list = [
+    TypeInferFeatureGenerator,
+    CoordinatesInferFeatureGenerator,
+]
+
 pre_feature_generator_list = [
     FillNaFeatureGenerator,
     TypeInferFeatureGenerator,

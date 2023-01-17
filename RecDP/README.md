@@ -16,6 +16,16 @@ RecDP v2.0 is aiming to provide auto Data Prepartion upon spark and pandas.
 ![RecDP v2.0 Overview](resources/recdp_20_overview.png)
 
 # Getting Start
+## setup with pip
+```
+git clone --single-branch --branch RecDP_v2.0 https://github.com/intel-innersource/frameworks.bigdata.AIDK.git
+cd frameworks.bigdata.AIDK/RecDP
+# install java
+DEBIAN_FRONTEND=noninteractive apt-get install -y openjdk-8-jre
+python setup.py sdist
+pip install dist/pyrecdp-1.0.1.tar.gz
+```
+
 ## use docker to setup pyrecdp
 ```
 git clone --single-branch --branch RecDP_v2.0 https://github.com/intel-innersource/frameworks.bigdata.AIDK.git
@@ -26,6 +36,7 @@ python3 scripts/start_e2eaiok_docker.py
 ```
 
 ## Quick Example
+[colab notebook spark engine](https://colab.research.google.com/drive/1i_Gcf12-l1drBE8xlEgIk5xGWDAXvRvu?usp=sharing)
 > NYC Taxi fare 55M records, RecDP took 350secs and featuretools took 2908secs
 > Below is RecDP codes and output, for featuretools script, please see [NYC Taxi fare auto data prepration](examples/notebooks/autofe/FeatureWrangler.ipynb)
 ```

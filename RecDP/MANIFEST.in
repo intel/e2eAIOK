@@ -1,2 +1,4 @@
-include ScalaProcessUtils/built/30/*.jar
-include ScalaProcessUtils/built/31/*.jar
+include pyrecdp/ScalaProcessUtils/target/*.jar
+include pyrecdp/ScalaProcessUtils/spark-env.sh
+include pyrecdp/ScalaProcessUtils/spark-defaults.conf
+include pyrecdp/widgets/templates/*.html

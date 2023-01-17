@@ -1,7 +1,7 @@
 from jinja2 import Environment, PackageLoader
 from pyrecdp.primitives.generators import *
+from .BasePipeline import BasePipeline
 from bokeh.resources import INLINE
-
 ENV_LOADER = Environment(
     loader=PackageLoader("pyrecdp", "widgets/templates"),
 )
@@ -16,7 +16,8 @@ CELL_HEIGHT_OVERRIDE = """<style>
                           </style>"""
 
 class FeatureVisulizer:
-    def __init__(self, stats):        
+    def __init__(self, stats):    
+
         template_base = ENV_LOADER.get_template("base.html")
         context = {
             "resources": INLINE.render(),
@@ -41,39 +42,25 @@ class FeatureVisulizer:
         Display report inside a notebook
         """
         return f"{CELL_HEIGHT_OVERRIDE}<div style='background-color: #fff;'>{self.report}</div>"
-
-class FeatureProfiler:
+class FeatureProfiler(BasePipeline):        
     def __init__(self, dataset, label, *args, **kwargs):
-        X = dataset
-        if isinstance(label, str):
-            if label not in dataset.columns:
-                raise ValueError(f"label {label} is not found in dataset")
-            y = dataset[label]
-        else:
-            y = label
-        to_select = [i for i in X.columns if i != y.name]
-        self.feature_data = X[to_select]
-        self.y = y
+        super().__init__(dataset, label)
+
         self.data_stats = None
         self._processed_data = self.feature_data
-        
-    def fit_analyze(self, *args, **kwargs) -> dict():
-        if self.data_stats:
-            return self.data_stats
-        # pre-process
-        feature_data = self.feature_data
-        feature_data = TypeInferFeatureGenerator().fit_transform(feature_data)
-        feature_data = CoordinatesInferFeatureGenerator().fit_transform(feature_data)
-        
-        self._processed_data = feature_data
 
-        # prepare state
-        self.data_stats = StatisticsFeatureGenerator().update_feature_statistics(feature_data, self.y)
-        
-        return self.data_stats
+        self.generators.append([DataframeConvertFeatureGenerator()])
+        self.generators.append([cls() for cls in feature_infer_list])
+        self.generators.append([DataframeTransformFeatureGenerator()])
+
+        self.fit_analyze()
     
-    def visualize_analyze(self, display = True):
-        return FeatureVisulizer(self.fit_analyze())
+    def visualize_analyze(self, engine_type = 'pandas', display = True):
+        if not self.data_stats:
+            feature_data = self.fit_transform(engine_type)
+            self.data_stats = StatisticsFeatureGenerator().update_feature_statistics(feature_data, self.y)
+            self._processed_data = feature_data
+        return FeatureVisulizer(self.data_stats)
 
     def _debug_get_processed_data(self):
         return self._processed_data
