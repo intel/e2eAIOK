@@ -14,8 +14,6 @@
 #    limitations under the License.
 
 
-from copy import deepcopy
-from nnunet.utilities.nd_softmax import softmax_helper
 from torch import nn
 import torch
 import numpy as np
@@ -121,6 +119,8 @@ class Generic_UNet_DA(Generic_UNet):
         if self._deep_supervision:
             logits = tuple([seg_outputs[-1]] + [i(j) for i, j in
                                               zip(list(self.upscale_logits_ops)[::-1], seg_outputs[:-1][::-1])])
+        else:
+            logits = tuple([seg_outputs[-1]])
 
         if self.training:
             return logits, skips, decoder_feats[::-1]

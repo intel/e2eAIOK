@@ -1,11 +1,6 @@
-import sys
-import os
 import torch.nn as nn
 import torch
-from torch.cuda.amp import autocast
-import logging
 import torch.fx
-from .adapter.adversarial.adversarial_adapter import AdversarialAdapter
 
 from enum import Enum
 class TransferStrategy(Enum):
@@ -162,14 +157,14 @@ class TransferrableModel(nn.Module):
         :param x_src: source domain data
         :return: (TransferrableModelOutput for x_tgt, TransferrableModelOutput for x_src)
         '''
-        backbone_output_src, *src_feat = self.backbone(x_src)
-        backbone_output_tgt, *tgt_feat = self.backbone(x_tgt)
+        backbone_output_tgt = self.backbone(x_tgt)
+        backbone_output_src = self.backbone(x_src)
         return (
             TransferrableModelOutput(backbone_output_tgt,None, None),
             TransferrableModelOutput(backbone_output_src, None, None),
         )
 
-    def _adaption_loss(self, input_sample, label, fp16=False, source_pred_to_target_pred=lambda x:x):
+    def _adaption_loss(self, input_sample, label, source_pred_to_target_pred=lambda x:x):
         ''' loss for OnlyDomainAdaptionStrategy or FinetuneAndDomainAdaptionStrategy
 
         :param input_sample: tuple of (source_data, target_data)
@@ -179,28 +174,30 @@ class TransferrableModel(nn.Module):
         source_data, data = input_sample
         source_label, target = label
 
-        with autocast(enabled=fp16):
-            output, *target_feat = self.backbone(data)
-            output = [source_pred_to_target_pred(item) for item in output]
-            target_loss = self.backbone.loss(output, target)
-
-            source_output, *source_feat = self.backbone(source_data)
-            source_loss = self.backbone.loss(source_output, source_label)
-
-            adv_loss = self.adapter(*(
-                (source_output, *source_feat),
-                (output, *target_feat),
-                source_label
-            ))
-
-        total_loss = backbone_loss = self.backbone_loss_weight * source_loss
+        source_output, *source_feat = self.backbone(source_data)
+        source_loss = self.backbone.loss(source_output, source_label)
+        
+        target_loss = None
+        output, *target_feat = self.backbone(data)
+        output = [source_pred_to_target_pred(item) for item in output]
         if self.enable_target_training_label:
-            backbone_loss += self.backbone_loss_weight * target_loss
-            total_loss += self.backbone_loss_weight * target_loss
-        if adv_loss:
-            total_loss += self.adapter_loss_weight * adv_loss
+            target_loss = self.backbone.loss(output, target)
+        
+        adv_loss = self.adapter(*(
+            (source_output, *source_feat),
+            (output, *target_feat),
+            source_label
+        ))
 
-        return TransferrableModelLoss(total_loss,backbone_loss,None,adv_loss)
+        # calc total loss
+        total_loss = source_loss * self.backbone_loss_weight
+        if self.enable_target_training_label:
+            total_loss += target_loss * self.backbone_loss_weight
+        if adv_loss:
+            total_loss += adv_loss
+
+        # return (total_loss, adv_loss, source_loss, target_loss)
+        return TransferrableModelLoss(total_loss,source_loss * self.backbone_loss_weight,None,adv_loss)
 
     def forward(self,x):
         ''' forward

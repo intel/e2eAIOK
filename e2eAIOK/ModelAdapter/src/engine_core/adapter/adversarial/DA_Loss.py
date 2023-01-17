@@ -17,9 +17,8 @@ from typing import Optional, List
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from nnunet.network_architecture.DA.discriminator import SegDiscriminator, FCDiscriminator
-
-from tllib.modules.grl import GradientReverseLayer, WarmStartGradientReverseLayer
+from .discriminator import SegDiscriminator, FCDiscriminator
+from tllib.modules.grl import WarmStartGradientReverseLayer
 from tllib.utils.metric import binary_accuracy, accuracy
 
 
@@ -120,7 +119,7 @@ class SegOutDomainAdversarialLoss(nn.Module):
 class CACDomainAdversarialLoss(nn.Module):
     def __init__(self, **kwargs):
         super().__init__()
-        self.loss_weights = kwargs.pop("loss_weights")
+        self.loss_weights = kwargs.pop("loss_weight")
 
         self.encoder_domain_adv = self.decoder_domain_adv = self.seg_domain_adv = None
 
