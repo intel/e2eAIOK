@@ -7,7 +7,7 @@ ENV PATH /opt/intel/oneapi/intelpython/latest/condabin:$PATH
 RUN apt-get update -y && apt-get install -y openssh-server openjdk-8-jdk sshpass numactl vim time
 
 SHELL ["conda", "run", "-n", "pytorch-1.12.0", "/bin/bash", "-c"]
-RUN python -m pip install torchsummary easydict sentencepiece opencv-python scikit-image tensorboard timm boto3 ptflops thop sigopt optuna transformers nnunet wandb pytest
+RUN python -m pip install torchsummary easydict sentencepiece opencv-python scikit-image tensorboard timm boto3 ptflops thop sigopt optuna transformers nnunet wandb
 RUN python -m pip install torchaudio~=0.12.0 --extra-index-url https://download.pytorch.org/whl/cpu
 RUN python -m pip install oneccl_bind_pt==1.12.100 -f https://developer.intel.com/ipex-whl-stable
 RUN pip install git+https://github.com/thuml/Transfer-Learning-Library.git
