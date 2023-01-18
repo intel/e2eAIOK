@@ -17,7 +17,7 @@ import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 e2eaiok_dir = e2eAIOK.__path__[0]
 
 def is_safe_path(basedir, path):
-    return os.path.abspath(path).startwith(basedir)
+    return os.path.abspath(path).startswith(basedir)
 
 def objective(args,trial):
     ''' Optuna optimize objective

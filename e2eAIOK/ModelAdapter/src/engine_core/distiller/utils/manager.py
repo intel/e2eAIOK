@@ -174,9 +174,9 @@ class _Reader:
                 values_content = self.values_file.read(self.item_size)
             except Exception as e:
                 print(e)
-            finally:
-                if hasattr(self.values_file, 'close'):
-                    self.values_file.close()
+            # finally:
+            #     if hasattr(self.values_file, 'close'):
+            #         self.values_file.close()
             return values_content
 
         def _ensure_handle_created(self):
