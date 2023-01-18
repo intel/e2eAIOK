@@ -16,10 +16,9 @@
 
 from torch import nn
 import torch
-import numpy as np
+import torch.nn.functional
 from nnunet.network_architecture.initialization import InitWeights_He
 from nnunet.network_architecture.generic_UNet import (ConvDropoutNormNonlin, StackedConvLayers)
-import torch.nn.functional
 
 
 

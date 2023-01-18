@@ -13,6 +13,10 @@ RANDOM_SEED=`date +%s`
 python -m intel_extension_for_pytorch.cpu.launch --distributed --nproc_per_node=1 --nnodes=1 /home/vmagent/app/e2eaiok/e2eAIOK/DeNas/train.py \
    --domain bert --conf /home/vmagent/app/e2eaiok/conf/denas/nlp/e2eaiok_denas_train_bert.conf 2>&1 | tee BERT_training_${RANDOM_SEED}.log
 
+#BERT four nodes training
+#python -m intel_extension_for_pytorch.cpu.launch --distributed --nproc_per_node=2 --nnodes=4 --hostfile hostfile /home/vmagent/app/e2eaiok/e2eAIOK/DeNas/train.py \
+#   --domain bert --conf /home/vmagent/app/e2eaiok/conf/denas/nlp/e2eaiok_denas_dist_train_bert.conf 2>&1 | tee BERT_training_${RANDOM_SEED}.log
+
 #VIT Single node two processes traing
 #python -m intel_extension_for_pytorch.cpu.launch --distributed --nproc_per_node=2 --nnodes=1  /home/vmagent/app/e2eaiok/e2eAIOK/DeNas/train.py \
 #      --domain vit --conf /home/vmagent/app/e2eaiok/conf/denas/cv/e2eaiok_denas_train_vit.conf 2>&1 | tee VIT_training_${RANDOM_SEED}.log
