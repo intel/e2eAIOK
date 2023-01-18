@@ -24,8 +24,8 @@ class TestMakeTransferrable:
 
     '''
     def setup(self):
-        self.label_map = {item.split('\t')[0]: int(item.split('\t')[1]) for item in
-                     open("/home/vmagent/app/data/dataset/office31/label_map.txt").readlines()}
+        # self.label_map = {item.split('\t')[0]: int(item.split('\t')[1]) for item in
+        #              open("/home/vmagent/app/data/dataset/office31/label_map.txt").readlines()}
         self.batch_size = 16
 
     def _create_kwargs(self):
@@ -240,8 +240,8 @@ class TestTransferrableModel:
         }
 
     def setup(self):
-        self.label_map = {item.split('\t')[0]: int(item.split('\t')[1]) for item in
-                     open("/home/vmagent/app/data/dataset/office31/label_map.txt").readlines()}
+        # self.label_map = {item.split('\t')[0]: int(item.split('\t')[1]) for item in
+        #              open("/home/vmagent/app/data/dataset/office31/label_map.txt").readlines()}
         self.batch_size = 16
         self.input = torch.randn([self.batch_size, 3, 224, 224])
         self.num_class = 1000
