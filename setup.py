@@ -41,7 +41,7 @@ def setup_package(args):
             "Operating System :: OS Independent",
         ],
         packages=args["packages"],
-        package_data = args["package_data"]
+        package_data = args["package_data"],
         python_requires=">=3.6",
         zip_safe=False,
         install_requires=args["install_requires"]
