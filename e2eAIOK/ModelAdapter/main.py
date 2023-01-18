@@ -11,7 +11,7 @@ import argparse
 from functools import partial
 import sys
 import e2eAIOK
-from e2eAIOK.ModelAdapter.src.training import ModelAdapterTask
+from e2eAIOK.ModelAdapter.training import ModelAdapterTask
 from e2eAIOK.common.utils import update_dict
 import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 e2eaiok_dir = e2eAIOK.__path__[0]
@@ -41,7 +41,7 @@ def main(args, trial):
     #################### merge cfg ################
     with open(os.path.join(e2eaiok_dir, "common/default.conf")) as f:
         cfg = yaml.safe_load(f)
-    with open(os.path.join(e2eaiok_dir, "ModelAdapter/src/default_ma.conf")) as f:
+    with open(os.path.join(e2eaiok_dir, "ModelAdapter/default_ma.conf")) as f:
         cfg = update_dict(cfg, yaml.safe_load(f))
     if not is_safe_path("/home/vmagent/app/e2eaiok", args.cfg):
         print(f"{args.cfg} is not safe.")

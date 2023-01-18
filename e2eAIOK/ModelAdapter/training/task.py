@@ -5,14 +5,14 @@ import intel_extension_for_pytorch as ipex
 from types import MethodType
 import os
 import e2eAIOK.common.trainer.utils.utils as utils
-from e2eAIOK.ModelAdapter.src.engine_core.adapter import createAdapter
-from e2eAIOK.ModelAdapter.src.engine_core.distiller import KD, DKD
-from e2eAIOK.ModelAdapter.src.engine_core.distiller.utils import logits_wrap_dataset
-from e2eAIOK.ModelAdapter.src.engine_core.finetunner import BasicFinetunner
-from e2eAIOK.ModelAdapter.src.engine_core.transferrable_model import *
-from e2eAIOK.ModelAdapter.src.training import TorchTrainerMA
-from e2eAIOK.ModelAdapter.src.dataset import createDataBuilder
-from e2eAIOK.ModelAdapter.src.backbone import createBackbone
+from e2eAIOK.ModelAdapter.engine_core.adapter import createAdapter
+from e2eAIOK.ModelAdapter.engine_core.distiller import KD, DKD
+from e2eAIOK.ModelAdapter.engine_core.distiller.utils import logits_wrap_dataset
+from e2eAIOK.ModelAdapter.engine_core.finetunner import BasicFinetunner
+from e2eAIOK.ModelAdapter.engine_core.transferrable_model import *
+from e2eAIOK.ModelAdapter.training import TorchTrainerMA
+from e2eAIOK.ModelAdapter.dataset import createDataBuilder
+from e2eAIOK.ModelAdapter.backbone import createBackbone
 import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 
 class ModelAdapterTask:

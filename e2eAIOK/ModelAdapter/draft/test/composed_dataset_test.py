@@ -3,7 +3,7 @@ import sys
 import os
 import sys
 from torch.utils.data import Dataset
-from e2eAIOK.ModelAdapter.src.dataset.composed_dataset import ComposedDataset
+from e2eAIOK.ModelAdapter.dataset.composed_dataset import ComposedDataset
 
 class NumberDataset(Dataset):
     ''' Toy Dataset to mimic real-world Dataset
