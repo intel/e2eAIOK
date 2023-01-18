@@ -3,18 +3,18 @@ import sys
 import os
 import torch
 import torchvision
-from e2eAIOK.ModelAdapter.src.engine_core.transferrable_model import TransferrableModel,\
+from e2eAIOK.ModelAdapter.engine_core.transferrable_model import TransferrableModel,\
     TransferStrategy,TransferrableModelOutput,TransferrableModelLoss,\
     _make_transferrable,_transferrable,ALL_STRATEGIES,\
     make_transferrable_with_finetune, make_transferrable_with_knowledge_distillation,\
     make_transferrable_with_domain_adaption
-from e2eAIOK.ModelAdapter.src.engine_core.distiller.basic_distiller import BasicDistiller
-from e2eAIOK.ModelAdapter.src.engine_core.finetunner.basic_finetunner import BasicFinetunner
-from e2eAIOK.ModelAdapter.src.engine_core.adapter.adversarial.dann_adapter import DANNAdapter
-from e2eAIOK.ModelAdapter.src.engine_core.adapter.adversarial.adversarial_adapter import AdversarialAdapter
-from e2eAIOK.ModelAdapter.src.dataset.office31 import Office31
-from e2eAIOK.ModelAdapter.src.backbone.unet.generic_UNet_DA import Generic_UNet_DA
-from e2eAIOK.ModelAdapter.src.engine_core.adapter.adversarial.DA_Loss import CACDomainAdversarialLoss
+from e2eAIOK.ModelAdapter.engine_core.distiller.basic_distiller import BasicDistiller
+from e2eAIOK.ModelAdapter.engine_core.finetunner.basic_finetunner import BasicFinetunner
+from e2eAIOK.ModelAdapter.engine_core.adapter.adversarial.dann_adapter import DANNAdapter
+from e2eAIOK.ModelAdapter.engine_core.adapter.adversarial.adversarial_adapter import AdversarialAdapter
+from e2eAIOK.ModelAdapter.dataset.office31 import Office31
+from e2eAIOK.ModelAdapter.backbone.unet.generic_UNet_DA import Generic_UNet_DA
+from e2eAIOK.ModelAdapter.engine_core.adapter.adversarial.DA_Loss import CACDomainAdversarialLoss
 from e2eAIOK.common.trainer.utils.utils import acc
 from e2eAIOK.common.trainer.utils.utils import tensor_near_equal
 import torch.fx

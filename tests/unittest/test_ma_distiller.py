@@ -5,8 +5,8 @@ import torch
 import torchvision
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
-from e2eAIOK.ModelAdapter.src.engine_core.distiller import BasicDistiller, KD, DKD
-from e2eAIOK.ModelAdapter.src.engine_core.distiller.utils import logits_wrap_dataset
+from e2eAIOK.ModelAdapter.engine_core.distiller import BasicDistiller, KD, DKD
+from e2eAIOK.ModelAdapter.engine_core.distiller.utils import logits_wrap_dataset
 from torch.utils.data import Subset
 import random
 

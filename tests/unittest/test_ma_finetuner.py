@@ -3,7 +3,7 @@ import sys
 import os
 import torch
 import torchvision
-from e2eAIOK.ModelAdapter.src.engine_core.finetunner.basic_finetunner import BasicFinetunner
+from e2eAIOK.ModelAdapter.engine_core.finetunner.basic_finetunner import BasicFinetunner
 from e2eAIOK.common.trainer.utils.utils import tensor_near_equal
 from copy import deepcopy
 

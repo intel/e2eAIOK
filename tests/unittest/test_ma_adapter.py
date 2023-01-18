@@ -1,11 +1,11 @@
 import pytest
 import sys
 import os
-from e2eAIOK.ModelAdapter.src.engine_core.adapter.factory import createAdapter
-from e2eAIOK.ModelAdapter.src.engine_core.adapter.adversarial.adversarial_adapter import AdversarialAdapter
-from e2eAIOK.ModelAdapter.src.engine_core.adapter.adversarial.dann_adapter import DANNAdapter
-from e2eAIOK.ModelAdapter.src.engine_core.adapter.adversarial.cdan_adapter import CDANAdapter,RandomLayer
-from e2eAIOK.ModelAdapter.src.engine_core.adapter.adversarial.grl import GradientReverseLayer
+from e2eAIOK.ModelAdapter.engine_core.adapter.factory import createAdapter
+from e2eAIOK.ModelAdapter.engine_core.adapter.adversarial.adversarial_adapter import AdversarialAdapter
+from e2eAIOK.ModelAdapter.engine_core.adapter.adversarial.dann_adapter import DANNAdapter
+from e2eAIOK.ModelAdapter.engine_core.adapter.adversarial.cdan_adapter import CDANAdapter,RandomLayer
+from e2eAIOK.ModelAdapter.engine_core.adapter.adversarial.grl import GradientReverseLayer
 import torch
 import numpy as np
 
