@@ -56,7 +56,7 @@ class SeriesSchema:
     @property
     def is_numeric(self):
         if isinstance(self.type, ColumnSchema):
-            return self.type.is_numeric
+            return self.type.is_numeric or 'numeric' in str(self.type)
         from pandas.api.types import is_numeric_dtype as check_func
         return check_func(self.type)
 

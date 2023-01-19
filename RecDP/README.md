@@ -24,19 +24,13 @@ cd frameworks.bigdata.AIDK/RecDP
 DEBIAN_FRONTEND=noninteractive apt-get install -y openjdk-8-jre
 python setup.py sdist
 pip install dist/pyrecdp-1.0.1.tar.gz
-```
 
-## use docker to setup pyrecdp
-```
-git clone --single-branch --branch RecDP_v2.0 https://github.com/intel-innersource/frameworks.bigdata.AIDK.git
-cd frameworks.bigdata.AIDK/RecDP
-python3 scripts/start_e2eaiok_docker.py
-#python3 scripts/start_e2eaiok_docker.py --proxy "http://ip:port"
+sh start-jupyter.sh
 # open browser with http://hostname:8888
 ```
 
 ## Quick Example
-[colab notebook spark engine](https://colab.research.google.com/drive/1i_Gcf12-l1drBE8xlEgIk5xGWDAXvRvu?usp=sharing)
+[colab notebook spark engine](https://colab.research.google.com/drive/1Nuw3Tp1oRmbVpVDxpwcwyM1_yqYs4ZpU?usp=sharing)
 > NYC Taxi fare 55M records, RecDP took 350secs and featuretools took 2908secs
 > Below is RecDP codes and output, for featuretools script, please see [NYC Taxi fare auto data prepration](examples/notebooks/autofe/FeatureWrangler.ipynb)
 ```
@@ -51,26 +45,42 @@ pipeline = FeatureWrangler(dataset=train_data, label="reply")
 transformed_train_data = pipeline.fit_transform(engine_type = 'spark')
 ```
 ```
-After analysis, we detect and decided to include below steps in pipeline:
-"Stage 0: [<class 'pyrecdp.primitives.generators.dataframe.DataframeConvertFeatureGenerator'>]",
-"Stage 1: [<class 'pyrecdp.primitives.generators.fillna.FillNaFeatureGenerator'>, <class 'pyrecdp.primitives.generators.type.TypeInferFeatureGenerator'>, <class 'pyrecdp.primitives.generators.geograph.CoordinatesInferFeatureGenerator'>]"
-"Stage 2: [<class 'pyrecdp.primitives.generators.datetime.DatetimeFeatureGenerator'>, <class 'pyrecdp.primitives.generators.geograph.GeoFeatureGenerator'>]"
-"Stage 3: [<class 'pyrecdp.primitives.generators.dataframe.DataframeTransformFeatureGenerator'>]",
-'Stage 4: []',
-'Stage 5: []',
-'Stage 6: []'
+After analysis, decided pipeline includes below steps:
+
+Stage 0: [<class 'pyrecdp.primitives.generators.dataframe.DataframeConvertFeatureGenerator'>]
+Stage 1: [<class 'pyrecdp.primitives.generators.fillna.FillNaFeatureGenerator'>, <class 'pyrecdp.primitives.generators.type.TypeInferFeatureGenerator'>, <class 'pyrecdp.primitives.generators.geograph.CoordinatesInferFeatureGenerator'>]
+Stage 2: [<class 'pyrecdp.primitives.generators.datetime.DatetimeFeatureGenerator'>, <class 'pyrecdp.primitives.generators.geograph.GeoFeatureGenerator'>]
+Stage 3: [<class 'pyrecdp.primitives.generators.drop.DropUselessFeatureGenerator'>, <class 'pyrecdp.primitives.generators.name.RenameFeatureGenerator'>]
+Stage 4: [<class 'pyrecdp.primitives.generators.dataframe.DataframeTransformFeatureGenerator'>]
+Stage 5: []
+Stage 6: []
+Stage 7: [<class 'pyrecdp.primitives.generators.type.TypeCheckFeatureGenerator'>]
+initiate autofe pipeline took 7.2034686505794525 sec
+Will assign 48 cores and 308337 M memory for spark
 ```
 ```
 # output log, spark based
-# enriched from 21 features to 41 features
+# enriched from 6 features to 11 features
 train_data shape is (54315955, 7)
 read train data from csv took 45.0155632654205 sec
 initiate autofe pipeline took 3.5842366172000766 sec
 DataframeConvert partition pandas dataframe to spark RDD took 42.148 secs
-DataframeTransform took 292.536 secs, processed 54315955 rows with num_partitions as 200
-DataframeTransform combine to one pandas dataframe took 6.072 secs
-transform took 348.05814038962126 sec
-transformed shape is (54315955, 15)
+DataframeTransform took 251.128 secs, processed 54315955 rows with num_partitions as 200
+DataframeTransform combine to one pandas dataframe took 6.648 secs
+transform took 304.19811651296914 sec
+transformed shape is (54315955, 12)
+[LightGBM] [Info] Total Bins 25091
+[LightGBM] [Info] Number of data points in the train set: 48884359, number of used features: 11
+[LightGBM] [Info] Start training from score 11.324507
+Training until validation scores don't improve for 50 rounds
+[100]	valid_0's rmse: 3.92054
+[200]	valid_0's rmse: 3.80928
+...
+[1900]	valid_0's rmse: 3.5408
+[2000]	valid_0's rmse: 3.53851
+Did not meet early stopping. Best iteration is:
+[1997]	valid_0's rmse: 3.53851
+train took 1506.3177826348692 sec
 ```
 
 # More Examples

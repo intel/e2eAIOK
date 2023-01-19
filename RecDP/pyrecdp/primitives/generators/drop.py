@@ -18,10 +18,12 @@ class DropUselessFeatureGenerator(super_class):
             if not self.final:
                 if not (pa_field.is_numeric or pa_field.is_categorical):
                     self.feature_in.append(pa_field.name)
+                    print(f"{pa_field} should drop")
                     found = True
             else:
                 if not (pa_field.is_numeric):
                     self.feature_in.append(pa_field.name)
+                    print(f"{pa_field} should drop")
                     found = True
         return found
     

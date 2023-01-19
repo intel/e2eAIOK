@@ -18,7 +18,7 @@ class DatetimeFeatureGenerator(FeaturetoolsBasedFeatureGenerator):
             Weekday(),
             Year(),
             Hour(),
-            PartOfDay()
+            #PartOfDay()
         ]
     
     def is_useful(self, pa_schema):
