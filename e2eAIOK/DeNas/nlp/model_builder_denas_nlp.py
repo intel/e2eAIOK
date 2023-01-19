@@ -22,3 +22,15 @@ class ModelBuilderNLPDeNas(ModelBuilderNLP):
         print("architecture: {}".format(subbert_config))
         print('Total parameters: {}'.format(size))
         return model
+
+    def _init_extra_model(self, model_path, model_structure):
+        config = BertConfig.from_pretrained(model_path, num_labels=self.cfg.num_labels, finetuning_task=self.cfg.task_name)
+        model = SuperBertForQuestionAnswering.from_pretrained(model_path, config)
+        device = torch.device("cuda" if torch.cuda.is_available() and not self.args.no_cuda else "cpu")
+        model.to(device)
+        subbert_config = decode_arch(model_structure)
+        model.module.set_sample_config(subbert_config) if hasattr(model, 'module') else model.set_sample_config(subbert_config)
+        size = model.module.calc_sampled_param_num() if hasattr(model, 'module') else model.calc_sampled_param_num()
+        print("architecture: {}".format(subbert_config))
+        print('Total parameters: {}'.format(size))
+        return model

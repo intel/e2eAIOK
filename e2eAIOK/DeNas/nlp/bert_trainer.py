@@ -12,6 +12,10 @@ import e2eAIOK.common.trainer.utils.utils as utils
 import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 from e2eAIOK.common.trainer.torch_trainer import TorchTrainer
 
+from e2eAIOK.DeNas.nlp.model_builder_denas_nlp import ModelBuilderNLPDeNas
+from e2eAIOK.ModelAdapter.src.engine_core import transferrable_model
+from e2eAIOK.ModelAdapter.src.engine_core.distiller import kd
+
 class BERTTrainer(TorchTrainer):
     def __init__(self, cfg, model, train_dataloader, eval_dataloader, other_data, optimizer, criterion, scheduler, metric):
         super(BERTTrainer, self).__init__(cfg, model, train_dataloader, eval_dataloader, optimizer, criterion, scheduler, metric)
@@ -35,6 +39,14 @@ class BERTTrainer(TorchTrainer):
             custom_ops_thop = customer_ops_map_thop()
             macs_thop, _ = profile(self.model, inputs=(inputs,), custom_ops=custom_ops_thop)
             logging.info("(THOP) MACs: %.2f" % (macs_thop/(1000**3)))
+        if self.cfg.is_tl:
+            self.teacher_model = ModelBuilderNLPDeNas(self.cfg)._init_extra_model(self.cfg.teacher_model, self.cfg.teacher_model_structure)
+            self.teacher_distiller = kd.KD(pretrained_model=self.teacher_model, use_saved_logits=not self.cfg.is_saving_logits) #use_saved_logits=True
+            if self.cfg.is_saving_logits:
+                self.teacher_distiller.prepare_logits(self.train_dataloader, epochs=int(self.cfg.train_epochs))
+                self.logger.info("Successfully save teacher model logits!")
+                sys.exit()
+            self.model = transferrable_model.make_transferrable_with_knowledge_distillation(self.model, self.criterion, self.teacher_distiller)
 
     def _is_early_stop(self, metric):
         return super()._is_early_stop(metric)

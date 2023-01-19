@@ -11,6 +11,8 @@ from e2eAIOK.DeNas.module.nlp.tokenization import BertTokenizer, whitespace_toke
 from e2eAIOK.common.trainer.data.data_builder_nlp import DataBuilderNLP, DataProcessor, InputExample
 import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 
+from e2eAIOK.ModelAdapter.src.engine_core.distiller.utils import logits_wrap_dataset
+
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',
                     level=logging.INFO)
@@ -25,6 +27,8 @@ class DataBuilderSQuAD(DataBuilderNLP):
     def prepare_dataset(self):
         dataset_train, train_examples, train_dataset, labels = build_dataset(is_train=True, args=self.cfg)
         dataset_val, val_examples, val_dataset, val_features, tokenizer = build_dataset(is_train=False, args=self.cfg)
+        if self.cfg.is_tl:
+            dataset_train = logits_wrap_dataset(dataset_train, self.cfg.logits_dir, num_classes=self.cfg.num_classes, save_logits=self.cfg.is_saving_logits)
         self.dataset_train = dataset_train
         self.dataset_val = dataset_val
         return (train_examples, val_examples, val_dataset, val_features, tokenizer)
@@ -59,7 +63,7 @@ class DataBuilderSQuAD(DataBuilderNLP):
             batch_size=self.cfg.train_batch_size,
             num_workers=self.cfg.num_workers,
             shuffle=shuffle,
-            drop_last=True,
+            drop_last=False,
         )
 
         dataloader_val = torch.utils.data.DataLoader(
