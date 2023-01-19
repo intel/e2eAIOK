@@ -2,10 +2,11 @@ from .dataframe import DataframeConvertFeatureGenerator, DataframeTransformFeatu
 from .binned import BinnedFeatureGenerator
 from .category import CategoryFeatureGenerator
 from .datetime import DatetimeFeatureGenerator
-from .drop_duplicates import DropDuplicatesFeatureGenerator
+from .drop import DropUselessFeatureGenerator
+from .name import RenameFeatureGenerator
 from .fillna import FillNaFeatureGenerator
 from .statics import StatisticsFeatureGenerator
-from .type import TypeInferFeatureGenerator
+from .type import TypeInferFeatureGenerator, TypeCheckFeatureGenerator
 from .encoder import LabelEncoderFeatureGenerator, OneHotEncoderFeatureGenerator
 from .nlp import DecodedTextFeatureGenerator, TextFeatureGenerator
 from .geograph import GeoFeatureGenerator, CoordinatesInferFeatureGenerator
@@ -38,4 +39,12 @@ encode_generator_list = [
     OneHotEncoderFeatureGenerator
 ]
 
-post_feature_generator_list = []
+post_feature_generator_list = [
+    DropUselessFeatureGenerator,
+    RenameFeatureGenerator
+]
+
+final_generator_list = [
+    TypeCheckFeatureGenerator,
+    DropUselessFeatureGenerator
+]

@@ -25,6 +25,7 @@ def create_spark_context():
                 .config("spark.executorEnv.PYTHONPATH", pathlib)\
                 .config("spark.driver.memory", f"{total_mem}M")\
                 .config("spark.driver.maxResultSize","16g")\
+                .config("spark.sql.execution.arrow.pyspark.enabled","true")\
                 .getOrCreate()
     # try:
     #     spark = SparkSession.builder.master(f'spark://{hname}:7077')\

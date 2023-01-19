@@ -19,9 +19,11 @@ class BasePipeline:
             y = label
         to_select = [i for i in X.columns if i != y.name]
         self.feature_data = X[to_select]
+        self.original_data = dataset
         self.y = y
         # add default pipeline
         self.generators = []
+        self.rdp = None
     
     def fit_analyze(self, *args, **kwargs):
         # Chendi: Since fit_analyze is mainly focusing on decide which primitives we should use, avoid feeding too big dataframe here
@@ -49,14 +51,18 @@ class BasePipeline:
             return self._generate_pipeline_code_pd(*args, **kwargs)
 
     def fit_transform(self, engine_type = 'pandas', *args, **kwargs):
+        if engine_type == "spark":
+            self.rdp = SparkDataProcessor()
         func_chain = self.generate_pipeline_code(engine_type)
-        ret = self.feature_data
+        ret = self.original_data
         for func in func_chain:
             start_time = time.time()
             ret = func(ret)
             end_time = time.time()
             if engine_type == "pandas":
                 print(f"Transformation of {func} took {(end_time - start_time):.3f} secs")
+        if engine_type == "spark":
+            del self.rdp 
         return ret
 
     def dump_pipeline_codes(self):
@@ -72,10 +78,9 @@ class BasePipeline:
         return func_chain
     
     def _generate_pipeline_code_spark(self, *args, **kwargs):
-        rdp = SparkDataProcessor()
         func_chain = []
         for generator_stage in self.generators:
             for generator in generator_stage:
-                func_chain.append(generator.get_function_spark(rdp))
+                func_chain.append(generator.get_function_spark(self.rdp))
         return func_chain
 

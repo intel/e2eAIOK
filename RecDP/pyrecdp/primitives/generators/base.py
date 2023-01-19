@@ -1,13 +1,15 @@
 import inspect
+from pyrecdp.core import SeriesSchema
+from typing import List
 
 class BaseFeatureGenerator:
     def __init__(self):
         pass
     
-    def is_useful(self, pa_schema):
+    def is_useful(self, pa_schema: List[SeriesSchema]):
         return True
     
-    def fit_prepare(self, pa_schema):
+    def fit_prepare(self, pa_schema: List[SeriesSchema]):
         return
 
     def get_function_pd(self):

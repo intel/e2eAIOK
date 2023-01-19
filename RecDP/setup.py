@@ -48,5 +48,7 @@ setuptools.setup(
         "graphviz",
         "requests",
         "distro",
-        "pyspark==3.3.1"
+        "pyspark==3.3.1",
+        "lightgbm",
+        "jupyter"
         ])

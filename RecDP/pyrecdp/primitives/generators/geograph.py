@@ -22,7 +22,9 @@ class GeoFeatureGenerator(FeaturetoolsBasedFeatureGenerator):
             out_feat_name = f"haversine_{'_'.join(self.feature_in)}"
             op = Haversine()
             out_feat_type = op.return_type
-            self.feature_in_out_map[str(self.feature_in)] = (SeriesSchema(out_feat_name, out_feat_type), op)
+            out_schema = SeriesSchema(out_feat_name, out_feat_type)
+            self.feature_in_out_map[str(self.feature_in)] = (out_schema, op)
+            pa_schema.append(out_schema)
 
         return pa_schema
 

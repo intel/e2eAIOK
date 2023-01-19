@@ -1,5 +1,6 @@
 from .base import BaseFeatureGenerator as super_class
 from pyrecdp.core import SeriesSchema
+from typing import List
 
 class FeaturetoolsBasedFeatureGenerator(super_class):
     def __init__(self, **kwargs):
@@ -7,13 +8,14 @@ class FeaturetoolsBasedFeatureGenerator(super_class):
         self.feature_in = []
         self.feature_in_out_map = {} 
     
-    def fit_prepare(self, pa_schema):
+    def fit_prepare(self, pa_schema: List[SeriesSchema]):
         for in_feat_name in self.feature_in:
             self.feature_in_out_map[in_feat_name] = []
             for op in self.op_list:
                 out_feat_name = f"{in_feat_name}.{op.name}"
                 out_feat_type = op.return_type
                 out_schema = SeriesSchema(out_feat_name, out_feat_type)
+                pa_schema.append(out_schema)
                 self.feature_in_out_map[in_feat_name].append((out_schema, op))
         return pa_schema
 

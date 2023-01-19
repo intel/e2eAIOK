@@ -1,11 +1,15 @@
 from .base import BaseFeatureGenerator as super_class
 from pyrecdp.core import SeriesSchema
+from typing import List
 import pandas as pd
 import pyarrow as pa
 from pandas.api import types as pdt
 import numpy as np
 from collections import OrderedDict
 import inspect
+
+from pyspark.sql import DataFrame as SparkDataFrame
+from pyspark import RDD
 
 def convert_to_type(series, expected_schema: SeriesSchema):
     if expected_schema.is_datetime:
@@ -89,3 +93,34 @@ class TypeInferFeatureGenerator(super_class):
             s, type_change = try_datetime(s)    
             
         return SeriesSchema(s), type_change
+ 
+class TypeCheckFeatureGenerator(super_class):
+    def __init__(self, final = False, **kwargs):
+        super().__init__(**kwargs)
+   
+    def is_useful(self, pa_schema: List[SeriesSchema]):
+        return True
+    
+    def fit_prepare(self, pa_schema: List[SeriesSchema]):
+        for idx in range(len(pa_schema)):
+            pa_field = pa_schema[idx]
+            if pa_field.is_categorical_and_string:
+                pa_schema[idx] = SeriesSchema(pa_field.name, pd.StringDtype())
+            elif pa_field.is_categorical:
+                pa_schema[idx] = SeriesSchema(pa_field.name, pd.Int32Dtype())
+        return pa_schema
+
+    def get_function_pd(self):
+        def as_type(df):
+            return df
+        return as_type
+    
+    def get_function_spark(self, rdp):        
+        actual_func = self.get_function_pd()
+        def drop_useless_feature(df):
+            # check input df type
+            if isinstance(df, pd.DataFrame):
+                return actual_func(df)
+            elif isinstance(df, SparkDataFrame):
+                raise NotImplementedError("Support later")
+        return drop_useless_feature

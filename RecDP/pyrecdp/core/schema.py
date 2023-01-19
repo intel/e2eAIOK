@@ -22,6 +22,12 @@ class SeriesSchema:
             self.is_text_flag = isinstance(self.type, TextDtype)
         else:
             raise ValueError("SeriesSchema unsupport input arguments more than 2")
+
+    def __repr__(self):
+        return f"{self.name}<{self.type}>"
+
+    def __str__(self):
+        return f"{self.name}<{self.type}>"
    
     @property
     def dtype_str(self):
@@ -50,7 +56,7 @@ class SeriesSchema:
     @property
     def is_numeric(self):
         if isinstance(self.type, ColumnSchema):
-            return False
+            return self.type.is_numeric
         from pandas.api.types import is_numeric_dtype as check_func
         return check_func(self.type)
 
@@ -85,7 +91,7 @@ class SeriesSchema:
     @property
     def is_categorical(self):
         if isinstance(self.type, ColumnSchema):
-            return False
+            return self.type.is_categorical
         from pandas.api.types import is_categorical_dtype as check_func
         return check_func(self.type)
     
@@ -99,7 +105,7 @@ class SeriesSchema:
     @property
     def is_categorical_and_string(self):
         if isinstance(self.type, ColumnSchema):
-            return False
+            return self.type.is_categorical and not self.type.is_ordinal
         from pandas.api.types import is_categorical_dtype, is_string_dtype
         if not is_categorical_dtype(self.type):
             return False
@@ -116,6 +122,10 @@ class SeriesSchema:
     @property
     def is_text(self):
         return self.is_text_flag
+
+    @property
+    def is_woodwork_schema(self):
+        return isinstance(self.type, ColumnSchema)
     
 
 class DataFrameSchema(list):
