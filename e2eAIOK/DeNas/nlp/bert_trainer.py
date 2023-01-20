@@ -41,7 +41,8 @@ class BERTTrainer(TorchTrainer):
             logging.info("(THOP) MACs: %.2f" % (macs_thop/(1000**3)))
         if self.cfg.is_tl:
             self.teacher_model = ModelBuilderNLPDeNas(self.cfg)._init_extra_model(self.cfg.teacher_model, self.cfg.teacher_model_structure)
-            self.teacher_distiller = kd.KD(pretrained_model=self.teacher_model, use_saved_logits=not self.cfg.is_saving_logits) #use_saved_logits=True
+            self.teacher_distiller = kd.KD(pretrained_model=self.teacher_model, use_saved_logits=True)
+            self.logger.info("Successfully load teacher model!")
             if self.cfg.is_saving_logits:
                 self.teacher_distiller.prepare_logits(self.train_dataloader, epochs=int(self.cfg.train_epochs))
                 self.logger.info("Successfully save teacher model logits!")
@@ -72,14 +73,20 @@ class BERTTrainer(TorchTrainer):
     def train_one_epoch(self, epoch):
         # set random seed
         # random.seed(epoch)
-        if self.train_dataloader.sampler is not None and hasattr(self.train_dataloader.sampler, "set_epoch"):
-            self.train_dataloader.sampler.set_epoch(epoch)
+        
+        #if self.train_dataloader.sampler is not None and hasattr(self.train_dataloader.sampler, "set_epoch"):
+        #    self.train_dataloader.sampler.set_epoch(epoch)
+        if hasattr(self.train_dataloader.dataset, "set_epoch"):
+            self.train_dataloader.dataset.set_epoch(epoch)
 
         for step, batch in enumerate(tqdm(self.train_dataloader, desc="Iteration", ascii=True)):
             self.model.train()
             inputs, targets = batch
             outputs = self.model(inputs)
-            loss = self.criterion(outputs, targets)
+            if self.cfg.is_tl:
+                loss = self.model.loss(outputs, targets)
+            else:
+                loss = self.criterion(outputs, targets)
 
             self.optimizer.zero_grad()       
             loss.backward()
