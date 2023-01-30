@@ -11,7 +11,7 @@ from e2eAIOK.DeNas.module.nlp.tokenization import BertTokenizer, whitespace_toke
 from e2eAIOK.common.trainer.data.data_builder_nlp import DataBuilderNLP, DataProcessor, InputExample
 import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 
-from e2eAIOK.ModelAdapter.src.engine_core.distiller.utils import logits_wrap_dataset
+from e2eAIOK.ModelAdapter.engine_core.distiller.utils import logits_wrap_dataset
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',

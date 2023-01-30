@@ -13,8 +13,8 @@ import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 from e2eAIOK.common.trainer.torch_trainer import TorchTrainer
 
 from e2eAIOK.DeNas.nlp.model_builder_denas_nlp import ModelBuilderNLPDeNas
-from e2eAIOK.ModelAdapter.src.engine_core import transferrable_model
-from e2eAIOK.ModelAdapter.src.engine_core.distiller import kd
+from e2eAIOK.ModelAdapter.engine_core import transferrable_model
+from e2eAIOK.ModelAdapter.engine_core.distiller import kd
 
 class BERTTrainer(TorchTrainer):
     def __init__(self, cfg, model, train_dataloader, eval_dataloader, other_data, optimizer, criterion, scheduler, metric):
