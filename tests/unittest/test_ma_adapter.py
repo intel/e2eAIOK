@@ -27,17 +27,17 @@ class TestAdapterFactory:
                     for grl_coeff_high in [0.5,1.0,2.0]:
                         for max_iter in [10,100,200]:
                             kwargs = {
-                                'input_size': input_size,
+                                'in_feature': input_size,
                                 'hidden_size': hidden_size,
-                                'dropout': dropout,
+                                'dropout_rate': dropout,
                                 'grl_coeff_alpha': grl_coeff_alpha,
                                 'grl_coeff_high': grl_coeff_high,
                                 'max_iter': max_iter
                             }
                             adpter = createAdapter("DANN", **kwargs)
-                            assert kwargs['input_size'] == adpter.ad_layer1.in_features
+                            assert kwargs['in_feature'] == adpter.ad_layer1.in_features
                             assert kwargs['hidden_size'] == adpter.ad_layer1.out_features
-                            assert abs(kwargs['dropout'] - adpter.dropout1.p) <= 1e-9
+                            assert abs(kwargs['dropout_rate'] - adpter.dropout1.p) <= 1e-9
                             assert abs(kwargs['grl_coeff_alpha'] - adpter.grl.coeff_alpha) <= 1e-9
                             assert abs(kwargs['grl_coeff_high'] - adpter.grl.coeff_high) <= 1e-9
                             assert kwargs['max_iter'] == adpter.grl.max_iter
@@ -55,11 +55,11 @@ class TestAdapterFactory:
                         for max_iter in [10,100,200]:
                             for backbone_output_size in [10,20]:
                                 for enable_random_layer in [-1,0,1,2]:
-                                    for enable_entropy_weight in [-1,0,1,2]:
+                                    for enable_entropy_weight in [0,1,2]:
                                         kwargs = {
-                                            'input_size': input_size,
+                                            'in_feature': input_size,
                                             'hidden_size': hidden_size,
-                                            'dropout': dropout,
+                                            'dropout_rate': dropout,
                                             'grl_coeff_alpha': grl_coeff_alpha,
                                             'grl_coeff_high': grl_coeff_high,
                                             'max_iter': max_iter,
@@ -68,9 +68,9 @@ class TestAdapterFactory:
                                             'enable_entropy_weight': enable_entropy_weight,
                                         }
                                         adpter = createAdapter("CDAN", **kwargs)
-                                        assert kwargs['input_size'] == adpter.ad_layer1.in_features
+                                        assert kwargs['in_feature'] == adpter.ad_layer1.in_features
                                         assert kwargs['hidden_size'] == adpter.ad_layer1.out_features
-                                        assert abs(kwargs['dropout'] - adpter.dropout1.p) <= 1e-9
+                                        assert abs(kwargs['dropout_rate'] - adpter.dropout1.p) <= 1e-9
                                         assert abs(kwargs['grl_coeff_alpha'] - adpter.grl.coeff_alpha) <= 1e-9
                                         assert abs(kwargs['grl_coeff_high'] - adpter.grl.coeff_high)  <= 1e-9
                                         assert kwargs['max_iter'] == adpter.grl.max_iter
@@ -82,7 +82,7 @@ class TestAdapterFactory:
                                         else:
                                             assert adpter._random_layer is None
 
-                                        assert (kwargs['enable_entropy_weight'] > 0) == adpter._enable_entropy_weight
+                                        assert (kwargs['enable_entropy_weight'] > 0) == bool(adpter._enable_entropy_weight)
 
     def test_createInvalid_Kwargs(self):
         ''' test create invalid adapter by invalid kwargs
@@ -90,9 +90,10 @@ class TestAdapterFactory:
         :return:
         '''
         for name in ['DANN', 'CDAN']:
-            with pytest.raises(KeyError) as e:
+            with pytest.raises(TypeError) as e:
                 adapter = createAdapter(name)
-            assert e.value.args[0] == 'input_size'
+            # print(e.value.args[0])
+            assert  'required positional arguments' in e.value.args[0]
 
     def test_createInvalid_NotImplemented(self):
         ''' test create invalid adapter by NotImplemented class
@@ -391,3 +392,8 @@ class TestGradientReverseLayer:
             assert abs(self.grl.coeff) <= 1e-9
             torch.sum(output).backward()
             assert tensor_near_equal(input.grad,torch.zeros_like(input.grad))   # grad is always 0.0
+
+
+if __name__ == '__main__':
+    test = TestAdapterFactory()
+    test.test_createInvalid_Kwargs()

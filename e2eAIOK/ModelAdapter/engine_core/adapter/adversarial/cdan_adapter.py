@@ -63,7 +63,7 @@ class CDANAdapter(AdversarialAdapter):
         :param enable_entropy_weight: whether using entropy as weight
         '''
         super(CDANAdapter, self).__init__(in_feature, hidden_size,dropout_rate,grl_coeff_alpha,grl_coeff_high,max_iter)
-        if enable_random_layer:
+        if enable_random_layer > 0:
             self._random_layer = RandomLayer([in_feature, backbone_output_size], in_feature)
             logging.info("CDAN enable random layer")
         else:
