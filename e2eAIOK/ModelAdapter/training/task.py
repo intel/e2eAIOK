@@ -5,7 +5,7 @@ import intel_extension_for_pytorch as ipex
 from types import MethodType
 import os
 import e2eAIOK.common.trainer.utils.utils as utils
-# from e2eAIOK.ModelAdapter.engine_core.adapter import createAdapter
+from e2eAIOK.ModelAdapter.engine_core.adapter import createAdapter
 from e2eAIOK.ModelAdapter.engine_core.distiller import KD, DKD
 from e2eAIOK.ModelAdapter.engine_core.distiller.utils import logits_wrap_dataset
 from e2eAIOK.ModelAdapter.engine_core.finetunner import BasicFinetunner
