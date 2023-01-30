@@ -41,7 +41,7 @@ def setup_package(args):
             "Operating System :: OS Independent",
         ],
         packages=args["packages"],
-        package_data = {'e2eAIOK': ['version']},
+        package_data = args["package_data"],
         python_requires=">=3.6",
         zip_safe=False,
         install_requires=args["install_requires"]
@@ -52,11 +52,15 @@ if __name__ == '__main__':
     args = dict(
         name = "e2eAIOK",
         packages = find_packages(exclude=["RecDP", "RecDP.*", "modelzoo", "example"]),
-        install_requires = []
+        install_requires = [],
+        package_data = {}
     )
     if "--denas" in sys.argv:
         args["name"] = "e2eAIOK-denas"
-        args["packages"] = find_packages(exclude=["RecDP", "RecDP.*", "modelzoo", "example", "e2eAIOK.SDA", "e2eAIOK.SDA.*", "e2eAIOK.dataloader", "e2eAIOK.utils"])
+        args["packages"] = find_packages(exclude=["RecDP", "RecDP.*", "modelzoo", "example", \
+                                                    "e2eAIOK.SDA", "e2eAIOK.SDA.*", "e2eAIOK.dataloader", "e2eAIOK.utils",\
+                                                    "e2eAIOK.ModelAdapter", "e2eAIOK.ModelAdapter.*"])
+        args["package_data"] = {'e2eAIOK': ['version','common/default.conf']},
         install_reqs = parse_requirements("e2eAIOK/DeNas/requirements.txt", session=False)
         # handle pip version compatibility
         try:
@@ -66,7 +70,10 @@ if __name__ == '__main__':
         sys.argv.remove("--denas")
     elif "--sda" in sys.argv:
         args["name"] = "e2eAIOK-sda"
-        args["packages"] = find_packages(exclude=["RecDP", "RecDP.*", "modelzoo", "example", "e2eAIOK.DeNas", "e2eAIOK.DeNas.*"])
+        args["packages"] = find_packages(exclude=["RecDP", "RecDP.*", "modelzoo", "example", \
+                                                    "e2eAIOK.DeNas", "e2eAIOK.DeNas.*",\
+                                                    "e2eAIOK.ModelAdapter", "e2eAIOK.ModelAdapter.*"])
+        args["package_data"] = {'e2eAIOK': ['version','common/default.conf']},
         install_reqs = parse_requirements("e2eAIOK/SDA/requirements.txt", session=False)
         # handle pip version compatibility
         try:
@@ -74,4 +81,19 @@ if __name__ == '__main__':
         except AttributeError:
             args["install_requires"] = [str(ir.requirement) for ir in install_reqs] 
         sys.argv.remove("--sda")
+    elif "--ma" in sys.argv:
+        args["name"] = "e2eAIOK-ModelAdapter"
+        args["packages"] = find_packages(exclude=["RecDP", "RecDP.*", "modelzoo", "example", \
+                                                "e2eAIOK.SDA", "e2eAIOK.SDA.*", "e2eAIOK.dataloader", "e2eAIOK.utils",\
+                                                "e2eAIOK.DeNas", "e2eAIOK.DeNas.*"])
+        args["package_data"] = {'e2eAIOK': ['version','common/default.conf','ModelAdapter/default_ma.conf']}
+        install_reqs = parse_requirements("e2eAIOK/ModelAdapter/requirements.txt", session=False)
+        # handle pip version compatibility
+        try:
+            args["install_requires"] = [str(ir.req) for ir in install_reqs]
+        except AttributeError:
+            args["install_requires"] = [str(ir.requirement) for ir in install_reqs] 
+        sys.argv.remove("--ma")
+    else:
+        args["package_data"] = {'e2eAIOK': ['version','common/default.conf','ModelAdapter/default_ma.conf']}
     setup_package(args)

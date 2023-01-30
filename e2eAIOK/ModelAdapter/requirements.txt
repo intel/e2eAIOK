@@ -1,0 +1,17 @@
+scikit-learn
+torchsummary 
+easydict 
+sentencepiece 
+opencv-python 
+scikit-image 
+tensorboard 
+timm 
+boto3 
+ptflops 
+thop 
+optuna 
+transformers 
+nnunet
+torchaudio~=0.12.0
+wandb
+git+https://github.com/thuml/Transfer-Learning-Library.git
