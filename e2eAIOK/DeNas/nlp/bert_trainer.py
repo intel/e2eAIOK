@@ -39,7 +39,7 @@ class BERTTrainer(TorchTrainer):
             custom_ops_thop = customer_ops_map_thop()
             macs_thop, _ = profile(self.model, inputs=(inputs,), custom_ops=custom_ops_thop)
             logging.info("(THOP) MACs: %.2f" % (macs_thop/(1000**3)))
-        if self.cfg.is_tl:
+        if self.cfg.teacher_model != 'None':
             self.teacher_model = ModelBuilderNLPDeNas(self.cfg)._init_extra_model(self.cfg.teacher_model, self.cfg.teacher_model_structure)
             self.teacher_distiller = kd.KD(pretrained_model=self.teacher_model, use_saved_logits=True)
             self.logger.info("Successfully load teacher model!")
@@ -83,7 +83,7 @@ class BERTTrainer(TorchTrainer):
             self.model.train()
             inputs, targets = batch
             outputs = self.model(inputs)
-            if self.cfg.is_tl:
+            if self.cfg.is_transferlearning:
                 loss = self.model.loss(outputs, targets)
             else:
                 loss = self.criterion(outputs, targets)

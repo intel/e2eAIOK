@@ -27,7 +27,7 @@ class DataBuilderSQuAD(DataBuilderNLP):
     def prepare_dataset(self):
         dataset_train, train_examples, train_dataset, labels = build_dataset(is_train=True, args=self.cfg)
         dataset_val, val_examples, val_dataset, val_features, tokenizer = build_dataset(is_train=False, args=self.cfg)
-        if self.cfg.is_tl:
+        if self.cfg.teacher_model != 'None':
             dataset_train = logits_wrap_dataset(dataset_train, self.cfg.logits_dir, num_classes=self.cfg.num_classes, save_logits=self.cfg.is_saving_logits)
         self.dataset_train = dataset_train
         self.dataset_val = dataset_val
