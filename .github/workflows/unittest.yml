@@ -36,6 +36,7 @@ jobs:
         pip install codecov
         pip install build wheel
         pip install -r e2eAIOK/DeNas/requirements.txt
+        pip install -r e2eAIOK/ModelAdapter/requirements.txt
         
     - name: Install package
       run: |
