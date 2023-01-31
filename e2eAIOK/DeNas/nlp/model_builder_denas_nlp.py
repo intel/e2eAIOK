@@ -28,7 +28,10 @@ class ModelBuilderNLPDeNas(ModelBuilderNLP):
         model = SuperBertForQuestionAnswering.from_pretrained(model_path, config)
         device = torch.device("cuda" if torch.cuda.is_available() and not self.args.no_cuda else "cpu")
         model.to(device)
-        subbert_config = decode_arch(model_structure)
+        if os.path.exists(model_structure):
+            subbert_config = decode_arch(model_structure)
+        else:
+            subbert_config = {'sample_layer_num': 12, 'sample_num_attention_heads': [12] * 12, 'sample_qkv_sizes': [768] * 12, 'sample_hidden_size': 768, 'sample_intermediate_sizes': [3072] * 12}
         model.module.set_sample_config(subbert_config) if hasattr(model, 'module') else model.set_sample_config(subbert_config)
         size = model.module.calc_sampled_param_num() if hasattr(model, 'module') else model.calc_sampled_param_num()
         print("architecture: {}".format(subbert_config))

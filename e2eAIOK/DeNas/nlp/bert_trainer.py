@@ -71,10 +71,8 @@ class BERTTrainer(TorchTrainer):
 
     def _post_process(self):
         model_to_save = self.model.module if hasattr(self.model, 'module') else self.model
-        parameter_size = model_to_save.calc_sampled_param_num()
         output_str = "**************S*************\n" + \
                              "task_name = {}\n".format(self.cfg.task_name) + \
-                             "parameter size = {}\n".format(parameter_size) + \
                              "total training time = {}\n".format(str(time.time() - self.start_time)) + \
                              "best_acc = {}\n".format(self.best_acc) + \
                              "**************E*************\n"
