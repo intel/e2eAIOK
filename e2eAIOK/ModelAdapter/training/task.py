@@ -1,7 +1,6 @@
 import torch
 import time
 import logging
-import intel_extension_for_pytorch as ipex
 from types import MethodType
 import os
 import e2eAIOK.common.trainer.utils.utils as utils
@@ -242,6 +241,7 @@ class ModelAdapterTask:
         optimizer = self.create_optimizer()
         ### ipex wrapper 
         if "enable_ipex" in self.cfg and self.cfg.enable_ipex:
+            import intel_extension_for_pytorch as ipex
             model = model.to(memory_format = torch.channels_last)
             model, optimizer = ipex.optimize(model, optimizer=optimizer)
             if is_transferrable: # ipex bug: some attribute is lost 
