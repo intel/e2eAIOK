@@ -484,11 +484,13 @@ def do_qa_eval(args, model, *inputs):
     dev_dataset = others[2]
     features = others[3]
     model.eval()
+    if 'teacher_model' in args and args.teacher_model != 'None':
+        model = model.backbone
     for batch_, example_indices in eval_dataloader:
         with torch.no_grad():
             start = datetime.now()
             total_logits = model(batch_)
-            batch_start_logits, batch_end_logits = total_logits.split(1, dim=-1)
+            batch_start_logits, batch_end_logits = total_logits.split(int(total_logits.size()[-1]/2), dim=-1)
             batch_start_logits = batch_start_logits.squeeze(-1)
             batch_end_logits = batch_end_logits.squeeze(-1)
             infer_times.append((datetime.now() - start).microseconds / 1000)

@@ -12,6 +12,10 @@ import e2eAIOK.common.trainer.utils.utils as utils
 import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 from e2eAIOK.common.trainer.torch_trainer import TorchTrainer
 
+from e2eAIOK.DeNas.nlp.model_builder_denas_nlp import ModelBuilderNLPDeNas
+from e2eAIOK.ModelAdapter.engine_core import transferrable_model
+from e2eAIOK.ModelAdapter.engine_core.distiller import kd
+
 class BERTTrainer(TorchTrainer):
     def __init__(self, cfg, model, train_dataloader, eval_dataloader, other_data, optimizer, criterion, scheduler, metric):
         super(BERTTrainer, self).__init__(cfg, model, train_dataloader, eval_dataloader, optimizer, criterion, scheduler, metric)
@@ -35,6 +39,25 @@ class BERTTrainer(TorchTrainer):
             custom_ops_thop = customer_ops_map_thop()
             macs_thop, _ = profile(self.model, inputs=(inputs,), custom_ops=custom_ops_thop)
             logging.info("(THOP) MACs: %.2f" % (macs_thop/(1000**3)))
+        if 'teacher_model' in self.cfg and self.cfg.teacher_model != 'None':
+            try:
+                self.teacher_model = ModelBuilderNLPDeNas(self.cfg)._init_extra_model(self.cfg.teacher_model, self.cfg.teacher_model_structure)
+            except Exception:
+                logging.info("Please loading fine-tuned teacher model of BERT style on the target task from Hugging Face")
+                raise NotImplementedError
+            self.teacher_distiller = kd.KD(pretrained_model=self.teacher_model, use_saved_logits=True)
+            self.logger.info("Successfully load teacher model!")
+            # Phrase #1: saving logits
+            if self.cfg.is_saving_logits:
+                self.teacher_distiller.prepare_logits(self.train_dataloader, epochs=int(self.cfg.train_epochs))
+                self.logger.info("Successfully save teacher model logits!")
+                sys.exit()
+            # Phrase #2: making transfer learning with phrase #1 saved logits
+            # TODO: Integrate saving logits and transfer learning into one stage process
+            self.model = transferrable_model.make_transferrable_with_knowledge_distillation(self.model, self.criterion, self.teacher_distiller)
+        else:
+            if not hasattr(self.model, "loss"):
+                setattr(self.model, 'loss', self.criterion)
 
     def _is_early_stop(self, metric):
         return super()._is_early_stop(metric)
@@ -48,10 +71,8 @@ class BERTTrainer(TorchTrainer):
 
     def _post_process(self):
         model_to_save = self.model.module if hasattr(self.model, 'module') else self.model
-        parameter_size = model_to_save.calc_sampled_param_num()
         output_str = "**************S*************\n" + \
                              "task_name = {}\n".format(self.cfg.task_name) + \
-                             "parameter size = {}\n".format(parameter_size) + \
                              "total training time = {}\n".format(str(time.time() - self.start_time)) + \
                              "best_acc = {}\n".format(self.best_acc) + \
                              "**************E*************\n"
@@ -60,14 +81,17 @@ class BERTTrainer(TorchTrainer):
     def train_one_epoch(self, epoch):
         # set random seed
         # random.seed(epoch)
-        if self.train_dataloader.sampler is not None and hasattr(self.train_dataloader.sampler, "set_epoch"):
-            self.train_dataloader.sampler.set_epoch(epoch)
+        
+        #if self.train_dataloader.sampler is not None and hasattr(self.train_dataloader.sampler, "set_epoch"):
+        #    self.train_dataloader.sampler.set_epoch(epoch)
+        if hasattr(self.train_dataloader.dataset, "set_epoch"):
+            self.train_dataloader.dataset.set_epoch(epoch)
 
         for step, batch in enumerate(tqdm(self.train_dataloader, desc="Iteration", ascii=True)):
             self.model.train()
             inputs, targets = batch
             outputs = self.model(inputs)
-            loss = self.criterion(outputs, targets)
+            loss = self.model.loss(outputs, targets)
 
             self.optimizer.zero_grad()       
             loss.backward()

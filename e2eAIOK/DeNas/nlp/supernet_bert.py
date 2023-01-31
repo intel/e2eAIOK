@@ -250,18 +250,19 @@ class BertPreTrainedModel(nn.Module):
             if 'bert' not in key:
                 new_key = 'bert.' + key
             if new_key:
-                if 'embedding' in key and 'LayerNorm' not in key:
+                if 'embedding' in key and 'LayerNorm' not in key and '.embedding.' not in key:
                     tmp = new_key.split('.')
                     new_key = '.'.join(tmp[:-1]) + '.embedding.' + tmp[-1]
-                if 'layer' in key:
+                if 'layer' in key and 'layers' not in key:
                     new_key = new_key.replace('layer', 'layers')
             else:
-                if 'embedding' in key and 'LayerNorm' not in key:
+                if 'embedding' in key and 'LayerNorm' not in key  and '.embedding.' not in key:
                     tmp = key.split('.')
                     new_key = '.'.join(tmp[:-1]) + '.embedding.' + tmp[-1]
-                if 'layer' in key:
+                if 'layer' in key and 'layers' not in key:
                     new_key = key.replace('layer', 'layers')
-
+            if 'qa_outputs' in key:
+                new_key = new_key.replace("bert.", "")
             if new_key:
                 old_keys.append(key)
                 new_keys.append(new_key)
@@ -412,11 +413,11 @@ class SuperBertForQuestionAnswering(BertPreTrainedModel):
         last_sequence_output = encoded_layers
         
         logits = self.qa_outputs(last_sequence_output)
-        #start_logits, end_logits = logits.split(1, dim=-1)
-        #start_logits = start_logits.squeeze(-1)
-        #end_logits = end_logits.squeeze(-1)
+        start_logits, end_logits = logits.split(1, dim=-1)
+        start_logits = start_logits.squeeze(-1)
+        end_logits = end_logits.squeeze(-1)
 
-        #logits = torch.cat((start_logits, end_logits), -1)
+        logits = torch.cat((start_logits, end_logits), -1)
 
         return logits
 
