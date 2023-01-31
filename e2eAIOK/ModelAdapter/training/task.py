@@ -5,7 +5,7 @@ import intel_extension_for_pytorch as ipex
 from types import MethodType
 import os
 import e2eAIOK.common.trainer.utils.utils as utils
-# from e2eAIOK.ModelAdapter.engine_core.adapter import createAdapter
+from e2eAIOK.ModelAdapter.engine_core.adapter import createAdapter
 from e2eAIOK.ModelAdapter.engine_core.distiller import KD, DKD
 from e2eAIOK.ModelAdapter.engine_core.distiller.utils import logits_wrap_dataset
 from e2eAIOK.ModelAdapter.engine_core.finetunner import BasicFinetunner
@@ -138,8 +138,8 @@ class ModelAdapterTask:
         
         if self.cfg.adapter.type == "CDAN":
             args_dict = {
-                'input_size': self.cfg.adapter.feature_size * self.num_classes, 'hidden_size': self.cfg.adapter.feature_size,
-                'dropout': 0.0, 'grl_coeff_alpha': 5.0, 'grl_coeff_high': 1.0, 'max_iter': self.epoch_steps, 'backbone_output_size': self.num_classes, 
+                'in_feature': self.cfg.adapter.feature_size * self.num_classes, 'hidden_size': self.cfg.adapter.feature_size,
+                'dropout_rate': 0.0, 'grl_coeff_alpha': 5.0, 'grl_coeff_high': 1.0, 'max_iter': self.epoch_steps, 'backbone_output_size': self.num_classes, 
                 'enable_random_layer': False, 'enable_entropy_weight': False
             }
         elif self.cfg.adapter.type == "CAC_UNet":
