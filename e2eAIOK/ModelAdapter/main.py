@@ -54,9 +54,9 @@ def main(args, trial):
     torch.manual_seed(cfg.seed)
 
     ## To be fix
-    if cfg.num_workers > 0:
-        raise RuntimeError("Do not support dataloader number of workers > 0, will be fixed later.")
-        sys.exit(0)
+    # if cfg.num_workers > 0:
+    #     raise RuntimeError("Do not support dataloader number of workers > 0, will be fixed later.")
+    #     sys.exit(0)
 
     #################### dir conguration ################
     is_distributed = ext_dist.my_size > 1
