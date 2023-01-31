@@ -39,15 +39,25 @@ class BERTTrainer(TorchTrainer):
             custom_ops_thop = customer_ops_map_thop()
             macs_thop, _ = profile(self.model, inputs=(inputs,), custom_ops=custom_ops_thop)
             logging.info("(THOP) MACs: %.2f" % (macs_thop/(1000**3)))
-        if self.cfg.teacher_model != 'None':
-            self.teacher_model = ModelBuilderNLPDeNas(self.cfg)._init_extra_model(self.cfg.teacher_model, self.cfg.teacher_model_structure)
+        if 'teacher_model' in self.cfg and self.cfg.teacher_model != 'None':
+            try:
+                self.teacher_model = ModelBuilderNLPDeNas(self.cfg)._init_extra_model(self.cfg.teacher_model, self.cfg.teacher_model_structure)
+            except Exception:
+                logging.info("Please loading fine-tuned teacher model of BERT style on the target task from Hugging Face")
+                raise NotImplementedError
             self.teacher_distiller = kd.KD(pretrained_model=self.teacher_model, use_saved_logits=True)
             self.logger.info("Successfully load teacher model!")
+            # Phrase #1: saving logits
             if self.cfg.is_saving_logits:
                 self.teacher_distiller.prepare_logits(self.train_dataloader, epochs=int(self.cfg.train_epochs))
                 self.logger.info("Successfully save teacher model logits!")
                 sys.exit()
+            # Phrase #2: making transfer learning with phrase #1 saved logits
+            # TODO: Integrate saving logits and transfer learning into one stage process
             self.model = transferrable_model.make_transferrable_with_knowledge_distillation(self.model, self.criterion, self.teacher_distiller)
+        else:
+            if not hasattr(self.model, "loss"):
+                setattr(self.model, 'loss', self.criterion)
 
     def _is_early_stop(self, metric):
         return super()._is_early_stop(metric)
@@ -83,10 +93,7 @@ class BERTTrainer(TorchTrainer):
             self.model.train()
             inputs, targets = batch
             outputs = self.model(inputs)
-            if self.cfg.is_transferlearning:
-                loss = self.model.loss(outputs, targets)
-            else:
-                loss = self.criterion(outputs, targets)
+            loss = self.model.loss(outputs, targets)
 
             self.optimizer.zero_grad()       
             loss.backward()
