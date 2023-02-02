@@ -50,3 +50,8 @@ jobs:
     - name: After test summary
       run: |
         codecov
+
+    - name: Submodule package check
+      run: |
+        python setup.py bdist_wheel --denas && twine check dist/e2eAIOK_denas-*.*.*-py3-none-any.whl && rm -rf build && rm -rf dist
+        python setup.py bdist_wheel --sda && twine check dist/e2eAIOK_sda-*.*.*-py3-none-any.whl && rm -rf build && rm -rf dist 
