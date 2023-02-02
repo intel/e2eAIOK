@@ -16,8 +16,9 @@
 set -x
 
 echo "############################## setting env ##############################"
-master="vsr214"
-hosts="vsr214,vsr215,vsr216,vsr218"
+master=`hostname`
+# hosts format: hostname1,hostname2,...
+hosts=$1
 OMP_NUM_THREADS=23
 epochs=20
 
