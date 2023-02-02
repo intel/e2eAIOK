@@ -36,4 +36,5 @@ nnUNet_train_da \
     -sp nnUNetPlansv2.1_trgSp_kits19 \
     --epochs $epochs --loss_weights 1 0 1 0 0 \
     --ipex \
-    -pretrained_weights $pre_trained_model_path
+    -pretrained_weights $pre_trained_model_path \
+    --num_batch 1
