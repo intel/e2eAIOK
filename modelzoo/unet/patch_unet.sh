@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# generate patch
+# diff -urN nnUNet/ nnUNetNew > nnunet.patch
+
 get_original_model () {
     cp -r ../third_party/nnUNet .
 }
@@ -12,3 +15,4 @@ apply_patch () {
 
 get_original_model
 apply_patch
+

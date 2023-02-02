@@ -16,15 +16,23 @@
 set -x
 
 ############################################# data preprocess #############################################
-# cd nnUNet/nnunet
-# python dataset_conversion/amos_convert_label.py
-# python dataset_conversion/kits_convert_label.py basic
-# nnUNet_plan_and_preprocess -t 507 --verify_dataset_integrity
-# nnUNet_plan_and_preprocess -t 508 --verify_dataset_integrity
-# nnUNet_plan_and_preprocess -t 508 -pl2d None -pl3d ExperimentPlanner3D_v21_customTargetSpacing_kits19
-# !nnUNet_plan_and_preprocess -t 507 -pl2d None -pl3d ExperimentPlanner3D_v21_customTargetSpacing_kits19 -no_pp
-# python dataset_conversion/kits_convert_label.py intensity
-# nnUNet_plan_and_preprocess -t 507 -pl2d None -pl3d ExperimentPlanner3D_v21_customTargetSpacing_kits19 -no_plan
+cd nnUNet/nnunet
+
+# data rename and copy
+python dataset_conversion/amos_convert_label.py
+python dataset_conversion/kits_convert_label.py basic
+
+# data verify
+nnUNet_plan_and_preprocess -t 507 --verify_dataset_integrity
+nnUNet_plan_and_preprocess -t 508 --verify_dataset_integrity
+
+# source data normalization
+nnUNet_plan_and_preprocess -t 508 -pl2d None -pl3d ExperimentPlanner3D_v21_customTargetSpacing_kits19
+
+# target data normalization
+nnUNet_plan_and_preprocess -t 507 -pl2d None -pl3d ExperimentPlanner3D_v21_customTargetSpacing_kits19 -no_pp
+python dataset_conversion/kits_convert_label.py intensity
+nnUNet_plan_and_preprocess -t 507 -pl2d None -pl3d ExperimentPlanner3D_v21_customTargetSpacing_kits19 -no_plan
 
 
 
