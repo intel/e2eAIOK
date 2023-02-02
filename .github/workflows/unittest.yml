@@ -12,11 +12,12 @@ on:
     - 'e2eAIOK/**'
     - 'modelzoo/**'
     - 'tests/unittest/**'
+    - 'setup.py'
 
 jobs:
   unit_tests:
     name: Unit Test
-    runs-on: self-hosted
+    runs-on: xeon6140
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -34,7 +35,7 @@ jobs:
         pip install -U pip
         pip install -U pytest
         pip install codecov
-        pip install build wheel
+        pip install build wheel twine
         pip install -r e2eAIOK/DeNas/requirements.txt
         pip install -r e2eAIOK/ModelAdapter/requirements.txt
         
@@ -49,3 +50,8 @@ jobs:
     - name: After test summary
       run: |
         codecov
+
+    - name: Submodule package check
+      run: |
+        python setup.py bdist_wheel --denas && twine check dist/e2eAIOK_denas-*.*.*-py3-none-any.whl && rm -rf build && rm -rf dist
+        python setup.py bdist_wheel --sda && twine check dist/e2eAIOK_sda-*.*.*-py3-none-any.whl && rm -rf build && rm -rf dist 
