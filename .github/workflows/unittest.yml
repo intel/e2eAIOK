@@ -34,15 +34,15 @@ jobs:
         pip install -U pip
         pip install -U pytest
         pip install codecov
-        pip install build wheel
+        pip install build wheel twine
         pip install -r e2eAIOK/DeNas/requirements.txt
         pip install -r e2eAIOK/ModelAdapter/requirements.txt
         
     - name: Install package
       run: |
         python setup.py sdist && pip install dist/e2eAIOK-*.*.*.tar.gz
-        python setup.py bdist_wheel --denas
-        python setup.py bdist_wheel --sda
+        python setup.py bdist_wheel --denas && twine check dist/*
+        python setup.py bdist_wheel --sda && twine check dist/*
 
     - name: Run test
       run: |
