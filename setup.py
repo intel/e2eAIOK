@@ -25,7 +25,7 @@ def setup_package(args):
     metadata = dict(
         name=args["name"],
         version=VERSION,
-        author="INTEL AIA BDF",
+        author="INTEL",
         license='Apache License',
         description="Intel® End-to-End AI Optimization Kit",
         long_description=long_description,
