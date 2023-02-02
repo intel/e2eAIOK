@@ -16,10 +16,10 @@
 set -x
 
 echo "############################## setting env ##############################"
-export nnUNet_raw_data_base="/home/vmagent/app/data/adaptor_large/nnUNet_raw_data_base"
-export nnUNet_preprocessed="/home/vmagent/app/data/adaptor_large/nnUNet_preprocessed"
-export RESULTS_FOLDER="/home/vmagent/app/data/adaptor_large/nnUNet_trained_models"
-pre_trained_model_path="/home/vmagent/app/data/adaptor_large/pre-trained-model/model_final_checkpoint-600.model"
+export nnUNet_raw_data_base="/home/vmagent/app/data/adaptor_small/nnUNet_raw_data_base"
+export nnUNet_preprocessed="/home/vmagent/app/data/adaptor_small/nnUNet_preprocessed"
+export RESULTS_FOLDER="/home/vmagent/app/data/adaptor_small/nnUNet_trained_models"
+pre_trained_model_path="/home/vmagent/app/data/adaptor_small/pre-trained-model/model_final_checkpoint-600.model"
 
 
 echo "############################## 1 node opt model ##############################"
@@ -37,12 +37,3 @@ nnUNet_train_da \
     --epochs $epochs --loss_weights 1 0 1 0 0 \
     --ipex \
     -pretrained_weights $pre_trained_model_path
-
-
-echo "############################## 1 node stock model ##############################"
-epochs=1
-
-nnUNet_train \
-    3d_fullres nnUNetTrainerV2 507 1 \
-    -p nnUNetPlansv2.1_trgSp_kits19 \
-    --epochs $epochs
