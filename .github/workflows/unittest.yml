@@ -43,7 +43,6 @@ jobs:
         python setup.py sdist && pip install dist/e2eAIOK-*.*.*.tar.gz
         python setup.py bdist_wheel --denas
         python setup.py bdist_wheel --sda
-        python setup.py bdist_wheel --ma
 
     - name: Run test
       run: |
