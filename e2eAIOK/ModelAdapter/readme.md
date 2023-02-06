@@ -79,7 +79,7 @@ There are three modules in Model Adapter: Finetuner for pretraining & fine-tunin
    You can find a complete demo at [distiller customized demo](../../demo/ma/distiller/Model_Adapter_Distiller_customized_resnet18_CIFAR100.ipynb)
 
 **Acceleration with logits saving**
-During distillation, teacher forwarding usually takes a lot of time. To accelerate the training procedure, We can save the predicting logits from teacher in advance and reuse it in later student training. Here is the [Logits saving demo](../../demo/ma/distiller/Model_Adapter_Distiller_customized_resnet18_CIFAR100_save_logits.ipynb) and the code for [training with saved logits](../../demo/ma/distiller/Model_Adapter_Distiller_customized_resnet18_CIFAR100_train_with_logits.ipynb)
+During distillation, teacher forwarding usually takes a lot of time. To accelerate the training procedure, We can save the predicting logits from teacher in advance and reuse it in later student training. Here is the [logits saving demo](../../demo/ma/distiller/Model_Adapter_Distiller_customized_resnet18_CIFAR100_save_logits.ipynb) and the code for [training with saved logits](../../demo/ma/distiller/Model_Adapter_Distiller_customized_resnet18_CIFAR100_train_with_logits.ipynb)
 
 #### Domain Adapter
 
