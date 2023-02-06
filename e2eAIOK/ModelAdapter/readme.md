@@ -54,7 +54,6 @@ python scripts/start_e2eaiok_docker.py --backend pytorch112 --dataset_path ${dat
 sshpass -p docker ssh ${host0} -p 12347
 ```
 
-## Get Started 
 ### Quick Start 
 - [Finetuner](https://github.com/intel/e2eAIOK/demo/ma/finetuner/Model_Adapter_Finetuner_builtin_resnet50_CIFAR100.ipynb) - Apply finetuner on Image Classification.
 ```bash
@@ -73,7 +72,7 @@ sh patch_unet.sh
 sh scripts/run_single_demo.sh
 ```
  
-### Customized demo
+### Customized usage
 
  We provide an unified API for all three components, which is an unified interface to assign different transfer learning ability to the underlying model and can be easily integrated with existing pipeline with few codes modification.
 
