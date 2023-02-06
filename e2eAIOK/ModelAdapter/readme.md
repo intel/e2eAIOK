@@ -34,11 +34,11 @@ There are three modules in Model Adapter: Finetuner for pretraining & fine-tunin
 - [Domain Adapter on Medical Segmentation](https://github.com/intel/e2eAIOK/demo/ma/adapter/Model_Adapter_Domain_Adapter_builtin_Unet_KITS19.ipynb)
 
 ### Customized Demos for detailed usage
-- [Finetuner](https://github.com/intel/e2eAIOK/demo/ma/finetuner/Model_Adapter_Finetuner_customized_resnet50_CIFAR100.ipynb)
-- [Distiller](https://github.com/intel/e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_customized_resnet18_CIFAR100.ipynb)
-- [Distiller to save logits](https://github.com/intel/e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_customized_resnet18_CIFAR100_save_logits.ipynb)
-- [Distiller train with saved logits](https://github.com/intel/e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_customized_resnet18_CIFAR100_train_with_saved_logits.ipynb)
-- [Domain Adapter](https://github.com/intel/e2eAIOK/demo/ma/adapter/Model_Adapter_Adapter_customized_Unet_KITS19.ipynb)
+- [Finetuner on Image Classification](https://github.com/intel/e2eAIOK/demo/ma/finetuner/Model_Adapter_Finetuner_customized_resnet50_CIFAR100.ipynb)
+- [Distiller on Image Classification](https://github.com/intel/e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_customized_resnet18_CIFAR100.ipynb)
+- [Distiller on Image Classification to save logits](https://github.com/intel/e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_customized_resnet18_CIFAR100_save_logits.ipynb)
+- [Distiller on Image Classification train with saved logits](https://github.com/intel/e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_customized_resnet18_CIFAR100_train_with_saved_logits.ipynb)
+- [Domain Adapter on Medical Segmentation](https://github.com/intel/e2eAIOK/demo/ma/adapter/Model_Adapter_Adapter_customized_Unet_KITS19.ipynb)
 
 ## Getting Started 
 
