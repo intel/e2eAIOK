@@ -72,7 +72,7 @@ sh patch_unet.sh
 sh scripts/run_single_demo.sh
 ```
  
-### Customized usage
+### API usage for Customized cases
 
  We provide an unified API for all three components, which is an unified interface to assign different transfer learning ability to the underlying model and can be easily integrated with existing pipeline with few codes modification.
 
