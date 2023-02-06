@@ -5,7 +5,7 @@
 With the development of technology, more and more advanced models have been released. For example, GPT-3 model has 175B parameters, and is trained on 500B dataset. These models, while achieving SOTA results, are only available for head players. There are several challenges in applying these huge and complex models. For example, expensive training cost, huge efforts of data labeling, and high hardware resource requirement for deployment. 
 
 ### Solution with Model Adaptor of Intel® End-to-End AI Optimization Kit
-Some technologies have been proposed to tackle these challenges. For example, pre-training & fine-tuning mechanism can greatly reduce the training cost; knowledge distillation can significantly reduce the hardware resource requirement; besides, domain adaptation can train target model with few-label or even label-free. Many related toolkits have been developed, but they mostly only focus on one of these technologies. We propose a Model Adaptor toolkit, which combines all these technologies with a unified Application Programming Interface (API). 
+Some technologies have been proposed to tackle these challenges. For example, pre-training & fine-tuning[1] mechanism can greatly reduce the training cost; knowledge distillation[2] can significantly reduce the hardware resource requirement; besides, domain adaptation[3] can train target model with few-label or even label-free. Many related toolkits have been developed, but they mostly only focus on one of these technologies. We propose a Model Adaptor toolkit, which combines all these technologies with a unified Application Programming Interface (API). 
 
 AIOK Model Adaptor toolkit is a convenient framework can be used to reduce training and inference time,  or data labeling cost by efficiently utilizing public advanced models and datasets from many domains. Its objectives are:(1)Transfer knowledge from pretrained model with the same/different network structure, which greatly speedups training without accuracy regression. (2)Transfer knowledge from source domain data without target label.
 
@@ -26,24 +26,56 @@ There are three modules in Model Adapter: Finetuner for pretraining & fine-tunin
 
 <img src="./doc/overview.png" width="60%">
 
+## Demos
+### Built-in Demos
+- [Model Adapter Overview](https://github.com/intel/e2eAIOK/demo/ma/Model_Adapter_Summary.ipynb) 
+- [Finetuner on Image Classification](https://github.com/intel/e2eAIOK/demo/ma/finetuner/Model_Adapter_Finetuner_builtin_resnet50_CIFAR100.ipynb)
+- [Distiller on Image Classification](https://github.com/intel/e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_builtin_resnet18_CIFAR100.ipynb)
+- [Domain Adapter on Medical Segmentation](https://github.com/intel/e2eAIOK/demo/ma/adapter/Model_Adapter_Domain_Adapter_builtin_Unet_KITS19.ipynb)
+
+### Customized Demos for detailed usage
+- [Finetuner](https://github.com/intel/e2eAIOK/demo/ma/finetuner/Model_Adapter_Finetuner_customized_resnet50_CIFAR100.ipynb)
+- [Distiller](https://github.com/intel/e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_customized_resnet18_CIFAR100.ipynb)
+- [Distiller to save logits](https://github.com/intel/e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_customized_resnet18_CIFAR100_save_logits.ipynb)
+- [Distiller train with saved logits](https://github.com/intel/e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_customized_resnet18_CIFAR100_train_with_saved_logits.ipynb)
+- [Domain Adapter](https://github.com/intel/e2eAIOK/demo/ma/adapter/Model_Adapter_Adapter_customized_Unet_KITS19.ipynb)
 
 ## Getting Started 
 
 ### Installing
-    ```bash
-    git clone https://github.com/intel/e2eAIOK.git
-    git submodule update --init --recursive
-    ```
+```bash
+## set env
+git clone https://github.com/intel/e2eAIOK.git
+cd e2eAIOK
+git submodule update --init --recursive
+python scripts/start_e2eaiok_docker.py --backend pytorch112 --dataset_path ${dataset_path} --workers ${host1}, ${host2}, ${host3}, ${host4} --proxy "http://addr:ip"
 
-### Build-in Demos
-- [Model Adapter Overview](../../demo/ma/Model_Adapter_Summary.ipynb) 
-- [Finetuner](../../demo/ma/finetuner/Model_Adapter_Finetuner_buildin_resnet50_CIFAR100.ipynb) - Apply finetuner on Image Classification.
-- [Distiller](../../demo/ma/distiller/Model_Adapter_Distiller_buildin_resnet18_CIFAR100.ipynb) - Apply distiller on Image Classificationt.
-- [Domain Adapter](../../demo/ma/adapter/Model_Adapter_Domain_Adapter_buildin_Unet_KITS19.ipynb) - Apply domain adapter on Medical Segmentation.
+## enter docker
+sshpass -p docker ssh ${host0} -p 12347
+```
+
+## Get Started 
+### Quick Start 
+- [Finetuner](https://github.com/intel/e2eAIOK/demo/ma/finetuner/Model_Adapter_Finetuner_builtin_resnet50_CIFAR100.ipynb) - Apply finetuner on Image Classification.
+```bash
+python /home/vmagent/app/e2eaiok/e2eAIOK/ModelAdapter/main.py --cfg /home/vmagent/app/e2eaiok/conf/ma/demo/baseline/cifar100_res18.yaml
+```
+
+- [Distiller](https://github.com/intel/e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_builtin_resnet18_CIFAR100.ipynb) - Apply distiller on Image Classificationt.
+```bash
+python /home/vmagent/app/e2eaiok/e2eAIOK/ModelAdapter/main.py --cfg /home/vmagent/app/e2eaiok/conf/ma/demo/distiller/cifar100_kd_res50_res18.yaml
+```
+- [Domain Adapter](https://github.com/intel/e2eAIOK/demo/ma/adapter/Model_Adapter_Domain_Adapter_builtin_Unet_KITS19.ipynb) - Apply domain adapter on Medical Segmentation.
+
+```bash
+cd /home/vmagent/app/e2eaiok/modelzoo/unet
+sh patch_unet.sh
+sh scripts/run_single_demo.sh
+```
  
-### Customized usage
+### Customized demo
 
- We provide an unified API for all three components, , which is an unified interface to assign different transfer learning ability to the underlying model and can be easily integrated with existing pipeline with few codes modification.
+ We provide an unified API for all three components, which is an unified interface to assign different transfer learning ability to the underlying model and can be easily integrated with existing pipeline with few codes modification.
 
 #### Finetuner
 
@@ -59,7 +91,7 @@ There are three modules in Model Adapter: Finetuner for pretraining & fine-tunin
     finetunner= BasicFinetunner(pretrained_model, is_frozen=False)
     model = make_transferrable_with_finetune(model, loss_fn, finetunner)
     ```
-    You can find a complete demo at [finetuner customized demo](../../demo/ma/finetuner/Model_Adapter_Finetuner_customized_resnet50_CIFAR100.ipynb).
+    You can find a complete demo at [finetuner customized demo](https://github.com/intel/e2eAIOK/demo/ma/finetuner/Model_Adapter_Finetuner_customized_resnet50_CIFAR100.ipynb).
 
 #### Distiller
 
@@ -76,10 +108,10 @@ There are three modules in Model Adapter: Finetuner for pretraining & fine-tunin
    model = make_transferrable_with_knowledge_distillation(model, loss_fn, distiller)
    ```
    
-   You can find a complete demo at [distiller customized demo](../../demo/ma/distiller/Model_Adapter_Distiller_customized_resnet18_CIFAR100.ipynb)
+   You can find a complete demo at [distiller customized demo](https://github.com/intel/e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_builtin_resnet18_CIFAR100.ipynb)
 
 **Acceleration with logits saving**
-During distillation, teacher forwarding usually takes a lot of time. To accelerate the training procedure, We can save the predicting logits from teacher in advance and reuse it in later student training. Here is the [logits saving demo](../../demo/ma/distiller/Model_Adapter_Distiller_customized_resnet18_CIFAR100_save_logits.ipynb) and the code for [training with saved logits](../../demo/ma/distiller/Model_Adapter_Distiller_customized_resnet18_CIFAR100_train_with_logits.ipynb)
+During distillation, teacher forwarding usually takes a lot of time. To accelerate the training procedure, We can save the predicting logits from teacher in advance and reuse it in later student training. Here is the [logits saving demo](https://github.com/intel/e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_customized_resnet18_CIFAR100_save_logits.ipynb) and the code for [training with saved logits](https://github.com/intel/e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_customized_resnet18_CIFAR100_train_with_logits.ipynb)
 
 #### Domain Adapter
 
@@ -102,3 +134,12 @@ During distillation, teacher forwarding usually takes a lot of time. To accelera
    transfer_strategy = TransferStrategy.OnlyDomainAdaptionStrategy
    model = make_transferrable_with_domain_adaption(model, adapter, transfer_strategy,...)
    ```
+   
+ # References
+[1] He, K., Girshick, R., Doll´ar, P.: Rethinking imagenet pre-training. In: ICCV (2019)
+
+[2] G. Hinton, O. Vinyals, and J. Dean. Distilling the knowledge in a neural network. arXiv preprint arXiv:1503.02531, 2015
+
+[3] Yaroslav Ganin and Victor Lempitsky. Unsupervised domain adaptation by backpropagation. In ICML, pages 325–333, 2015
+
+[4] Tal Ridnik, Emanuel Ben-Baruch, Asaf Noy, and Lihi Zelnik-Manor. Imagenet-21k pretraining for the masses. arXiv:2104.10972, 2021
