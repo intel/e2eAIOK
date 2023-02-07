@@ -2,7 +2,7 @@
 ## INTRODUCTION 
 ### Problem Statement
 
-With the development of deep learnign models and growth of hardware computing power, more and more advanced/large models have been created. For example, GPT-3 model has 175B parameters, and is trained on 500B dataset. These models, though delivering state of the art results, posed some challenges when adopting it in user environment. For example, high training cost, huge efforts of data labeling, and hard to be deployed in resource constraint environment. 
+With the development of deep learnign models and growth of hardware computing power, more and more advanced/large models have been created. For example, GPT-3 model has 175B parameters, and is trained on 500B dataset. These models, though delivering state of the art results, posed some challenges when adopting it in user environment. For example, high training cost, huge efforts of data labeling, and hard to be deployed in resource constraint environment.  
 
 ### Intel® End-to-End AI Optimization Kit Model Adaptor
 Various technologies have been developed to resolve these challenges. For example, pre-training & fine-tuning[1] mechanism can greatly reduce the training cost; knowledge distillation[2] can significantly reduce the hardware resource requirement; besides, domain adaptation[3] can train target model with few-label or even label-free. We proposed Model Adaptor, providing comprehensive transfer learning optimization technologies via a unified Application Programming Interface (API). 
