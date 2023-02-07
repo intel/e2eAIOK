@@ -1,20 +1,20 @@
-# AIOK Model Adaptor: Enhance AI Pipeline with Knowledge Transfer
+# Intel® End-to-End AI Optimization Kit Model Adaptor 
 ## INTRODUCTION 
 ### Problem Statement
 
-With the development of technology, more and more advanced models have been released. For example, GPT-3 model has 175B parameters, and is trained on 500B dataset. These models, while achieving SOTA results, are only available for head players. There are several challenges in applying these huge and complex models. For example, expensive training cost, huge efforts of data labeling, and high hardware resource requirement for deployment. 
+With the development of deep learnign models and growth of hardware computing power, more and more advanced/large models have been created. For example, GPT-3 model has 175B parameters, and is trained on 500B dataset. These models, though delivering state of the art results, posed some challenges when adopting it in user environment. For example, high training cost, huge efforts of data labeling, and hard to be deployed in resource constraint environment. 
 
-### Solution with Model Adaptor of Intel® End-to-End AI Optimization Kit
-Some technologies have been proposed to tackle these challenges. For example, pre-training & fine-tuning[1] mechanism can greatly reduce the training cost; knowledge distillation[2] can significantly reduce the hardware resource requirement; besides, domain adaptation[3] can train target model with few-label or even label-free. Many related toolkits have been developed, but they mostly only focus on one of these technologies. We propose a Model Adaptor toolkit, which combines all these technologies with a unified Application Programming Interface (API). 
+### Intel® End-to-End AI Optimization Kit Model Adaptor
+Various technologies have been developed to resolve these challenges. For example, pre-training & fine-tuning[1] mechanism can greatly reduce the training cost; knowledge distillation[2] can significantly reduce the hardware resource requirement; besides, domain adaptation[3] can train target model with few-label or even label-free. We proposed Model Adaptor, providing comprehensive transfer learning optimization technologies via a unified Application Programming Interface (API). 
 
-AIOK Model Adaptor toolkit is a convenient framework can be used to reduce training and inference time,  or data labeling cost by efficiently utilizing public advanced models and datasets from many domains. Its objectives are:(1)Transfer knowledge from pretrained model with the same/different network structure, which greatly speedups training without accuracy regression. (2)Transfer knowledge from source domain data without target label.
+Model Adaptor is target to to reduce training and inference time, or data labeling cost by efficiently utilizing public advanced models and datasets from many domains. Its objectives are:(1)Transfer knowledge from pretrained model with the same/different network structure, which improves training without accuracy regression. (2)Transfer knowledge from source domain data without target label.
 
 ### This solution is intended for
 This solution is intended for citizen data scientists, enterprise users, independent software vendor and partial of cloud service provider.
 
 ## ARCHITECTURE 
 ### Model Adaptor of Intel® End-to-End AI Optimization Kit
-There are three modules in Model Adapter: Finetuner for pretraining & fine-tuning, Distiller for knowledge distillation and Adapter for domain adaption. They all share a unified API and can be easily integrated with existing pipeline with few codes modification. What’s more, Model Adaptor makes additional efforts on CPU optimization of training and inference, both on single-node and distributed modes.
+There are three modules in Model Adapter: Finetuner for pretraining & fine-tuning, Distiller for knowledge distillation and Adapter for domain adaption. They shared a unified API and can be easily integrated with existing pipeline with few code changes. Model Adaptor was optimized on CPU clusters for training and inference with Intel optimized frameworks and libraries.
 
 ### The key components are
 
