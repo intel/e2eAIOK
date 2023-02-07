@@ -10,7 +10,7 @@ Various technologies have been developed to resolve these challenges. For exampl
 Model Adaptor is target to to reduce training and inference time, or data labeling cost by efficiently utilizing public advanced models and datasets from many domains. Its objectives are:(1)Transfer knowledge from pretrained model with the same/different network structure, which improves training without accuracy regression. (2)Transfer knowledge from source domain data without target label.
 
 ### This solution is intended for
-This solution is intended for citizen data scientists, enterprise users, independent software vendor and partial of cloud service provider.
+This solution is  intended for citizen data scientists, enterprise users, independent software vendor and partial of cloud service provider.
 
 ## ARCHITECTURE 
 ### Model Adaptor of Intel® End-to-End AI Optimization Kit
