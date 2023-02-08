@@ -2,7 +2,7 @@ import random
 import os, sys
 
 from e2eAIOK.DeNas.asr.model_builder_denas_asr import gen_transformer, load_pretrained_model
-import torch.nn.utils.prune as prune
+from e2eAIOK.DeNas.pruner.pruner import Pruner
 
 def asr_decode_cand_tuple(cand):
     depth = cand[0]
@@ -20,9 +20,8 @@ def construct_model_with_structure(structure):
 
 def construct_model_with_pruner(sparsity, params):
     model = load_pretrained_model(params.ckpt)
-    params_to_prune = tuple([(layer, "weight") for layer in model.modules() if hasattr(layer, 'weight')])
-    prune.global_unstructured(params_to_prune, prune.L1Unstructured, amount=sparsity)
-    [prune.remove(module, 'weight') for module in model.modules() if hasattr(module, 'weight')]
+    pruner = Pruner(params.algo, sparsity)
+    model = pruner.prune(model)
     return model
 
 def asr_is_legal(cand, vis_dict, params, super_net):
