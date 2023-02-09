@@ -5,9 +5,9 @@ https://github.com/intel/e2eAIOK/issues
 Pull Request Name format: [${VERSION_ID}][ISSUE-${ISSUES_ID}] ${detailed message}
 ex: [v1.1][ISSUE-190] Add PR to issue link
 
-  1. If the PR is unfinished, add '[WIP]' in your PR title, e.g., '[WIP][VERSION_ID][ISSUE_ID] Your PR title ...'.
+  1. If the PR is unfinished and for comments purpose, add '[WIP]' in your PR title, e.g., '[VERSION_ID][ISSUE_ID][WIP]Your PR title ...'.
   2. Be sure to keep the PR description updated to reflect all changes.
-  3. Please write your PR title to summarize what this PR proposes.
+  3. Please add PR title to describe what this PR proposes.
 -->
 
 ### What changes were proposed in this pull request?
@@ -19,8 +19,8 @@ Please clarify what changes you are proposing. The purpose of this section is to
 ### Why are the changes needed?
 <!--
 Please clarify why the changes are needed. For instance,
-  1. If you propose a new API, clarify the use case for a new API.
-  2. If you fix a bug, you can clarify why it is a bug.
+  1. If you propose a new feature/API, clarify the use case for a new feature/API.
+  2. If you fix a bug, mark which bug being fixed.
 -->
 
 
