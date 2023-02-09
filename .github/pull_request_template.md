@@ -2,7 +2,8 @@
 Thanks for sending a pull request!  Here are some tips for you:
 Please open an issue for this pull request on Github Issues as well.
 https://github.com/intel/e2eAIOK/issues
-Pull Request Name format: [${VERSION_ID}][${ISSUES_ID}] ${detailed message}
+Pull Request Name format: [${VERSION_ID}][ISSUE-${ISSUES_ID}] ${detailed message}
+ex: [v1.1][ISSUE-190] Add PR to issue link
 
   1. If the PR is unfinished, add '[WIP]' in your PR title, e.g., '[WIP][VERSION_ID][ISSUE_ID] Your PR title ...'.
   2. Be sure to keep the PR description updated to reflect all changes.

@@ -21,7 +21,7 @@ function haveISSUESID(title) {
   if (!title) {
     return false;
   }
-  return /^\[NSE-\d+\]/.test(title);
+  return /\[ISSUE-\d+\]/.test(title);
 }
 
 async function commentOpenISSUESIssue(github, context, pullRequestNumber) {

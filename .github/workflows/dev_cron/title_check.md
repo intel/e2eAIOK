@@ -23,5 +23,6 @@ Please open an issue for this pull request on Github Issues as well.
 
 https://github.com/intel/e2eAIOK/issues
 
-Pull Request Name format: [${VERSION_ID}][${ISSUES_ID}] ${detailed message}
+Pull Request Name format: [${VERSION_ID}][ISSUE-${ISSUES_ID}] ${detailed message}
+ex: [v1.1][ISSUE-190] Add PR to issue link
 
