@@ -20,7 +20,8 @@ master=`hostname`
 # hosts format: hostname1,hostname2,...
 hosts=$1
 OMP_NUM_THREADS=23
-epochs=20
+# epochs: usually 20
+epochs=$2
 
 echo "############################## 4 node opt model ##############################"
 # -exp_name 'cpu-test-epoch-20' \
@@ -39,7 +40,7 @@ export MASTER_ADDR=$master && \
         -hosts $hosts \
         -print-rank-map \
         -verbose \
-        python -u nnUnet/nnunet/run/run_training_da.py \
+        python -u nnUNet/nnunet/run/run_training_da.py \
         3d_fullres nnUNetTrainer_DA_V2 508 507 1 \
         -p nnUNetPlansv2.1_trgSp_kits19 \
         -sp nnUNetPlansv2.1_trgSp_kits19 \
