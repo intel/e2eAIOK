@@ -48,6 +48,7 @@ class TorchTrainerMA(TorchTrainer):
             raise RuntimeError("early stop metric [%s] not in metric keys [%s]"%(
                 best_metric_name,",".join(metric.keys())
             ))
+        self._pre_process()
 
     def __str__(self):
         _str = "Trainer: model:%s\n"%self.model
@@ -71,7 +72,7 @@ class TorchTrainerMA(TorchTrainer):
         _str += "\tlogging_interval:%s\n" % self.cfg.log_interval_step
         return _str
 
-    def show_update_tensorboard_metric(self, dataset_name,metric_values,cur_epoch=0,cur_step=0,epoch_steps=0):
+    def show_update_tensorboard_metric(self, dataset_name,metric_values,cur_epoch=0,cur_step=0,epoch_steps=0,parameters=True):
         ''' add metric to tensorboard
 
         :param dataset_name: dataset name (Train? Evaluation? Test?)
@@ -88,7 +89,7 @@ class TorchTrainerMA(TorchTrainer):
         if self.tensorboard_writer is not None:
             for (metric_name, metric_value) in metric_values.items():
                 self.tensorboard_writer.add_scalar('{}/{}_{}'.format(metric_name,dataset_name,metric_name), metric_value, cur_epoch * epoch_steps + cur_step)
-            if cur_step in [0, epoch_steps - 1] or  cur_step % (self.cfg.log_interval_step * 10) == 0: # first iter, last iter and several middle iter.
+            if parameters and (cur_step in [0, epoch_steps - 1] or  cur_step % (self.cfg.log_interval_step * 10) == 0): # first iter, last iter and several middle iter.
                 for (name, parameter) in self.model.named_parameters():
                     # if torch.isnan(parameter).int().sum() > 0 : continue
                     self.tensorboard_writer.add_histogram(name, parameter, cur_epoch * epoch_steps + cur_step)
@@ -235,7 +236,7 @@ class TorchTrainerMA(TorchTrainer):
                 for metric_name in sorted(metric_values.keys()):
                     metric_values[metric_name] /= sample_num
                 ############## show and update tensorboard metric ###################
-                self.show_update_tensorboard_metric(datasetName,metric_values,cur_epoch,cur_step=0,epoch_steps=epoch_steps)
+                self.show_update_tensorboard_metric(datasetName,metric_values,cur_epoch,cur_step=0,epoch_steps=epoch_steps,parameters=False)
             return metric_values
 
     def save_checkpoints(self, epoch=0, update_best=False, model_dir=""):
@@ -263,7 +264,6 @@ class TorchTrainerMA(TorchTrainer):
         :return: validation metric. If has Earlystopping, using the best metric; Else, using the last metric
         '''
         ##### pre_process
-        self._pre_process()
         very_start_time = time.time()
         initial_epoch = self.cfg.start_epoch
         train_dataset = self.train_dataloader.dataset
