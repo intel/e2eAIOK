@@ -11,15 +11,6 @@ import torch.nn.functional as F
 
 from e2eAIOK.DeNas.thirdparty.supernet_hf import SuperHFModel
 
-from module.nlp.layernorm_super import LayerNormSuper
-from module.nlp.Linear_super import LinearSuper
-from thop.vision.basic_hooks import count_normalization, count_linear
-
-def customer_ops_map_thop():
-    customer_ops_map = {LayerNormSuper: count_normalization,
-                        LinearSuper: count_linear}
-    return customer_ops_map
-
 def decode_arch(arches_file):
     subhf_config = None
     with open(arches_file, 'r') as fin:
