@@ -16,6 +16,7 @@ from e2eAIOK.DeNas.search.SearchEngineFactory import SearchEngineFactory
 from e2eAIOK.DeNas.search.utils import Timer, parse_config
 from transformers import logging
 logging.set_verbosity_error()
+from e2eAIOK.DeNas.asr.model_builder_denas_asr import load_pretrained_model
 
 def parse_args(args):
     parser = argparse.ArgumentParser('DE-NAS')
@@ -54,10 +55,13 @@ def main(params):
         super_net = SuperBertModel.from_pretrained(params.pretrained_bert, config)
         search_space = generate_search_space(params["SEARCH_SPACE"])
     elif params.domain == 'asr':
-        super_net = TransformerASRSuper
-        if params.pruner:
-            search_space = {'sparsity': np.arange(cfg["sparsity"]["min"], cfg["sparsity"]["max"], cfg["sparsity"]["step"])}
+        if "pruner" in params and params.pruner:
+            super_net = load_pretrained_model(params.model)
+            search_space = {'sparsity': np.arange(params["sparsity"]["min"], params["sparsity"]["max"], params["sparsity"]["step"])}
         else:
+            with open(params.supernet_cfg) as f:
+                cfg = edict(yaml.safe_load(f))
+            super_net = TransformerASRSuper
             search_space = {'num_heads': cfg.SEARCH_SPACE.NUM_HEADS, 'mlp_ratio': cfg.SEARCH_SPACE.MLP_RATIO,
                         'embed_dim': cfg.SEARCH_SPACE.EMBED_DIM , 'depth': cfg.SEARCH_SPACE.DEPTH}
     elif params.domain == 'hf':

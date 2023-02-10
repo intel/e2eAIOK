@@ -11,6 +11,7 @@ from e2eAIOK.DeNas.asr.lib.convolution import ConvolutionFrontEnd
 from e2eAIOK.DeNas.module.asr.linear import Linear
 from e2eAIOK.DeNas.asr.data.processing.features import InputNormalization
 from e2eAIOK.DeNas.utils import decode_arch_tuple
+from e2eAIOK.DeNas.pruner.pruner import Pruner
 
 class ModelBuilderASRDeNas(ModelBuilderASR):
     def __init__(self, cfg):
@@ -81,28 +82,8 @@ class ModelBuilderASRDeNas(ModelBuilderASR):
     def load_pretrained_model_and_prune(self):
         model = self.load_pretrained_model()
         prune_module = model["Transformer"]
-        params_to_prune = tuple([(layer, "weight") for layer in prune_module.modules() if hasattr(layer, 'weight')])
-        prune.global_unstructured(params_to_prune, prune.L1Unstructured, amount=self.cfg["sparsity"])
-        [prune.remove(module, 'weight') for module in prune_module.modules() if hasattr(module, 'weight')]
-
-        return model
-    
-    def prune_model_with_inc(self):
-        from neural_compressor.training import prepare_compression, WeightPruningConfig
-        model = self.load_pretrained_model()
-        pruning_configs=[
-            {
-                'op_names': ['Transformer.*'], 'pruning_type': "snip_momentum", 'pruning_scope': 'global', 'target_sparsity': self.cfg['sparsity']
-            }
-        ]
-        config = WeightPruningConfig(pruning_configs)
-        compression_manager = prepare_compression(model, config)
-        compression_manager.callbacks.on_train_begin()
-        model.train()
-        compression_manager.callbacks.on_step_begin(0)
-        compression_manager.callbacks.on_before_optimizer_step()
-        compression_manager.callbacks.on_after_optimizer_step()
-        compression_manager.callbacks.on_train_end()
+        pruner = Pruner(self.cfg["algo"], self.cfg["sparsity"])
+        prune_module = pruner.prune(prune_module)
         return model
 
 
