@@ -33,7 +33,15 @@ def log_subprocess_output(pipe, logger, idx = ""):
 
 def get_install_cmd():
     import platform
-    os = platform.linux_distribution()[0]
+    try:
+        import distro
+        using_distro = True
+    except ImportError:
+        using_distro = False
+    if using_distro:
+        os = distro.like()
+    else:
+        os = platform.linux_distribution()[0] # linux_distribution attribute is deprecated in python 3.8
     if 'debian' in os:
         return "apt install -y "
     else:
