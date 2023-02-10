@@ -1,90 +1,98 @@
-# Model Adaptor: Enhance AI Pipeline with Knowledge Transfer
+# Intel® End-to-End AI Optimization Kit Model Adaptor
 ## INTRODUCTION 
 ### Problem Statement
-With the development of deep learning techniques, the size of advanced models is getting larger and larger. For example, GPT-3 model has 175B parameters, and is trained on 500B dataset. These models, while achieving SOTA results, are only available for head players. There are many challenges to apply these models for most users:
 
-1. Time cost and money cost of training an advanced are extremely high when training from scratch. For example, it costs 4.6M $ and takes 355 GPU-years to train GPT-3 model from scratch.
-    
-2. Training these advanced models requires a large amount of labeled data. For example, the widely used ImageNet-1k dataset has 1.28M labeled images.
-   
-3. Hardware with limited resources can't enjoy the benefits of advanced models, because advanced models can't deploy on them, e.g., mobile devices.
+With the development of deep learning models and growth of hardware computation power, more and more large models have been created. For example, GPT-3 model has 175B parameters, and is trained on 500B dataset. These models, though delivering state of the art results, posed some challenges when adopting it in user environment. For example, high training cost, huge efforts of data labeling, and hard to be deployed in resource constraint environment.
 
-### Solution with Model Adaptor of Intel® End-to-End AI Optimization Kit
+### Intel® End-to-End AI Optimization Kit Model Adaptor
+Various technologies have been developed to resolve these challenges. For example, pre-training & fine-tuning [1] can greatly reduce the training cost; knowledge distillation [2] can significantly reduce the hardware resource requirement; besides, domain adaptation[3] can train target model with few-label or even label-free data. We proposed Model Adaptor, providing comprehensive transfer learning optimization technologies via a unified Application Programming Interface (API).
 
-An intuitive idea is: Can we use publicly available resources to reduce the cost of model training and data collection?  
-
-Over time, more and more publicly available pre-trained models and labeled datasets are emerging on Internet. Then we can transfer “knowledge” from these available pre-trained models and labeled datasets to our target task with several SOTA technologies, i.e., pretraining & finetuning [1], distillation [2], and domain adaption [3].
-
-- Pretraining & Finetuning: During pretraining, an advanced model is trained on a large dataset; During finetuning, the pretrained advanced model is applied to downstream tasks. 
-
-- Distillation: Distillation is used to distill knowledge from pre-trained advanced model (called teacher model) to a different model (called student model). Generally, the output of teacher model serves as pseudo-label for student model, and the student model learns to fit the pseudo-label to perform knowledge transferring. 
-
-- Domain adaption: Domain adaption is used to reuse another dataset (called "source domain dataset") to target task. 
+Model Adaptor is targeted to reduce training time and improve inference throughput, data labeling cost by efficiently utilize pre-trained models and datasets from common domains. The objectives are:(1) Transfer knowledge from pretrained model with the same/different network structure, reduce training time without or with minimum accuracy regression. (2) Transfer knowledge from source domain data without target label to target domain data.
 
 ### This solution is intended for
-
-1. Individual user can use Model Adaptor to take advantage of advanced models efficiently and effectively. 
-   
-2. Data scientists can use Model Adaptor to perform knowledge transferring, focusing on where to transfer instead of how to transfer , and improve data analysis.
-
-3. Developers can integrate Model Adaptor to their products, equipping the capability of transfer knowledge.
-
-4. Enterprises can combine Model Adaptor into existing pipeline to improve efficiency and effectiveness.
-
-5. Users without GPU/TPU use can Model Adaptor to efficiently perform knowledge transferring on CPU.
+This solution is intended for citizen data scientists, enterprise users, independent software vendor and partial of cloud service providers.
 
 ## ARCHITECTURE 
 ### Model Adaptor of Intel® End-to-End AI Optimization Kit
-In Model Adaptor, we have implemented all the above three transfer learning technologies with a unified API. Besides, Model Adaptor can be easily integrated with existing pipeline, requiring only a few code changes. Finally, Model Adaptor makes additional efforts on optimization of CPU-training and CPU-inference, both on single-node and multi-node.
+There are three modules in Model Adapter: Finetuner for pretraining & fine-tuning, Distiller for knowledge distillation and Domain Adapter for domain adaption. They shared a unified API and can be easily integrated with existing pipeline with few code changes. Model Adaptor was optimized on CPU clusters for training and inference with Intel optimized frameworks and libraries.
 
 ### The key components are
 
-- **Finetuner**: A finetuner is one of the components for TransferableModel, performs finetuning and servs as a regularizer of underlying model. 
-- **Distiller**: A distiller is second of the components for TransferableModel, performs distillation and servs as another regularizer of underlying model. 
-- **Adapter**: : An adapter is the third of the components for TransferableModel, performs domain adaption and serves as third regularizer of underlying model.
+- **Finetuner**: Finetuner uses pretraining and finetuning technology to transfer knowledge from pretrained model to target model with same network structure. Pretrained models usually are generated separately, which is a pre-trained model on specific dataset. Finetuner retrieves the pretrained model with same network structure, and copy pretrained weights from pretrained model to corresponding layer of target model, instead of random initialization for target mode. With this, it can greatly improve training speed and delivers better performance.
 
-<img src="./doc/imgs/arch.png" width="800px" />
+- **Distiller**: Distiller uses knowledge distillation technology to transfer knowledge from a heavy model (teacher) to a light one (student) with different structure. Teacher is a large model pretrained on specific dataset, which contains sufficient knowledge for this task, while the student model has much smaller structure. Distiller trains with two losses: one comes from the dataset learning, another is to reduce the gap with teacher predicting, and in this way teacher’s knowledge can quickly guide the learning of student to coverage. Distiller reduces training time significantly, improves model convergence and small models’ predication accuracy. 
 
-**Remark**: Source domain data is served as another knowledge base to Model Adaptor. Model Adaptor transfer knowledge from source domain data to target task. 
+- **Domain Adapter**: Domain Adapter is based on domain transfer technology, it can transfer knowledge from source domain (cheap labels) to target domain (few labels or label-free). Directly applying pre-trained model into target domain cannot always work due to covariate shift and label shift, while fine-tuning is also not working due to the expensive labeling in some domains. Even if users invest resource in labeling, it will be time-consuming and delays the model deployment. Adapter aims at reusing the transferable knowledge with the help of another labeled dataset with same learning task. That is, achieving better generalization with little labeled target dataset or achieving a competitive performance in label-free target dataset.
+
+<img src="./doc/overview.png" width="60%">
 
 ## Getting Started 
+
+### Installation 
+```bash
+## set env
+git clone https://github.com/intel/e2eAIOK.git
+cd e2eAIOK
+git submodule update --init --recursive
+python scripts/start_e2eaiok_docker.py --backend pytorch112 --dataset_path ${dataset_path} --workers ${host1}, ${host2}, ${host3}, ${host4} --proxy "http://addr:ip"
+
+## enter docker
+sshpass -p docker ssh ${host0} -p 12347
+```
+
+### Quick Start 
+- [Finetuner](https://github.com/intel/e2eAIOK/demo/ma/finetuner/Model_Adapter_Finetuner_builtin_resnet50_CIFAR100.ipynb) - Apply finetuner for ResNet50 on CIFAR100 dataset to improve the accuracy.
+```bash
+python /home/vmagent/app/e2eaiok/e2eAIOK/ModelAdapter/main.py --cfg /home/vmagent/app/e2eaiok/conf/ma/demo/baseline/cifar100_res18.yaml
+```
+
+- [Distiller](https://github.com/intel/e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_builtin_resnet18_CIFAR100.ipynb) - Apply distiller from teacher model ResNet50 to student model ResNet18 on CIFAR100 to guide the learning of small model.
+```bash
+python /home/vmagent/app/e2eaiok/e2eAIOK/ModelAdapter/main.py --cfg /home/vmagent/app/e2eaiok/conf/ma/demo/distiller/cifar100_kd_res50_res18.yaml
+```
  
-### Quick start
+### API usage for Customized cases
 
-   We provide an unified API, which is an unified interface to assign different transfer learning ability to the underlying model. The Unified API returns a transferable model, which is a wrapper of the underlying model. The type of transferable model is TransferableModel, which shares the same interface with the underlying model. Therefore, the original model can be replaced with the transferable model in general pipeline. 
+We provide a unified API for all three components to apply different model adapter features to the underlying model, and it can be easily integrated with existing pipeline with few code changes.
 
-- #### Finetuning with Model Adaptor
+#### Finetuner
 
 1. Download the pretrained resnet50 from [ImageNet-21K Pretraining for the Masses](https://miil-public-eu.oss-eu-central-1.aliyuncs.com/model-zoo/ImageNet_21K_P/models/resnet50_miil_21k.pth)[4], which is pretrained on Imagenet21k.
 
 2. Create a transferable model with Model Adaptor Unified API:
     ```python
-    model = timm.create_model('resnet50', pretrained=False, num_classes=100).to(device)
+    model = timm.create_model('resnet50', pretrained=False, num_classes=100)
 
-    pretrained_path = './model-zoo/resnet50_miil_21k.pth' # download path
-    pretrained_model = timm.create_model('resnet50', pretrained=False, num_classes=11221).to(device)
-    pretrained_model.load_state_dict(torch.load(pretrained_path,map_location=device)["state_dict"], strict=True)
+    pretrained_path = './resnet50_miil_21k.pth' # download path
+    pretrained_model = timm.create_model('resnet50', pretrained=False, num_classes=11221)
+    pretrained_model.load_state_dict(torch.load(pretrained_path,map_location='cpu')["state_dict"], strict=True)
     finetunner= BasicFinetunner(pretrained_model, is_frozen=False)
     model = make_transferrable_with_finetune(model, loss_fn, finetunner)
     ```
+    You can find a complete demo at [finetuner customized demo](https://github.com/intel/e2eAIOK/demo/ma/finetuner/Model_Adapter_Finetuner_customized_resnet50_CIFAR100.ipynb).
 
-- #### Distillation with Model Adaptor
+#### Distiller
 
 1. Prepare a teacher model, here we select pretrained vit_base-224-in21k-ft-cifar100 is from [HuggingFace](https://huggingface.co/edumunozsala/vit_base-224-in21k-ft-cifar100).
 
 2. Create a transferable model with Model Adaptor Unified API:
    ```python
-   model = timm.create_model('resnet50', pretrained=False, num_classes=100).to(device)
+   model = timm.create_model('resnet50', pretrained=False, num_classes=100)
 
+   from transformers import ViTForImageClassification
    teacher_model = AutoModelForImageClassification.from_pretrained("edumunozsala/vit_base-224-in21k-ft-cifar100")
-   distiller= BasicDistiller(teacher_model, num_classes=100)
+   distiller= KD(teacher_model)
+   loss_fn = torch.nn.CrossEntropyLoss()
    model = make_transferrable_with_knowledge_distillation(model, loss_fn, distiller)
    ```
+   
+   You can find a complete demo at [distiller customized demo](https://github.com/intel/e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_builtin_resnet18_CIFAR100.ipynb)
 
-**Acceleration with logits saving**
-During distillation, teacher forwarding usually takes a lot of time. To accelerate the training procedure, We can save the predicting logits from teacher in advance and reuse it in later student training. Here is the [Logits saving demo](./example/Distiller_ResNet18_from_VIT_on_CIFAR100_save_logits.ipynb) and the code for [training with saved logits](./example/Distiller_ResNet18_from_VIT_on_CIFAR100_train_with_logits.ipynb)
+***Optimizations: Acceleration with logits saving***
 
-- #### Domain Adaption with Model Adaptor
+During distillation, teacher forwarding usually takes a lot of time. To accelerate the training process, we can save the predicting logits from teacher in advance and reuse it in later student training. Here is  [logits saving demo](https://github.com/intel/e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_customized_resnet18_CIFAR100_save_logits.ipynb) and the code for [training with saved logits](https://github.com/intel/e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_customized_resnet18_CIFAR100_train_with_logits.ipynb)
+
+#### Domain Adapter
 
 1. Create backbone model and discriminator model:
    ```python
@@ -105,16 +113,23 @@ During distillation, teacher forwarding usually takes a lot of time. To accelera
    transfer_strategy = TransferStrategy.OnlyDomainAdaptionStrategy
    model = make_transferrable_with_domain_adaption(model, adapter, transfer_strategy,...)
    ```
+## Demos
+### Built-in Demos
+- [Model Adapter Overview](https://github.com/intel/e2eAIOK/demo/ma/Model_Adapter_Summary.ipynb) 
+- [Finetuner on Image Classification](https://github.com/intel/e2eAIOK/demo/ma/finetuner/Model_Adapter_Finetuner_builtin_resnet50_CIFAR100.ipynb)
+- [Distiller on Image Classification](https://github.com/intel/e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_builtin_resnet18_CIFAR100.ipynb)
+- [Domain Adapter on Medical Segmentation](https://github.com/intel/e2eAIOK/demo/ma/adapter/Model_Adapter_Domain_Adapter_builtin_Unet_KITS19.ipynb)
 
-### Demos
-- [Model Adapter Demo](./example/Model_Adapter_Demo.ipynb) 
-- [Finetuner Demo](./example/pipeline_with_finetuner.py)
-- [Distiller Demo](./example/Distiller_ResNet18_from_VIT_on_CIFAR100_train.ipynb)
-- [Distiller Demo with saved logits](./example/Distiller_ResNet18_from_VIT_on_CIFAR100_train_with_logits.ipynb)
-- [Domain Adatper Demo](./example/domain_adapter_demo)
-
-## Reference
+### API usage for Customized usage
+- [Finetuner on Image Classification](https://github.com/intel/e2eAIOK/demo/ma/finetuner/Model_Adapter_Finetuner_customized_resnet50_CIFAR100.ipynb)
+- [Distiller on Image Classification](https://github.com/intel/e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_customized_resnet18_CIFAR100.ipynb)
+- [Domain Adapter on Medical Segmentation](https://github.com/intel/e2eAIOK/demo/ma/adapter/Model_Adapter_Adapter_customized_Unet_KITS19.ipynb)
+   
+ # References
 [1] He, K., Girshick, R., Doll´ar, P.: Rethinking imagenet pre-training. In: ICCV (2019)
+
 [2] G. Hinton, O. Vinyals, and J. Dean. Distilling the knowledge in a neural network. arXiv preprint arXiv:1503.02531, 2015
+
 [3] Yaroslav Ganin and Victor Lempitsky. Unsupervised domain adaptation by backpropagation. In ICML, pages 325–333, 2015
+
 [4] Tal Ridnik, Emanuel Ben-Baruch, Asaf Noy, and Lihi Zelnik-Manor. Imagenet-21k pretraining for the masses. arXiv:2104.10972, 2021
