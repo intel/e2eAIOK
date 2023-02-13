@@ -1,29 +1,13 @@
 import random
+
 import os, sys
 
-from e2eAIOK.DeNas.asr.model_builder_denas_asr import gen_transformer, load_pretrained_model
-from e2eAIOK.DeNas.pruner.pruner import Pruner
-from copy import deepcopy
+
+from e2eAIOK.DeNas.module.asr.utils import gen_transformer
 
 def asr_decode_cand_tuple(cand):
     depth = cand[0]
     return depth, list(cand[1:depth+1]), list(cand[depth + 1: 2 * depth + 1]), cand[-1]
-
-def construct_model_with_structure(structure):
-    depth, mlp_ratio, num_heads, d_model = asr_decode_cand_tuple(structure)
-    sampled_config = {}
-    sampled_config['num_encoder_layers'] = depth
-    sampled_config['mlp_ratio'] = mlp_ratio
-    sampled_config['encoder_heads'] = num_heads
-    sampled_config['d_model'] = d_model
-    net = gen_transformer(**sampled_config)
-    return net
-
-def construct_model_with_pruner(sparsity, params, super_net):
-    model = deepcopy(super_net)
-    pruner = Pruner(params.algo, sparsity)
-    model = pruner.prune(model)
-    return model
 
 def asr_is_legal(cand, vis_dict, params, super_net):
     if cand not in vis_dict:
@@ -31,18 +15,21 @@ def asr_is_legal(cand, vis_dict, params, super_net):
     info = vis_dict[cand]
     if 'visited' in info:
         return False, super_net
-    if params.pruner:
-        model = construct_model_with_pruner(cand, params, super_net)
-    else:
-        model = construct_model_with_structure(cand)
-    total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    depth, mlp_ratio, num_heads, d_model = asr_decode_cand_tuple(cand)
+    sampled_config = {}
+    sampled_config['num_encoder_layers'] = depth
+    sampled_config['mlp_ratio'] = mlp_ratio
+    sampled_config['encoder_heads'] = num_heads
+    sampled_config['d_model'] = d_model
+    super_net = gen_transformer(**sampled_config)
+    total_params = sum(p.numel() for p in super_net.parameters() if p.requires_grad)
     info['params'] =  total_params / 10.**6
     if info['params'] > params.max_param_limits or info['params'] < params.min_param_limits:
         return False, info['params'] < params.min_param_limits
     info['visited'] = True
-    return True, model
+    return True, super_net
 
-def asr_populate_random_structure(search_space):
+def asr_populate_random_func(search_space):
     cand_tuple = list()
     dimensions = ['mlp_ratio', 'num_heads']
     depth = random.choice(search_space['depth'])
@@ -52,15 +39,6 @@ def asr_populate_random_structure(search_space):
             cand_tuple.append(random.choice(search_space[dimension]))
     cand_tuple.append(random.choice(search_space['embed_dim']))
     return tuple(cand_tuple)
-
-def asr_populate_sparsity(search_space):
-    return random.choice(search_space['sparsity'])
-
-def asr_populate_random_func(search_space, pruner):
-    if pruner:
-        return asr_populate_sparsity(search_space)
-    else:
-        return asr_populate_random_structure(search_space)
 
 def asr_mutation_random_func(m_prob, s_prob, search_space, top_candidates):
     cand = list(random.choice(top_candidates))

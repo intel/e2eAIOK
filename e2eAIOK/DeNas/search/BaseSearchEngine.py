@@ -2,9 +2,11 @@ import logging
 import gc
 import json
 import numpy as np
+from copy import deepcopy
+import random
 
 from abc import ABC, abstractmethod
-from e2eAIOK.DeNas.utils import NETWORK_LATENCY
+from e2eAIOK.DeNas.utils import NETWORK_LATENCY, get_total_parameters_count, get_pruned_parameters_count
 from e2eAIOK.DeNas.scores.compute_de_score import do_compute_nas_score 
 from e2eAIOK.DeNas.cv.utils.cnn import cnn_is_legal, cnn_populate_random_func
 from e2eAIOK.DeNas.cv.utils.vit import vit_is_legal, vit_populate_random_func
@@ -12,6 +14,7 @@ from e2eAIOK.DeNas.nlp.utils import bert_is_legal, bert_populate_random_func, ge
 from e2eAIOK.DeNas.asr.utils.asr_nas import asr_is_legal, asr_populate_random_func
 from e2eAIOK.DeNas.thirdparty.utils import hf_is_legal, hf_populate_random_func
 from e2eAIOK.DeNas.thirdparty.supernet_hf import SuperHFModel
+from e2eAIOK.DeNas.pruner.pruner import Pruner
 
  
 class BaseSearchEngine(ABC):
@@ -36,20 +39,39 @@ class BaseSearchEngine(ABC):
     Judge sample structure legal or not
     '''
     def cand_islegal(self, cand):
-        if self.params.domain == "cnn":
-            return cnn_is_legal(cand, self.vis_dict, self.params, self.super_net)
-        elif self.params.domain == "vit":
-            return vit_is_legal(cand, self.vis_dict, self.params, self.super_net)
-        elif self.params.domain == "bert":
-            return bert_is_legal(cand, self.vis_dict, self.params, self.super_net)
-        elif self.params.domain == "asr":
-            is_legal, net = asr_is_legal(cand, self.vis_dict, self.params, self.super_net)
-            self.super_net = net
-            return is_legal
-        elif self.params.domain == "hf":
-            return hf_is_legal(cand, self.vis_dict, self.params)
+        if "pruner" in self.params and self.params.pruner:
+            if cand not in self.vis_dict:
+                self.vis_dict[cand] = {}
+            info = self.vis_dict[cand]
+            if 'visited' in info:
+                return False
+            cand_model = deepcopy(self.super_net)
+            pruner = Pruner(self.params.algo, cand)
+            self.cand_model = pruner.prune(cand_model)
+
+            total_params = get_total_parameters_count(cand_model)
+            total_params_pruned = get_pruned_parameters_count(cand_model)
+            info['params'] =  total_params / 10.**6
+            info['sparsity'] = total_params_pruned / total_params
+            if info['sparsity'] > self.params.max_sparsity_limits or info['params'] < self.params.min_sparsity_limits:
+                return False
+            info['visited'] = True
+            return True
         else:
-            raise RuntimeError(f"Domain {self.params.domain} is not supported")
+            if self.params.domain == "cnn":
+                return cnn_is_legal(cand, self.vis_dict, self.params, self.super_net)
+            elif self.params.domain == "vit":
+                return vit_is_legal(cand, self.vis_dict, self.params, self.super_net)
+            elif self.params.domain == "bert":
+                return bert_is_legal(cand, self.vis_dict, self.params, self.super_net)
+            elif self.params.domain == "asr":
+                is_legal, net = asr_is_legal(cand, self.vis_dict, self.params, self.super_net)
+                self.cand_model = net
+                return is_legal
+            elif self.params.domain == "hf":
+                return hf_is_legal(cand, self.vis_dict, self.params)
+            else:
+                raise RuntimeError(f"Domain {self.params.domain} is not supported")
 
     '''
     Check whether candidate latency is within latency budget
@@ -101,18 +123,21 @@ class BaseSearchEngine(ABC):
     Generate sample random structure
     '''
     def populate_random_func(self):
-        if self.params.domain == "cnn":
-            return cnn_populate_random_func(self.super_net, self.search_space, self.params.num_classes, self.params.plainnet_struct, self.params.no_reslink, self.params.no_BN, self.params.use_se)
-        elif self.params.domain == "vit":
-            return vit_populate_random_func(self.search_space)
-        elif self.params.domain == "bert":
-            return bert_populate_random_func(self.search_space)
-        elif self.params.domain == "asr":
-            return asr_populate_random_func(self.search_space, self.params.pruner)
-        elif self.params.domain == "hf":
-            return hf_populate_random_func(self.search_space)
+        if "pruner" in self.params and self.params.pruner:
+            return random.choice(self.search_space['sparsity'])
         else:
-            raise RuntimeError(f"Domain {self.params.domain} is not supported")
+            if self.params.domain == "cnn":
+                return cnn_populate_random_func(self.super_net, self.search_space, self.params.num_classes, self.params.plainnet_struct, self.params.no_reslink, self.params.no_BN, self.params.use_se)
+            elif self.params.domain == "vit":
+                return vit_populate_random_func(self.search_space)
+            elif self.params.domain == "bert":
+                return bert_populate_random_func(self.search_space)
+            elif self.params.domain == "asr":
+                return asr_populate_random_func(self.search_space)
+            elif self.params.domain == "hf":
+                return hf_populate_random_func(self.search_space)
+            else:
+                raise RuntimeError(f"Domain {self.params.domain} is not supported")
 
     '''
     Compute nas score for sample structure
@@ -127,7 +152,7 @@ class BaseSearchEngine(ABC):
             model = self.super_net.set_sample_config(subconfig)
             model = self.super_net
         elif self.params.domain == "asr":
-            model = self.super_net
+            model = self.cand_model
         elif self.params.domain == "hf":
             subconfig = json.loads(cand)
             model = SuperHFModel.set_sample_config(self.params.supernet, **subconfig)
