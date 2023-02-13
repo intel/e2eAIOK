@@ -2,7 +2,7 @@ import math
 import torch
 import logging
 from packaging import version
-from asr.utils.checkpoints import (
+from e2eAIOK.DeNas.asr.utils.checkpoints import (
     mark_as_saver,
     mark_as_loader,
     mark_as_transfer,
