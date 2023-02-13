@@ -1,0 +1,30 @@
+experiment:
+  project: "demo"
+  tag: "cifar100_res50"
+  
+output_dir: "/home/vmagent/app/data/model"
+train_epochs: 1
+
+### dataset
+data_set: "cifar100"
+data_path:  "/home/vmagent/app/data/dataset/cifar"
+num_workers: 4
+
+### model
+model_type: "resnet50"
+
+## optimizer
+optimizer: "SGD"
+learning_rate: 0.00753
+weight_decay: 0.00115
+momentum: 0.9
+
+### scheduler
+lr_scheduler: "CosineAnnealingLR"
+lr_scheduler_config:
+    T_max: 200
+
+### early stop
+early_stop: "EarlyStopping"
+early_stop_config:
+    tolerance_epoch: 15

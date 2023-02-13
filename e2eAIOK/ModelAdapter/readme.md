@@ -73,11 +73,11 @@ We provide a unified API for all three components to apply different model adapt
 
 #### Distiller
 
-1. Prepare a teacher model, here we select pretrained vit_base-224-in21k-ft-cifar100 is from [HuggingFace](https://huggingface.co/edumunozsala/vit_base-224-in21k-ft-cifar100).
+1. Prepare a teacher model, here we select pretrained [vit_base-224-in21k-ft-cifar100 from HuggingFace](https://huggingface.co/edumunozsala/vit_base-224-in21k-ft-cifar100).
 
 2. Create a transferable model with Model Adaptor Unified API:
    ```python
-   model = timm.create_model('resnet50', pretrained=False, num_classes=100)
+   model = timm.create_model('resnet18', pretrained=False, num_classes=100)
 
    from transformers import ViTForImageClassification
    teacher_model = AutoModelForImageClassification.from_pretrained("edumunozsala/vit_base-224-in21k-ft-cifar100")
