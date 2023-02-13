@@ -115,15 +115,15 @@ During distillation, teacher forwarding usually takes a lot of time. To accelera
    ```
 ## Demos
 ### Built-in Demos
-- [Model Adapter Overview](../../e2eAIOK/demo/ma/Model_Adapter_Summary.ipynb) 
-- [Finetuner on Image Classification](../../e2eAIOK/demo/ma/finetuner/Model_Adapter_Finetuner_builtin_ResNet50_CIFAR100.ipynb)
-- [Distiller on Image Classification](../../e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_builtin_ResNet18_CIFAR100.ipynb)
-- [Domain Adapter on Medical Segmentation](../../e2eAIOK/demo/ma/adapter/Model_Adapter_Domain_Adapter_builtin_Unet_KITS19.ipynb)
+- [Model Adapter Overview](../../demo/ma/Model_Adapter_Summary.ipynb) 
+- [Finetuner on Image Classification](../../demo/ma/finetuner/Model_Adapter_Finetuner_builtin_ResNet50_CIFAR100.ipynb)
+- [Distiller on Image Classification](../../demo/ma/distiller/Model_Adapter_Distiller_builtin_ResNet18_CIFAR100.ipynb)
+- [Domain Adapter on Medical Segmentation](../../demo/ma/domain_adapter/Model_Adapter_Domain_Adapter_builtin_Unet_KITS19.ipynb)
 
 ### API usage for Customized usage
-- [Finetuner on Image Classification](../../e2eAIOK/demo/ma/finetuner/Model_Adapter_Finetuner_customized_ResNet50_CIFAR100.ipynb)
-- [Distiller on Image Classification](../../e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_customized_ResNet18_CIFAR100.ipynb)
-- [Domain Adapter on Medical Segmentation](../../e2eAIOK/demo/ma/adapter/Model_Adapter_Adapter_customized_Unet_KITS19.ipynb)
+- [Finetuner on Image Classification](../../demo/ma/finetuner/Model_Adapter_Finetuner_customized_ResNet50_CIFAR100.ipynb)
+- [Distiller on Image Classification](../../demo/ma/distiller/Model_Adapter_Distiller_customized_ResNet18_CIFAR100.ipynb)
+- [Domain Adapter on Medical Segmentation](../../demo/ma/domain_adapter/Model_Adapter_Domain_Adapter_customized_Unet_KITS19.ipynb)
    
  # References
 [1] He, K., Girshick, R., Doll´ar, P.: Rethinking imagenet pre-training. In: ICCV (2019)
