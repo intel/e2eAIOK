@@ -87,6 +87,7 @@ class BaseSearchEngine(ABC):
             sampled_config['sample_hidden_size'] = cand[3]
             sampled_config['sample_intermediate_sizes'] = [cand[4]]*cand[0]
             model = self.super_net.set_sample_config(sampled_config)
+            model = self.super_net
             latency = NETWORK_LATENCY[self.params.domain](model=model, batch_size=self.params.batch_size, max_seq_length=self.params.img_size, gpu=None, infer_cnt=10.)
         elif self.params.domain == "thirdparty":
             cand_dict = json.loads(cand)
@@ -124,7 +125,8 @@ class BaseSearchEngine(ABC):
             model = self.super_net
         elif self.params.domain == "bert":
             subconfig = get_subconfig(cand)
-            model = self.super_net.module.set_sample_config(subconfig) if hasattr(self.super_net, 'module') else self.super_net.set_sample_config(subconfig)
+            model = self.super_net.set_sample_config(subconfig)
+            model = self.super_net
         elif self.params.domain == "asr":
             model = self.super_net
         elif self.params.domain == "thirdparty":
