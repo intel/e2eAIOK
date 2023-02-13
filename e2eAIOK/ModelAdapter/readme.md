@@ -41,14 +41,14 @@ sshpass -p docker ssh ${host0} -p 12347
 ```
 
 ### Quick Start 
-- [Finetuner](https://github.com/intel/e2eAIOK/demo/ma/finetuner/Model_Adapter_Finetuner_builtin_resnet50_CIFAR100.ipynb) - Apply finetuner for ResNet50 on CIFAR100 dataset to improve the accuracy.
+- [Finetuner](../../demo/ma/finetuner/Model_Adapter_Finetuner_builtin_resnet50_CIFAR100.ipynb) - Apply finetuner for ResNet50 on CIFAR100 dataset to improve the accuracy.
 ```bash
-python /home/vmagent/app/e2eaiok/e2eAIOK/ModelAdapter/main.py --cfg /home/vmagent/app/e2eaiok/conf/ma/demo/baseline/cifar100_res18.yaml
+python /home/vmagent/app/e2eaiok/e2eAIOK/ModelAdapter/main.py --cfg /home/vmagent/app/e2eaiok/conf/ma/demo/finetuner/cifar100_res50PretrainI21k.yaml
 ```
 
-- [Distiller](https://github.com/intel/e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_builtin_resnet18_CIFAR100.ipynb) - Apply distiller from teacher model ResNet50 to student model ResNet18 on CIFAR100 to guide the learning of small model.
+- [Distiller](../../e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_builtin_resnet18_CIFAR100.ipynb) - Apply distiller from teacher model VIT to student model ResNet18 on CIFAR100 to guide the learning of small model.
 ```bash
-python /home/vmagent/app/e2eaiok/e2eAIOK/ModelAdapter/main.py --cfg /home/vmagent/app/e2eaiok/conf/ma/demo/distiller/cifar100_kd_res50_res18.yaml
+python /home/vmagent/app/e2eaiok/e2eAIOK/ModelAdapter/main.py --cfg /home/vmagent/app/e2eaiok/conf/ma/demo/distiller/cifar100_kd_vit_res18_demo.yaml
 ```
  
 ### API usage for Customized cases
@@ -69,7 +69,7 @@ We provide a unified API for all three components to apply different model adapt
     finetunner= BasicFinetunner(pretrained_model, is_frozen=False)
     model = make_transferrable_with_finetune(model, loss_fn, finetunner)
     ```
-    You can find a complete demo at [finetuner customized demo](https://github.com/intel/e2eAIOK/demo/ma/finetuner/Model_Adapter_Finetuner_customized_resnet50_CIFAR100.ipynb).
+    You can find a complete demo at [finetuner customized demo](../../intel/e2eAIOK/demo/ma/finetuner/Model_Adapter_Finetuner_customized_resnet50_CIFAR100.ipynb).
 
 #### Distiller
 
@@ -81,16 +81,16 @@ We provide a unified API for all three components to apply different model adapt
 
    from transformers import ViTForImageClassification
    teacher_model = AutoModelForImageClassification.from_pretrained("edumunozsala/vit_base-224-in21k-ft-cifar100")
-   distiller= KD(teacher_model)
+   distiller= KD(teacher_model,teacher_type="huggingface_vit")
    loss_fn = torch.nn.CrossEntropyLoss()
    model = make_transferrable_with_knowledge_distillation(model, loss_fn, distiller)
    ```
    
-   You can find a complete demo at [distiller customized demo](https://github.com/intel/e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_builtin_resnet18_CIFAR100.ipynb)
+   You can find a complete demo at [distiller customized demo](../../intel/e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_builtin_resnet18_CIFAR100.ipynb)
 
 ***Optimizations: Acceleration with logits saving***
 
-During distillation, teacher forwarding usually takes a lot of time. To accelerate the training process, we can save the predicting logits from teacher in advance and reuse it in later student training. Here is  [logits saving demo](https://github.com/intel/e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_customized_resnet18_CIFAR100_save_logits.ipynb) and the code for [training with saved logits](https://github.com/intel/e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_customized_resnet18_CIFAR100_train_with_logits.ipynb)
+During distillation, teacher forwarding usually takes a lot of time. To accelerate the training process, we can save the predicting logits from teacher in advance and reuse it in later student training. Here is  [logits saving demo](../../intel/e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_customized_resnet18_CIFAR100_save_logits.ipynb) and the code for [training with saved logits](../../intel/e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_customized_resnet18_CIFAR100_train_with_logits.ipynb)
 
 #### Domain Adapter
 
@@ -115,15 +115,15 @@ During distillation, teacher forwarding usually takes a lot of time. To accelera
    ```
 ## Demos
 ### Built-in Demos
-- [Model Adapter Overview](https://github.com/intel/e2eAIOK/demo/ma/Model_Adapter_Summary.ipynb) 
-- [Finetuner on Image Classification](https://github.com/intel/e2eAIOK/demo/ma/finetuner/Model_Adapter_Finetuner_builtin_resnet50_CIFAR100.ipynb)
-- [Distiller on Image Classification](https://github.com/intel/e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_builtin_resnet18_CIFAR100.ipynb)
-- [Domain Adapter on Medical Segmentation](https://github.com/intel/e2eAIOK/demo/ma/adapter/Model_Adapter_Domain_Adapter_builtin_Unet_KITS19.ipynb)
+- [Model Adapter Overview](../../e2eAIOK/demo/ma/Model_Adapter_Summary.ipynb) 
+- [Finetuner on Image Classification](../../e2eAIOK/demo/ma/finetuner/Model_Adapter_Finetuner_builtin_ResNet50_CIFAR100.ipynb)
+- [Distiller on Image Classification](../../e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_builtin_ResNet18_CIFAR100.ipynb)
+- [Domain Adapter on Medical Segmentation](../../e2eAIOK/demo/ma/adapter/Model_Adapter_Domain_Adapter_builtin_Unet_KITS19.ipynb)
 
 ### API usage for Customized usage
-- [Finetuner on Image Classification](https://github.com/intel/e2eAIOK/demo/ma/finetuner/Model_Adapter_Finetuner_customized_resnet50_CIFAR100.ipynb)
-- [Distiller on Image Classification](https://github.com/intel/e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_customized_resnet18_CIFAR100.ipynb)
-- [Domain Adapter on Medical Segmentation](https://github.com/intel/e2eAIOK/demo/ma/adapter/Model_Adapter_Adapter_customized_Unet_KITS19.ipynb)
+- [Finetuner on Image Classification](../../e2eAIOK/demo/ma/finetuner/Model_Adapter_Finetuner_customized_ResNet50_CIFAR100.ipynb)
+- [Distiller on Image Classification](../../e2eAIOK/demo/ma/distiller/Model_Adapter_Distiller_customized_ResNet18_CIFAR100.ipynb)
+- [Domain Adapter on Medical Segmentation](../../e2eAIOK/demo/ma/adapter/Model_Adapter_Adapter_customized_Unet_KITS19.ipynb)
    
  # References
 [1] He, K., Girshick, R., Doll´ar, P.: Rethinking imagenet pre-training. In: ICCV (2019)

@@ -41,6 +41,8 @@ Intel® End-to-End AI Optimization Kit is a composable toolkits for E2E AI optim
 
 * [Neural Network Constructor](e2eAIOK/DeNas/README.md): A neural architecture search technology based on component to build compact neural network models for specific domains directly. It is a multi-model, hardware aware, train-free neural architecture search approach to build models for CV, NLP, ASR directly and leverage transfer learning model adaptor to deploy the models in user’s production environment.
 
+* [Model Adapter](e2eAIOK/ModelAdapter/README.md):  A general and convenient framework for transfer knowledge from pretrained model and/or source domain data to target task. There are three modules in it: Finetuner for pretraining & fine-tuning, Distiller for knowledge distillation and Model Adapter for domain adaption. All the three components share a unified API and can be easily integrated with existing pipeline with few codes modification.
+
 For more information, you may [read the docs](https://github.com/intel/e2eAIOK).
 ![Architecture](./docs/source/aiok_workflow.png)
 
@@ -69,6 +71,11 @@ cd e2eAIOK; python scripts/start_e2eaiok_docker.py --backend [tensorflow, pytorc
   * [Computer Vision](demo/denas/computer_vision/DENAS_COMPUTER_VISION_DEMO.ipynb) - CNN/Vit, PyTorch
   * [NLP](demo/denas/bert/DENAS_BERT_DEMO.ipynb) - BERT, PyTorch
   * [Speech Recognition](demo/denas/asr/DENAS_ASR_DEMO.ipynb) - ASR, PyTorch
+  
+* Model Aadapter demos
+  * [Finetuner](demo/ma/finetuner/Model_Adapter_Finetuner_builtin_ResNet50_CIFAR100.ipynb) - Image Classification, Pytorch
+  * [Distiller](demo/ma/distiller/Model_Adapter_Distiller_builtin_ResNet18_CIFAR100.ipynb) - Image Classification, Pytorch
+  * [Domain Adapter](demo/ma/domain_adapter/Model_Adapter_Domain_Adapter_builtin_Unet_KITS19.ipynb) - Medical Segmentation, Pytorch
 
 ## Performance
 
