@@ -1,17 +1,13 @@
+torch==1.12.1 -f https://download.pytorch.org/whl/cpu
+torchvision==0.13.1 -f https://download.pytorch.org/whl/cpu
+torchaudio==0.12.1 -f https://download.pytorch.org/whl/cpu
 scikit-learn
-torchsummary 
-easydict 
-sentencepiece 
-opencv-python 
-scikit-image 
-tensorboard 
-timm 
-boto3 
-ptflops 
-thop 
-optuna 
-transformers 
+torchsummary
+easydict
+tensorboard
+timm
 nnunet
-torchaudio~=0.12.0
-wandb
-git+https://github.com/thuml/Transfer-Learning-Library.git
+transformers
+thop
+intel_extension_for_pytorch==1.12.100 -f https://developer.intel.com/ipex-whl-stable    
+tllib==0.4 -i https://test.pypi.org/simple/ 

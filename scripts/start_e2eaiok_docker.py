@@ -32,8 +32,16 @@ def log_subprocess_output(pipe, logger, idx = ""):
         logger.info(f"[{idx}]" + line.decode("utf-8").strip())
 
 def get_install_cmd():
-    import platform
-    os = platform.linux_distribution()[0]
+    try:
+        import distro
+    except:
+        python_name = f"python{sys.version_info[0]}"
+        cmdline = f"{python_name} -m pip install distro"
+        if not execute(cmdline, logger):
+            logger.error("failed to install distro package, please fix manually")
+            return None
+        import distro
+    os = distro.like()
     if 'debian' in os:
         return "apt install -y "
     else:

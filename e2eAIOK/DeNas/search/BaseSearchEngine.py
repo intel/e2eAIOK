@@ -1,13 +1,13 @@
 import logging
 import gc
 import numpy as np
-import e2eAIOK.DeNas.cv.benchmark_network_latency as benchmark_network_latency
 
 from abc import ABC, abstractmethod
+from e2eAIOK.DeNas.utils import NETWORK_LATENCY
 from e2eAIOK.DeNas.scores.compute_de_score import do_compute_nas_score 
 from e2eAIOK.DeNas.cv.utils.cnn import cnn_is_legal, cnn_populate_random_func
 from e2eAIOK.DeNas.cv.utils.vit import vit_is_legal, vit_populate_random_func
-from e2eAIOK.DeNas.nlp.utils import bert_is_legal, bert_populate_random_func, get_subconfig, get_bert_latency
+from e2eAIOK.DeNas.nlp.utils import bert_is_legal, bert_populate_random_func, get_subconfig
 from e2eAIOK.DeNas.asr.utils.asr_nas import asr_is_legal, asr_populate_random_func
 
  
@@ -68,7 +68,7 @@ class BaseSearchEngine(ABC):
         latency = np.inf
         if self.params.domain == "cnn":
             model = self.super_net(num_classes=self.params.num_classes, plainnet_struct=cand, no_create=False, no_reslink=False)
-            latency = benchmark_network_latency.get_model_latency(model=model, batch_size=self.params.batch_size,
+            latency = NETWORK_LATENCY[self.params.domain](model=model, batch_size=self.params.batch_size,
                                                                     resolution=self.params.img_size,
                                                                     in_channels=3, gpu=None, repeat_times=1,
                                                                     fp16=False)
@@ -82,7 +82,7 @@ class BaseSearchEngine(ABC):
             sampled_config['sample_hidden_size'] = cand[3]
             sampled_config['sample_intermediate_sizes'] = [cand[4]]*cand[0]
             model = self.super_net.set_sample_config(sampled_config)
-            latency = get_bert_latency(model=model, batch_size=self.params.batch_size, max_seq_length=self.params.img_size, gpu=None, infer_cnt=10.)
+            latency = NETWORK_LATENCY[self.params.domain](model=model, batch_size=self.params.batch_size, max_seq_length=self.params.img_size, gpu=None, infer_cnt=10.)
         else:
             raise RuntimeError(f"Domain {self.params.domain} is not supported")
         self.vis_dict[cand]['latency']= latency

@@ -32,6 +32,8 @@ def save_check_logits(model, dataloader, epochs, start_epoch=0, topk=0, num_clas
             save_logits_epoch(model, dataloader, epoch_steps, topk,  model_type, device)
         if check_flag:
             check_logits_epoch(model, dataloader, epoch_steps, topk, num_classes, model_type, device)
+        if epoch == epochs - 1: ## last epoch, let manager refresh
+            dataset.set_epoch(epoch)
         print(f"Epoch {epoch} took {time.time()-start_time} seconds")
         logging.info(f"Epoch {epoch} took {time.time()-start_time} seconds")
 
