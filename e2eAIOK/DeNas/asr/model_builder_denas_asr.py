@@ -20,11 +20,14 @@ class ModelBuilderASRDeNas(ModelBuilderASR):
         if "best_model_structure" in self.cfg and self.cfg.best_model_structure != None:
             with open(self.cfg.best_model_structure, 'r') as f:
                 arch = f.readlines()[-1]
-            num_encoder_layers, mlp_ratio, encoder_heads, d_model = decode_arch_tuple(arch)
-            self.cfg["num_encoder_layers"] = num_encoder_layers
-            self.cfg["mlp_ratio"] = mlp_ratio
-            self.cfg["encoder_heads"] = encoder_heads
-            self.cfg["d_model"] = d_model
+            if self.cfg["pruner"]:
+                self.cfg["sparsity"] = float(arch)
+            else:
+                num_encoder_layers, mlp_ratio, encoder_heads, d_model = decode_arch_tuple(arch)
+                self.cfg["num_encoder_layers"] = num_encoder_layers
+                self.cfg["mlp_ratio"] = mlp_ratio
+                self.cfg["encoder_heads"] = encoder_heads
+                self.cfg["d_model"] = d_model
         modules = {}
         cnn = ConvolutionFrontEnd(
             input_shape = self.cfg["input_shape"],

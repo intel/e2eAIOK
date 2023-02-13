@@ -26,6 +26,7 @@ from e2eAIOK.DeNas.cv.cv_trainer import CVTrainer
 from e2eAIOK.DeNas.nlp.utils import bert_create_optimizer, bert_create_criterion, bert_create_scheduler, bert_create_metric
 from e2eAIOK.DeNas.nlp.bert_trainer import BERTTrainer
 from e2eAIOK.DeNas.search.utils import parse_config
+from e2eAIOK.DeNas.pruner.pruner import Pruner
 
 
 def parse_args(args):
@@ -65,7 +66,10 @@ def main(cfg):
         trainer = BERTTrainer(cfg, model, train_dataloader, eval_dataloader, other_data, optimizer, criterion, scheduler, metric)
     elif cfg.domain == 'asr':
         if cfg.pruner:
-            model = ModelBuilderASRDeNas(cfg).load_pretrained_model_and_prune()
+            model_builder = ModelBuilderASRDeNas(cfg)
+            model = model_builder.load_pretrained_model()
+            pruner = Pruner(cfg.algo, model_builder.cfg.sparsity)
+            pruner.prune(model["Transformer"])
         else:
             model = ModelBuilderASRDeNas(cfg).create_model()
         tokenizer = sp.SentencePieceProcessor()
