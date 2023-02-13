@@ -109,3 +109,15 @@ def get_hf_latency(model, batch_size, max_seq_length, gpu, infer_cnt):
             aver_time += sep / (infer_cnt - 1)
     return aver_time
 
+def input_construtor(batch_size, resolution, domain="NLP"):
+    if domain == "NLP":
+        input_ids = [[9333-id] * resolution for id in range(batch_size)]
+        input_masks = resolution * [1]
+        input_segments = resolution * [0]
+        input_ids = torch.tensor(input_ids, dtype=torch.long)
+        input_masks = torch.tensor([input_masks]*batch_size, dtype=torch.long)
+        input_segments = torch.tensor([input_segments]*batch_size, dtype=torch.long)
+        batch = {'input_ids': input_ids, 'token_type_ids': input_segments, 'attention_mask':input_masks}
+        return batch
+    else:
+        raise NotImplementedError

@@ -118,19 +118,18 @@ class BaseSearchEngine(ABC):
     Compute nas score for sample structure
     '''
     def cand_evaluate(self, cand):
-        subconfig = None
         if self.params.domain == "cnn":
             model = self.super_net(num_classes=self.params.num_classes, plainnet_struct=cand, no_create=False, no_reslink=True)
         elif self.params.domain == "vit":
             model = self.super_net
         elif self.params.domain == "bert":
             subconfig = get_subconfig(cand)
-            model = self.super_net
+            model = self.super_net.module.set_sample_config(subconfig) if hasattr(self.super_net, 'module') else self.super_net.set_sample_config(subconfig)
         elif self.params.domain == "asr":
             model = self.super_net
         elif self.params.domain == "thirdparty":
             subconfig = json.loads(cand)
-            model = self.params.pretrained_model
+            model = SuperHFModel.set_sample_config(self.params.pretrained_model, **subconfig)
         else:
             raise RuntimeError(f"Domain {self.params.domain} is not supported")
         
@@ -138,7 +137,6 @@ class BaseSearchEngine(ABC):
                                                         resolution=self.params.img_size,
                                                         batch_size=self.params.batch_size,
                                                         mixup_gamma=1e-2,
-                                                        subconfig=subconfig,
                                                         expressivity_weight=self.params.expressivity_weight,
                                                         complexity_weight=self.params.complexity_weight,
                                                         diversity_weight=self.params.diversity_weight,

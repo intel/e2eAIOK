@@ -19,6 +19,7 @@ from e2eAIOK.DeNas.module.asr.encoder import TransformerEncoder
 from e2eAIOK.DeNas.module.asr.attention import MultiheadAttention
 from e2eAIOK.DeNas.module.asr.linear import Linear
 from e2eAIOK.DeNas.thirdparty.supernet_hf import SuperHFModel
+from e2eAIOK.DeNas.thirdparty.utils import input_construtor
 
 from torchsummary import summary
 
@@ -133,9 +134,7 @@ def compute_diversity_score(model_type, net, *inputs):
     elif model_type == "asr":
         output, _ = net.encode(inputs[0])
     elif model_type == "hf":
-        input_ids, input_masks, input_segments = inputs
-        batch = {'input_ids': input_ids, 'token_type_ids': input_segments, 'attention_mask':input_masks}
-        output = net(**batch)
+        output = net(**inputs[0])
         output = output.last_hidden_state
     torch.sum(output).backward()
 
@@ -152,8 +151,7 @@ def compute_diversity_score(model_type, net, *inputs):
 
 
 def compute_saliency_score(model_type, net, *inputs):
-    device = inputs[0].device
-
+    
     # convert params to their abs. Keep sign for converting it back.
     @torch.no_grad()
     def linearize(net):
@@ -185,9 +183,7 @@ def compute_saliency_score(model_type, net, *inputs):
     elif model_type == "asr":
         output, _ = net.encode(inputs[0])
     elif model_type == "hf":
-        input_ids, input_masks, input_segments = inputs
-        batch = {'input_ids': input_ids, 'token_type_ids': input_segments, 'attention_mask':input_masks}
-        output = net(**batch)
+        output = net(**inputs[0])
         output = output.last_hidden_state
 
     torch.sum(output).backward()
@@ -206,17 +202,11 @@ def compute_saliency_score(model_type, net, *inputs):
 
     return grads_abs
 
-def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, mixup_gamma, subconfig=None, expressivity_weight=0, complexity_weight=0, diversity_weight=0, saliency_weight=0, latency_weight=0):
+def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, mixup_gamma, expressivity_weight=0, complexity_weight=0, diversity_weight=0, saliency_weight=0, latency_weight=0):
     
     expressivity_score = 0
     complexity_score = 0
     network_weight_gaussian_init(model,model_type)
-    if subconfig is not None:
-        if model_type == "bert":
-            model.module.set_sample_config(subconfig) if hasattr(model, 'module') \
-                else model.set_sample_config(subconfig)
-        else:
-            model = SuperHFModel.set_sample_config(model, **subconfig)
     model.train()
     model.requires_grad_(True)
     model.zero_grad()
@@ -227,10 +217,9 @@ def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, 
         input = torch.randn(size=[batch_size, 3, resolution, resolution],  dtype=dtype)
         disversity_score_list = compute_diversity_score(model_type, model, input)
     elif model_type == "bert":
-        max_seq_length = resolution
-        input_ids = [[9333-id] * max_seq_length for id in range(batch_size)]
-        input_masks = max_seq_length * [1]
-        input_segments = max_seq_length * [0]
+        input_ids = [[9333-id] * resolution for id in range(batch_size)]
+        input_masks = resolution * [1]
+        input_segments = resolution * [0]
         input_ids = torch.tensor(input_ids, dtype=torch.long)
         input_masks = torch.tensor([input_masks]*batch_size, dtype=torch.long)
         input_segments = torch.tensor([input_segments]*batch_size, dtype=torch.long)
@@ -239,14 +228,8 @@ def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, 
         input = torch.randn(size=[batch_size, 400, 20, 64])
         disversity_score_list = compute_diversity_score(model_type, model, input)
     elif model_type == "hf":
-        max_seq_length = resolution
-        input_ids = [[9333-id] * max_seq_length for id in range(batch_size)]
-        input_masks = max_seq_length * [1]
-        input_segments = max_seq_length * [0]
-        input_ids = torch.tensor(input_ids, dtype=torch.long)
-        input_masks = torch.tensor([input_masks]*batch_size, dtype=torch.long)
-        input_segments = torch.tensor([input_segments]*batch_size, dtype=torch.long)
-        disversity_score_list = compute_diversity_score(model_type, model, input_ids, input_masks, input_segments)
+        input = input_construtor(batch_size, resolution)
+        disversity_score_list = compute_diversity_score(model_type, model, input)
     disversity_score = 0
     for grad_abs in disversity_score_list:
         if len(grad_abs.shape) == 0:
@@ -261,7 +244,8 @@ def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, 
     elif model_type == "asr":
         grads_abs_list = compute_saliency_score(model_type, model, input)
     elif model_type == "hf":
-        grads_abs_list = compute_saliency_score(model_type, model, input_ids, input_masks, input_segments)
+        input = input_construtor(batch_size, resolution)
+        grads_abs_list = compute_saliency_score(model_type, model, input)
    
     saliency_score = 0
     for grad_abs in grads_abs_list:
