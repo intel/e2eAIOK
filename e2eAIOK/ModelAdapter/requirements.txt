@@ -1,4 +1,6 @@
-torch==1.12.1+cpu torchvision==0.13.1+cpu torchaudio==0.12.1+cpu --extra-index-url https://download.pytorch.org/whl/cpu
+torch==1.12.1 -f https://download.pytorch.org/whl/cpu
+torchvision==0.13.1 -f https://download.pytorch.org/whl/cpu
+torchaudio==0.12.1 -f https://download.pytorch.org/whl/cpu
 scikit-learn
 torchsummary
 easydict
@@ -7,6 +9,5 @@ timm
 nnunet
 transformers
 thop
-intel_extension_for_pytorch-1.12.100+cpu -f https://developer.intel.com/ipex-whl-stable    
-oneccl_bind_pt==1.12.100 -f https://developer.intel.com/ipex-whl-stable
+intel_extension_for_pytorch==1.12.100 -f https://developer.intel.com/ipex-whl-stable    
 tllib==0.4 -i https://test.pypi.org/simple/ 
