@@ -4,7 +4,7 @@ from torch import nn
 import numpy as np
 import gc
 import torch
-from e2eAIOK.DeNas.utils import NETWORK_Latency
+from e2eAIOK.DeNas.utils import NETWORK_LATENCY
 # TODO: separate domain specific ops
 from e2eAIOK.DeNas.module.cv.Linear_super import LinearSuper
 from e2eAIOK.DeNas.module.cv.layernorm_super import LayerNormSuper
@@ -227,12 +227,12 @@ def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, 
         else:
             raise RuntimeError('only support grad shape of 4 or 2')
     if model_type == "transformer":
-        latency = NETWORK_Latency[model_type](model=model, batch_size=batch_size,
+        latency = NETWORK_LATENCY[model_type](model=model, batch_size=batch_size,
                                                         resolution=resolution,
                                                         in_channels=3, gpu=None, repeat_times=3,
                                                         fp16=False)    
     elif model_type == "bert":
-        latency = NETWORK_Latency[model_type](model=model, batch_size=batch_size, max_seq_length=resolution, gpu=None, infer_cnt=10.)
+        latency = NETWORK_LATENCY[model_type](model=model, batch_size=batch_size, max_seq_length=resolution, gpu=None, infer_cnt=10.)
     else:
         latency = 0
     score = (expressivity_score*expressivity_weight 

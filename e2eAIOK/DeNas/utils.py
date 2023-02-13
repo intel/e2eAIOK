@@ -2,7 +2,7 @@ import ast
 from e2eAIOK.DeNas.cv.benchmark_network_latency import get_model_latency
 from e2eAIOK.DeNas.nlp.utils import get_bert_latency
 
-NETWORK_Latency = {"cnn": get_model_latency,
+NETWORK_LATENCY = {"cnn": get_model_latency,
                     "bert": get_bert_latency,
                     "transformer": get_model_latency}
 
