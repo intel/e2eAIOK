@@ -19,7 +19,7 @@ from e2eAIOK.DeNas.module.asr.encoder import TransformerEncoder
 from e2eAIOK.DeNas.module.asr.attention import MultiheadAttention
 from e2eAIOK.DeNas.module.asr.linear import Linear
 from e2eAIOK.DeNas.thirdparty.supernet_hf import SuperHFModel
-from e2eAIOK.DeNas.thirdparty.utils import input_construtor
+from e2eAIOK.DeNas.thirdparty.utils import input_construtor, LINEAR_LAYER_STRUCTURE, ATTN_LAYER_STRUCTURE
 
 from torchsummary import summary
 
@@ -72,14 +72,11 @@ def get_linear_layer_metric_array(model_type, net, metric):
                     metric_array.append(metric(sub_layer.pos_ffn.fc1))
                     metric_array.append(metric(sub_layer.pos_ffn.fc2))
         elif model_type == "hf":
-            if "output" in type(layer).__name__.lower() or "intermediate" in type(layer).__name__.lower():
-                for sub_layer in layer.modules():
-                    if isinstance(sub_layer, linear.Linear):
-                        metric_array.append(metric(sub_layer))
-            if "mlp" in type(layer).__name__.lower():
-                for sub_layer in layer.modules():
-                    if isinstance(sub_layer, pytorch_utils.Conv1D):
-                        metric_array.append(metric(sub_layer))
+            for k in LINEAR_LAYER_STRUCTURE:
+                if k in type(layer).__name__.lower():
+                    for sub_layer in layer.modules():
+                        if isinstance(sub_layer, LINEAR_LAYER_STRUCTURE[k]):
+                            metric_array.append(metric(sub_layer))
     return metric_array
 
 def get_attn_layer_metric_array(model_type, net, metric):
@@ -108,14 +105,11 @@ def get_attn_layer_metric_array(model_type, net, metric):
                     metric_array.append(func(sub_layer.self_att.att.in_proj_weight))
                     metric_array.append(metric(sub_layer.self_att.att.out_proj))
         elif model_type == 'hf':
-            if "selfatt" in type(layer).__name__.lower():
-                for sub_layer in layer.modules():
-                    if isinstance(sub_layer, linear.Linear):
-                        metric_array.append(metric(sub_layer))
-            if "att" in type(layer).__name__.lower():
-                for sub_layer in layer.modules():
-                    if isinstance(sub_layer, pytorch_utils.Conv1D):
-                        metric_array.append(metric(sub_layer))
+            for k in ATTN_LAYER_STRUCTURE:
+                if k in type(layer).__name__.lower():
+                    for sub_layer in layer.modules():
+                        if isinstance(sub_layer, ATTN_LAYER_STRUCTURE[k]):
+                            metric_array.append(metric(sub_layer))
     return metric_array
 
 

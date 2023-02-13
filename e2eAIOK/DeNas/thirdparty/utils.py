@@ -8,8 +8,19 @@ import shutil
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.nn.modules import linear
+from transformers import pytorch_utils
 
 from e2eAIOK.DeNas.thirdparty.supernet_hf import SuperHFModel
+
+LINEAR_LAYER_STRUCTURE = {"output": linear.Linear,
+                            "intermediate": linear.Linear,
+                            "mlp": pytorch_utils.Conv1D
+                        }
+
+ATTN_LAYER_STRUCTURE = {"selfatt": linear.Linear,
+                            "att": pytorch_utils.Conv1D
+                        }
 
 def decode_arch(arches_file):
     subhf_config = None
