@@ -60,13 +60,13 @@ class ModelBuilderASRDeNas(ModelBuilderASR):
         return model
 
     def load_pretrained_model(self):
-        if not os.path.exists(self.cfg['ckpt']):
-            raise RuntimeError(f"Can not find pre-trained model {self.cfg['ckpt']}!")
-        print(f"loading pretrained model at {self.cfg['ckpt']}")
+        if not os.path.exists(self.cfg['model']):
+            raise RuntimeError(f"Can not find pre-trained model {self.cfg['model']}!")
+        print(f"loading pretrained model at {self.cfg['model']}")
 
         super_model = self._init_model()
         super_model_list = torch.nn.ModuleList([super_model["CNN"], super_model["Transformer"], super_model["seq_lin"], super_model["ctc_lin"]])
-        pretrained_dict = torch.load(self.cfg['ckpt'], map_location=torch.device('cpu'))
+        pretrained_dict = torch.load(self.cfg['model'], map_location=torch.device('cpu'))
         super_model_list_dict = super_model_list.state_dict()
         super_model_list_keys = list(super_model_list_dict.keys())
         pretrained_keys = pretrained_dict.keys()
