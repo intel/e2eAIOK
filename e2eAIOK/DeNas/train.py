@@ -46,6 +46,10 @@ def main(cfg):
         torch.manual_seed(cfg.random_seed)
 
     ext_dist.init_distributed(backend=cfg.dist_backend)
+    if "sparsity" in cfg and cfg.sparsity != None:
+        with open(cfg.sparsity, 'r') as f:
+            sparsity = f.readlines()[-1]
+            cfg["sparsity"] = float(sparsity)
 
     if cfg.domain in ['cnn','vit']:
         model = ModelBuilderCVDeNas(cfg).create_model()
@@ -65,10 +69,10 @@ def main(cfg):
         metric = bert_create_metric(cfg)
         trainer = BERTTrainer(cfg, model, train_dataloader, eval_dataloader, other_data, optimizer, criterion, scheduler, metric)
     elif cfg.domain == 'asr':
-        if cfg.pruner:
+        if "pruner" in cfg and cfg.pruner:
             model_builder = ModelBuilderASRDeNas(cfg)
             model = model_builder.load_pretrained_model()
-            pruner = Pruner(cfg.algo, model_builder.cfg.sparsity)
+            pruner = Pruner(cfg.algo, cfg.sparsity)
             pruner.prune(model["Transformer"])
         else:
             model = ModelBuilderASRDeNas(cfg).create_model()
