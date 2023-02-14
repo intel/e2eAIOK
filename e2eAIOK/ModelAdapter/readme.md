@@ -24,7 +24,9 @@ There are three modules in Model Adapter: Finetuner for pretraining & fine-tunin
 
 - **Domain Adapter**: Domain Adapter is based on domain transfer technology, it can transfer knowledge from source domain (cheap labels) to target domain (few labels or label-free). Directly applying pre-trained model into target domain cannot always work due to covariate shift and label shift, while fine-tuning is also not working due to the expensive labeling in some domains. Even if users invest resource in labeling, it will be time-consuming and delays the model deployment. Adapter aims at reusing the transferable knowledge with the help of another labeled dataset with same learning task. That is, achieving better generalization with little labeled target dataset or achieving a competitive performance in label-free target dataset.
 
-<img src="./doc/overview.png" width="60%">
+<p align="center">
+  <img width="60%" src="./doc/overview.png">
+</p>
 
 ## Getting Started 
 
@@ -117,13 +119,13 @@ During distillation, teacher forwarding usually takes a lot of time. To accelera
 ### Built-in Demos
 - [Model Adapter Overview](../../demo/ma/Model_Adapter_Summary.ipynb) 
 - [Finetuner on Image Classification](../../demo/ma/finetuner/Model_Adapter_Finetuner_builtin_ResNet50_CIFAR100.ipynb)
-- [Distiller on Image Classification](../../demo/ma/distiller/Model_Adapter_Distiller_builtin_ResNet18_CIFAR100.ipynb)
+- [Distiller on Image Classification](../../demo/ma/distiller/Model_Adapter_Distiller_builtin_VIT_to_ResNet18_CIFAR100.ipynb)
 - [Domain Adapter on Medical Segmentation](../../demo/ma/domain_adapter/Model_Adapter_Domain_Adapter_builtin_Unet_KITS19.ipynb)
 
 ### API usage for Customized usage
-- [Finetuner on Image Classification](../../demo/ma/finetuner/Model_Adapter_Finetuner_customized_ResNet50_CIFAR100.ipynb)
-- [Distiller on Image Classification](../../demo/ma/distiller/Model_Adapter_Distiller_customized_ResNet18_CIFAR100.ipynb)
-- [Domain Adapter on Medical Segmentation](../../demo/ma/domain_adapter/Model_Adapter_Domain_Adapter_customized_Unet_KITS19.ipynb)
+- [Finetuner on Image Classification](../../demo/ma/finetuner/Model_Adapter_Finetuner_Walkthrough_ResNet50_CIFAR100.ipynb)
+- [Distiller on Image Classification](../../demo/ma/distiller/Model_Adapter_Distiller_Walkthrough_VIT_to_ResNet18_CIFAR100.ipynb)
+- [Domain Adapter on Medical Segmentation](../../demo/ma/domain_adapter/Model_Adapter_Domain_Adapter_Walkthrough_Unet_KITS19.ipynb)
    
  # References
 [1] He, K., Girshick, R., Doll´ar, P.: Rethinking imagenet pre-training. In: ICCV (2019)
