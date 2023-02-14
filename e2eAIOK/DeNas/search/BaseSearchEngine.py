@@ -15,7 +15,6 @@ from e2eAIOK.DeNas.thirdparty.supernet_hf import SuperHFModel
 
  
 class BaseSearchEngine(ABC):
-
     def __init__(self, params=None, super_net=None, search_space=None):
         super().__init__()
         self.super_net = super_net
