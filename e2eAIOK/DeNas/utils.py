@@ -6,8 +6,7 @@ from e2eAIOK.DeNas.thirdparty.utils import get_hf_latency
 NETWORK_LATENCY = {"cnn": get_model_latency,
                     "bert": get_bert_latency,
                     "transformer": get_model_latency,
-                    "hf": get_hf_latency,
-                    "thirdparty": get_hf_latency}
+                    "hf": get_hf_latency}
 
 def decode_arch_tuple(arch_tuple):
     arch_tuple = ast.literal_eval(arch_tuple)

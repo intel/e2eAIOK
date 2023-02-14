@@ -261,7 +261,7 @@ class SigoptSearchEngine(BaseSearchEngine):
                 best_struct_tuple.append(int(best_assignments[num_heads_name]))
             best_struct_tuple.append(int(best_assignments['EMBED_DIM']))
             self.best_struct = tuple(best_struct_tuple)
-        elif self.params.domain == "thirdparty":
+        elif self.params.domain == "hf":
             experiment = self.conn.experiments().create(
                 name= 'hugging face denas',
                 project='denas',

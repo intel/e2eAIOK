@@ -47,7 +47,7 @@ class BaseSearchEngine(ABC):
             is_legal, net = asr_is_legal(cand, self.vis_dict, self.params, self.super_net)
             self.super_net = net
             return is_legal
-        elif self.params.domain == "thirdparty":
+        elif self.params.domain == "hf":
             return hf_is_legal(cand, self.vis_dict, self.params)
         else:
             raise RuntimeError(f"Domain {self.params.domain} is not supported")
@@ -89,7 +89,7 @@ class BaseSearchEngine(ABC):
             model = self.super_net.set_sample_config(sampled_config)
             model = self.super_net
             latency = NETWORK_LATENCY[self.params.domain](model=model, batch_size=self.params.batch_size, max_seq_length=self.params.img_size, gpu=None, infer_cnt=10.)
-        elif self.params.domain == "thirdparty":
+        elif self.params.domain == "hf":
             cand_dict = json.loads(cand)
             model = SuperHFModel.set_sample_config(self.params.pretrained_model ,**cand_dict)
             latency = NETWORK_LATENCY[self.params.domain](model=model, batch_size=self.params.batch_size, max_seq_length=self.params.img_size, gpu=None, infer_cnt=10.)
@@ -110,7 +110,7 @@ class BaseSearchEngine(ABC):
             return bert_populate_random_func(self.search_space)
         elif self.params.domain == "asr":
             return asr_populate_random_func(self.search_space)
-        elif self.params.domain == "thirdparty":
+        elif self.params.domain == "hf":
             return hf_populate_random_func(self.search_space)
         else:
             raise RuntimeError(f"Domain {self.params.domain} is not supported")
@@ -129,7 +129,7 @@ class BaseSearchEngine(ABC):
             model = self.super_net
         elif self.params.domain == "asr":
             model = self.super_net
-        elif self.params.domain == "thirdparty":
+        elif self.params.domain == "hf":
             subconfig = json.loads(cand)
             model = SuperHFModel.set_sample_config(self.params.pretrained_model, **subconfig)
         else:

@@ -18,7 +18,7 @@ logging.set_verbosity_error()
 
 def parse_args(args):
     parser = argparse.ArgumentParser('DE-NAS')
-    parser.add_argument('--domain', type=str, default=None, choices=['cnn', 'vit', 'bert', 'asr', 'thirdparty'], help='DE-NAS search domain')
+    parser.add_argument('--domain', type=str, default=None, choices=['cnn', 'vit', 'bert', 'asr', 'hf'], help='DE-NAS search domain')
     parser.add_argument('--conf', type=str, default=None, help='DE-NAS conf file')
     settings = {}
     settings.update(parser.parse_args(args).__dict__)
@@ -62,7 +62,7 @@ def main(params):
         super_net = TransformerASRSuper
         search_space = {'num_heads': cfg.SEARCH_SPACE.NUM_HEADS, 'mlp_ratio': cfg.SEARCH_SPACE.MLP_RATIO,
                         'embed_dim': cfg.SEARCH_SPACE.EMBED_DIM , 'depth': cfg.SEARCH_SPACE.DEPTH}
-    elif params.domain == 'thirdparty':
+    elif params.domain == 'hf':
         with open(params.supernet_cfg) as f:
             cfg = edict(yaml.safe_load(f))
             params.cfg = cfg
