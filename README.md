@@ -73,9 +73,15 @@ cd e2eAIOK; python scripts/start_e2eaiok_docker.py --backend [tensorflow, pytorc
   * [Speech Recognition](demo/denas/asr/DENAS_ASR_DEMO.ipynb) - ASR, PyTorch
   
 * Model Aadapter demos
-  * [Finetuner](demo/ma/finetuner/Model_Adapter_Finetuner_builtin_ResNet50_CIFAR100.ipynb) - Image Classification, Pytorch
-  * [Distiller](demo/ma/distiller/Model_Adapter_Distiller_builtin_ResNet18_CIFAR100.ipynb) - Image Classification, Pytorch
-  * [Domain Adapter](demo/ma/domain_adapter/Model_Adapter_Domain_Adapter_builtin_Unet_KITS19.ipynb) - Medical Segmentation, Pytorch
+   * [Model Adapter Overview](demo/ma/Model_Adapter_Summary.ipynb) 
+   * Built-in Demos
+      * [Finetuner on Image Classification](demo/ma/finetuner/Model_Adapter_Finetuner_builtin_ResNet50_CIFAR100.ipynb)
+      * [Distiller on Image Classification](demo/ma/distiller/Model_Adapter_Distiller_builtin_ResNet18_CIFAR100.ipynb)
+      * [Domain Adapter on Medical Segmentation](demo/ma/domain_adapter/Model_Adapter_Domain_Adapter_builtin_Unet_KITS19.ipynb)
+   * API usage for Customized usage
+      * [Finetuner on Image Classification](demo/ma/finetuner/Model_Adapter_Finetuner_customized_ResNet50_CIFAR100.ipynb)
+      * [Distiller on Image Classification](demo/ma/distiller/Model_Adapter_Distiller_customized_ResNet18_CIFAR100.ipynb)
+      * [Domain Adapter on Medical Segmentation](demo/ma/domain_adapter/Model_Adapter_Domain_Adapter_customized_Unet_KITS19.ipynb)
 
 ## Performance
 
