@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # generate patch
+# cp -r ../third_party/nnUNet/ .
 # diff -urN nnUNet/ nnUNetNew > nnunet.patch
 
 get_original_model () {

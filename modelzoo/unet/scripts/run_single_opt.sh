@@ -15,6 +15,8 @@
 #!/bin/bash
 set -x
 
+unset MASTER_ADDR
+
 echo "############################## setting env ##############################"
 export nnUNet_raw_data_base="/home/vmagent/app/data/adaptor_large/nnUNet_raw_data_base"
 export nnUNet_preprocessed="/home/vmagent/app/data/adaptor_large/nnUNet_preprocessed"
@@ -25,10 +27,9 @@ pre_trained_model_path="/home/vmagent/app/data/adaptor_large/pre-trained-model/m
 echo "############################## 1 node opt model ##############################"
 # -exp_name 'cpu-test-epoch-20' \
 # --initial_lr 0.02 \
-# --epochs 20
 # -no_train -val
 # --ipex
-epochs=1
+epochs=$1
 
 nnUNet_train_da \
     3d_fullres nnUNetTrainer_DA_V2 508 507 1 \
@@ -37,12 +38,3 @@ nnUNet_train_da \
     --epochs $epochs --loss_weights 1 0 1 0 0 \
     --ipex \
     -pretrained_weights $pre_trained_model_path
-
-
-echo "############################## 1 node stock model ##############################"
-epochs=1
-
-nnUNet_train \
-    3d_fullres nnUNetTrainerV2 507 1 \
-    -p nnUNetPlansv2.1_trgSp_kits19 \
-    --epochs $epochs
