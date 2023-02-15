@@ -30,6 +30,7 @@ SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
 RUN python -m pip install --no-cache-dir --ignore-installed sigopt pytest
 RUN python -m pip install pyrecdp pyarrow notebook
 RUN python -m pip install e2eAIOK --pre
+RUN python -m pip install e2eAIOK-sda --pre --no-deps --ignore-installed
 
 SHELL ["/bin/bash", "-c"]
 RUN sed -i 's/#Port 22/Port 12344/g' /etc/ssh/sshd_config
