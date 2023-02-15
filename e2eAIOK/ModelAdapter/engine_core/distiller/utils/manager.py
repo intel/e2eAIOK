@@ -174,9 +174,6 @@ class _Reader:
                 values_content = self.values_file.read(self.item_size)
             except Exception as e:
                 print(e)
-            # finally:
-            #     if hasattr(self.values_file, 'close'):
-            #         self.values_file.close()
             return values_content
 
         def _ensure_handle_created(self):
@@ -184,6 +181,9 @@ class _Reader:
                 values_fname = self.name + '-values.bin'
                 self.values_file = open(values_fname, 'rb')
 
+        def __del__(self):
+            if self.values_file is not None and hasattr(self.values_file, 'close'):
+                self.values_file.close()
 
 class TxtManager:
     def __init__(self, path: str, item_size: int, rank: int):
