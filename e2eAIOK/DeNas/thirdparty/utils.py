@@ -110,10 +110,8 @@ def get_hf_latency(model, batch_size, max_seq_length, gpu, infer_cnt):
         start = time.time()
         with torch.no_grad():
             model(**batch)
-
         end = time.time()
         sep = 1000 * (end - start)
-
         if i == 0:
             continue
         else:
