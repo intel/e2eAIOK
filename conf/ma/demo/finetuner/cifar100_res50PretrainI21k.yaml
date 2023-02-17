@@ -2,7 +2,7 @@ experiment:
   project: "finetuner"
   tag: "cifar100_res50_PretrainI21k"
   strategy: "OnlyFinetuneStrategy"
-  
+
 output_dir: "/home/vmagent/app/data/model"
 train_epochs: 1
 enable_ipex: True
@@ -38,4 +38,4 @@ lr_scheduler_config:
 ### early stop
 early_stop: "EarlyStopping"
 early_stop_config:
-    tolerance_epoch: 15
+    tolerance_epoch: 5
