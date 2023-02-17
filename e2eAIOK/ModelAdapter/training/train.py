@@ -112,11 +112,23 @@ class TorchTrainerMA(TorchTrainer):
         """            
         if ext_dist.my_size > 1:
             self.logger.info("training with DistributedDataParallel")
-            self.model = ext_dist.DDP(self.model)
-            self.model.loss = MethodType(lambda obj,*args: obj.module.loss(*args) ,self.model) #  obj stands for model, both original model and transferrable model
-            if self.is_transferrable: # dispatch method to model.module
-                self.model.get_backbone = MethodType(lambda obj: obj.module.get_backbone() ,self.model) # obj stands for model
-                self.model.get_training_metrics = MethodType(lambda obj,*args: obj.module.get_training_metrics(*args) ,self.model) #  obj stands for model
+            if self.is_transferrable:
+                self.model.backbone = ext_dist.DDP(self.model.backbone)
+                self.model.backbone.loss = MethodType(lambda obj,*args: obj.module.loss(*args) ,self.model.backbone) #  obj stands for model, both original model and transferrable model
+                if self.model.finetuner is not None:
+                    self.mode.finetuner = ext_dist.DDP(self.mode.finetuner)
+                if self.model.distiller is not None:
+                    try:
+                        self.model.distiller = ext_dist.DDP(self.model.distiller) # if distiller require_grad=False, may fail in this step, just skip
+                    except Exception as e:
+                        print(e)
+                if self.model.adapter is not None:
+                    self.mode.adapter = ext_dist.DDP(self.mode.adapter)
+            else:
+                self.model = ext_dist.DDP(self.model)
+                self.model.loss = MethodType(lambda obj,*args: obj.module.loss(*args) ,self.model) #  obj stands for model, both original model and transferrable model
+                #     self.model.get_backbone = MethodType(lambda obj: obj.module.get_backbone() ,self.model) # obj stands for model
+                #     self.model.get_training_metrics = MethodType(lambda obj,*args: obj.module.get_training_metrics(*args) ,self.model) #  obj stands for model
 
     def _is_early_stop(self, metrics_map):
         """
@@ -171,6 +183,10 @@ class TorchTrainerMA(TorchTrainer):
                 self.optimizer.step()
                 if self.warmup_scheduler and cur_epoch < self.cfg.warmup_scheduler_epoch:
                     self.warmup_scheduler.step()
+
+                # for name, params in self.model.named_parameters():
+                #     if params.grad is None: continue
+                #     print(f'rank: {ext_dist.my_rank}, name: {name}, grads: {torch.sum(params.grad)}, value: {torch.sum(params)}')
 
                 ##### calculate metrics and show results
                 if cur_step % self.cfg.log_interval_step == 0:
@@ -282,6 +298,7 @@ class TorchTrainerMA(TorchTrainer):
             self.scheduler.load_state_dict(state["scheduler"])
         
         ##### start training
+        epoch_steps_eval = len(self.eval_dataloader)
         for epoch in range(initial_epoch, self.cfg.train_epochs):
             start_time = time.time()
             update_best = False
@@ -301,7 +318,7 @@ class TorchTrainerMA(TorchTrainer):
 
             ###### train and evaluate for on epoch
             self.train_one_epoch(epoch, epoch_steps)
-            metrics_map = self.evaluate(epoch,epoch_steps,test_flag=False)
+            metrics_map = self.evaluate(epoch,epoch_steps_eval,test_flag=False)
             
             ###### flush tensorboard and update scheduler
             if self.tensorboard_writer is not None:
