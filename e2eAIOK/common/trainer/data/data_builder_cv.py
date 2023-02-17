@@ -21,20 +21,26 @@ class DataBuilderCV(DataBuilder):
         pin_memory = self.cfg.pin_mem if "pin_mem" in self.cfg else False
 
         ### check whether distributed or enable_ipex
+        ## For train
         if ext_dist.my_size > 1:
             num_tasks = ext_dist.dist.get_world_size()
             global_rank = ext_dist.dist.get_rank()
             sampler_train = torch.utils.data.DistributedSampler(
                 self.dataset_train, num_replicas=num_tasks, rank=global_rank, shuffle=True, drop_last= drop_last)
+        else:
+            sampler_train = torch.utils.data.RandomSampler(self.dataset_train)
+
+        ## For evaluation
+        if ext_dist.my_size > 1 and not ("ddp_eval_nosplit" in self.cfg and self.cfg.ddp_eval_nosplit): # ddp_eval_nosplit flag means do not split evaluation dataset in distribution mode
             sampler_val = torch.utils.data.DistributedSampler(
                 self.dataset_val, num_replicas=num_tasks, rank=global_rank,  shuffle=False)
             if self.dataset_test is not None:
                 sampler_test = torch.utils.data.DistributedSampler(
                 self.dataset_test, num_replicas=num_tasks, rank=global_rank,  shuffle=False)
         else:
-            sampler_train = torch.utils.data.RandomSampler(self.dataset_train)
             sampler_val = torch.utils.data.SequentialSampler(self.dataset_val)
-            sampler_test = torch.utils.data.SequentialSampler(self.dataset_test)
+            if self.dataset_test is not None:
+                sampler_test = torch.utils.data.SequentialSampler(self.dataset_test)
         
         # if "enable_ipex" in self.cfg and self.cfg.enable_ipex:
         #     collate_fn = channels_last_collate
