@@ -79,7 +79,7 @@ class ModelAdapterTask:
 
         :return a finetuner
         '''
-        if self.cfg.finetuner.type == "":
+        if "Finetune" not in self.cfg.experiment.strategy or self.cfg.finetuner.type == "":
             finetuner = None
         elif self.cfg.finetuner.type == "Basic":
             pretrained_model = createBackbone(self.cfg, self.cfg.model_type, num_classes=self.cfg.finetuner.pretrained_num_classes, \
@@ -97,7 +97,7 @@ class ModelAdapterTask:
         
         :return a distiller
         '''
-        if self.cfg.distiller.type == "":
+        if "Distillation" not in self.cfg.experiment.strategy or self.cfg.distiller.type == "":
             distiller = None
         else:
             teacher_model = createBackbone(self.cfg, self.cfg.distiller.teacher.type, num_classes = self.num_classes, \
@@ -131,7 +131,7 @@ class ModelAdapterTask:
 
         :return an adapter
         '''
-        if self.cfg.adapter.type == "":
+        if "DomainAdaption" not in self.cfg.experiment.strategy or self.cfg.adapter.type == "":
             self.adapter = None
             return None
         
