@@ -17,6 +17,7 @@ def parse_args(args):
     parser.add_argument('--proxy', type=str, default=None, help='proxy for pip and apt install')
     parser.add_argument('--log_path',type=str,default="./e2eaiok_docker_building.log",help='large capacity folder for dataset storing')
     parser.add_argument('-w', '--workers',nargs='+', default=[], help='worker host list')
+    parser.add_argument('--no_push', action="store_true")
 
     return parser.parse_args(args)
 
@@ -107,7 +108,7 @@ def execute_check(cmdline, check_func, logger):
     rc = process.wait()
     return check_func(ret)
 
-def check_requirements(docker_name, workers, local, logger):
+def check_requirements(docker_name, workers, local, logger, no_push=False):
     # check if we can access all remote workers
     # check if sshpass is installed
     cmdline = "sshpass -V"
@@ -129,6 +130,8 @@ def check_requirements(docker_name, workers, local, logger):
         logger.info(f"Docker Container {docker_name} exists, skip docker build")
         return True, 'no_build_docker_no_push'
 
+    if no_push:
+        return True, 'build_docker_no_push'
     if len(workers) == 0:
         return True, 'build_docker_no_push'
     if len(workers) == 1 and local in workers:
@@ -329,7 +332,7 @@ def main(input_args):
         port = 12347
 
     # 0. prepare_env
-    r, next_step = check_requirements(docker_name, input_args.workers, hostname, logger)
+    r, next_step = check_requirements(docker_name, input_args.workers, hostname, logger, no_push=input_args.no_push)
     if not r:
         logger.error(f"Failed in check_requirements, please check {input_args.log_path}")
         exit()
