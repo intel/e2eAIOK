@@ -1,0 +1,17 @@
+experiment:
+  project: "test"
+  tag: "cifar100_res50_PretrainI21k"
+
+output_dir: "/home/vmagent/app/data/model"
+train_epochs: 1
+enable_ipex: True
+
+### dataset
+data_set: "cifar100"
+data_path:  "/home/vmagent/app/data/dataset/cifar"
+num_workers: 4
+input_size: 112
+
+### model
+model_type: "resnet50"
+pretrain: "/home/vmagent/app/data/model/finetuner/cifar100_res50_PretrainI21k/resnet50_OnlyFinetuneStrategy_cifar100/backbone_epoch_0.pth"
