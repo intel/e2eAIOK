@@ -4,7 +4,7 @@ experiment:
   strategy: "OnlyDistillationStrategy"
   
 output_dir: "/home/vmagent/app/data/model"
-train_epochs: 200
+train_epochs: 80
 model_save_interval: 5
 
 ### dataset

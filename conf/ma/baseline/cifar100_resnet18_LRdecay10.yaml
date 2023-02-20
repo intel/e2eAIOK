@@ -2,15 +2,18 @@ experiment:
     project: "baselines"
     tag: "cifar100_res18_ReduceLROnPlateau"
 
+output_dir: "/home/vmagent/app/data/model"
+train_epochs: 80
+
+### dataset
 data_set: "cifar100"
-data_path:  "/home/vmagent/app/data/dataset"
+data_path:  "/home/vmagent/app/data/dataset/cifar"
 num_workers: 4
 
+### model
 model_type: "resnet18_cifar"
 
-train_epochs: 200
-metric_threshold: 100
-
+## optimizer
 optimizer: "SGD"
 learning_rate: 0.1
 weight_decay: 0.0001

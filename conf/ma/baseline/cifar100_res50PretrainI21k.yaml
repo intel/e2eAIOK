@@ -14,4 +14,4 @@ input_size: 112
 
 ### model
 model_type: "resnet50"
-pretrain: "/home/vmagent/app/data/model/finetuner/cifar100_res50_PretrainI21k/resnet50_OnlyFinetuneStrategy_cifar100/backbone_epoch_0.pth"
+pretrain: "/home/vmagent/app/data/model/finetuner/cifar100_res50PretrainI21k/cifar100_res50_pretrain_imagenet21k_89.29.pth"
