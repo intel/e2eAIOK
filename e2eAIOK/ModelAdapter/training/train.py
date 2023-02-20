@@ -115,11 +115,8 @@ class TorchTrainerMA(TorchTrainer):
             if self.is_transferrable:
                 self.model.backbone = ext_dist.DDP(self.model.backbone)
                 self.model.backbone.loss = MethodType(lambda obj,*args: obj.module.loss(*args) ,self.model.backbone) #  obj stands for model, both original model and transferrable model
-                if self.model.distiller is not None:
-                    try:
-                        self.model.distiller = ext_dist.DDP(self.model.distiller) # if distiller require_grad=False, may fail in this step, just skip
-                    except Exception as e:
-                        print(e)
+                if self.model.distiller is not None and not self.model.distiller.is_frozen:
+                    self.model.distiller = ext_dist.DDP(self.model.distiller) # if distiller require_grad=False, may fail in this step, just skip
                 if self.model.adapter is not None:
                     self.mode.adapter = ext_dist.DDP(self.mode.adapter)
             else:
