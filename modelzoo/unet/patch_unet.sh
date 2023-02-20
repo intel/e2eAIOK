@@ -9,7 +9,7 @@ get_original_model () {
 
 apply_patch () {
     cd nnUNet
-    git apply ../git.patch
+    git apply ../nnunet.patch
     pip install -e .
     cd ..
 }
