@@ -19,6 +19,9 @@ unset MASTER_ADDR
 export nnUNet_raw_data_base="/home/vmagent/app/data/adaptor_large/nnUNet_raw_data_base"
 export nnUNet_preprocessed="/home/vmagent/app/data/adaptor_large/nnUNet_preprocessed"
 export RESULTS_FOLDER="/home/vmagent/app/data/adaptor_large/nnUNet_trained_models"
+# nnUNetTrainer_DA_V2, nnUNetTrainerV2
+trainer=nnUNetTrainer_DA_V2
+
 
 ############################################# predict #############################################
 # -chk model_latest \
@@ -30,7 +33,7 @@ time nnUNet_predict \
     -f 1 \
     -t 507 -m 3d_fullres -p nnUNetPlansv2.1_trgSp_kits19 \
     --disable_tta \
-    -tr nnUNetTrainer_DA_V2 \
+    -tr $trainer \
     --overwrite_existing \
     --disable_mixed_precision 
 

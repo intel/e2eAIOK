@@ -20,9 +20,9 @@ master=`hostname`
 # hosts format: hostname1,hostname2,...
 hosts=$1
 hosts_num=$2
-OMP_NUM_THREADS=1
-# epochs: usually 20
 epochs=$3
+OMP_NUM_THREADS=48
+ppn=2
 
 echo "############################## 4 node opt model ##############################"
 # -exp_name 'cpu-test-epoch-20' \
@@ -38,7 +38,7 @@ export MASTER_ADDR=$master && \
         -genv nnUNet_preprocessed="/home/vmagent/app/data/adaptor_large/nnUNet_preprocessed" \
         -genv RESULTS_FOLDER="/home/vmagent/app/data/adaptor_large/nnUNet_trained_models" \
         -genv OMP_NUM_THREADS=$OMP_NUM_THREADS \
-        -n $hosts_num -ppn 1 \
+        -n $hosts_num -ppn $ppn \
         -hosts $hosts \
         -print-rank-map \
         -verbose \

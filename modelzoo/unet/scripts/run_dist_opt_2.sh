@@ -19,6 +19,7 @@ echo "############################## setting args ##############################
 master=$1
 node_rank=$2
 epochs=$3
+nproc_per_node=1
 
 echo "############################## setting env ##############################"
 export nnUNet_raw_data_base="/home/vmagent/app/data/adaptor_large/nnUNet_raw_data_base"
@@ -36,7 +37,7 @@ echo "############################## 4 node opt model ##########################
 torchrun \
     --rdzv_id=100 --rdzv_backend=c10d --rdzv_endpoint=$master:29400 \
     --nnodes=4 \
-    --nproc_per_node=1 \
+    --nproc_per_node=$nproc_per_node \
     --no_python \
     --node_rank $node_rank \
     --master_addr=$master \
