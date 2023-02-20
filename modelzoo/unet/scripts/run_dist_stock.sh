@@ -32,7 +32,7 @@ echo "############################## 4 node opt model ##########################
 # --ipex 
 
 export MASTER_ADDR=$master && \
-    export MASTER_PORT=23900 && \
+    export MASTER_PORT=23100 && \
     mpirun \
         -genv nnUNet_raw_data_base="/home/vmagent/app/data/adaptor_large/nnUNet_raw_data_base" \
         -genv nnUNet_preprocessed="/home/vmagent/app/data/adaptor_large/nnUNet_preprocessed" \
@@ -42,10 +42,27 @@ export MASTER_ADDR=$master && \
         -hosts $hosts \
         -print-rank-map \
         -verbose \
-        nnUNet_train_da \
-        3d_fullres nnUNetTrainer_DA_V2 508 507 1 \
+        nnUNet_train \
+        3d_fullres nnUNetTrainerV2 507 1 \
         -p nnUNetPlansv2.1_trgSp_kits19 \
-        -sp nnUNetPlansv2.1_trgSp_kits19 \
-        --epochs $epochs --loss_weights 1 0 1 0 0 \
+        --epochs $epochs \
         --backend gloo \
         -pretrained_weights "/home/vmagent/app/data/adaptor_large/pre-trained-model/model_final_checkpoint-600.model"
+
+
+
+# export nnUNet_raw_data_base="/home/vmagent/app/data/adaptor_large/nnUNet_raw_data_base" && \
+# export nnUNet_preprocessed="/home/vmagent/app/data/adaptor_large/nnUNet_preprocessed" && \
+# export RESULTS_FOLDER="/home/vmagent/app/data/adaptor_large/nnUNet_trained_models" && \
+# python -m intel_extension_for_pytorch.cpu.launch --distributed \
+#     --nproc_per_node=1 --nnodes=2 \
+#     --master_addr=vsr257 \
+#     --master_port=23900 \
+#     --hostfile /home/vmagent/app/e2eAIOK/modelzoo/unet/bkp/hosts \
+#     /home/vmagent/app/e2eAIOK/modelzoo/unet/nnUNet/nnunet/run/run_training.py \
+#         3d_fullres nnUNetTrainerV2 507 1 \
+#         -p nnUNetPlansv2.1_trgSp_kits19 \
+#         --epochs 1 \
+#         --backend gloo \
+#         -pretrained_weights "/home/vmagent/app/data/adaptor_large/pre-trained-model/model_final_checkpoint-600.model"
+    

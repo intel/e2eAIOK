@@ -10,6 +10,7 @@ on:
     - 'e2eAIOK/ModelAdapter/**'
     - 'tests/cicd/ModelAdapterJenkinsfile'
     - 'tests/cicd/jenkins_ma_adapter_test.sh'
+    - 'modelzoo/unet/**'
 
 jobs:
   integration_test:
