@@ -16,6 +16,7 @@ from e2eAIOK.DeNas.cv.model_builder_denas_cv import ModelBuilderCVDeNas
 from e2eAIOK.DeNas.nlp.model_builder_denas_nlp import ModelBuilderNLPDeNas
 from e2eAIOK.common.trainer.data.asr.data_builder_librispeech import DataBuilderLibriSpeech
 from e2eAIOK.common.trainer.data.cv.data_builder_cifar import DataBuilderCIFAR
+from e2eAIOK.common.trainer.data.cv.data_builder_imagenet import DataBuilderImageNet
 from e2eAIOK.common.trainer.data.nlp.data_builder_squad import DataBuilderSQuAD
 from e2eAIOK.DeNas.asr.asr_trainer import ASRTrainer
 from e2eAIOK.DeNas.asr.trainer.schedulers import NoamScheduler
@@ -47,7 +48,7 @@ def main(cfg):
 
     if cfg.domain in ['cnn','vit']:
         model = ModelBuilderCVDeNas(cfg).create_model()
-        train_dataloader, eval_dataloader = DataBuilderCIFAR(cfg).get_dataloader()
+        train_dataloader, eval_dataloader = (DataBuilderImageNet(cfg) if cfg.data_set == 'ImageNet' else DataBuilderCIFAR(cfg)).get_dataloader()
         optimizer = utils.create_optimizer(model, cfg)
         criterion = utils.create_criterion(cfg)
         scheduler = utils.create_scheduler(optimizer, cfg)

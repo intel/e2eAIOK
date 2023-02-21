@@ -1,1 +1,1 @@
-__all__ = ['data_builder_cifar', 'data_builder_uspavsminist']
+__all__ = ['data_builder_cifar', 'data_builder_uspavsminist', 'data_builder_imagenet']
