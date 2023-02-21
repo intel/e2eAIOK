@@ -25,9 +25,6 @@ class TypeInferFeatureGenerator(super_class):
         self._astype_feature_map = None
         self.feature_in = []
    
-    def is_useful(self, pa_schema):
-        return True
-    
     def fit_prepare(self, pa_schema, df):
         self._astype_feature_map = OrderedDict()
         ret_pa_fields = []
@@ -37,7 +34,7 @@ class TypeInferFeatureGenerator(super_class):
                 self.feature_in.append(feature_name)
                 self._astype_feature_map[feature_name] = ret_field
             ret_pa_fields.append(ret_field)
-        return ret_pa_fields
+        return ret_pa_fields, True
 
     def get_function_pd(self):
         def type_infer(df):            
@@ -98,9 +95,6 @@ class TypeCheckFeatureGenerator(super_class):
     def __init__(self, final = False, **kwargs):
         super().__init__(**kwargs)
    
-    def is_useful(self, pa_schema: List[SeriesSchema]):
-        return True
-    
     def fit_prepare(self, pa_schema: List[SeriesSchema]):
         for idx in range(len(pa_schema)):
             pa_field = pa_schema[idx]
@@ -108,7 +102,7 @@ class TypeCheckFeatureGenerator(super_class):
                 pa_schema[idx] = SeriesSchema(pa_field.name, pd.StringDtype())
             elif pa_field.is_categorical:
                 pa_schema[idx] = SeriesSchema(pa_field.name, pd.Int32Dtype())
-        return pa_schema
+        return pa_schema, False
 
     def get_function_pd(self):
         def as_type(df):

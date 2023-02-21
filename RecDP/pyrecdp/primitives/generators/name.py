@@ -6,22 +6,19 @@ class RenameFeatureGenerator(super_class):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.renamed = {}
-   
-    def is_useful(self, pa_schema: List[SeriesSchema]):
-        found = False
+
+    def fit_prepare(self, pa_schema):
+        is_useful = False
         for pa_field in pa_schema:
             if '.' in pa_field.name:
                 self.renamed[pa_field.name] = pa_field.name.replace('.', '__')
-                found = True
-        return found
-    
-    def fit_prepare(self, pa_schema):
+                is_useful = True
         ret_schema = []
         for pa_field in pa_schema:
             if pa_field.name in self.renamed:
                 pa_field.name = self.renamed[pa_field.name]
             ret_schema.append(pa_field)
-        return ret_schema
+        return ret_schema, is_useful
 
     def get_function_pd(self):
         def rename_feature(df):

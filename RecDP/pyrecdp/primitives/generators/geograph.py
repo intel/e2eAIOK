@@ -7,15 +7,12 @@ class GeoFeatureGenerator(FeaturetoolsBasedFeatureGenerator):
         super().__init__(**kwargs)
         self.op_list = []
 
-    def is_useful(self, pa_schema):
-        found = False
+    def fit_prepare(self, pa_schema):
+        is_useful = False
         for pa_field in pa_schema:
             if pa_field.is_coordinates:
                 self.feature_in.append(pa_field.name)
-                found = True
-        return found
-    
-    def fit_prepare(self, pa_schema):
+                is_useful = True
         if len(self.feature_in) == 2:
             # we assume we can calculate distance between them
             from featuretools.primitives import Haversine
@@ -26,7 +23,7 @@ class GeoFeatureGenerator(FeaturetoolsBasedFeatureGenerator):
             self.feature_in_out_map[str(self.feature_in)] = (out_schema, op)
             pa_schema.append(out_schema)
 
-        return pa_schema
+        return pa_schema, is_useful
 
     def get_function_pd(self):
         def generate_ft_feature(df):
@@ -90,19 +87,15 @@ class CoordinatesInferFeatureGenerator(super_class):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.points = []
-   
-    def is_useful(self, pa_schema):
+
+    def fit_prepare(self, pa_schema):
+        is_useful = False
         for field in pa_schema:
             if self.is_coor_related_name_and_set(field.name):
-                return True
-        return False
-    
-    def fit_prepare(self, pa_schema):
-        for field in pa_schema:
-            self.is_coor_related_name_and_set(field.name)
+                is_useful = True
         for p in self.points:
             pa_schema.append(SeriesSchema(p.get_feature_name(), p.get_feature_type()))
-        return pa_schema
+        return pa_schema, is_useful
 
     def get_function_pd(self):
         def type_infer(df):            

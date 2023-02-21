@@ -81,11 +81,8 @@ class StatisticsFeatureGenerator(super_class):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def is_useful(self, df):
-        return True
-    
     def fit_prepare(self, pa_schema):
-        return
+        return pa_schema, True
     
     def update_feature_statistics(self, X, y):
         overview_info = {}

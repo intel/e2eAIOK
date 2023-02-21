@@ -11,28 +11,25 @@ class DropUselessFeatureGenerator(super_class):
         self._astype_feature_map = None
         self.feature_in = []
         self.final = final
-   
-    def is_useful(self, pa_schema: List[SeriesSchema]):
-        found = False
+
+    def fit_prepare(self, pa_schema: List[SeriesSchema]):
+        is_useful = False
         for pa_field in pa_schema:
             if not self.final:
                 if not (pa_field.is_numeric or pa_field.is_categorical):
                     self.feature_in.append(pa_field.name)
+                    is_useful = True
                     print(f"{pa_field} should drop")
-                    found = True
             else:
                 if not (pa_field.is_numeric):
                     self.feature_in.append(pa_field.name)
+                    is_useful = True
                     print(f"{pa_field} should drop")
-                    found = True
-        return found
-    
-    def fit_prepare(self, pa_schema: List[SeriesSchema]):
         ret_schema = []
         for pa_field in pa_schema:
             if pa_field.name not in self.feature_in:
                 ret_schema.append(pa_field)
-        return ret_schema
+        return ret_schema, is_useful
 
     def get_function_pd(self):
         def drop_useless_feature(df):

@@ -1,0 +1,15 @@
+@startuml
+
+start
+
+repeat :update supplementary table_list;
+repeat :for table in supp_table_list;
+:detect index
+update detected_relation;
+repeat while (no more table?) is (no) not (yes)
+:main_table.join(detected_relation)
+main_table = main_table.transform;
+repeat while (end relation detection?) is (no) not (yes)
+stop
+
+@enduml

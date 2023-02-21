@@ -22,6 +22,7 @@ class BasePipeline:
         self.original_data = dataset
         self.y = y
         # add default pipeline
+        # fixme: Now we use list of primitives, should use DAG format later.
         self.generators = []
         self.rdp = None
     
@@ -33,11 +34,11 @@ class BasePipeline:
         for i in range(len(self.generators)):
             generator_group_valid = []
             for generator in self.generators[i]:
-                if generator.is_useful(cur_feature_list):
-                    if isinstance(generator, TypeInferFeatureGenerator):
-                        cur_feature_list = generator.fit_prepare(cur_feature_list, sampled_feature_data)
-                    else:
-                        cur_feature_list = generator.fit_prepare(cur_feature_list)
+                if isinstance(generator, TypeInferFeatureGenerator):
+                    cur_feature_list, is_useful = generator.fit_prepare(cur_feature_list, sampled_feature_data)
+                else:
+                    cur_feature_list, is_useful = generator.fit_prepare(cur_feature_list)
+                if is_useful:
                     generator_group_valid.append(generator)
             self.generators[i] = generator_group_valid
 

@@ -1,0 +1,171 @@
+@startuml
+Object clicks {
+    display_id : string
+    ad_id : string
+    clicks : clicked : label
+}
+Object events {
+    display_id : string
+    uuid : string
+    document_id : string
+    timestamp : int64
+    platform : string
+    geo_location : string
+}
+Object promoted_content {
+    ad_id : string
+    document_id : string
+    campaign_id : string
+    advertiser_id : string
+}
+Object page_views {
+    uuid : string
+    document_id : string
+    timestamp : int64
+    platform : string
+    geo_location : string
+    traffic_resource: int
+}
+Object document_meta {
+    document_id : string
+    source_id : string
+    publisher_id : string
+    publish_time : int64
+}
+Object document_entities {
+    document_id : string
+    entity_id : string
+    confidence_level : int
+}
+Object document_categories {
+    document_id : string
+    category_id : string
+    confidence_level : int
+}
+Object document_topic {
+    document_id : string
+    topic_id : string
+    confidence_level : int
+}
+
+Entity indexed\nevents {
+    display_id : string
+    --
+    uuid : string
+    document_id : string
+    timestamp : int64
+    platform : string
+    geo_location : string
+}
+Entity indexed\npromoted_content {
+    ad_id : string
+    --
+    document_id : string
+    campaign_id : string
+    advertiser_id : string
+}
+Entity indexed\npage_views {
+    uuid : string
+    document_id : string
+    timestamp : int64
+    platform : string
+    geo_location : string
+    --
+    traffic_resource: int
+}
+Entity indexed\ndocument_meta {
+    document_id : string
+    --
+    source_id : string
+    publisher_id : string
+    publish_time : int64
+}
+Entity indexed\ndocument_entities {
+    document_id : string
+    --
+    entity_id : string
+    confidence_level : int
+}
+Entity indexed\ndocument_categories {
+    document_id : string
+    --
+    category_id : string
+    confidence_level : int
+}
+Entity indexed\ndocument_topic {
+    document_id : string
+    --
+    topic_id : string
+    confidence_level : int
+}
+Entity joined_clicks {
+    display_id : string
+    ad_id : string
+    clicks : clicked : label
+    uuid : string
+    timestamp : int64
+    platform : string
+    geo_location : string
+    campaign_id : string
+    advertiser_id : string
+    document_id_x : string
+    document_id_y : string
+}
+Entity unifiedjoined_clicks {
+    display_id : string
+    ad_id : string
+    clicks : clicked : label
+    uuid : string
+    timestamp : int64
+    platform : string
+    geo_location : string
+    campaign_id : string
+    advertiser_id : string
+    document_id : string
+}
+Entity FinalTrainClicks {
+    display_id : string
+    ad_id : string
+    clicks : clicked : label
+    uuid : string
+    timestamp : int64
+    platform : string
+    geo_location : string
+    document_id : string
+    campaign_id : string
+    advertiser_id : string
+    traffic_resource: int
+    source_id : string
+    publisher_id : string
+    publish_time : int64
+    entity_id : string
+    confidence_level_entity : int
+    category_id : string
+    confidence_level_category : int
+    topic_id : string
+    confidence_level_topic : int
+}
+
+
+clicks |o-- indexed\nevents : outer join
+clicks |o-- indexed\npromoted_content : outer join
+indexed\nevents ||-- events : detect index
+indexed\npromoted_content ||-- promoted_content : detect index
+clicks -> joined_clicks : transform
+joined_clicks -> unifiedjoined_clicks : transform
+indexed\npage_views ||-- page_views : detect index
+indexed\ndocument_meta ||-- document_meta : detect index
+indexed\ndocument_entities ||-- document_entities : detect index
+indexed\ndocument_categories ||-- document_categories : detect index
+indexed\ndocument_topic ||-- document_topic : detect index
+unifiedjoined_clicks |o--   indexed\npage_views : outer join
+unifiedjoined_clicks |o-- indexed\ndocument_meta : outer join
+unifiedjoined_clicks |o-- indexed\ndocument_entities : outer join
+unifiedjoined_clicks |o-- indexed\ndocument_categories : outer join
+unifiedjoined_clicks |o-- indexed\ndocument_topic : outer join
+unifiedjoined_clicks -> FinalTrainClicks :  transform
+
+
+
+
+@enduml

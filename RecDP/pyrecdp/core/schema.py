@@ -17,6 +17,7 @@ class SeriesSchema:
             s_dtype = args[1]
             # s_dtype is possible to be pandas.dtype or woodwork.dtype       
             self.name = s_name
+            # TODO: convert featuretools return_type to recdp return type
             self.type = s_dtype
             self.actual_type = None
             self.is_text_flag = isinstance(self.type, TextDtype)

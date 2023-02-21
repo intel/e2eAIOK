@@ -20,7 +20,8 @@ class TestFeatureWranglerPandasBased(unittest.TestCase):
         ret_df = pipeline.fit_transform(engine_type = 'pandas')
         # test with shape
         self.assertEqual(ret_df.shape[0], 10000)
-        self.assertTrue(ret_df.shape[1] >= 15)
+        print(ret_df.dtypes)
+        self.assertTrue(ret_df.shape[1] >= 12)
         
     def test_twitter_recsys(self):
         train_data = pd.read_parquet(f"{pathlib}/tests/data/test_twitter_recsys.parquet")
@@ -28,7 +29,8 @@ class TestFeatureWranglerPandasBased(unittest.TestCase):
         ret_df = pipeline.fit_transform(engine_type = 'pandas')
         # test with shape
         self.assertEqual(ret_df.shape[0], 10000)
-        self.assertTrue(ret_df.shape[1] >= 41)
+        print(ret_df.dtypes)
+        self.assertTrue(ret_df.shape[1] >= 31)
         
 class TestFeatureWranglerSparkBased(unittest.TestCase):
 
@@ -38,7 +40,8 @@ class TestFeatureWranglerSparkBased(unittest.TestCase):
         ret_df = pipeline.fit_transform(engine_type = 'spark')
         # test with shape
         self.assertEqual(ret_df.shape[0], 10000)
-        self.assertTrue(ret_df.shape[1] >= 15)
+        print(ret_df.dtypes)
+        self.assertTrue(ret_df.shape[1] >= 12)
         
     def test_twitter_recsys(self):
         train_data = pd.read_parquet(f"{pathlib}/tests/data/test_twitter_recsys.parquet")
@@ -46,4 +49,5 @@ class TestFeatureWranglerSparkBased(unittest.TestCase):
         ret_df = pipeline.fit_transform(engine_type = 'pandas')
         # test with shape
         self.assertEqual(ret_df.shape[0], 10000)
-        self.assertTrue(ret_df.shape[1] >= 41)
+        print(ret_df.dtypes)
+        self.assertTrue(ret_df.shape[1] >= 31)

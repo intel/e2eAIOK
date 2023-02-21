@@ -6,8 +6,12 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', level=loggin
 logger = logging.getLogger(__name__)
 
 class FeatureWrangler(BasePipeline):
-    def __init__(self, dataset, label, *args, **kwargs):
+    def __init__(self, dataset, label, supplementary_datasets = None, *args, **kwargs):
         super().__init__(dataset, label)
+
+        # If we provided multiple datasets in this workload
+        if supplementary_datasets:
+            self.generators.append([cls(supplementary_datasets) for cls in relation_builder_list])
         
         self.generators.append([DataframeConvertFeatureGenerator()])
         self.generators.append([cls() for cls in pre_feature_generator_list])

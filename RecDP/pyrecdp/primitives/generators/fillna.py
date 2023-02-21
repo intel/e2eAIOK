@@ -18,16 +18,13 @@ class FillNaFeatureGenerator(super_class):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def is_useful(self, pa_schema):
-        return True
-    
     def fit_prepare(self, pa_schema):
         self._fillna_feature_map = {}
         for field in pa_schema:
             default_value = get_default_value(field)
             if default_value:
                 self._fillna_feature_map[field.name] = default_value
-        return pa_schema
+        return pa_schema, True
     
     def get_function_pd(self):
         def fill_na(df):

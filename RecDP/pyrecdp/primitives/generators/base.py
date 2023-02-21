@@ -6,11 +6,8 @@ class BaseFeatureGenerator:
     def __init__(self):
         pass
     
-    def is_useful(self, pa_schema: List[SeriesSchema]):
-        return True
-    
     def fit_prepare(self, pa_schema: List[SeriesSchema]):
-        return
+        return pa_schema, False
 
     def get_function_pd(self):
         def base_feature_generator(df):

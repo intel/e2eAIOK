@@ -1,0 +1,16 @@
+@startuml
+
+start
+
+:initialize primitive list;
+repeat :next primitive;
+  if (primitive.is_useful(data_schema)?) then (yes)
+    :data_schema,func_desc = \n\tprimitive.fit_prepare(data_schema)\nprimitiveDAG.update(func_desc);
+
+  endif
+repeat while (more primitives to check?) is (yes) not (no)
+:return primitiveDAG;
+
+stop
+
+@enduml

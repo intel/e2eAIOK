@@ -10,10 +10,15 @@ from .type import TypeInferFeatureGenerator, TypeCheckFeatureGenerator
 from .encoder import LabelEncoderFeatureGenerator, OneHotEncoderFeatureGenerator
 from .nlp import DecodedTextFeatureGenerator, TextFeatureGenerator
 from .geograph import GeoFeatureGenerator, CoordinatesInferFeatureGenerator
+from .relation import RelationBuilder
 
 feature_infer_list = [
     TypeInferFeatureGenerator,
     CoordinatesInferFeatureGenerator,
+]
+
+relation_builder_list = [
+    RelationBuilder
 ]
 
 pre_feature_generator_list = [

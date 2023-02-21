@@ -33,15 +33,13 @@ class DecodedTextFeatureGenerator(FeaturetoolsBasedFeatureGenerator):
             BertTokenizerDecode()
         ]
 
-    def is_useful(self, pa_schema: SeriesSchema):
-        found = False
+    def fit_prepare(self, pa_schema):
+        is_useful = False
         for pa_field in pa_schema:
             if pa_field.is_text:
-                self.feature_in.append(pa_field.name)
-                found = True
-        return found
-
-    def fit_prepare(self, pa_schema):
+                in_feat_name = pa_field.name
+                is_useful = True
+                self.feature_in.append(in_feat_name)
         for in_feat_name in self.feature_in:
             self.feature_in_out_map[in_feat_name] = []
             for op in self.op_list:
@@ -50,7 +48,7 @@ class DecodedTextFeatureGenerator(FeaturetoolsBasedFeatureGenerator):
                 out_schema = SeriesSchema(out_feat_name, out_feat_type)
                 self.feature_in_out_map[in_feat_name].append((out_schema, op))
                 pa_schema.append(out_schema)
-        return pa_schema
+        return pa_schema, is_useful
     
 class TextFeatureGenerator(FeaturetoolsBasedFeatureGenerator):
     def __init__(self):
@@ -61,10 +59,11 @@ class TextFeatureGenerator(FeaturetoolsBasedFeatureGenerator):
             NumWords(),
         ]
 
-    def is_useful(self, pa_schema: SeriesSchema):
-        found = False
+    def fit_prepare(self, pa_schema):
+        is_useful = False
         for pa_field in pa_schema:
             if pa_field.is_text and "decode" in pa_field.name:
+                is_useful = True
                 self.feature_in.append(pa_field.name)
-                found = True
-        return found
+        ret_pa_schema, _ = super().fit_prepare(pa_schema)
+        return ret_pa_schema, is_useful
