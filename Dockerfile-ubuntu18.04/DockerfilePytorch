@@ -41,6 +41,10 @@ RUN python -m pip install "git+https://github.com/mlperf/logging.git@1.0.0"
 # setup raydp pyrecdp pandas
 SHELL ["conda", "run", "-n", "pytorch_mlperf", "/bin/bash", "-c"]
 RUN pip install ray==2.1.0 raydp-nightly pyrecdp pandas scikit-learn "pyarrow<7.0.0"
+RUN wget -qO- https://downloads.apache.org/commons/text/binaries/commons-text-1.10.0-bin.tar.gz | tar xvz -C /home/
+RUN python -m pip show pyspark
+RUN PYSPARK_PATH=$(python -m pip show pyspark | grep Location | awk '{print $2}') && rm ${PYSPARK_PATH}/pyspark/jars/commons-text-1.9*jar &&  mv /home/commons-text-1.10.0/commons-text-1.10.0.jar ${PYSPARK_PATH}/pyspark/jars/
+
 
 # setup ssh
 SHELL ["/bin/bash", "-c"]
