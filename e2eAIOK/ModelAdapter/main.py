@@ -47,7 +47,12 @@ def main(args):
     LOG_DIR = os.path.join(root_dir,"log")                      # to save training log
     PROFILE_DIR = os.path.join(root_dir,"profile")              # to save profiling result
     model_save_path = os.path.join(root_dir, prefix)
-    cfg.tensorboard_dir = os.path.join(cfg.tensorboard_dir,"%s_%s"%(cfg.experiment.tag,prefix))  # to save tensorboard log
+    if "tensorboard_dir" in cfg and cfg.tensorboard_dir != "":
+        cfg.tensorboard_dir = os.path.join(cfg.tensorboard_dir,"%s_%s"%(cfg.experiment.tag,prefix))  # to save tensorboard log
+        if not is_safe_path(safe_base_dir, cfg.tensorboard_dir):
+            print(f"{cfg.tensorboard_dir} is not safe.")
+            sys.exit()
+        os.makedirs(cfg.tensorboard_dir,exist_ok=True)
     cfg.profiler_config.trace_file = os.path.join(PROFILE_DIR,"profile_%s"%prefix_time)
     if not is_safe_path(safe_base_dir, LOG_DIR):
         print(f"{LOG_DIR} is not safe.")
@@ -55,15 +60,11 @@ def main(args):
     if not is_safe_path(safe_base_dir, PROFILE_DIR):
         print(f"{PROFILE_DIR} is not safe.")
         sys.exit()
-    if not is_safe_path(safe_base_dir, cfg.tensorboard_dir):
-        print(f"{cfg.tensorboard_dir} is not safe.")
-        sys.exit()
     if not is_safe_path(safe_base_dir, model_save_path):
         print(f"{model_save_path} is not safe.")
         sys.exit()    
     os.makedirs(LOG_DIR,exist_ok=True)
     os.makedirs(PROFILE_DIR,exist_ok=True) 
-    os.makedirs(cfg.tensorboard_dir,exist_ok=True)
     os.makedirs(model_save_path,exist_ok=True)
 
     ###################### Distiller check ################

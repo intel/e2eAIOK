@@ -193,7 +193,7 @@ class TorchTrainerMA(TorchTrainer):
                             metric_value = metric_fn(output, label)
                             metric_value = metric_value[0] if isinstance(metric_value, list) else metric_value
                             metric_values[metric_name] = metric_value
-                    self.show_update_tensorboard_metric('Train', metric_values, cur_epoch, cur_step, epoch_steps)
+                    self.show_update_tensorboard_metric('Train', metric_values, cur_epoch, cur_step, epoch_steps,parameters=False)
                 
                 ##### update profiler
                 if context is self.profiler:

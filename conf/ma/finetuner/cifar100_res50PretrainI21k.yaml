@@ -4,7 +4,7 @@ experiment:
   strategy: "OnlyFinetuneStrategy"
 
 output_dir: "/home/vmagent/app/data/model"
-train_epochs: 1
+train_epochs: 50
 enable_ipex: True
 
 ### dataset

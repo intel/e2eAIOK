@@ -4,7 +4,7 @@ experiment:
   strategy: "OnlyDistillationStrategy"
   
 output_dir: "/home/vmagent/app/data/model"
-train_epochs: 80
+train_epochs: 60
 model_save_interval: 5
 
 ### dataset
@@ -31,15 +31,15 @@ distiller:
 
 ## optimizer
 optimizer: "SGD"
-learning_rate: 0.1
+learning_rate: 0.12
 weight_decay: 0.0001
 momentum: 0.9
 
 ### scheduler
-lr_scheduler: "ReduceLROnPlateau"
+lr_scheduler: "MultiStepLR"
 lr_scheduler_config:
     decay_rate: 0.2
-    decay_patience: 3
+    decay_stages: [25, 35, 40]
 
 ### early stop
 early_stop: "EarlyStopping"
