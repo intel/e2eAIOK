@@ -123,7 +123,7 @@ def compute_diversity_score(model_type, net, *inputs):
         inputs = torch.ones([1] + input_dim)
         output = net.forward(inputs)
     elif model_type == "bert":
-        input_ids, input_masks, input_segments = inputs
+        input_ids, input_masks, input_segments = inputs[0]['input_ids'], inputs[0]['attention_mask'], inputs[0]['token_type_ids']
         output, pooled_output = net.forward(input_ids, input_masks, input_segments)
     elif model_type == "asr":
         output, _ = net.encode(inputs[0])
@@ -172,7 +172,7 @@ def compute_saliency_score(model_type, net, *inputs):
         inputs = torch.ones([1] + input_dim)
         output = net.forward(inputs)
     elif model_type == "bert":
-        input_ids, input_masks, input_segments = inputs
+        input_ids, input_masks, input_segments = inputs[0]['input_ids'], inputs[0]['attention_mask'], inputs[0]['token_type_ids']
         output, pooled_output = net.forward(input_ids, input_masks, input_segments)
     elif model_type == "asr":
         output, _ = net.encode(inputs[0])
@@ -211,13 +211,8 @@ def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, 
         input = torch.randn(size=[batch_size, 3, resolution, resolution],  dtype=dtype)
         disversity_score_list = compute_diversity_score(model_type, model, input)
     elif model_type == "bert":
-        input_ids = [[9333-id] * resolution for id in range(batch_size)]
-        input_masks = resolution * [1]
-        input_segments = resolution * [0]
-        input_ids = torch.tensor(input_ids, dtype=torch.long)
-        input_masks = torch.tensor([input_masks]*batch_size, dtype=torch.long)
-        input_segments = torch.tensor([input_segments]*batch_size, dtype=torch.long)
-        disversity_score_list = compute_diversity_score(model_type, model, input_ids, input_masks, input_segments)
+        input = input_construtor(batch_size, resolution)
+        disversity_score_list = compute_diversity_score(model_type, model, input)
     elif model_type == "asr":
         input = torch.randn(size=[batch_size, 400, 20, 64])
         disversity_score_list = compute_diversity_score(model_type, model, input)
@@ -234,7 +229,8 @@ def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, 
     if model_type == "transformer":
         grads_abs_list = compute_saliency_score(model_type, model, input)
     elif model_type == "bert":
-        grads_abs_list = compute_saliency_score(model_type, model, input_ids, input_masks, input_segments)
+        input = input_construtor(batch_size, resolution)
+        grads_abs_list = compute_saliency_score(model_type, model, input)
     elif model_type == "asr":
         grads_abs_list = compute_saliency_score(model_type, model, input)
     elif model_type == "hf":

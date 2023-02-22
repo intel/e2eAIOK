@@ -95,13 +95,8 @@ def get_hf_latency(model, batch_size, max_seq_length, gpu, infer_cnt):
         device = 'cpu'
     else:
         device = 'cuda'
-    input_ids = [9333] * max_seq_length
-    input_masks = max_seq_length * [1]
-    input_segments = max_seq_length * [0]
-    input_ids = torch.tensor([input_ids]*batch_size, dtype=torch.long).to(device)
-    input_masks = torch.tensor([input_masks]*batch_size, dtype=torch.long).to(device)
-    input_segments = torch.tensor([input_segments]*batch_size, dtype=torch.long).to(device)
-    batch = {'input_ids': input_ids, 'token_type_ids': input_segments, 'attention_mask':input_masks}
+    
+    batch = input_construtor(batch_size, max_seq_length)
 
     aver_time = 0.
     model.eval()
