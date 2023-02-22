@@ -15,6 +15,7 @@ from e2eAIOK.DeNas.asr.utils.asr_nas import asr_is_legal, asr_populate_random_fu
 from e2eAIOK.DeNas.thirdparty.utils import hf_is_legal, hf_populate_random_func
 from e2eAIOK.DeNas.thirdparty.supernet_hf import SuperHFModel
 from e2eAIOK.DeNas.pruner.pruner import Pruner
+from e2eAIOK.DeNas.pruner.PrunerFactory import PrunerFactory
 
  
 class BaseSearchEngine(ABC):
@@ -39,15 +40,15 @@ class BaseSearchEngine(ABC):
     Judge sample structure legal or not
     '''
     def cand_islegal(self, cand):
-        if "pruner" in self.params and self.params.pruner:
+        if "pruner" in self.params and self.params.pruner.pruner:
             if cand not in self.vis_dict:
                 self.vis_dict[cand] = {}
             info = self.vis_dict[cand]
             if 'visited' in info:
                 return False
             cand_model = deepcopy(self.super_net)
-            pruner = Pruner(self.params.algo, cand)
-            self.cand_model = pruner.prune(cand_model)
+            pruner = PrunerFactory.create_pruner(self.params.pruner.backend, self.params.pruner.algo, self.params.pruner.layer_list, self.params.pruner.exclude_list)
+            self.cand_model, mask = pruner.prune(cand_model, cand)
 
             total_params = get_total_parameters_count(cand_model)
             total_params_pruned = get_pruned_parameters_count(cand_model)
@@ -123,7 +124,7 @@ class BaseSearchEngine(ABC):
     Generate sample random structure
     '''
     def populate_random_func(self):
-        if "pruner" in self.params and self.params.pruner:
+        if "pruner" in self.params and self.params.pruner.pruner:
             return random.choice(self.search_space['sparsity'])
         else:
             if self.params.domain == "cnn":

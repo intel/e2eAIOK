@@ -1,1 +1,1 @@
-__all__ = ['pruner']
+__all__ = ['PrunerFactory', 'PytorchPruner']

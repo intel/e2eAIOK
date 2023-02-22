@@ -58,9 +58,9 @@ def main(params):
     elif params.domain == 'asr':
         with open(params.supernet_cfg) as f:
             cfg = edict(yaml.safe_load(f))
-        if "pruner" in params and params.pruner:
+        if "pruner" in params and params.pruner.pruner:
             super_net = ModelBuilderASRDeNas(cfg.SUPERNET).load_pretrained_model()["Transformer"]
-            search_space = {'sparsity': np.arange(params["sparsity"]["min"], params["sparsity"]["max"], params["sparsity"]["step"])}
+            search_space = {'sparsity': np.arange(cfg.sparsity.min, cfg.sparsity.max, cfg.sparsity.step)}
         else:
             super_net = TransformerASRSuper
             search_space = {'num_heads': cfg.SEARCH_SPACE.NUM_HEADS, 'mlp_ratio': cfg.SEARCH_SPACE.MLP_RATIO,

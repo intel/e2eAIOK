@@ -26,7 +26,7 @@ from e2eAIOK.DeNas.cv.cv_trainer import CVTrainer
 from e2eAIOK.DeNas.nlp.utils import bert_create_optimizer, bert_create_criterion, bert_create_scheduler, bert_create_metric
 from e2eAIOK.DeNas.nlp.bert_trainer import BERTTrainer
 from e2eAIOK.DeNas.search.utils import parse_config
-from e2eAIOK.DeNas.pruner.pruner import Pruner
+from e2eAIOK.DeNas.pruner.PrunerFactory import PrunerFactory
 
 
 def parse_args(args):
@@ -46,10 +46,10 @@ def main(cfg):
         torch.manual_seed(cfg.random_seed)
 
     ext_dist.init_distributed(backend=cfg.dist_backend)
-    if "sparsity" in cfg and cfg.sparsity != None:
-        with open(cfg.sparsity, 'r') as f:
+    if "pruner" in cfg and cfg.pruner != None:
+        with open(cfg.pruner.sparsity, 'r') as f:
             sparsity = f.readlines()[-1]
-            cfg["sparsity"] = float(sparsity)
+            cfg.pruner.sparsity = float(sparsity)
 
     if cfg.domain in ['cnn','vit']:
         model = ModelBuilderCVDeNas(cfg).create_model()
@@ -69,11 +69,11 @@ def main(cfg):
         metric = bert_create_metric(cfg)
         trainer = BERTTrainer(cfg, model, train_dataloader, eval_dataloader, other_data, optimizer, criterion, scheduler, metric)
     elif cfg.domain == 'asr':
-        if "pruner" in cfg and cfg.pruner:
+        if "pruner" in cfg and cfg.pruner.pruner:
             model_builder = ModelBuilderASRDeNas(cfg)
             model = model_builder.load_pretrained_model()
-            pruner = Pruner(cfg.algo, cfg.sparsity)
-            pruner.prune(model["Transformer"])
+            pruner = PrunerFactory.create_pruner(cfg.pruner.backend, cfg.pruner.algo, cfg.pruner.layer_list, cfg.pruner.exclude_list)
+            pruner.prune(model["Transformer"], cfg.pruner.sparsity)
         else:
             model = ModelBuilderASRDeNas(cfg).create_model()
         tokenizer = sp.SentencePieceProcessor()
