@@ -23,9 +23,9 @@ class TestBasicDistiller:
                     transforms.ToTensor(),
                     transforms.Normalize(mean=(0.5,0.5,0.5), std=(0.5,0.5,0.5))])
         
-        dataset = datasets.CIFAR100(root="/home/vmagent/app/data/dataset", train=False, transform=trans, download=True)
+        dataset = datasets.CIFAR100(root="/home/vmagent/app/data/dataset/cifar", train=False, transform=trans, download=True)
         dataset = Subset(dataset, torch.Tensor([i for i in range(200)]).int())
-        dataset = logits_wrap_dataset(dataset, logits_path="/home/vmagent/app/data/dataset", num_classes=100, save_logits=save_logits, topk=0)
+        dataset = logits_wrap_dataset(dataset, logits_path="/home/vmagent/app/data/dataset/cifar/logits", num_classes=100, save_logits=save_logits, topk=0)
         dataloader = torch.utils.data.DataLoader(dataset=dataset,batch_size=32,shuffle=False)
         return dataloader
 
@@ -62,7 +62,7 @@ class TestBasicDistiller:
         dataloader = self._create_dataloader(save_logits=True)
         distiller = BasicDistiller(**kwargs)
         distiller.prepare_logits(dataloader, 1, start_epoch=0)
-        # assert os.path.exists("../datasets/logits_epoch0")
+        assert os.path.exists("/home/vmagent/app/data/dataset/cifar/logits/logits_epoch0")
 
     def test_forward(self):
         ''' test forward
@@ -77,15 +77,15 @@ class TestBasicDistiller:
         y = distiller(x)
         assert y.shape == torch.Size([bath_size,num_classes])
         ########################## load pretrain logits forward test ############################
-        # self.prepare_logits()
-        # kwargs = self._create_kwargs()
-        # dataloader = self._create_dataloader(save_logits=False)
-        # distiller = BasicDistiller(**kwargs)
+        self.prepare_logits()
+        kwargs = self._create_kwargs()
+        dataloader = self._create_dataloader(save_logits=False)
+        distiller = BasicDistiller(**kwargs)
 
-        # for (idx, (data, label)) in enumerate(dataloader):
-        #     y = distiller(data)
-        #     assert y.shape == torch.Size([data[0].shape[0],100])
-        #     break
+        for (idx, (data, label)) in enumerate(dataloader):
+            y = distiller(data)
+            assert y.shape == torch.Size([data[0].shape[0],100])
+            break
 
 class TestKD:
     ''' Test KD

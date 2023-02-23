@@ -40,7 +40,7 @@ def main(params):
                                     qkv_bias=True, drop_rate=params.drop_rate,
                                     drop_path_rate=params.drop_path_rate,
                                     gp=params.gp,
-                                    num_classes=10,
+                                    num_classes=params.num_classes,
                                     max_relative_position=params.max_relative_position,
                                     relative_position=params.relative_position,
                                     change_qkv=params.change_qkv, abs_pos=params.abs_pos)

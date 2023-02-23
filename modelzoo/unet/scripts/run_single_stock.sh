@@ -16,30 +16,20 @@
 set -x
 
 unset MASTER_ADDR
+
+echo "############################## setting env ##############################"
 export nnUNet_raw_data_base="/home/vmagent/app/data/adaptor_large/nnUNet_raw_data_base"
 export nnUNet_preprocessed="/home/vmagent/app/data/adaptor_large/nnUNet_preprocessed"
 export RESULTS_FOLDER="/home/vmagent/app/data/adaptor_large/nnUNet_trained_models"
-# nnUNetTrainer_DA_V2, nnUNetTrainerV2
-trainer=nnUNetTrainer_DA_V2
+pre_trained_model_path="/home/vmagent/app/data/adaptor_large/pre-trained-model/model_final_checkpoint-600.model"
 
 
-############################################# predict #############################################
-# -chk model_latest \
+echo "############################## 1 node stock model ##############################"
+# -exp_name 'cpu-test-epoch-20' \
+# -no_train -val
+epochs=$1
 
-# # inference
-time nnUNet_predict \
-    -i ${nnUNet_raw_data_base}/nnUNet_raw_data/Task507_KiTS_kidney/testTr/ \
-    -o ${nnUNet_raw_data_base}/nnUNet_raw_data/Task507_KiTS_kidney/predict/ \
-    -f 1 \
-    -t 507 -m 3d_fullres -p nnUNetPlansv2.1_trgSp_kits19 \
-    --disable_tta \
-    -tr $trainer \
-    --overwrite_existing \
-    --disable_mixed_precision 
-
-# # evaluate with given label    
-nnUNet_evaluate_folder \
-    -ref ${nnUNet_raw_data_base}/nnUNet_raw_data/Task507_KiTS_kidney/labelsTr \
-    -pred ${nnUNet_raw_data_base}/nnUNet_raw_data/Task507_KiTS_kidney/predict \
-    -l 1 \
-    --common
+nnUNet_train \
+    3d_fullres nnUNetTrainerV2 507 1 \
+    -p nnUNetPlansv2.1_trgSp_kits19 \
+    --epochs $epochs
