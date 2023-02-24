@@ -1,5 +1,6 @@
 import logging
 import gc
+import json
 import numpy as np
 
 from abc import ABC, abstractmethod
@@ -9,10 +10,11 @@ from e2eAIOK.DeNas.cv.utils.cnn import cnn_is_legal, cnn_populate_random_func
 from e2eAIOK.DeNas.cv.utils.vit import vit_is_legal, vit_populate_random_func
 from e2eAIOK.DeNas.nlp.utils import bert_is_legal, bert_populate_random_func, get_subconfig
 from e2eAIOK.DeNas.asr.utils.asr_nas import asr_is_legal, asr_populate_random_func
+from e2eAIOK.DeNas.thirdparty.utils import hf_is_legal, hf_populate_random_func
+from e2eAIOK.DeNas.thirdparty.supernet_hf import SuperHFModel
 
  
 class BaseSearchEngine(ABC):
-
     def __init__(self, params=None, super_net=None, search_space=None):
         super().__init__()
         self.super_net = super_net
@@ -44,6 +46,8 @@ class BaseSearchEngine(ABC):
             is_legal, net = asr_is_legal(cand, self.vis_dict, self.params, self.super_net)
             self.super_net = net
             return is_legal
+        elif self.params.domain == "hf":
+            return hf_is_legal(cand, self.vis_dict, self.params)
         else:
             raise RuntimeError(f"Domain {self.params.domain} is not supported")
 
@@ -82,6 +86,11 @@ class BaseSearchEngine(ABC):
             sampled_config['sample_hidden_size'] = cand[3]
             sampled_config['sample_intermediate_sizes'] = [cand[4]]*cand[0]
             model = self.super_net.set_sample_config(sampled_config)
+            model = self.super_net
+            latency = NETWORK_LATENCY[self.params.domain](model=model, batch_size=self.params.batch_size, max_seq_length=self.params.img_size, gpu=None, infer_cnt=10.)
+        elif self.params.domain == "hf":
+            cand_dict = json.loads(cand)
+            model = SuperHFModel.set_sample_config(self.params.pretrained_model ,**cand_dict)
             latency = NETWORK_LATENCY[self.params.domain](model=model, batch_size=self.params.batch_size, max_seq_length=self.params.img_size, gpu=None, infer_cnt=10.)
         else:
             raise RuntimeError(f"Domain {self.params.domain} is not supported")
@@ -100,6 +109,8 @@ class BaseSearchEngine(ABC):
             return bert_populate_random_func(self.search_space)
         elif self.params.domain == "asr":
             return asr_populate_random_func(self.search_space)
+        elif self.params.domain == "hf":
+            return hf_populate_random_func(self.search_space)
         else:
             raise RuntimeError(f"Domain {self.params.domain} is not supported")
 
@@ -107,16 +118,19 @@ class BaseSearchEngine(ABC):
     Compute nas score for sample structure
     '''
     def cand_evaluate(self, cand):
-        subconfig = None
         if self.params.domain == "cnn":
             model = self.super_net(num_classes=self.params.num_classes, plainnet_struct=cand, no_create=False, no_reslink=True)
         elif self.params.domain == "vit":
             model = self.super_net
         elif self.params.domain == "bert":
             subconfig = get_subconfig(cand)
+            model = self.super_net.set_sample_config(subconfig)
             model = self.super_net
         elif self.params.domain == "asr":
             model = self.super_net
+        elif self.params.domain == "hf":
+            subconfig = json.loads(cand)
+            model = SuperHFModel.set_sample_config(self.params.pretrained_model, **subconfig)
         else:
             raise RuntimeError(f"Domain {self.params.domain} is not supported")
         
@@ -124,7 +138,6 @@ class BaseSearchEngine(ABC):
                                                         resolution=self.params.img_size,
                                                         batch_size=self.params.batch_size,
                                                         mixup_gamma=1e-2,
-                                                        subconfig=subconfig,
                                                         expressivity_weight=self.params.expressivity_weight,
                                                         complexity_weight=self.params.complexity_weight,
                                                         diversity_weight=self.params.diversity_weight,

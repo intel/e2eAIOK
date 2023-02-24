@@ -1,4 +1,5 @@
 import time
+import json
 import sigopt
 
 from e2eAIOK.DeNas.search.BaseSearchEngine import BaseSearchEngine
@@ -269,6 +270,42 @@ class MOSigoptSearchEngine(BaseSearchEngine):
                 best_tuple.append(int(best_assignments[num_heads_name]))
             best_tuple.append(int(best_assignments['EMBED_DIM']))
             self.best_struct = tuple(best_tuple)
+        elif self.params.domain == "hf":
+            experiment = self.conn.experiments().create(
+                name= 'hugging face denas',
+                project='denas',
+                type="offline",
+                observation_budget=self.params.sigopt_max_epochs,
+                metrics=[dict(name='Score', objective='maximize'),dict(name='Latency', objective='minimize')],
+                parameters=[
+                    dict(name=k, type="int", bounds=dict(min=0, max=len(self.search_space[k])-1)) for k in self.search_space
+                ],
+            )
+            for epoch in range(experiment.observation_budget):
+                suggestion = self._get_sigopt_suggestion(experiment)
+                cand = dict()
+                for k in suggestion.assignments:
+                    cand[k] = self.search_space[k][0]+suggestion.assignments[k]*int((self.search_space[k][-1]-self.search_space[k][0])/(len(self.search_space[k])-1))
+                cand["hidden_size"] = int(cand["hidden_size"]/cand["num_attention_heads"]) * cand["num_attention_heads"]
+                cand = json.dumps(cand)
+                if not self.cand_islegal(cand):
+                    self._set_illegal_observation(experiment, suggestion.id)
+                    continue
+                if not self.cand_islegal_latency(cand):
+                    self._set_illegal_observation(experiment, suggestion.id)
+                    continue
+                nas_score, score, latency = self.cand_evaluate(cand)
+                self.logger.info('epoch = {} structure = {} nas_score = {} params = {}'.format(epoch, cand, self.vis_dict[cand]['score'], self.vis_dict[cand]['params']))
+                metrics = []
+                metrics.append({'name': 'Score', 'value': score.item()})
+                metrics.append({'name': 'Latency', 'value': latency})
+                self._set_sigopt_observation(experiment, suggestion.id, metrics)
+            best_assignments = self.conn.experiments(experiment.id).best_assignments().fetch().data[0].assignments
+            self.best_struct = dict()
+            for k in best_assignments:
+                self.best_struct[k] = self.search_space[k][0]+best_assignments[k]*int((self.search_space[k][-1]-self.search_space[k][0])/(len(self.search_space[k])-1))
+            self.best_struct["hidden_size"] = int(self.best_struct["hidden_size"]/self.best_struct["num_attention_heads"]) * self.best_struct["num_attention_heads"]
+            self.best_struct = json.dumps(self.best_struct)
         else:
             raise RuntimeError(f"Domain {self.params.domain} is not supported")
         with open("best_model_structure.txt", 'w') as f:

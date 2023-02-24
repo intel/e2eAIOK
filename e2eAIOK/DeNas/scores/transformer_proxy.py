@@ -5,6 +5,9 @@ import numpy as np
 import gc
 import torch
 from e2eAIOK.DeNas.utils import NETWORK_LATENCY
+from torch.nn.modules import linear
+from transformers import pytorch_utils
+
 # TODO: separate domain specific ops
 from e2eAIOK.DeNas.module.cv.Linear_super import LinearSuper
 from e2eAIOK.DeNas.module.cv.layernorm_super import LayerNormSuper
@@ -15,6 +18,8 @@ from e2eAIOK.DeNas.nlp.supernet_bert import SuperBertEncoder
 from e2eAIOK.DeNas.module.asr.encoder import TransformerEncoder
 from e2eAIOK.DeNas.module.asr.attention import MultiheadAttention
 from e2eAIOK.DeNas.module.asr.linear import Linear
+from e2eAIOK.DeNas.thirdparty.supernet_hf import SuperHFModel
+from e2eAIOK.DeNas.thirdparty.utils import input_construtor, LINEAR_LAYER_STRUCTURE, ATTN_LAYER_STRUCTURE
 
 from torchsummary import summary
 
@@ -66,6 +71,12 @@ def get_linear_layer_metric_array(model_type, net, metric):
                 for sub_layer in layer.layers:
                     metric_array.append(metric(sub_layer.pos_ffn.fc1))
                     metric_array.append(metric(sub_layer.pos_ffn.fc2))
+        elif model_type == "hf":
+            for k in LINEAR_LAYER_STRUCTURE:
+                if k in type(layer).__name__.lower():
+                    for sub_layer in layer.modules():
+                        if isinstance(sub_layer, LINEAR_LAYER_STRUCTURE[k]):
+                            metric_array.append(metric(sub_layer))
     return metric_array
 
 def get_attn_layer_metric_array(model_type, net, metric):
@@ -93,6 +104,12 @@ def get_attn_layer_metric_array(model_type, net, metric):
                 for sub_layer in layer.layers:
                     metric_array.append(func(sub_layer.self_att.att.in_proj_weight))
                     metric_array.append(metric(sub_layer.self_att.att.out_proj))
+        elif model_type == 'hf':
+            for k in ATTN_LAYER_STRUCTURE:
+                if k in type(layer).__name__.lower():
+                    for sub_layer in layer.modules():
+                        if isinstance(sub_layer, ATTN_LAYER_STRUCTURE[k]):
+                            metric_array.append(metric(sub_layer))
     return metric_array
 
 
@@ -106,10 +123,13 @@ def compute_diversity_score(model_type, net, *inputs):
         inputs = torch.ones([1] + input_dim)
         output = net.forward(inputs)
     elif model_type == "bert":
-        input_ids, input_masks, input_segments = inputs
+        input_ids, input_masks, input_segments = inputs[0]['input_ids'], inputs[0]['attention_mask'], inputs[0]['token_type_ids']
         output, pooled_output = net.forward(input_ids, input_masks, input_segments)
     elif model_type == "asr":
         output, _ = net.encode(inputs[0])
+    elif model_type == "hf":
+        output = net(**inputs[0])
+        output = output.last_hidden_state
     torch.sum(output).backward()
 
     # select the gradients that we want to use for search/prune
@@ -125,8 +145,7 @@ def compute_diversity_score(model_type, net, *inputs):
 
 
 def compute_saliency_score(model_type, net, *inputs):
-    device = inputs[0].device
-
+    
     # convert params to their abs. Keep sign for converting it back.
     @torch.no_grad()
     def linearize(net):
@@ -153,10 +172,13 @@ def compute_saliency_score(model_type, net, *inputs):
         inputs = torch.ones([1] + input_dim)
         output = net.forward(inputs)
     elif model_type == "bert":
-        input_ids, input_masks, input_segments = inputs
+        input_ids, input_masks, input_segments = inputs[0]['input_ids'], inputs[0]['attention_mask'], inputs[0]['token_type_ids']
         output, pooled_output = net.forward(input_ids, input_masks, input_segments)
     elif model_type == "asr":
         output, _ = net.encode(inputs[0])
+    elif model_type == "hf":
+        output = net(**inputs[0])
+        output = output.last_hidden_state
 
     torch.sum(output).backward()
 
@@ -174,14 +196,11 @@ def compute_saliency_score(model_type, net, *inputs):
 
     return grads_abs
 
-def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, mixup_gamma, subconfig=None, expressivity_weight=0, complexity_weight=0, diversity_weight=0, saliency_weight=0, latency_weight=0):
+def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, mixup_gamma, expressivity_weight=0, complexity_weight=0, diversity_weight=0, saliency_weight=0, latency_weight=0):
     
     expressivity_score = 0
     complexity_score = 0
     network_weight_gaussian_init(model,model_type)
-    if subconfig is not None:
-        model.module.set_sample_config(subconfig) if hasattr(model, 'module') \
-            else model.set_sample_config(subconfig)
     model.train()
     model.requires_grad_(True)
     model.zero_grad()
@@ -192,17 +211,13 @@ def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, 
         input = torch.randn(size=[batch_size, 3, resolution, resolution],  dtype=dtype)
         disversity_score_list = compute_diversity_score(model_type, model, input)
     elif model_type == "bert":
-        
-        max_seq_length = resolution
-        input_ids = [[9333-id] * max_seq_length for id in range(batch_size)]
-        input_masks = max_seq_length * [1]
-        input_segments = max_seq_length * [0]
-        input_ids = torch.tensor(input_ids, dtype=torch.long)
-        input_masks = torch.tensor([input_masks]*batch_size, dtype=torch.long)
-        input_segments = torch.tensor([input_segments]*batch_size, dtype=torch.long)
-        disversity_score_list = compute_diversity_score(model_type, model, input_ids, input_masks, input_segments)
+        input = input_construtor(batch_size, resolution)
+        disversity_score_list = compute_diversity_score(model_type, model, input)
     elif model_type == "asr":
         input = torch.randn(size=[batch_size, 400, 20, 64])
+        disversity_score_list = compute_diversity_score(model_type, model, input)
+    elif model_type == "hf":
+        input = input_construtor(batch_size, resolution)
         disversity_score_list = compute_diversity_score(model_type, model, input)
     disversity_score = 0
     for grad_abs in disversity_score_list:
@@ -214,8 +229,12 @@ def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, 
     if model_type == "transformer":
         grads_abs_list = compute_saliency_score(model_type, model, input)
     elif model_type == "bert":
-        grads_abs_list = compute_saliency_score(model_type, model, input_ids, input_masks, input_segments)
+        input = input_construtor(batch_size, resolution)
+        grads_abs_list = compute_saliency_score(model_type, model, input)
     elif model_type == "asr":
+        grads_abs_list = compute_saliency_score(model_type, model, input)
+    elif model_type == "hf":
+        input = input_construtor(batch_size, resolution)
         grads_abs_list = compute_saliency_score(model_type, model, input)
    
     saliency_score = 0
@@ -232,6 +251,8 @@ def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, 
                                                         in_channels=3, gpu=None, repeat_times=3,
                                                         fp16=False)    
     elif model_type == "bert":
+        latency = NETWORK_LATENCY[model_type](model=model, batch_size=batch_size, max_seq_length=resolution, gpu=None, infer_cnt=10.)
+    elif model_type == "hf":
         latency = NETWORK_LATENCY[model_type](model=model, batch_size=batch_size, max_seq_length=resolution, gpu=None, infer_cnt=10.)
     else:
         latency = 0
