@@ -189,23 +189,24 @@ class EarlyStopping():
         self.early_stop = False
 
     def __call__(self, validation_metric, optimal_metric):
-        ############## absolute level #################
         if self._metric_threshold is not None:
+            ############## absolute level #################
             if (self._is_max and validation_metric >= self._metric_threshold) or\
             ((not self._is_max) and validation_metric <= self._metric_threshold):
                 self.early_stop = True
                 print("Earlystop when meet metric_threshold [%s]"%self._metric_threshold)
                 logging.info("Earlystop when meet metric_threshold [%s]"%self._metric_threshold)
                 return
-        ############## relative level #################
-        if (self._is_max and (validation_metric < optimal_metric - self._delta)) \
-                or ((not self._is_max) and (validation_metric > optimal_metric + self._delta)): # less optimal
-            self._counter += 1
-        else: # more optimal
-            logging.info("Reset earlystop counter")
-            self._counter = 0
-        if self._counter >= self._tolerance_epoch:
-            self.early_stop = True
+        else:
+            ############## relative level #################
+            if (self._is_max and (validation_metric < optimal_metric - self._delta)) \
+                    or ((not self._is_max) and (validation_metric > optimal_metric + self._delta)): # less optimal
+                self._counter += 1
+            else: # more optimal
+                logging.info("Reset earlystop counter")
+                self._counter = 0
+            if self._counter >= self._tolerance_epoch:
+                self.early_stop = True
 
     def __str__(self):
         _str = 'EarlyStopping:%s\n'%self._tolerance_epoch
@@ -303,8 +304,6 @@ def create_optimizer(model=None, cfg=None, parameters=None):
 
     :return: a optimizer
     '''
-    logging.info(F"model:{model}")
-    logging.info(F"parameters:{parameters}")
     parameters = parameters if parameters is not None else model.parameters()
     if cfg.optimizer == "SGD":
         optimizer = torch.optim.SGD(parameters, lr=cfg.learning_rate,
