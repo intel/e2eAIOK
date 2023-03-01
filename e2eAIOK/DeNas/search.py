@@ -52,11 +52,9 @@ def main(params):
         super_net = SuperBertModel.from_pretrained(params.pretrained_bert, config)
         search_space = generate_search_space(params["SEARCH_SPACE"])
     elif params.domain == 'asr':
-        with open(params.supernet_cfg) as f:
-            cfg = edict(yaml.safe_load(f))
         super_net = TransformerASRSuper
-        search_space = {'num_heads': cfg.SEARCH_SPACE.NUM_HEADS, 'mlp_ratio': cfg.SEARCH_SPACE.MLP_RATIO,
-                        'embed_dim': cfg.SEARCH_SPACE.EMBED_DIM , 'depth': cfg.SEARCH_SPACE.DEPTH}
+        search_space = {'num_heads': params.SEARCH_SPACE.NUM_HEADS, 'mlp_ratio': params.SEARCH_SPACE.MLP_RATIO,
+                        'embed_dim': params.SEARCH_SPACE.EMBED_DIM , 'depth': params.SEARCH_SPACE.DEPTH}
     elif params.domain == 'hf':
         super_net = SuperHFModel.from_pretrained(params.pretrained_model)
         if "search_space" in params:
