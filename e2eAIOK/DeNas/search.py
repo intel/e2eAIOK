@@ -50,12 +50,9 @@ def main(params):
         search_space = {'num_heads': cfg.SEARCH_SPACE.NUM_HEADS, 'mlp_ratio': cfg.SEARCH_SPACE.MLP_RATIO,
                         'embed_dim': cfg.SEARCH_SPACE.EMBED_DIM , 'depth': cfg.SEARCH_SPACE.DEPTH}
     elif params.domain == 'bert':
-        with open(params.supernet_cfg) as f:
-            cfg = edict(yaml.safe_load(f))
-            params.cfg = cfg
         config = BertConfig.from_json_file(params.pretrained_bert_config)
         super_net = SuperBertModel.from_pretrained(params.pretrained_bert, config)
-        search_space = generate_search_space(cfg["SEARCH_SPACE"])
+        search_space = generate_search_space(params["SEARCH_SPACE"])
     elif params.domain == 'asr':
         with open(params.supernet_cfg) as f:
             cfg = edict(yaml.safe_load(f))
@@ -63,12 +60,9 @@ def main(params):
         search_space = {'num_heads': cfg.SEARCH_SPACE.NUM_HEADS, 'mlp_ratio': cfg.SEARCH_SPACE.MLP_RATIO,
                         'embed_dim': cfg.SEARCH_SPACE.EMBED_DIM , 'depth': cfg.SEARCH_SPACE.DEPTH}
     elif params.domain == 'hf':
-        with open(params.supernet_cfg) as f:
-            cfg = edict(yaml.safe_load(f))
-            params.cfg = cfg
         super_net = SuperHFModel.from_pretrained(params.pretrained_model)
-        if "search_space" in cfg:
-            search_space = SuperHFModel.search_space_generation(params.pretrained_model, **cfg.search_space)
+        if "search_space" in params:
+            search_space = SuperHFModel.search_space_generation(params.pretrained_model, **params.search_space)
         else:
             search_space = SuperHFModel.search_space_generation(params.pretrained_model)
     else:
