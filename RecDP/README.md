@@ -42,8 +42,10 @@ citizen data scientists, enterprise users, independent software vendor and parti
 ```
 git clone --single-branch --branch RecDP_v2.0 https://github.com/intel-innersource/frameworks.bigdata.AIDK.git
 cd frameworks.bigdata.AIDK/RecDP
-# install java
+# install dependencies
+apt-get update -y &&  DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-pip python-is-python3 graphviz
 DEBIAN_FRONTEND=noninteractive apt-get install -y openjdk-8-jre
+# install recdp
 python setup.py sdist
 pip install dist/pyrecdp-1.0.1.tar.gz
 
