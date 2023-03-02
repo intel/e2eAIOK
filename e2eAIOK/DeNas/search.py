@@ -34,12 +34,10 @@ def main(params):
         from cv.third_party.ZenNet import DeSearchSpaceXXBL as search_space
         from cv.third_party.ZenNet import DeMainNet as super_net
     elif params.domain == 'vit':
-        with open(params.supernet_cfg) as f:
-            cfg = edict(yaml.safe_load(f))
         super_net = Vision_TransformerSuper(img_size=params.img_size,
                                     patch_size=params.patch_size,
-                                    embed_dim=cfg.SUPERNET.EMBED_DIM, depth=cfg.SUPERNET.DEPTH,
-                                    num_heads=cfg.SUPERNET.NUM_HEADS,mlp_ratio=cfg.SUPERNET.MLP_RATIO,
+                                    embed_dim=params.SUPERNET.EMBED_DIM, depth=params.SUPERNET.DEPTH,
+                                    num_heads=params.SUPERNET.NUM_HEADS,mlp_ratio=params.SUPERNET.MLP_RATIO,
                                     qkv_bias=True, drop_rate=params.drop_rate,
                                     drop_path_rate=params.drop_path_rate,
                                     gp=params.gp,
@@ -47,28 +45,20 @@ def main(params):
                                     max_relative_position=params.max_relative_position,
                                     relative_position=params.relative_position,
                                     change_qkv=params.change_qkv, abs_pos=params.abs_pos)
-        search_space = {'num_heads': cfg.SEARCH_SPACE.NUM_HEADS, 'mlp_ratio': cfg.SEARCH_SPACE.MLP_RATIO,
-                        'embed_dim': cfg.SEARCH_SPACE.EMBED_DIM , 'depth': cfg.SEARCH_SPACE.DEPTH}
+        search_space = {'num_heads': params.SEARCH_SPACE.NUM_HEADS, 'mlp_ratio': params.SEARCH_SPACE.MLP_RATIO,
+                        'embed_dim': params.SEARCH_SPACE.EMBED_DIM , 'depth': params.SEARCH_SPACE.DEPTH}
     elif params.domain == 'bert':
-        with open(params.supernet_cfg) as f:
-            cfg = edict(yaml.safe_load(f))
-            params.cfg = cfg
         config = BertConfig.from_json_file(params.pretrained_bert_config)
         super_net = SuperBertModel.from_pretrained(params.pretrained_bert, config)
-        search_space = generate_search_space(cfg["SEARCH_SPACE"])
+        search_space = generate_search_space(params["SEARCH_SPACE"])
     elif params.domain == 'asr':
-        with open(params.supernet_cfg) as f:
-            cfg = edict(yaml.safe_load(f))
         super_net = TransformerASRSuper
-        search_space = {'num_heads': cfg.SEARCH_SPACE.NUM_HEADS, 'mlp_ratio': cfg.SEARCH_SPACE.MLP_RATIO,
-                        'embed_dim': cfg.SEARCH_SPACE.EMBED_DIM , 'depth': cfg.SEARCH_SPACE.DEPTH}
+        search_space = {'num_heads': params.SEARCH_SPACE.NUM_HEADS, 'mlp_ratio': params.SEARCH_SPACE.MLP_RATIO,
+                        'embed_dim': params.SEARCH_SPACE.EMBED_DIM , 'depth': params.SEARCH_SPACE.DEPTH}
     elif params.domain == 'hf':
-        with open(params.supernet_cfg) as f:
-            cfg = edict(yaml.safe_load(f))
-            params.cfg = cfg
         super_net = SuperHFModel.from_pretrained(params.pretrained_model)
-        if "search_space" in cfg:
-            search_space = SuperHFModel.search_space_generation(params.pretrained_model, **cfg.search_space)
+        if "search_space" in params:
+            search_space = SuperHFModel.search_space_generation(params.pretrained_model, **params.search_space)
         else:
             search_space = SuperHFModel.search_space_generation(params.pretrained_model)
     else:
