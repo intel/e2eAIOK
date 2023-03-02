@@ -46,7 +46,7 @@ def hf_is_legal(cand, vis_dict, params):
     if 'visited' in info:
         return False
     cand = json.loads(cand)
-    candidate_net = SuperHFModel.set_sample_config(params.pretrained_model, **cand)
+    candidate_net = SuperHFModel.set_sample_config(params.supernet, **cand)
     n_parameters = sum(param.numel() for param in candidate_net.parameters())
     info['params'] = n_parameters / 10.**6
     if info['params'] > params.max_param_limits:

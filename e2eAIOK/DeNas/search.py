@@ -56,11 +56,11 @@ def main(params):
         search_space = {'num_heads': params.SEARCH_SPACE.NUM_HEADS, 'mlp_ratio': params.SEARCH_SPACE.MLP_RATIO,
                         'embed_dim': params.SEARCH_SPACE.EMBED_DIM , 'depth': params.SEARCH_SPACE.DEPTH}
     elif params.domain == 'hf':
-        super_net = SuperHFModel.from_pretrained(params.pretrained_model)
+        super_net = SuperHFModel.from_pretrained(params.supernet)
         if "search_space" in params:
-            search_space = SuperHFModel.search_space_generation(params.pretrained_model, **params.search_space)
+            search_space = SuperHFModel.search_space_generation(params.supernet, **params.search_space)
         else:
-            search_space = SuperHFModel.search_space_generation(params.pretrained_model)
+            search_space = SuperHFModel.search_space_generation(params.supernet)
     else:
         raise RuntimeError(f"Domain {params.domain} is not supported")
 
