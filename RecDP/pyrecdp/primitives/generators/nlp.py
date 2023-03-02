@@ -1,6 +1,6 @@
-from .base import BaseFeatureGenerator as super_class
 from .featuretools_adaptor import FeaturetoolsBasedFeatureGenerator
-from pyrecdp.core import SeriesSchema, DataFrameSchema
+from pyrecdp.core import SeriesSchema
+from pyrecdp.primitives.operations import Operation
 from pyrecdp.core.schema import TextDtype
 
 from featuretools.primitives.base import TransformPrimitive
@@ -30,11 +30,13 @@ class DecodedTextFeatureGenerator(FeaturetoolsBasedFeatureGenerator):
     def __init__(self):
         super().__init__()
         self.op_list = [
-            BertTokenizerDecode()
+            BertTokenizerDecode
         ]
+        self.op_name = 'bert_decode'
 
-    def fit_prepare(self, pa_schema):
+    def fit_prepare(self, pipeline, children, max_idx):
         is_useful = False
+        pa_schema = pipeline[children[0]].output
         for pa_field in pa_schema:
             if pa_field.is_text:
                 in_feat_name = pa_field.name
@@ -43,27 +45,34 @@ class DecodedTextFeatureGenerator(FeaturetoolsBasedFeatureGenerator):
         for in_feat_name in self.feature_in:
             self.feature_in_out_map[in_feat_name] = []
             for op in self.op_list:
-                out_feat_name = f"{in_feat_name}.{op.name}"
+                op_clz = op
+                op = op_clz()
+                out_feat_name = f"{in_feat_name}__{op.name}"
                 out_feat_type = op.return_type
                 out_schema = SeriesSchema(out_feat_name, out_feat_type)
-                self.feature_in_out_map[in_feat_name].append((out_schema, op))
+                self.feature_in_out_map[in_feat_name].append((out_schema.name, op_clz))
                 pa_schema.append(out_schema)
-        return pa_schema, is_useful
-    
+        if is_useful:
+            cur_idx = max_idx + 1
+            config = self.feature_in_out_map
+            pipeline[cur_idx] = Operation(cur_idx, children, pa_schema, op = 'bert_decode', config = config)
+            return pipeline, cur_idx, cur_idx
+        else:
+            return pipeline, children[0], max_idx
+ 
 class TextFeatureGenerator(FeaturetoolsBasedFeatureGenerator):
     def __init__(self):
         super().__init__()
         from featuretools.primitives import NumberOfUniqueWords, NumWords
         self.op_list = [
-            NumberOfUniqueWords(),
-            NumWords(),
+            NumberOfUniqueWords,
+            NumWords,
         ]
+        self.op_name = 'text_feature'
 
-    def fit_prepare(self, pa_schema):
-        is_useful = False
+    def fit_prepare(self, pipeline, children, max_idx):
+        pa_schema = pipeline[children[0]].output
         for pa_field in pa_schema:
             if pa_field.is_text and "decode" in pa_field.name:
-                is_useful = True
                 self.feature_in.append(pa_field.name)
-        ret_pa_schema, _ = super().fit_prepare(pa_schema)
-        return ret_pa_schema, is_useful
+        return super().fit_prepare(pipeline, children, max_idx)

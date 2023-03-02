@@ -1,37 +1,39 @@
 from .base import BaseFeatureGenerator as super_class
 from .featuretools_adaptor import FeaturetoolsBasedFeatureGenerator
-from pyrecdp.core import SeriesSchema, DataFrameSchema
+from pyrecdp.core import SeriesSchema
+from pyrecdp.primitives.operations import Operation
+from featuretools.primitives import Haversine
 
 class GeoFeatureGenerator(FeaturetoolsBasedFeatureGenerator):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.op_list = []
+        self.op_list = [Haversine]
+        self.op_name = 'haversine'
 
-    def fit_prepare(self, pa_schema):
+    def fit_prepare(self, pipeline, children, max_idx):
         is_useful = False
+        pa_schema = pipeline[children[0]].output
         for pa_field in pa_schema:
             if pa_field.is_coordinates:
                 self.feature_in.append(pa_field.name)
                 is_useful = True
         if len(self.feature_in) == 2:
             # we assume we can calculate distance between them
-            from featuretools.primitives import Haversine
             out_feat_name = f"haversine_{'_'.join(self.feature_in)}"
-            op = Haversine()
+            op = self.op_list[0]()
             out_feat_type = op.return_type
             out_schema = SeriesSchema(out_feat_name, out_feat_type)
-            self.feature_in_out_map[str(self.feature_in)] = (out_schema, op)
+            self.feature_in_out_map[str(self.feature_in)] = (out_schema.name, self.op_list[0])
             pa_schema.append(out_schema)
 
-        return pa_schema, is_useful
+        if is_useful:
+            cur_idx = max_idx + 1
+            config = self.feature_in_out_map
+            pipeline[cur_idx] = Operation(cur_idx, children, pa_schema, op = 'haversine', config = config)
+            return pipeline, cur_idx, cur_idx
+        else:
+            return pipeline, children[0], max_idx
 
-    def get_function_pd(self):
-        def generate_ft_feature(df):
-            for inputs_str, op in self.feature_in_out_map.items():
-                inputs = eval(inputs_str)
-                df[op[0].name] = op[1](df[inputs[0]], df[inputs[1]])
-            return df
-        return generate_ft_feature
 
 class Point:
     def __init__(self, point = None, prefix = None, longitude = None, latitude = None):
@@ -88,26 +90,22 @@ class CoordinatesInferFeatureGenerator(super_class):
         super().__init__(**kwargs)
         self.points = []
 
-    def fit_prepare(self, pa_schema):
+    def fit_prepare(self, pipeline, children, max_idx):
         is_useful = False
+        pa_schema = pipeline[children[0]].output
         for field in pa_schema:
             if self.is_coor_related_name_and_set(field.name):
                 is_useful = True
         for p in self.points:
-            pa_schema.append(SeriesSchema(p.get_feature_name(), p.get_feature_type()))
-        return pa_schema, is_useful
-
-    def get_function_pd(self):
-        def type_infer(df):            
-            for p in self.points:
-                df = p.get_function()(df)
-            return df
-        return type_infer
-
-    def fit_transform(self, df):
-        if len(self.points) == 0:
-            self.fit_prepare(DataFrameSchema(df))
-        return self.get_function_pd()(df)
+            out_schema = SeriesSchema(p.get_feature_name(), p.get_feature_type()) 
+            pa_schema.append(out_schema)
+        if is_useful:
+            cur_idx = max_idx + 1
+            config = self.points
+            pipeline[cur_idx] = Operation(cur_idx, children, pa_schema, op = 'coordinates_infer', config = config)
+            return pipeline, cur_idx, cur_idx
+        else:
+            return pipeline, children[0], max_idx
     
     def is_coor_related_name_and_set(self, f_name):
             coor_related_names = ["longitude", "latitude", "coordinates", "point", "latlong", "longlat"]

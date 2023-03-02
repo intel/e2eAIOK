@@ -4,23 +4,13 @@ class LabelEncoderFeatureGenerator(super_class):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def fit_prepare(self, pa_schema):
-        return pa_schema, False
-    
-    def get_function_pd(self):
-        def label_encode(df):
-            return df
-        return label_encode
+    def fit_prepare(self, pipeline, children, max_idx):
+        return pipeline, children[0], max_idx
 
 
 class OneHotEncoderFeatureGenerator(super_class):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def fit_prepare(self, pa_schema):
-        return pa_schema, False
-    
-    def get_function_pd(self):
-        def onehot_encode(df):
-            return df
-        return onehot_encode
+    def fit_prepare(self, pipeline, children, max_idx):
+        return pipeline, children[0], max_idx

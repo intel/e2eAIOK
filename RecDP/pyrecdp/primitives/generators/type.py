@@ -1,12 +1,8 @@
 from .base import BaseFeatureGenerator as super_class
 from pyrecdp.core import SeriesSchema
-from typing import List
+from pyrecdp.primitives.operations import Operation
 import pandas as pd
-import pyarrow as pa
 from pandas.api import types as pdt
-import numpy as np
-from collections import OrderedDict
-import inspect
 
 from pyspark.sql import DataFrame as SparkDataFrame
 from pyspark import RDD
@@ -25,8 +21,8 @@ class TypeInferFeatureGenerator(super_class):
         self._astype_feature_map = None
         self.feature_in = []
    
-    def fit_prepare(self, pa_schema, df):
-        self._astype_feature_map = OrderedDict()
+    def fit_prepare(self, pipeline, children, max_idx, df):
+        self._astype_feature_map = {}
         ret_pa_fields = []
         for feature_name in df.columns:
             ret_field, type_change = self._infer_type(df[feature_name])
@@ -34,24 +30,12 @@ class TypeInferFeatureGenerator(super_class):
                 self.feature_in.append(feature_name)
                 self._astype_feature_map[feature_name] = ret_field
             ret_pa_fields.append(ret_field)
-        return ret_pa_fields, True
-
-    def get_function_pd(self):
-        def type_infer(df):            
-            for feature_name in self.feature_in:
-                df[feature_name] = convert_to_type(df[feature_name], self._astype_feature_map[feature_name])
-            return df
-        return type_infer
-
-    def fit_transform(self, df):
-        if not self._astype_feature_map:
-            self.fit_prepare(None, df)
-        return self.get_function_pd()(df)
- 
-    def dump_codes(self):
-        codes = f"self._astype_feature_map = {self._astype_feature_map}\n"
-        codes += inspect.getsource(self.get_function_pd())
-        return codes
+        
+        # append to pipeline
+        cur_idx = max_idx + 1
+        config = self._astype_feature_map
+        pipeline[cur_idx] = Operation(cur_idx, children, ret_pa_fields, op = 'type_infer', config = config)
+        return pipeline, cur_idx, cur_idx
     
     def _infer_type(self, s):
         def try_category(s):
@@ -95,26 +79,18 @@ class TypeCheckFeatureGenerator(super_class):
     def __init__(self, final = False, **kwargs):
         super().__init__(**kwargs)
    
-    def fit_prepare(self, pa_schema: List[SeriesSchema]):
+    def fit_prepare(self, pipeline, children, max_idx):
+        pa_schema = pipeline[children[0]].output
+        config = {}
         for idx in range(len(pa_schema)):
             pa_field = pa_schema[idx]
             if pa_field.is_categorical_and_string:
                 pa_schema[idx] = SeriesSchema(pa_field.name, pd.StringDtype())
+                config[pa_field.name] = 'str'
             elif pa_field.is_categorical:
                 pa_schema[idx] = SeriesSchema(pa_field.name, pd.Int32Dtype())
-        return pa_schema, False
-
-    def get_function_pd(self):
-        def as_type(df):
-            return df
-        return as_type
-    
-    def get_function_spark(self, rdp):        
-        actual_func = self.get_function_pd()
-        def drop_useless_feature(df):
-            # check input df type
-            if isinstance(df, pd.DataFrame):
-                return actual_func(df)
-            elif isinstance(df, SparkDataFrame):
-                raise NotImplementedError("Support later")
-        return drop_useless_feature
+                config[pa_field.name] = 'int'
+        
+        cur_idx = max_idx
+        #pipeline[cur_idx] = Operation(cur_idx, children, pa_schema, op = 'type_check', config = config)
+        return pipeline, cur_idx, cur_idx

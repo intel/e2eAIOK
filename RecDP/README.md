@@ -1,19 +1,41 @@
 # RecDP v2.0
 
 # INTRODUCTION
-RecDP v2.0 is aiming to provide auto Data Prepartion upon spark and pandas.
-* Auto Feature Enrich including:
-    * feature transformation(datetime, geo_info, text_nlp, url, etc.)
-    * feature cross(aggregation transformation - sum, avg, count, etc.)
-* Auto anomalies detection
-* Feature Profiling Visualizer
-* ML/DL connector:
-    * numpy based - xgboost/lightgbm
-    * pytorch tensor based
-    * dgl graph
-    * pyG graph
 
-![RecDP v2.0 Overview](resources/recdp_20_overview.png)
+## Problem Statement
+
+Data Preparation is an essential step to build AI pipelines 
+* key data preparation capabilities: data connector, cleaning, sampling, joining, profiling, feature engineering, low-code/no-code UI, lineage etc. 
+* exploration of optimal Data preparation consumes majority of Data Science time
+
+## Solution with RecDP v2.0
+
+* Auto pipeline
+    * only 3 lines of codes required
+* Pipeline Generator
+    * Data Profiling:
+        * Auto anomalies detection
+        * Auto missing value impute
+        * Profiling Visualizzation        
+    * Feature Wrangling:
+        * feature transformation(datetime, geo_info, text_nlp, url, etc.)
+        * multiple data auto joining
+        * feature cross(aggregation transformation - sum, avg, count, etc.)
+    * export pipeline as JSON file, can be import to other data platform
+* Pipeline Runner:
+    * spark engine: convert pipeline to spark codes to run
+    * pandas engine: convert pipeline to pandas codes to run
+    * sql engine: convert pipeline to sql
+* DataLoader:
+    * parquet, csv, json, database
+* FeatureWriter - ML/DL connector:
+    * Data Lineage
+    * Feature Store
+    * numpy, csv, parquet, dgl / pyG graph
+![RecDP v2.0 Overview](resources/recdp_intro.png)
+
+## This solution is intended for
+citizen data scientists, enterprise users, independent software vendor and partial of cloud service provider.
 
 # Getting Start
 ## setup with pip
@@ -29,61 +51,24 @@ sh start-jupyter.sh
 # open browser with http://hostname:8888
 ```
 
-## Quick Example
-[colab notebook spark engine](https://colab.research.google.com/drive/1Nuw3Tp1oRmbVpVDxpwcwyM1_yqYs4ZpU?usp=sharing)
-> NYC Taxi fare 55M records, RecDP took 350secs and featuretools took 2908secs
-> Below is RecDP codes and output, for featuretools script, please see [NYC Taxi fare auto data prepration](examples/notebooks/autofe/FeatureWrangler.ipynb)
+## run
 ```
-import pandas as pd
-train_data = pd.read_csv("nyc_taxi_fare_cleaned.csv")
-
-# use recdp to do auto feature wrangling
 from pyrecdp.autofe import FeatureWrangler
-pipeline = FeatureWrangler(dataset=train_data, label="reply")
 
-# switch between spark or pandas
-transformed_train_data = pipeline.fit_transform(engine_type = 'spark')
+pipeline = FeatureWrangler(dataset=train_data, label="fare_amount")
+pipeline.plot()
 ```
-```
-After analysis, decided pipeline includes below steps:
+![nyc taxi demo](resources/nyc_taxi_demo.JPG)
 
-Stage 0: [<class 'pyrecdp.primitives.generators.dataframe.DataframeConvertFeatureGenerator'>]
-Stage 1: [<class 'pyrecdp.primitives.generators.fillna.FillNaFeatureGenerator'>, <class 'pyrecdp.primitives.generators.type.TypeInferFeatureGenerator'>, <class 'pyrecdp.primitives.generators.geograph.CoordinatesInferFeatureGenerator'>]
-Stage 2: [<class 'pyrecdp.primitives.generators.datetime.DatetimeFeatureGenerator'>, <class 'pyrecdp.primitives.generators.geograph.GeoFeatureGenerator'>]
-Stage 3: [<class 'pyrecdp.primitives.generators.drop.DropUselessFeatureGenerator'>, <class 'pyrecdp.primitives.generators.name.RenameFeatureGenerator'>]
-Stage 4: [<class 'pyrecdp.primitives.generators.dataframe.DataframeTransformFeatureGenerator'>]
-Stage 5: []
-Stage 6: []
-Stage 7: [<class 'pyrecdp.primitives.generators.type.TypeCheckFeatureGenerator'>]
-initiate autofe pipeline took 7.2034686505794525 sec
-Will assign 48 cores and 308337 M memory for spark
-```
-```
-# output log, spark based
-# enriched from 6 features to 11 features
-train_data shape is (54315955, 7)
-read train data from csv took 45.0155632654205 sec
-initiate autofe pipeline took 3.5842366172000766 sec
-DataframeConvert partition pandas dataframe to spark RDD took 42.148 secs
-DataframeTransform took 251.128 secs, processed 54315955 rows with num_partitions as 200
-DataframeTransform combine to one pandas dataframe took 6.648 secs
-transform took 304.19811651296914 sec
-transformed shape is (54315955, 12)
-[LightGBM] [Info] Total Bins 25091
-[LightGBM] [Info] Number of data points in the train set: 48884359, number of used features: 11
-[LightGBM] [Info] Start training from score 11.324507
-Training until validation scores don't improve for 50 rounds
-[100]	valid_0's rmse: 3.92054
-[200]	valid_0's rmse: 3.80928
-...
-[1900]	valid_0's rmse: 3.5408
-[2000]	valid_0's rmse: 3.53851
-Did not meet early stopping. Best iteration is:
-[1997]	valid_0's rmse: 3.53851
-train took 1506.3177826348692 sec
-```
+## Quick Example
+[nyc taxi fare](examples/notebooks/autofe/demo/nyc_taxi_workflow_test.ipynb) - geographic, datetime feature engineering
 
-# More Examples
+[twitter recsys](examples/notebooks/autofe/demo/twitter_workflow_test.ipynb) - text nlp, datetime feature engineering
+
+[outbrain](examples/notebooks/autofe/demo/outbrain_ctr_workflow_test.ipynb) - multiple table joining
+
+# More Examples - completed example including training
+
 ## Auto Feature Enrich Examples
 * [NYC Taxi fare auto data prepration](examples/notebooks/autofe/FeatureWrangler.ipynb): An example to show how RecDP_v2.0 automatically generating datetime and geo features upon 55M records. Tested with both Spark and Pandas(featuretools) as compute engine, show 21x speedup by spark.
 
@@ -92,19 +77,10 @@ train took 1506.3177826348692 sec
 * amazon products review: To be added in near future
 
 ## Data Profiler Examples
-* [NYC Taxi fare Profiler](examples/notebooks/autofe/FeatureProfiler.ipynb), [snapshot](resources/FeatureProfiler_NYC.png): An example to show RecDP_v2.0 to profile data, including infer the potential data type, generate data distribution charts.
+* [NYC Taxi fare Profiler](resources/FeatureProfiler_NYC.png): An example to show RecDP_v2.0 to profile data, including infer the potential data type, generate data distribution charts.
 
-* [twitter Profiler](examples/notebooks/autofe/FeatureProfiler_recsys.ipynb), [snapshot](resources/FeatureProfiler_recsys.png): An example to show RecDP_v2.0 to profile data, including infer the potential data type, generate data distribution charts.
+* [twitter Profiler](resources/FeatureProfiler_recsys.png): An example to show RecDP_v2.0 to profile data, including infer the potential data type, generate data distribution charts.
 
-## Feature Cross
-
-* multiple table feature cross: To be added in near future
-
-* single table feature cross: To be added in near future
-
-## connector example
-
-* To be added in near future
 
 ## LICENSE
 * Apache 2.0

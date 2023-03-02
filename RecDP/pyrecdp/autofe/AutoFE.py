@@ -1,5 +1,5 @@
 import logging
-from pyrecdp.widgets.utils import Timer
+from pyrecdp.core.utils import Timer
 
 from pyrecdp.widgets import BaseWidget, TabWidget
 from pyrecdp.autofe import FeatureProfiler, FeatureWrangler

@@ -1,7 +1,5 @@
 from .base import BaseFeatureGenerator as super_class
-from pyrecdp.core import SeriesSchema
-from typing import List
-import pandas as pd
+from pyrecdp.primitives.operations import Operation
 from pyspark.sql import DataFrame as SparkDataFrame
 from pyspark import RDD
  
@@ -12,41 +10,26 @@ class DropUselessFeatureGenerator(super_class):
         self.feature_in = []
         self.final = final
 
-    def fit_prepare(self, pa_schema: List[SeriesSchema]):
+    def fit_prepare(self, pipeline, children, max_idx):
         is_useful = False
+        pa_schema = pipeline[children[0]].output
         for pa_field in pa_schema:
             if not self.final:
                 if not (pa_field.is_numeric or pa_field.is_categorical):
                     self.feature_in.append(pa_field.name)
                     is_useful = True
-                    print(f"{pa_field} should drop")
             else:
                 if not (pa_field.is_numeric):
                     self.feature_in.append(pa_field.name)
                     is_useful = True
-                    print(f"{pa_field} should drop")
         ret_schema = []
         for pa_field in pa_schema:
             if pa_field.name not in self.feature_in:
                 ret_schema.append(pa_field)
-        return ret_schema, is_useful
-
-    def get_function_pd(self):
-        def drop_useless_feature(df):
-            return df.drop(columns = self.feature_in)
-        return drop_useless_feature
-    
-    def get_function_spark(self, rdp):        
-        actual_func = self.get_function_pd()
-        def transform(iter, *args):
-            for x in iter:
-                yield actual_func(x[0], *args), x[1]
-        def drop_useless_feature(df):
-            # check input df type
-            if isinstance(df, pd.DataFrame):
-                return actual_func(df)
-            elif isinstance(df, RDD):
-                return df.mapPartitions(transform)
-            elif isinstance(df, SparkDataFrame):
-                raise NotImplementedError("Support later")
-        return drop_useless_feature
+        if is_useful:
+            cur_idx = max_idx + 1
+            config = self.feature_in
+            pipeline[cur_idx] = Operation(cur_idx, children, ret_schema, op = 'drop', config = config)
+            return pipeline, cur_idx, cur_idx
+        else:
+            return pipeline, children[0], max_idx

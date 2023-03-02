@@ -1,7 +1,7 @@
 from .base import BaseFeatureGenerator as super_class
 from pyrecdp.core import SeriesSchema
+from pyrecdp.primitives.operations import Operation
 import pandas as pd
-import inspect
 
 def get_default_value(at: SeriesSchema):
     if at.is_boolean:
@@ -18,22 +18,18 @@ class FillNaFeatureGenerator(super_class):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def fit_prepare(self, pa_schema):
+    def fit_prepare(self, pipeline, children, max_idx):
+        pa_schema = pipeline[children[0]].output
         self._fillna_feature_map = {}
         for field in pa_schema:
             default_value = get_default_value(field)
             if default_value:
                 self._fillna_feature_map[field.name] = default_value
-        return pa_schema, True
-    
-    def get_function_pd(self):
-        def fill_na(df):
-            df.fillna(self._fillna_feature_map, inplace=True, downcast=False)
-            return df
-        return fill_na
- 
-    def dump_codes(self):
-        codes = f"self._fillna_feature_map = {self._fillna_feature_map}\n"
-        codes += inspect.getsource(self.get_function_pd())
-        return codes
+        if len(self._fillna_feature_map) > 0:
+            cur_idx = max_idx + 1
+            config = self._fillna_feature_map
+            pipeline[cur_idx] = Operation(cur_idx, children, pa_schema, op = 'fillna', config = config)
+            return pipeline, cur_idx, cur_idx
+        else:
+            return pipeline, children[0], max_idx
 

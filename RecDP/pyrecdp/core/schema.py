@@ -25,10 +25,10 @@ class SeriesSchema:
             raise ValueError("SeriesSchema unsupport input arguments more than 2")
 
     def __repr__(self):
-        return f"{self.name}<{self.type}>"
+        return f"'{self.name}<{self.type}>'"
 
     def __str__(self):
-        return f"{self.name}<{self.type}>"
+        return f"'{self.name}<{self.type}>'"
    
     @property
     def dtype_str(self):

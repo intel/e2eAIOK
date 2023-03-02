@@ -1,87 +1,151 @@
 from pyrecdp.primitives.generators import *
-from pyrecdp.core import DataFrameAPI, DataFrameSchema, SparkDataProcessor
+from pyrecdp.core import DataFrameSchema, SparkDataProcessor, DiGraph
+from pyrecdp.primitives.operations import Operation, DataFrameOperation
 import pandas as pd
-import numpy as np
 import logging
-import time
+import graphviz
+import json
+from pyrecdp.core.utils import Timer, sample_read
 
 logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', level=logging.ERROR, datefmt='%I:%M:%S')
 logger = logging.getLogger(__name__)
 
 class BasePipeline:
     def __init__(self, dataset, label, *args, **kwargs):
-        X = DataFrameAPI.instiate(dataset)
-        if isinstance(label, str):
-            if label not in dataset.columns:
-                raise ValueError(f"label {label} is not found in dataset")
-            y = dataset[label]
+        if isinstance(dataset, pd.DataFrame):
+            self.dataset = {'main_table': dataset}
+        elif isinstance(dataset, list):
+            self.dataset = dict((idx, data) for idx, data in enumerate(dataset))
+        elif isinstance(dataset, dict):
+            self.dataset = dataset
         else:
-            y = label
-        to_select = [i for i in X.columns if i != y.name]
-        self.feature_data = X[to_select]
-        self.original_data = dataset
-        self.y = y
-        # add default pipeline
-        # fixme: Now we use list of primitives, should use DAG format later.
+            self.dataset = {'main_table': dataset}
+        main_table = None
+        input_is_path = False
+        if isinstance(label, str):    
+            for data_key, data in self.dataset.items():
+                # optional: data is file_path
+                if isinstance(data, str):
+                    input_is_path = True
+                    data = sample_read(data)
+                if label in data.columns:
+                    main_table = data_key
+                    break
+        if not main_table:
+            raise ValueError(f"label {label} is not found in dataset")
+        
+        # Set properties for BasePipeline
+        if not input_is_path:
+            original_data = self.dataset[main_table]
+        else:
+            original_data = sample_read(self.dataset[main_table])
+        y = original_data[label]
+        to_select = [i for i in original_data.columns if i != y.name]
+        self.feature_data = original_data[to_select]
+            
         self.generators = []
+        self.pipeline = DiGraph()
+        if not input_is_path:
+            self.pipeline[0] = Operation(
+                0, None, output = DataFrameSchema(self.feature_data), op = 'DataFrame', config = main_table)
+        else:
+            self.pipeline[0] = Operation(
+                0, None, output = DataFrameSchema(self.feature_data), op = 'DataLoader', config = {'table_name': main_table, 'file_path': self.dataset[main_table]})
+
+        if len(self.dataset) > 1:
+            self.supplementary = dict((k, v) for k, v in self.dataset.items() if k != main_table)
+        else:
+            self.supplementary = None
         self.rdp = None
     
     def fit_analyze(self, *args, **kwargs):
-        # Chendi: Since fit_analyze is mainly focusing on decide which primitives we should use, avoid feeding too big dataframe here
-        # If data size is over 10,000, do sample here
-        sampled_feature_data = self.feature_data.may_sample()
-        cur_feature_list = DataFrameSchema(sampled_feature_data)
+        child = list(self.pipeline.keys())[-1]
+        max_id = child
         for i in range(len(self.generators)):
-            generator_group_valid = []
             for generator in self.generators[i]:
-                if isinstance(generator, TypeInferFeatureGenerator):
-                    cur_feature_list, is_useful = generator.fit_prepare(cur_feature_list, sampled_feature_data)
-                else:
-                    cur_feature_list, is_useful = generator.fit_prepare(cur_feature_list)
-                if is_useful:
-                    generator_group_valid.append(generator)
-            self.generators[i] = generator_group_valid
+                self.pipeline, child, max_id = generator.fit_prepare(self.pipeline, [child], max_id)
 
-    def display_transform_pipeline(self):
-        return [f"Stage {i}: {[g.__class__ for g in stage]}" for i, stage in enumerate(self.generators)]
+    def __repr__(self):
+        return repr(self.pipeline)
 
-    def generate_pipeline_code(self, engine_type = "pandas", *args, **kwargs):
-        if engine_type == "spark":
-            return self._generate_pipeline_code_spark(*args, **kwargs)
+    def export(self, file_path = None):
+        print(self)
+        # json_object = json.dumps(self.pipeline, indent=4)
+        # if file_path:
+        #     # Writing to sample.json
+        #     with open("file_path", "w") as outfile:
+        #         outfile.write(json_object)
+        # else:
+        #     print(json_object)
+                
+    def plot(self):
+        f = graphviz.Digraph()
+        edges = []
+        nodes = []
+        f.attr(fontsize='10')
+        def add_escape(input):
+            return input.replace('<', '\<').replace('>', '\>')
+        def add_break(input):
+            if isinstance(input, dict):
+                input = [f"{k}: {add_break(v)}" for k, v in input.items()]
+            if isinstance(input, list):
+                ret = ""
+                for line in input:
+                    ret += str(add_break(line)) + "\l"
+                return ret
+            return input
+
+        for node_id, config in self.pipeline.items():
+            nodes.append([str(node_id), f"{config.op} |{add_escape(str(add_break(config.config)))}"])
+            if config.children:
+                for src_id in config.children:
+                    edges.append([str(src_id), str(node_id)])
+        for node in nodes:
+            f.node(node[0], node[1], shape='record', fontsize='12')
+        for edge in edges:
+            f.edge(*edge)
+        return f  
+
+    def to_chain(self):
+        return self.pipeline.convert_to_node_chain()
+        
+    def execute(self, engine_type = "pandas"):
+        # prepare pipeline
+        node_chain = self.pipeline.convert_to_node_chain()
+        executable_pipeline = DiGraph()
+        executable_sequence = []
+        for idx in node_chain:
+            executable_pipeline[idx] = self.pipeline[idx].instantiate()
+            executable_sequence.append(executable_pipeline[idx])
+
+        # execute
+        if engine_type == 'pandas':
+            for op in executable_sequence:
+                if isinstance(op, DataFrameOperation):
+                    op.set(self.dataset)
+                with Timer(f"execute {op}"):
+                    op.execute_pd(executable_pipeline)
+            df = executable_sequence[-1].cache
+        elif engine_type == 'spark':
+            for op in executable_sequence:
+                if isinstance(op, DataFrameOperation):
+                    op.set(self.dataset)
+                print(f"append {op} to spark pipeline")
+                op.execute_spark(executable_pipeline, self.rdp)
+                print(f"output schema is {op.cache}")
+            df = executable_sequence[-1].cache
+            with Timer(f"execute with spark"):
+                df = self.rdp.transform(df)
         else:
-            return self._generate_pipeline_code_pd(*args, **kwargs)
+            raise NotImplementedError('pipeline only support pandas and spark as engine')
+        
+        # fetch result
+        return df
 
     def fit_transform(self, engine_type = 'pandas', *args, **kwargs):
         if engine_type == "spark":
             self.rdp = SparkDataProcessor()
-        func_chain = self.generate_pipeline_code(engine_type)
-        ret = self.original_data
-        for func in func_chain:
-            start_time = time.time()
-            ret = func(ret)
-            end_time = time.time()
-            if engine_type == "pandas":
-                print(f"Transformation of {func} took {(end_time - start_time):.3f} secs")
+        ret = self.execute(engine_type)
         if engine_type == "spark":
             del self.rdp 
         return ret
-
-    def dump_pipeline_codes(self):
-        for generator_stage in self.generators:
-            for generator in generator_stage:
-                print(generator.dump_codes())
-        
-    def _generate_pipeline_code_pd(self, *args, **kwargs):
-        func_chain = []
-        for generator_stage in self.generators:
-            for generator in generator_stage:
-                func_chain.append(generator.get_function_pd())
-        return func_chain
-    
-    def _generate_pipeline_code_spark(self, *args, **kwargs):
-        func_chain = []
-        for generator_stage in self.generators:
-            for generator in generator_stage:
-                func_chain.append(generator.get_function_spark(self.rdp))
-        return func_chain
-

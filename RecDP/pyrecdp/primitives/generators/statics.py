@@ -1,9 +1,8 @@
 from .base import BaseFeatureGenerator as super_class
 from pyrecdp.core import SeriesSchema
 from pyrecdp.core.utils import is_text_series
-from pyrecdp.widgets.utils import Timer
+from pyrecdp.core.utils import Timer
 import pandas as pd
-import pyarrow as pa
 import numpy as np
 
 def draw_xy_scatter_plot(xy_scatter_features, feature_data, y, row_height, n_plot_per_row):
@@ -81,8 +80,8 @@ class StatisticsFeatureGenerator(super_class):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def fit_prepare(self, pa_schema):
-        return pa_schema, True
+    def fit_prepare(self, pipeline, children, max_idx):
+        return pipeline, children[0], max_idx
     
     def update_feature_statistics(self, X, y):
         overview_info = {}
