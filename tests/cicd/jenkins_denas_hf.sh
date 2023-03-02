@@ -8,13 +8,13 @@ conda activate pytorch
 cd /home/vmagent/app/e2eaiok
 python setup.py sdist && pip install dist/e2eAIOK-*.*.*.tar.gz
 
-# launch denas for bert-based supernet
+# launch denas for hf supernet
 cd /home/vmagent/app/e2eaiok/e2eAIOK/DeNas
-sed -i '/max_epochs:/ s/:.*/: 1/' ../../conf/denas/hf/e2eaiok_denas_bert.conf
-sed -i '/population_num:/ s/:.*/: 1/' ../../conf/denas/hf/e2eaiok_denas_bert.conf
-sed -i '/crossover_num:/ s/:.*/: 1/' ../../conf/denas/hf/e2eaiok_denas_bert.conf
-sed -i '/mutation_num:/ s/:.*/: 1/' ../../conf/denas/hf/e2eaiok_denas_bert.conf
-python -u search.py --domain hf --conf ../../conf/denas/hf/e2eaiok_denas_bert.conf
+sed -i '/max_epochs:/ s/:.*/: 1/' ../../conf/denas/hf/e2eaiok_denas_hf.conf
+sed -i '/population_num:/ s/:.*/: 1/' ../../conf/denas/hf/e2eaiok_denas_hf.conf
+sed -i '/crossover_num:/ s/:.*/: 1/' ../../conf/denas/hf/e2eaiok_denas_hf.conf
+sed -i '/mutation_num:/ s/:.*/: 1/' ../../conf/denas/hf/e2eaiok_denas_hf.conf
+python -u search.py --domain hf --conf ../../conf/denas/hf/e2eaiok_denas_hf.conf
 cd /home/vmagent/app/e2eaiok
 
 # test
