@@ -1,3 +1,4 @@
+import os
 import random
 import sys
 import argparse
@@ -56,11 +57,18 @@ def main(params):
         search_space = {'num_heads': params.SEARCH_SPACE.NUM_HEADS, 'mlp_ratio': params.SEARCH_SPACE.MLP_RATIO,
                         'embed_dim': params.SEARCH_SPACE.EMBED_DIM , 'depth': params.SEARCH_SPACE.DEPTH}
     elif params.domain == 'hf':
+        if os.path.exists(os.path.join(params.pretrained_model_path, params.supernet)):
+            params.supernet = os.path.join(params.pretrained_model_path, params.supernet)
         super_net = SuperHFModel.from_pretrained(params.supernet)
         if "search_space" in params:
             search_space = SuperHFModel.search_space_generation(params.supernet, **params.search_space)
         else:
             search_space = SuperHFModel.search_space_generation(params.supernet)
+        n_parameters = sum(param.numel() for param in super_net.parameters()) / 10.**6
+        if "max_param_limits" not in params:
+            params.max_param_limits = n_parameters
+        if "min_param_limits" not in params:
+            params.min_param_limits = n_parameters / 2.0
     else:
         raise RuntimeError(f"Domain {params.domain} is not supported")
 
