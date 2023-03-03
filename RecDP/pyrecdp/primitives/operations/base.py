@@ -1,4 +1,9 @@
 import json
+import pandas as pd
+from .dataframe import *
+from pyspark.sql import DataFrame as SparkDataFrame
+from pyspark import RDD as SparkRDD
+
 class Operation:
     def __init__(self, idx, children, output, op, config):
         self.idx = idx
@@ -21,46 +26,38 @@ class Operation:
         return dump_dict
     
     def instantiate(self):
-        if self.op == 'DataFrame':
-            from .data import DataFrameOperation
-            return DataFrameOperation(self)
-        if self.op == 'DataLoader':
-            from .data import DataLoader
-            return DataLoader(self)
-        if self.op == 'merge':
-            from .merge import MergeOperation
-            return MergeOperation(self)
-        if self.op == 'rename':
-            from .name import RenameOperation
-            return RenameOperation(self)
-        if self.op == 'categorify':
-            from .category import CategorifyOperation
-            return CategorifyOperation(self)
-        if self.op == 'datetime_feature':
-            from .datetime import DatetimeOperation
-            return DatetimeOperation(self)
-        if self.op == 'drop':
-            from .drop import DropOperation
-            return DropOperation(self)
-        if self.op == 'fillna':
-            from .fillna import FillNaOperation
-            return FillNaOperation(self)
-        if self.op == 'haversine':
-            from .geograph import HaversineOperation
-            return HaversineOperation(self)
-        if self.op == 'coordinates_infer':
-            from .geograph import CoordinatesOperation
-            return CoordinatesOperation(self)
-        if self.op == 'bert_decode':
-            from .nlp import BertDecodeOperation
-            return BertDecodeOperation(self)
-        if self.op == 'text_feature':
-            from .nlp import TextFeatureGenerator
-            return TextFeatureGenerator(self)
-        if self.op == 'type_infer':
-            from .type import TypeInferOperation
-            return TypeInferOperation(self)
-        raise NotImplementedError(f"operation {self.op} is not implemented.")
+        from .data import DataFrameOperation, DataLoader
+        from .merge import MergeOperation
+        from .name import RenameOperation
+        from .category import CategorifyOperation
+        from .datetime import DatetimeOperation
+        from .drop import DropOperation
+        from .fillna import FillNaOperation
+        from .geograph import HaversineOperation
+        from .nlp import BertDecodeOperation, TextFeatureGenerator
+        from .type import TypeInferOperation
+        from .tuple import TupleOperation
+
+        operations_ = {
+            'DataFrame': DataFrameOperation,
+            'DataLoader': DataLoader,
+            'merge': MergeOperation,
+            'rename': RenameOperation,
+            'categorify': CategorifyOperation,
+            'datetime_feature': DatetimeOperation,
+            'drop': DropOperation,
+            'fillna': FillNaOperation,
+            'haversine': HaversineOperation,
+            'tuple': TupleOperation,
+            'bert_decode': BertDecodeOperation,
+            'text_feature': TextFeatureGenerator,
+            'type_infer': TypeInferOperation
+        }
+
+        if self.op in operations_:
+            return operations_[self.op](self)
+        else:
+            raise NotImplementedError(f"operation {self.op} is not implemented.")
  
     @staticmethod
     def load(dump_dict):
@@ -71,6 +68,8 @@ class BaseOperation:
     def __init__(self, op_base):
         self.op = op_base
         self.cache = None
+        self.support_spark_dataframe = False
+        self.support_spark_rdd = False
        
     def __repr__(self) -> str:
         return self.op.op
@@ -88,9 +87,44 @@ class BaseOperation:
     def execute_spark(self, pipeline, rdp):
         if self.cache is not None:
             return
-        _proc = self.get_function_spark(rdp)
         if not self.op.children or len(self.op.children) == 0:
+            _proc = self.get_function_spark(rdp)
             self.cache = _proc()
         else:
+            _convert = None
             child_output = pipeline[self.op.children[0]].cache
+            if isinstance(child_output, SparkDataFrame):
+                if self.support_spark_dataframe:
+                    _proc = self.get_function_spark(rdp)
+                else:
+                    _convert = SparkDataFrameToRDDConverter().get_function(rdp)
+                    _proc = self.get_function_spark_rdd(rdp)
+            elif isinstance(child_output, SparkRDD):
+                if self.support_spark_rdd:
+                    _proc = self.get_function_spark_rdd(rdp)
+                else:
+                    _convert = RDDToSparkDataFrameConverter().get_function(rdp)
+                    _proc = self.get_function_spark(rdp)
+            elif isinstance(child_output, pd.DataFrame):
+                if self.support_spark_rdd:
+                    _convert = DataFrameToRDDConverter().get_function(rdp)
+                    _proc = self.get_function_spark_rdd(rdp)
+                else:
+                    _convert = DataFrameToSparkDataFrameConverter().get_function(rdp)
+                    _proc = self.get_function_spark(rdp)
+            else:
+                raise ValueError(f"child cache is not recognized {child_output}")
+        
+            if _convert:
+                child_output = _convert(child_output)
             self.cache = _proc(child_output)
+            #print(self.cache.take(1))
+
+    def get_function_spark_rdd(self, rdp):
+        actual_func = self.get_function_pd()
+        def transform(iter, *args):
+            for x in iter:
+                yield actual_func(x, *args)
+        def base_spark_feature_generator(rdd):
+            return rdd.mapPartitions(transform)
+        return base_spark_feature_generator

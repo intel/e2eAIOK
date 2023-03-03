@@ -36,8 +36,7 @@ class GeoFeatureGenerator(FeaturetoolsBasedFeatureGenerator):
 
 
 class Point:
-    def __init__(self, point = None, prefix = None, longitude = None, latitude = None):
-        self.point = point
+    def __init__(self, prefix = None, longitude = None, latitude = None):
         self.feature_name_prefix = prefix
         self.longitude = longitude
         self.latitude = latitude
@@ -47,43 +46,20 @@ class Point:
     
     def update(self, other):
         assert(self == other)
-        self.point = other.point if other.point else self.point
         self.longitude = other.longitude if other.longitude else self.longitude
         self.latitude = other.latitude if other.latitude else self.latitude
 
     def get_feature_name(self):
-        if self.point:
-            return self.feature_name_prefix
-        else:
-            return f"{self.feature_name_prefix}_coordinates"
+        return f"{self.feature_name_prefix}_coordinates"
         
     def get_feature_type(self):
         from woodwork.column_schema import ColumnSchema
         from woodwork.logical_types import LatLong
         return ColumnSchema(logical_type=LatLong)
-        
-    def get_function(self):
-        if self.point:
-            def process(df):
-                # convert string to latlong
-                sch = SeriesSchema(df[self.point])
-                if sch.is_coordinates:
-                    return df
-                elif sch.is_string:
-                    def convert_to_point(x):
-                        import re
-                        ret = re.findall(r'\d+', x)
-                        if not ret or len(ret) < 2:
-                            return (-1, -1)
-                        else:
-                            return (ret[0], ret[1])
-                    df[self.get_feature_name()] = df[self.point].apply(convert_to_point)
-                return df
-        else:
-            def process(df):
-                df[self.get_feature_name()] = df[[self.latitude, self.longitude]].apply(tuple, axis=1)
-                return df
-        return process
+    
+    def get_config(self):
+        return {'src':[self.latitude, self.longitude], 'dst': self.get_feature_name()}
+ 
 
 class CoordinatesInferFeatureGenerator(super_class):        
     def __init__(self, **kwargs):
@@ -100,9 +76,13 @@ class CoordinatesInferFeatureGenerator(super_class):
             out_schema = SeriesSchema(p.get_feature_name(), p.get_feature_type()) 
             pa_schema.append(out_schema)
         if is_useful:
-            cur_idx = max_idx + 1
-            config = self.points
-            pipeline[cur_idx] = Operation(cur_idx, children, pa_schema, op = 'coordinates_infer', config = config)
+            cur_idx = max_idx
+            child = children[0]
+            for p in self.points:
+                cur_idx = cur_idx + 1
+                config = p.get_config()
+                pipeline[cur_idx] = Operation(cur_idx, [child], pa_schema, op = 'tuple', config = config)
+                child = cur_idx
             return pipeline, cur_idx, cur_idx
         else:
             return pipeline, children[0], max_idx
@@ -114,9 +94,7 @@ class CoordinatesInferFeatureGenerator(super_class):
                 
             for to_detect in coor_related_names:
                 if to_detect in f_name.lower():
-                    if to_detect == "coordinates" or to_detect == "point" or to_detect == "latlong" or to_detect == "longlat":
-                        point = Point(point = f_name, prefix = f_name)
-                    elif to_detect == "longitude":
+                    if to_detect == "longitude":
                         point = Point(longitude = f_name, prefix = get_prefix(f_name, to_detect))
                     elif to_detect == "latitude":
                         point = Point(latitude = f_name, prefix = get_prefix(f_name, to_detect))

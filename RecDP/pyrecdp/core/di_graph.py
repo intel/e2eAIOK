@@ -83,5 +83,10 @@ class DiGraph(dict):
             
         ret = graph.chain()
         return ret
+
+    def json_dump(self):
+        import json
+        to_dump = dict((node_id, op.dump()) for node_id, op in self.items())
+        return json.dumps(to_dump, indent=4)
         
     

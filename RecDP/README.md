@@ -63,7 +63,7 @@ pipeline.plot()
 ![nyc taxi demo](resources/nyc_taxi_demo.JPG)
 
 ## Quick Example
-[nyc taxi fare](examples/notebooks/autofe/demo/nyc_taxi_workflow_test.ipynb) - geographic, datetime feature engineering
+[nyc taxi fare](examples/notebooks/autofe/demo/nyc_taxi_workflow_full.ipynb) - geographic, datetime feature engineering
 
 [twitter recsys](examples/notebooks/autofe/demo/twitter_workflow_test.ipynb) - text nlp, datetime feature engineering
 

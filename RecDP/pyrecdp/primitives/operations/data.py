@@ -16,9 +16,11 @@ class DataFrameOperation(BaseOperation):
 class DataLoader(BaseOperation):
     def __init__(self, op_base):
         super().__init__(op_base)
+        self.support_spark_dataframe = True
+        self.support_spark_rdd = False
         
     def get_function_pd(self):
-        def get_dataframe(dummy):
+        def get_dataframe():
             file_path = self.op.config['file_path']
             if file_path.endswith('.csv'):
                 return pd.read_csv(file_path)
@@ -28,7 +30,7 @@ class DataLoader(BaseOperation):
                 raise NotImplementedError("now sample read only support csv and parquet")
         return get_dataframe
     
-    def get_function_spark(self, rdp):
+    def get_function_spark(self, rdp, method = None):
         def get_dataframe():
             file_path = self.op.config['file_path']
             if file_path.endswith('.csv'):

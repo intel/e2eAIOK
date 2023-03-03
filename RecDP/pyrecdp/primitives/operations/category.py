@@ -6,6 +6,8 @@ class CategorifyOperation(BaseOperation):
     def __init__(self, op_base):
         super().__init__(op_base)
         self.feature_in = op_base.config
+        self.support_spark_dataframe = False
+        self.support_spark_rdd = False
     
     def get_function_pd(self):
         def categorify(df):
@@ -14,8 +16,6 @@ class CategorifyOperation(BaseOperation):
                 df[f"{feature}__idx"] = pd.Series(codes, df[feature].index)
             return df
         return categorify
-    
-
 
     def execute_spark(self, rdp):        
         raise NotImplementedError("Support later")

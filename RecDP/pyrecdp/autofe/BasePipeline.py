@@ -1,11 +1,13 @@
 from pyrecdp.primitives.generators import *
 from pyrecdp.core import DataFrameSchema, SparkDataProcessor, DiGraph
-from pyrecdp.primitives.operations import Operation, DataFrameOperation
+from pyrecdp.primitives.operations import Operation, DataFrameOperation, RDDToDataFrameConverter
 import pandas as pd
 import logging
 import graphviz
 import json
 from pyrecdp.core.utils import Timer, sample_read
+from pyspark.sql import DataFrame as SparkDataFrame
+from pyspark import RDD as SparkRDD
 
 logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', level=logging.ERROR, datefmt='%I:%M:%S')
 logger = logging.getLogger(__name__)
@@ -69,8 +71,19 @@ class BasePipeline:
         return repr(self.pipeline)
 
     def export(self, file_path = None):
-        print(self)
-        # json_object = json.dumps(self.pipeline, indent=4)
+        def pretty(d, indent=0):
+            for key, value in d.items():
+                print('\t' * indent + str(key))
+                if isinstance(value, dict):
+                    pretty(value, indent+1)
+                elif isinstance(value, list):
+                    for a in value:
+                        pretty(a)
+                elif isinstance(value, Operation):
+                    print('\t' * (indent+1) + str(value))
+        pretty(self.pipeline)
+        return
+        # json_object = self.pipeline.json_dump()
         # if file_path:
         #     # Writing to sample.json
         #     with open("file_path", "w") as outfile:
@@ -120,22 +133,29 @@ class BasePipeline:
 
         # execute
         if engine_type == 'pandas':
-            for op in executable_sequence:
-                if isinstance(op, DataFrameOperation):
-                    op.set(self.dataset)
-                with Timer(f"execute {op}"):
-                    op.execute_pd(executable_pipeline)
+            with Timer(f"execute with pandas"):
+                for op in executable_sequence:
+                    if isinstance(op, DataFrameOperation):
+                        op.set(self.dataset)
+                    with Timer(f"execute {op}"):
+                        op.execute_pd(executable_pipeline)
             df = executable_sequence[-1].cache
         elif engine_type == 'spark':
             for op in executable_sequence:
                 if isinstance(op, DataFrameOperation):
                     op.set(self.dataset)
-                print(f"append {op} to spark pipeline")
+                print(f"append {op}")
                 op.execute_spark(executable_pipeline, self.rdp)
-                print(f"output schema is {op.cache}")
-            df = executable_sequence[-1].cache
-            with Timer(f"execute with spark"):
-                df = self.rdp.transform(df)
+            ret = executable_sequence[-1].cache
+            if isinstance(ret, SparkDataFrame):
+                with Timer(f"execute with spark"):
+                    df = self.rdp.transform(ret)
+            elif isinstance(ret, SparkRDD):
+                _convert = RDDToDataFrameConverter().get_function(self.rdp)
+                with Timer(f"execute with spark"):
+                    df = _convert(ret)
+            else:
+                raise ValueError(f"unrecognized {ret} produced by execute with spark")
         else:
             raise NotImplementedError('pipeline only support pandas and spark as engine')
         

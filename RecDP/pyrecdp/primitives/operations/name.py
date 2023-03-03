@@ -1,13 +1,17 @@
 from .base import BaseOperation
+import copy
 
 class RenameOperation(BaseOperation):
     def __init__(self, op_base):
         super().__init__(op_base)
         self.renamed = op_base.config
+        self.support_spark_dataframe = True
+        self.support_spark_rdd = True
         
     def get_function_pd(self):
+        renamed = copy.deepcopy(self.renamed)
         def rename(df):
-            return df.rename(columns = self.renamed)
+            return df.rename(columns = renamed)
         return rename
 
     def get_function_spark(self, rdp):
