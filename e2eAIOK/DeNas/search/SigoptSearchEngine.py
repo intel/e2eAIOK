@@ -113,7 +113,7 @@ class SigoptSearchEngine(BaseSearchEngine):
                     continue
                 nas_score, score, latency = self.cand_evaluate(cand)
                 self.logger.info('epoch = {} structure = {} nas_score = {} params = {}'.format(epoch, cand, self.vis_dict[cand]['score'], self.vis_dict[cand]['params']))
-                self._set_sigopt_observation(experiment, suggestion.id, nas_score.item())
+                self._set_sigopt_observation(experiment, suggestion.id, nas_score)
             best_assignments = self.conn.experiments(experiment.id).best_assignments().fetch().data[0].assignments
             self.best_struct = (best_assignments['LAYER_NUM'],best_assignments['HEAD_NUM'],64*best_assignments['HEAD_NUM'],best_assignments['HIDDEN_SIZE']*self.params.cfg["SEARCH_SPACE"]['HIDDEN_SIZE']['bounds']['step'],best_assignments['INTERMEDIATE_SIZE']*self.params.cfg["SEARCH_SPACE"]['INTERMEDIATE_SIZE']['bounds']['step'])
         elif self.params.domain == "vit":
@@ -181,7 +181,7 @@ class SigoptSearchEngine(BaseSearchEngine):
                     continue
                 nas_score, score, latency = self.cand_evaluate(cand)
                 self.logger.info('epoch = {} structure = {} nas_score = {} params = {}'.format(epoch, cand, self.vis_dict[cand]['score'], self.vis_dict[cand]['params']))
-                self._set_sigopt_observation(experiment, suggestion.id, nas_score.item())
+                self._set_sigopt_observation(experiment, suggestion.id, nas_score)
             best_assignments = self.conn.experiments(experiment.id).best_assignments().fetch().data[0].assignments  
             depth = int(best_assignments['DEPTH'])
             best_struct_tuple = list()
@@ -248,7 +248,7 @@ class SigoptSearchEngine(BaseSearchEngine):
                     continue
                 nas_score, score, latency = self.cand_evaluate(cand)
                 self.logger.info('epoch = {} nas_score = {} cand = {}'.format(epoch, nas_score, cand))
-                self._set_sigopt_observation(experiment, suggestion.id, nas_score.item())
+                self._set_sigopt_observation(experiment, suggestion.id, nas_score)
             best_assignments = self.conn.experiments(experiment.id).best_assignments().fetch().data[0].assignments  
             depth = int(best_assignments['DEPTH'])
             best_struct_tuple = list()
@@ -287,7 +287,7 @@ class SigoptSearchEngine(BaseSearchEngine):
                     continue
                 nas_score, score, latency = self.cand_evaluate(cand)
                 self.logger.info('epoch = {} structure = {} nas_score = {} params = {}'.format(epoch, cand, self.vis_dict[cand]['score'], self.vis_dict[cand]['params']))
-                self._set_sigopt_observation(experiment, suggestion.id, nas_score.item())
+                self._set_sigopt_observation(experiment, suggestion.id, nas_score)
             best_assignments = self.conn.experiments(experiment.id).best_assignments().fetch().data[0].assignments
             self.best_struct = dict()
             for k in best_assignments:

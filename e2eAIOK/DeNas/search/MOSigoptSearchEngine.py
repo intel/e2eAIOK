@@ -114,7 +114,7 @@ class MOSigoptSearchEngine(BaseSearchEngine):
                 nas_score, score, latency = self.cand_evaluate(cand)
                 self.logger.info('epoch = {} structure = {} nas_score = {} params = {}'.format(epoch, cand, self.vis_dict[cand]['score'], self.vis_dict[cand]['params']))
                 metrics = []
-                metrics.append({'name': 'Score', 'value': score.item()})
+                metrics.append({'name': 'Score', 'value': score})
                 metrics.append({'name': 'Latency', 'value': latency})
                 self._set_sigopt_observation(experiment, suggestion.id, metrics)
             best_assignments = self.conn.experiments(experiment.id).best_assignments().fetch().data[0].assignments
@@ -185,7 +185,7 @@ class MOSigoptSearchEngine(BaseSearchEngine):
                 nas_score, score, latency = self.cand_evaluate(cand)
                 self.logger.info('epoch = {} structure = {} nas_score = {} params = {}'.format(epoch, cand, self.vis_dict[cand]['score'], self.vis_dict[cand]['params']))
                 metrics = []
-                metrics.append({'name': 'Score', 'value': score.item()})
+                metrics.append({'name': 'Score', 'value': score})
                 metrics.append({'name': 'Latency', 'value': latency})
                 self._set_sigopt_observation(experiment, suggestion.id, metrics)
             best_assignments = self.conn.experiments(experiment.id).best_assignments().fetch().data[0].assignments  
@@ -255,7 +255,7 @@ class MOSigoptSearchEngine(BaseSearchEngine):
                 nas_score, score, latency = self.cand_evaluate(cand)
                 self.logger.info('epoch = {} nas_score = {} cand = {}'.format(epoch, nas_score, cand))
                 metrics = []
-                metrics.append({'name': 'Score', 'value': score.item()})
+                metrics.append({'name': 'Score', 'value': score})
                 metrics.append({'name': 'Latency', 'value': latency})
                 self._set_sigopt_observation(experiment, suggestion.id, metrics)
             best_assignments = self.conn.experiments(experiment.id).best_assignments().fetch().data[0].assignments  
@@ -297,7 +297,7 @@ class MOSigoptSearchEngine(BaseSearchEngine):
                 nas_score, score, latency = self.cand_evaluate(cand)
                 self.logger.info('epoch = {} structure = {} nas_score = {} params = {}'.format(epoch, cand, self.vis_dict[cand]['score'], self.vis_dict[cand]['params']))
                 metrics = []
-                metrics.append({'name': 'Score', 'value': score.item()})
+                metrics.append({'name': 'Score', 'value': score})
                 metrics.append({'name': 'Latency', 'value': latency})
                 self._set_sigopt_observation(experiment, suggestion.id, metrics)
             best_assignments = self.conn.experiments(experiment.id).best_assignments().fetch().data[0].assignments

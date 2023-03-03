@@ -261,4 +261,4 @@ def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, 
                     + disversity_score*diversity_weight 
                     + saliency_score*saliency_weight)
     nas_score = score/(1 + latency*latency_weight)
-    return nas_score, score, latency
+    return nas_score.item(), score.item(), latency

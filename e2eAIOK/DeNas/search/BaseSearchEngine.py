@@ -90,7 +90,7 @@ class BaseSearchEngine(ABC):
             latency = NETWORK_LATENCY[self.params.domain](model=model, batch_size=self.params.batch_size, max_seq_length=self.params.img_size, gpu=None, infer_cnt=10.)
         elif self.params.domain == "hf":
             cand_dict = json.loads(cand)
-            model = SuperHFModel.set_sample_config(self.params.pretrained_model ,**cand_dict)
+            model = SuperHFModel.set_sample_config(self.params.supernet ,**cand_dict)
             latency = NETWORK_LATENCY[self.params.domain](model=model, batch_size=self.params.batch_size, max_seq_length=self.params.img_size, gpu=None, infer_cnt=10.)
         else:
             raise RuntimeError(f"Domain {self.params.domain} is not supported")
@@ -130,7 +130,7 @@ class BaseSearchEngine(ABC):
             model = self.super_net
         elif self.params.domain == "hf":
             subconfig = json.loads(cand)
-            model = SuperHFModel.set_sample_config(self.params.pretrained_model, **subconfig)
+            model = SuperHFModel.set_sample_config(self.params.supernet, **subconfig)
         else:
             raise RuntimeError(f"Domain {self.params.domain} is not supported")
         

@@ -1,3 +1,4 @@
+import os
 import random
 import sys
 import argparse
@@ -20,6 +21,7 @@ def parse_args(args):
     parser = argparse.ArgumentParser('DE-NAS')
     parser.add_argument('--domain', type=str, default=None, choices=['cnn', 'vit', 'bert', 'asr', 'hf'], help='DE-NAS search domain')
     parser.add_argument('--conf', type=str, default=None, help='DE-NAS conf file')
+    parser.add_argument('--model_name', type=str, default=None, help='DENAS HF model name')
     settings = {}
     settings.update(parser.parse_args(args).__dict__)
     settings.update(parse_config(settings['conf']))
@@ -56,11 +58,23 @@ def main(params):
         search_space = {'num_heads': params.SEARCH_SPACE.NUM_HEADS, 'mlp_ratio': params.SEARCH_SPACE.MLP_RATIO,
                         'embed_dim': params.SEARCH_SPACE.EMBED_DIM , 'depth': params.SEARCH_SPACE.DEPTH}
     elif params.domain == 'hf':
-        super_net = SuperHFModel.from_pretrained(params.pretrained_model)
-        if "search_space" in params:
-            search_space = SuperHFModel.search_space_generation(params.pretrained_model, **params.search_space)
+        if params.model_name is not None:
+            params.supernet = params.model_name
         else:
-            search_space = SuperHFModel.search_space_generation(params.pretrained_model)
+            if "supernet" not in params:
+                raise ValueError("Please specific the model name from HF in the command line argument 'model_name' or e2eaiok_denas_hf.conf 'supernet'")
+        if os.path.exists(os.path.join(params.pretrained_model_path, params.supernet)):
+            params.supernet = os.path.join(params.pretrained_model_path, params.supernet)
+        super_net = SuperHFModel.from_pretrained(params.supernet)
+        if "search_space" in params:
+            search_space = SuperHFModel.search_space_generation(params.supernet, **params.search_space)
+        else:
+            search_space = SuperHFModel.search_space_generation(params.supernet)
+        n_parameters = sum(param.numel() for param in super_net.parameters()) / 10.**6
+        if "max_param_limits" not in params:
+            params.max_param_limits = n_parameters
+        if "min_param_limits" not in params:
+            params.min_param_limits = n_parameters / 2.0
     else:
         raise RuntimeError(f"Domain {params.domain} is not supported")
 
