@@ -38,7 +38,7 @@ class DecodedTextFeatureGenerator(FeaturetoolsBasedFeatureGenerator):
         is_useful = False
         pa_schema = pipeline[children[0]].output
         for pa_field in pa_schema:
-            if pa_field.is_text:
+            if pa_field.is_text and pa_field.is_encoded:
                 in_feat_name = pa_field.name
                 is_useful = True
                 self.feature_in.append(in_feat_name)
@@ -48,8 +48,7 @@ class DecodedTextFeatureGenerator(FeaturetoolsBasedFeatureGenerator):
                 op_clz = op
                 op = op_clz()
                 out_feat_name = f"{in_feat_name}__{op.name}"
-                out_feat_type = op.return_type
-                out_schema = SeriesSchema(out_feat_name, out_feat_type)
+                out_schema = SeriesSchema(out_feat_name, op.return_type, {'is_text': True})
                 self.feature_in_out_map[in_feat_name].append((out_schema.name, op_clz))
                 pa_schema.append(out_schema)
         if is_useful:
@@ -73,6 +72,6 @@ class TextFeatureGenerator(FeaturetoolsBasedFeatureGenerator):
     def fit_prepare(self, pipeline, children, max_idx):
         pa_schema = pipeline[children[0]].output
         for pa_field in pa_schema:
-            if pa_field.is_text and "decode" in pa_field.name:
+            if pa_field.is_text:
                 self.feature_in.append(pa_field.name)
         return super().fit_prepare(pipeline, children, max_idx)

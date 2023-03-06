@@ -71,25 +71,13 @@ class BasePipeline:
         return repr(self.pipeline)
 
     def export(self, file_path = None):
-        def pretty(d, indent=0):
-            for key, value in d.items():
-                print('\t' * indent + str(key))
-                if isinstance(value, dict):
-                    pretty(value, indent+1)
-                elif isinstance(value, list):
-                    for a in value:
-                        pretty(a)
-                elif isinstance(value, Operation):
-                    print('\t' * (indent+1) + str(value))
-        pretty(self.pipeline)
-        return
-        # json_object = self.pipeline.json_dump()
-        # if file_path:
-        #     # Writing to sample.json
-        #     with open("file_path", "w") as outfile:
-        #         outfile.write(json_object)
-        # else:
-        #     print(json_object)
+        json_object = self.pipeline.json_dump()
+        if file_path:
+            # Writing to sample.json
+            with open("file_path", "w") as outfile:
+                outfile.write(json_object)
+        else:
+            print(json_object)
                 
     def plot(self):
         f = graphviz.Digraph()
@@ -97,8 +85,16 @@ class BasePipeline:
         nodes = []
         f.attr(fontsize='10')
         def add_escape(input):
-            return input.replace('<', '\<').replace('>', '\>')
+            input = input.replace('<', '\<').replace('>', '\>')
+            #input = input.replace("'", "\\\'").replace("\"", "\\\"")
+            return input
+
         def add_break(input):
+            if isinstance(input, list) and len(input) < 3:
+                for line in input:
+                    if isinstance(line, str):
+                        ret = str(input)
+                        return ret
             if isinstance(input, dict):
                 input = [f"{k}: {add_break(v)}" for k, v in input.items()]
             if isinstance(input, list):

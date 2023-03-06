@@ -1,6 +1,6 @@
 from woodwork.column_schema import ColumnSchema
 from pandas import StringDtype
-from pyrecdp.core.utils import is_text_series
+from pyrecdp.core.utils import is_text_series, is_tuple, is_encoded
 class TextDtype(StringDtype):
     pass
 
@@ -9,124 +9,135 @@ class SeriesSchema:
         if len(args) == 1:
             s = args[0]
             self.name = s.name
-            self.type = s.dtype
-            self.actual_type = type(s.loc[s.first_valid_index()]) if s.first_valid_index() >= 0 else None
-            self.is_text_flag = is_text_series(s)
-        elif len(args) == 2:
-            s_name = args[0]
-            s_dtype = args[1]
+            in_type = s.dtype
+            self.config = {}
+            self.config['is_text'] = is_text_series(s)
+            if self.config['is_text']:
+                self.config['is_encoded'] = is_encoded(s)
+            self.config['is_tuple'] = is_tuple(s)
+        elif len(args) >= 2:
             # s_dtype is possible to be pandas.dtype or woodwork.dtype       
-            self.name = s_name
+            self.name = args[0]
             # TODO: convert featuretools return_type to recdp return type
-            self.type = s_dtype
-            self.actual_type = None
-            self.is_text_flag = isinstance(self.type, TextDtype)
+            in_type = args[1]
+            if len(args) > 2:
+                self.config = args[2]
+            else:
+                self.config = {}
         else:
-            raise ValueError("SeriesSchema unsupport input arguments more than 2")
+            raise ValueError(f"SeriesSchema unsupport input as {args}")
+
+        if in_type:
+            # check all types
+            from pandas.api.types import is_bool_dtype
+            from pandas.api.types import is_string_dtype
+            from pandas.api.types import is_numeric_dtype
+            from pandas.api.types import is_float_dtype
+            from pandas.api.types import is_int64_dtype
+            from pandas.api.types import is_integer_dtype
+            from pandas.api.types import is_datetime64_any_dtype
+            from pandas.api.types import is_categorical_dtype
+            from pandas.api.types import is_object_dtype, is_list_like
+            self.config['is_boolean'] = is_bool_dtype(in_type)
+            self.config['is_string'] = is_string_dtype(in_type)
+            self.config['is_numeric'] = is_numeric_dtype(in_type)
+            self.config['is_float'] = is_float_dtype(in_type)
+            self.config['is_int64'] = is_int64_dtype(in_type)
+            self.config['is_integer'] = is_integer_dtype(in_type)
+            self.config['is_datetime'] = is_datetime64_any_dtype(in_type)
+            self.config['is_categorical'] = is_categorical_dtype(in_type)
+            self.config['is_list'] = is_object_dtype(in_type) and is_list_like(in_type)
+
+            if isinstance(in_type, ColumnSchema):
+                self.config['is_categorical'] = in_type.is_categorical
+                self.config['is_numeric'] = in_type.is_numeric or 'numeric' in str(in_type)
+                self.config['is_categorical_string'] = in_type.is_categorical and not in_type.is_ordinal
+                self.config['is_latlong'] = in_type.is_latlong
+
+        self.post_fix()
+
+    def post_fix(self):
+        #post fix
+        if 'is_datetime' in self.config and self.config['is_datetime']:
+            self.config['is_text'] = False
+
+    def copy_config_to(self, config):
+        for k, v in self.config.items():
+            if v:
+                config[k] = v
+        return config
+    
+    def copy_config_from(self, config):
+        for k, v in config.items():
+            if v:
+                self.config[k] = v
+        self.post_fix()
+
+    def dump(self):
+        return (self.name, list(k for k, v in self.config.items() if v))
 
     def __repr__(self):
-        return f"'{self.name}<{self.type}>'"
-
-    def __str__(self):
-        return f"'{self.name}<{self.type}>'"
+        return f"{self.dump()}"
    
     @property
     def dtype_str(self):
-        if isinstance(self.type, ColumnSchema):
-            return self.type
-        if self.is_string:
-            return "string"
-        if self.is_categorical_and_string:
-            return "categorical string"
-        return self.type.name
+        return str(dict((k, v) for k, v in self.config.items() if v))
          
     @property
     def is_boolean(self):
-        if isinstance(self.type, ColumnSchema):
-            return False
-        from pandas.api.types import is_bool_dtype as check_func
-        return check_func(self.type)
+        return 'is_boolean' in self.config and self.config['is_boolean']
 
     @property
     def is_string(self):
-        if isinstance(self.type, ColumnSchema):
-            return False
-        from pandas.api.types import is_string_dtype as check_func
-        return check_func(self.type)
+        return 'is_string' in self.config and self.config['is_string']
     
     @property
     def is_numeric(self):
-        if isinstance(self.type, ColumnSchema):
-            return self.type.is_numeric or 'numeric' in str(self.type)
-        from pandas.api.types import is_numeric_dtype as check_func
-        return check_func(self.type)
+        return 'is_numeric' in self.config and self.config['is_numeric']
 
     @property
     def is_float(self):
-        if isinstance(self.type, ColumnSchema):
-            return False
-        from pandas.api.types import is_float_dtype as check_func
-        return check_func(self.type)
+        return 'is_float' in self.config and self.config['is_float']
 
     @property
     def is_int64(self):
-        if isinstance(self.type, ColumnSchema):
-            return False
-        from pandas.api.types import is_int64_dtype as check_func
-        return check_func(self.type)
+        return 'is_int64' in self.config and self.config['is_int64']
 
     @property
     def is_integer(self):
-        if isinstance(self.type, ColumnSchema):
-            return False
-        from pandas.api.types import is_integer_dtype as check_func
-        return check_func(self.type)
+        return 'is_integer' in self.config and self.config['is_integer']
 
     @property
     def is_datetime(self):
-        if isinstance(self.type, ColumnSchema):
-            return False
-        from pandas.api.types import is_datetime64_any_dtype as check_func
-        return check_func(self.type)
+        return 'is_datetime' in self.config and self.config['is_datetime']
     
     @property
     def is_categorical(self):
-        if isinstance(self.type, ColumnSchema):
-            return self.type.is_categorical
-        from pandas.api.types import is_categorical_dtype as check_func
-        return check_func(self.type)
+        return 'is_categorical' in self.config and self.config['is_categorical']
     
     @property
     def is_list(self):
-        if isinstance(self.type, ColumnSchema):
-            return False
-        from pandas.api.types import is_object_dtype, is_list_like
-        return is_object_dtype(self.type) and is_list_like(self.type)
-    
+        return 'is_list' in self.config and self.config['is_list']
+
     @property
     def is_categorical_and_string(self):
-        if isinstance(self.type, ColumnSchema):
-            return self.type.is_categorical and not self.type.is_ordinal
-        from pandas.api.types import is_categorical_dtype, is_string_dtype
-        if not is_categorical_dtype(self.type):
-            return False
-        return is_string_dtype(self.type.categories)
+        if 'is_categorical_string' in self.config and self.config['is_categorical_string']:
+            return True
+        if 'is_categorical' in self.config and 'is_string' in self.config:
+            return self.config['is_string'] and self.config['is_categorical']
+        return False
     
     @property
     def is_coordinates(self):
-        if self.actual_type is tuple:
-            return True
-        if not isinstance(self.type, ColumnSchema):
-            return False
-        return self.type.is_latlong
+        return 'is_latlong' in self.config and self.config['is_latlong']
     
     @property
-    def is_text(self):
-        return self.is_text_flag
+    def is_encoded(self):
+        return 'is_encoded' in self.config and self.config['is_encoded']
 
     @property
-    def is_woodwork_schema(self):
-        return isinstance(self.type, ColumnSchema)
+    def is_text(self):
+        return 'is_text' in self.config and self.config["is_text"]
     
 
 class DataFrameSchema(list):

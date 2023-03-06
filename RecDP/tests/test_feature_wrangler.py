@@ -20,7 +20,6 @@ class TestFeatureWranglerPandasBased(unittest.TestCase):
         ret_df = pipeline.fit_transform(engine_type = 'pandas')
         # test with shape
         self.assertEqual(ret_df.shape[0], 10000)
-        print(ret_df.dtypes)
         self.assertTrue(ret_df.shape[1] >= 12)
         
     def test_twitter_recsys(self):
@@ -29,8 +28,15 @@ class TestFeatureWranglerPandasBased(unittest.TestCase):
         ret_df = pipeline.fit_transform(engine_type = 'pandas')
         # test with shape
         self.assertEqual(ret_df.shape[0], 10000)
-        print(ret_df.dtypes)
         self.assertTrue(ret_df.shape[1] >= 31)
+    
+    def test_amazon(self):
+        train_data = pd.read_table(f"{pathlib}/tests/data/amazon_reviews_us_Books.tsv", on_bad_lines='skip')
+        pipeline = FeatureWrangler(dataset=train_data, label="star_rating")
+        ret_df = pipeline.fit_transform(engine_type = 'pandas')
+        # test with shape
+        self.assertEqual(ret_df.shape[0], 9667)
+        self.assertTrue(ret_df.shape[1] >= 16)
         
 class TestFeatureWranglerSparkBased(unittest.TestCase):
 
@@ -40,14 +46,20 @@ class TestFeatureWranglerSparkBased(unittest.TestCase):
         ret_df = pipeline.fit_transform(engine_type = 'spark')
         # test with shape
         self.assertEqual(ret_df.shape[0], 10000)
-        print(ret_df.dtypes)
         self.assertTrue(ret_df.shape[1] >= 12)
         
     def test_twitter_recsys(self):
         train_data = pd.read_parquet(f"{pathlib}/tests/data/test_twitter_recsys.parquet")
         pipeline = FeatureWrangler(dataset=train_data, label="reply")
-        ret_df = pipeline.fit_transform(engine_type = 'pandas')
+        ret_df = pipeline.fit_transform(engine_type = 'spark')
         # test with shape
         self.assertEqual(ret_df.shape[0], 10000)
-        print(ret_df.dtypes)
         self.assertTrue(ret_df.shape[1] >= 31)
+
+    def test_amazon(self):
+        train_data = pd.read_table(f"{pathlib}/tests/data/amazon_reviews_us_Books.tsv", on_bad_lines='skip')
+        pipeline = FeatureWrangler(dataset=train_data, label="star_rating")
+        ret_df = pipeline.fit_transform(engine_type = 'spark')
+        # test with shape
+        self.assertEqual(ret_df.shape[0], 9667)
+        self.assertTrue(ret_df.shape[1] >= 16)

@@ -74,10 +74,6 @@ pipeline.plot()
 ## Auto Feature Enrich Examples
 * [NYC Taxi fare auto data prepration](examples/notebooks/autofe/FeatureWrangler.ipynb): An example to show how RecDP_v2.0 automatically generating datetime and geo features upon 55M records. Tested with both Spark and Pandas(featuretools) as compute engine, show 21x speedup by spark.
 
-* [twitter auto data prepration](examples/notebooks/autofe/FeatureWrangler-recsys.ipynb): An example to show how RecDP_v2.0 automatically generating datetime, nlp features upon 14M records. Tested with both Spark and Pandas(featuretools) as compute engine, show 10x speedup by spark.
-
-* amazon products review: To be added in near future
-
 ## Data Profiler Examples
 * [NYC Taxi fare Profiler](resources/FeatureProfiler_NYC.png): An example to show RecDP_v2.0 to profile data, including infer the potential data type, generate data distribution charts.
 

@@ -3,6 +3,7 @@ import pandas as pd
 from .dataframe import *
 from pyspark.sql import DataFrame as SparkDataFrame
 from pyspark import RDD as SparkRDD
+from pyrecdp.core.utils import dump_fix
 
 class Operation:
     def __init__(self, idx, children, output, op, config):
@@ -21,7 +22,7 @@ class Operation:
             'children': self.children,
             #'output': self.output,
             'op': self.op,
-            'config': self.config
+            'config': dump_fix(self.config)
         }
         return dump_dict
     
