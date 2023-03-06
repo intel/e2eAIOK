@@ -222,7 +222,7 @@ def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, 
     disversity_score = 0
     for grad_abs in disversity_score_list:
         if len(grad_abs.shape) == 0:
-            disversity_score += grad_abs
+            disversity_score += float(grad_abs)
         elif len(grad_abs.shape) == 2:
             disversity_score += float(torch.mean(torch.sum(grad_abs, dim=[1])))
 
@@ -261,4 +261,4 @@ def do_compute_nas_score_transformer(model_type, model, resolution, batch_size, 
                     + disversity_score*diversity_weight 
                     + saliency_score*saliency_weight)
     nas_score = score/(1 + latency*latency_weight)
-    return nas_score.item(), score.item(), latency
+    return nas_score, score, latency
