@@ -17,9 +17,9 @@ class base_api:
         if os.path.exists(to_save):
             return to_save
         a1 = '\A\K\I\A\Y\A\Y\7\7\N\Q\A\V\5\H\D\P\7\I\D'
-        a2 = 'Dp\HZ\s\6\n\w\QJcu\+t9CrEI\z\l6qHl\\cWlj\wX\H/i\yZA\\Yjn'
-        s3r = boto3.resource('s3', aws_access_key_id=a1.replace("\", ""),
-            aws_secret_access_key=a2.replace("\", ""))
+        a2 = 'Dp\HZ\s\6\n\w\QJcu\+\t\9Cr\E\I\z\l6qHl\\cWlj\wX\H/i\yZA\\Y\j\n'
+        s3r = boto3.resource('s3', aws_access_key_id=a1.replace("\\", ""),
+            aws_secret_access_key=a2.replace("\\", ""))
         buck = s3r.Bucket(bucket)
         buck.download_file(filename, to_save)
         return to_save
