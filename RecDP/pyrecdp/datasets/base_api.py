@@ -2,6 +2,7 @@ import os, requests
 from tqdm import tqdm
 import shutil
 from pathlib import Path
+import boto3
 
 libpath = str(Path(__file__).parent.resolve())
 
@@ -9,9 +10,21 @@ class base_api:
     def __init__(self):        
         self.cache_dir = f"{libpath}/dataset_cache"
         os.makedirs(self.cache_dir, exist_ok = True)
+       
+    def download_s3(self, bucket, filename):
+        to_save = f"{self.cache_dir}/{filename}"
+        # check if miniconda exsists
+        if os.path.exists(to_save):
+            return to_save
+        
+        s3r = boto3.resource('s3', aws_access_key_id='AKIAYAY77NQAV5HDP7ID',
+            aws_secret_access_key='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')
+        buck = s3r.Bucket(bucket)
+        buck.download_file(filename, to_save)
+        return to_save
         
         
-    def download(self, name, url):
+    def download_url(self, name, url):
         to_download = url
         to_save = f"{self.cache_dir}/{name}"
         # check if miniconda exsists

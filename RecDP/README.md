@@ -63,13 +63,13 @@ pipeline.plot()
 ![nyc taxi demo](resources/nyc_taxi_demo.JPG)
 
 ## Quick Example
-* [nyc taxi fare](examples/notebooks/autofe/demo/nyc_taxi_workflow_full.ipynb) - geographic, datetime feature engineering
+* [nyc taxi fare](examples/notebooks/autofe/demo/nyc_taxi_workflow_full.ipynb) - geographic, datetime feature engineering - [colab_notebook](https://colab.research.google.com/drive/1Ob9-JwwUmYdXoFMq6rR7N1pBjN7-c1_0?usp=sharing)
 
-* [twitter recsys](examples/notebooks/autofe/demo/twitter_workflow_test.ipynb) - text nlp, datetime feature engineering
+* [twitter recsys](examples/notebooks/autofe/demo/twitter_workflow_test.ipynb) - text nlp, datetime feature engineering - [colab_notebook](https://colab.research.google.com/drive/19gI4n8WqH9Oem9Vfanmb3JG0RDXnVKxP?usp=sharing) 
 
-* [outbrain](examples/notebooks/autofe/demo/outbrain_ctr_workflow_test.ipynb) - multiple table joining
+* [outbrain](examples/notebooks/autofe/demo/outbrain_ctr_workflow_test.ipynb) - multiple table joining - [colab_notebook](https://colab.research.google.com/drive/1ZItFclrsqYjkBA3TZzZnp4aELWWVNPV1?usp=sharing) 
 
-* [amazon product review](examples/notebooks/autofe/demo/amazon_product_review_test.ipynb) - text nlp, datetime, feature-cross
+* [amazon product review](examples/notebooks/autofe/demo/amazon_product_review_test.ipynb) - text nlp, datetime, feature-cross - [colab_notebook](https://colab.research.google.com/drive/1Wrcw1yJsBvjkxfiBl5IiIJqzBK_zOvtR?usp=sharing)
 
 # More Examples - completed example including training
 
