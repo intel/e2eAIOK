@@ -26,14 +26,14 @@ class TestDeNasASRModelBuilder:
             "d_ffn": 64,
             "transformer_dropout": 0.1,
             "output_neurons": 5000,
-            "best_model_structure": None,
-            "model": "/tmp/model.pt"
+            "best_model_structure": None
         }
         cfg = edict(cfg)
+        cfg["pretrain"] = "/tmp/model.pt"
 
         # save model
         model1 = ModelBuilderASRDeNas(cfg).create_model()
-        torch.save(model1.state_dict(), cfg["model"])
+        torch.save(model1.state_dict(), cfg["pretrain"])
         # load saved model
-        model2 = ModelBuilderASRDeNas(cfg).load_pretrained_model()
+        model2 = ModelBuilderASRDeNas(cfg).create_model()
         

@@ -14,13 +14,13 @@ class TestDeNasPytorchPruner:
         pruner = PytorchPruner("randomunstructured")
         assert pruner.algo == prune.random_unstructured
         pruner = PytorchPruner("lnstructured")
-        assert pruner.algo == functools.partial(prune.ln_structured, n=2, dim=0)
+        assert pruner.algo.keywords == functools.partial(prune.ln_structured, n=2, dim=0).keywords
         pruner = PytorchPruner("randomstructured")
-        assert pruner.algo == functools.partial(prune.random_structured, dim=0)
+        assert pruner.algo.keywords == functools.partial(prune.random_structured, dim=0).keywords
         pruner = PytorchPruner("globalrandomunstructured")
-        assert pruner.algo == functools.partial(prune.global_unstructured, pruning_method=prune.RandomUnstructured)
+        assert pruner.algo.keywords == functools.partial(prune.global_unstructured, pruning_method=prune.RandomUnstructured).keywords
         pruner = PytorchPruner("globall1unstructured")
-        assert pruner.algo == functools.partial(prune.global_unstructured, pruning_method=prune.L1Unstructured)
+        assert pruner.algo.keywords == functools.partial(prune.global_unstructured, pruning_method=prune.L1Unstructured).keywords
 
     '''
     Test Pruner.prune(model)
