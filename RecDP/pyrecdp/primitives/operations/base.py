@@ -61,8 +61,8 @@ class Operation:
             raise NotImplementedError(f"operation {self.op} is not implemented.")
  
     @staticmethod
-    def load(dump_dict):
-        obj = Operation(dump_dict['idx'], dump_dict['children'].copy(), dump_dict['output'].copy(), dump_dict['op'].copy(), dump_dict['config'].copy())
+    def load(idx, dump_dict):
+        obj = Operation(idx, dump_dict['children'], None, dump_dict['op'], dump_dict['config'])
         return obj
 
 class BaseOperation:

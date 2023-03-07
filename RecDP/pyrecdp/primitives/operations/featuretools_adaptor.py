@@ -1,5 +1,6 @@
 from .base import BaseOperation
 import copy
+from pyrecdp.core.utils import class_name_fix
 
 class FeaturetoolsOperation(BaseOperation):
     def __init__(self, op_base):
@@ -13,7 +14,7 @@ class FeaturetoolsOperation(BaseOperation):
         def generate_ft_feature(df):
             for in_feat_name, ops in feature_in_out_map.items():
                 for op in ops:
-                    op_object = op[1]()
+                    op_object = class_name_fix(op[1])()
                     df[op[0]] = op_object(df[in_feat_name])
             return df
         return generate_ft_feature

@@ -74,11 +74,30 @@ class BasePipeline:
         json_object = self.pipeline.json_dump()
         if file_path:
             # Writing to sample.json
-            with open("file_path", "w") as outfile:
+            with open(file_path, "w") as outfile:
                 outfile.write(json_object)
         else:
             print(json_object)
-                
+    
+    def import_from_json(self, file_path):
+        with open(file_path, "r") as infile:
+            json_object = json.load(infile)
+        for idx, op_config in json_object.items():
+            idx = int(idx)
+            if idx in self.pipeline:
+                continue
+            self.pipeline[idx] = Operation.load(idx, op_config)
+        #self.create_executable_pipeline()
+        
+    def create_executable_pipeline(self):
+        node_chain = self.pipeline.convert_to_node_chain()
+        executable_pipeline = DiGraph()
+        executable_sequence = []
+        for idx in node_chain:
+            executable_pipeline[idx] = self.pipeline[idx].instantiate()
+            executable_sequence.append(executable_pipeline[idx])
+        return executable_pipeline, executable_sequence
+        
     def plot(self):
         f = graphviz.Digraph()
         edges = []
@@ -120,12 +139,7 @@ class BasePipeline:
         
     def execute(self, engine_type = "pandas"):
         # prepare pipeline
-        node_chain = self.pipeline.convert_to_node_chain()
-        executable_pipeline = DiGraph()
-        executable_sequence = []
-        for idx in node_chain:
-            executable_pipeline[idx] = self.pipeline[idx].instantiate()
-            executable_sequence.append(executable_pipeline[idx])
+        executable_pipeline, executable_sequence = self.create_executable_pipeline()
 
         # execute
         if engine_type == 'pandas':

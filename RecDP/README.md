@@ -63,16 +63,21 @@ pipeline.plot()
 ![nyc taxi demo](resources/nyc_taxi_demo.JPG)
 
 ## Quick Example
-[nyc taxi fare](examples/notebooks/autofe/demo/nyc_taxi_workflow_full.ipynb) - geographic, datetime feature engineering
+* [nyc taxi fare](examples/notebooks/autofe/demo/nyc_taxi_workflow_full.ipynb) - geographic, datetime feature engineering
 
-[twitter recsys](examples/notebooks/autofe/demo/twitter_workflow_test.ipynb) - text nlp, datetime feature engineering
+* [twitter recsys](examples/notebooks/autofe/demo/twitter_workflow_test.ipynb) - text nlp, datetime feature engineering
 
-[outbrain](examples/notebooks/autofe/demo/outbrain_ctr_workflow_test.ipynb) - multiple table joining
+* [outbrain](examples/notebooks/autofe/demo/outbrain_ctr_workflow_test.ipynb) - multiple table joining
+
+* [amazon product review](examples/notebooks/autofe/demo/amazon_product_review_test.ipynb) - text nlp, datetime, feature-cross
 
 # More Examples - completed example including training
 
-## Auto Feature Enrich Examples
+## Auto Feature Engineering vs. featuretools
 * [NYC Taxi fare auto data prepration](examples/notebooks/autofe/FeatureWrangler.ipynb): An example to show how RecDP_v2.0 automatically generating datetime and geo features upon 55M records. Tested with both Spark and Pandas(featuretools) as compute engine, show 21x speedup by spark.
+
+## load PIPELINE and execute
+* [twitter pipeline re-load and execute](examples/notebooks/autofe/demo/custom_pipeline_twitter.ipynb): An example to show how RecDP_v2.0 reload pipeline from json and do execution - use RecDP as compute engine.
 
 ## Data Profiler Examples
 * [NYC Taxi fare Profiler](resources/FeatureProfiler_NYC.png): An example to show RecDP_v2.0 to profile data, including infer the potential data type, generate data distribution charts.

@@ -44,11 +44,25 @@ def dump_fix(x):
     elif isinstance(x, list):
         for idx in range(len(x)):
             x[idx] = dump_fix(x[idx])
+    elif isinstance(x, type):
+        x = (x.__module__, x.__name__)
+    elif isinstance(x, tuple):
+        x = (dump_fix(x[0]), dump_fix(x[1]))
     elif hasattr(x, 'dump'):
         x = x.dump()
     else:
-        x = repr(x)
-    return x   
+        x = x
+    return x
+
+def class_name_fix(s):
+    ret = s
+    if isinstance(s, type):
+        ret = s
+    elif isinstance(s, tuple) or isinstance(s, list):
+        import importlib
+        module = importlib.import_module(s[0])
+        ret = eval("module." + s[1])
+    return ret
     
 def is_text_series(s):
     from pandas.api import types as pdt
