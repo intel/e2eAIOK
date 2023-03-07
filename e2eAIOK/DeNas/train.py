@@ -69,13 +69,7 @@ def main(cfg):
         metric = bert_create_metric(cfg)
         trainer = BERTTrainer(cfg, model, train_dataloader, eval_dataloader, other_data, optimizer, criterion, scheduler, metric)
     elif cfg.domain == 'asr':
-        if "pruner" in cfg and cfg.pruner.pruner:
-            model_builder = ModelBuilderASRDeNas(cfg)
-            model = model_builder.load_pretrained_model()
-            pruner = PrunerFactory.create_pruner(cfg.pruner.backend, cfg.pruner.algo, cfg.pruner.layer_list, cfg.pruner.exclude_list)
-            pruner.prune(model["Transformer"], cfg.pruner.sparsity)
-        else:
-            model = ModelBuilderASRDeNas(cfg).create_model()
+        model = ModelBuilderASRDeNas(cfg).create_model()
         tokenizer = sp.SentencePieceProcessor()
         train_dataloader, eval_dataloader = DataBuilderLibriSpeech(cfg, tokenizer).get_dataloader()
         optimizer = torch.optim.Adam(model.parameters(), lr=cfg["lr_adam"], betas=(0.9, 0.98), eps=0.000000001)

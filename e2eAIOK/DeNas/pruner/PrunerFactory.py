@@ -1,7 +1,11 @@
 from e2eAIOK.DeNas.pruner.PytorchPruner import PytorchPruner
+from e2eAIOK.DeNas.pruner.INCPruner import INCPruner
+from e2eAIOK.DeNas.pruner.NNIPruner import NNIPruner
 
 PRUNER_BACKENDS = {
         "pytorch": PytorchPruner,
+        "inc": INCPruner,
+        "nni": NNIPruner
 }
 
 class PrunerFactory(object):

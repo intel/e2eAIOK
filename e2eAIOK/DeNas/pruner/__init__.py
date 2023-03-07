@@ -1,1 +1,1 @@
-__all__ = ['PrunerFactory', 'PytorchPruner']
+__all__ = ['PrunerFactory', 'PytorchPruner', 'INCPruner', 'NNIPruner', 'model_speedup']

@@ -59,7 +59,7 @@ def main(params):
         with open(params.supernet_cfg) as f:
             cfg = edict(yaml.safe_load(f))
         if "pruner" in params and params.pruner.pruner:
-            super_net = ModelBuilderASRDeNas(cfg.SUPERNET).load_pretrained_model()["Transformer"]
+            super_net = ModelBuilderASRDeNas(cfg.SUPERNET).create_model()["Transformer"]
             search_space = {'sparsity': np.arange(cfg.sparsity.min, cfg.sparsity.max, cfg.sparsity.step)}
         else:
             super_net = TransformerASRSuper

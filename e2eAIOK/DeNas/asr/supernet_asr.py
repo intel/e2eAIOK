@@ -32,8 +32,10 @@ class TransformerASRSuper(nn.Module):
         activation=nn.ReLU,
         normalize_before=False,
         max_length: Optional[int] = 2500,
+        name="asr"
     ):
         super().__init__()
+        self.name = name
         self.encoder_kdim = None
         self.encoder_vdim = None
         self.decoder_kdim = None

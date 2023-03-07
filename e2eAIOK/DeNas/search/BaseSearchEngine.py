@@ -16,6 +16,7 @@ from e2eAIOK.DeNas.thirdparty.utils import hf_is_legal, hf_populate_random_func
 from e2eAIOK.DeNas.thirdparty.supernet_hf import SuperHFModel
 from e2eAIOK.DeNas.pruner.pruner import Pruner
 from e2eAIOK.DeNas.pruner.PrunerFactory import PrunerFactory
+from e2eAIOK.DeNas.pruner.model_speedup.speedup import optimize_model
 
  
 class BaseSearchEngine(ABC):
@@ -49,10 +50,13 @@ class BaseSearchEngine(ABC):
             cand_model = deepcopy(self.super_net)
             pruner = PrunerFactory.create_pruner(self.params.pruner.backend, self.params.pruner.algo, self.params.pruner.layer_list, self.params.pruner.exclude_list)
             self.cand_model, mask = pruner.prune(cand_model, cand)
+            if self.params.pruner.speedup:
+                prune_heads = hasattr(self.cand_model, 'prune_heads')
+                self.cand_model = optimize_model(self.cand_model, prune_heads=prune_heads)
 
-            total_params = get_total_parameters_count(cand_model)
-            total_params_pruned = get_pruned_parameters_count(cand_model)
-            info['params'] =  total_params / 10.**6
+            total_params = sum(p.numel() for p in self.super_net.parameters() if p.requires_grad)
+            total_params_pruned = sum(p.numel() for p in self.cand_model.parameters() if p.requires_grad)
+            info['params'] =  total_params_pruned / 10.**6
             info['sparsity'] = total_params_pruned / total_params
             if info['sparsity'] > self.params.max_sparsity_limits or info['params'] < self.params.min_sparsity_limits:
                 return False

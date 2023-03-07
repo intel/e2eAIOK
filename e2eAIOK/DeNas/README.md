@@ -64,3 +64,25 @@ python -u search.py --domain bert --conf ../../conf/denas/nlp/e2eaiok_denas_bert
 ```
 python -u search.py --domain asr --conf ../../conf/denas/asr/e2eaiok_denas_asr.conf
 ```
+
+#### Pruner
+
+```python
+# pruner search space config
+sparsity:
+  min: 0.0
+  max: 1.0
+  step: 0.1
+# pruner search config
+pruner:
+  pruner: true # set true to enable pruning-based model constructor
+  backend: pytorch # pruning backend, pytorch/nni/inc
+  algo: lnstructured # pruning algorithm
+  layer_list: # define pruning layer list
+  exclude_list: [] # define exclude layer list of pruning
+  speedup: true # enable pruned model speedup to reduce model size
+```
+
+```bash
+python -u search.py --domain $domain --conf $config_file
+```

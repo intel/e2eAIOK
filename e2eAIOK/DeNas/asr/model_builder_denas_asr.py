@@ -11,6 +11,8 @@ from e2eAIOK.DeNas.module.asr.linear import Linear
 from e2eAIOK.DeNas.asr.data.processing.features import InputNormalization
 from e2eAIOK.DeNas.module.asr.utils import gen_transformer
 from e2eAIOK.DeNas.utils import decode_arch_tuple
+from e2eAIOK.DeNas.pruner.PrunerFactory import PrunerFactory
+from e2eAIOK.DeNas.pruner.model_speedup.speedup import optimize_model
 
 class ModelBuilderASRDeNas(ModelBuilderASR):
     def __init__(self, cfg):
@@ -59,18 +61,25 @@ class ModelBuilderASRDeNas(ModelBuilderASR):
         
         return model
 
-    def load_pretrained_model(self):
-        if not os.path.exists(self.cfg['model']):
-            raise RuntimeError(f"Can not find pre-trained model {self.cfg['model']}!")
-        print(f"loading pretrained model at {self.cfg['model']}")
+    def load_model(self, pretrain):
+        if not os.path.exists(pretrain):
+            raise RuntimeError(f"Can not find pre-trained model {pretrain}!")
+        print(f"loading pretrained model at {pretrain}")
 
-        super_model = self._init_model()
-        super_model_list = torch.nn.ModuleList([super_model["CNN"], super_model["Transformer"], super_model["seq_lin"], super_model["ctc_lin"]])
-        pretrained_dict = torch.load(self.cfg['model'], map_location=torch.device('cpu'))
-        super_model_list_dict = super_model_list.state_dict()
-        super_model_list_keys = list(super_model_list_dict.keys())
+        model_list = torch.nn.ModuleList([self.model["CNN"], self.model["Transformer"], self.model["seq_lin"], self.model["ctc_lin"]])
+        pretrained_dict = torch.load(pretrain, map_location=torch.device('cpu'))
+        model_list_dict = model_list.state_dict()
+        model_list_keys = list(model_list_dict.keys())
         pretrained_keys = pretrained_dict.keys()
         for i, key in enumerate(pretrained_keys):
-            super_model_list_dict[super_model_list_keys[i]].copy_(pretrained_dict[key])
-
-        return super_model
+            model_list_dict[model_list_keys[i]].copy_(pretrained_dict[key])
+    
+    def prune_model(self):
+        """
+            model pruning and speedup
+        """
+        pruner = PrunerFactory.create_pruner(self.cfg.pruner.backend, self.cfg.pruner.algo, self.cfg.pruner.layer_list, self.cfg.pruner.exclude_list)
+        pruner.prune(self.model["Transformer"], self.cfg.pruner.sparsity)
+        if self.cfg.pruner.speedup:
+            prune_heads = hasattr(self.model["Transformer"], 'prune_heads')
+            self.model["Transformer"] = optimize_model(self.model["Transformer"], prune_heads=prune_heads)
