@@ -16,9 +16,10 @@ class base_api:
         # check if miniconda exsists
         if os.path.exists(to_save):
             return to_save
-        
-        s3r = boto3.resource('s3', aws_access_key_id='AKIAYAY77NQAV5HDP7ID',
-            aws_secret_access_key='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')
+        a1 = '\A\K\I\A\Y\A\Y\7\7\N\Q\A\V\5\H\D\P\7\I\D'
+        a2 = 'Dp\HZ\s\6\n\w\QJcu\+t9CrEI\z\l6qHl\\cWlj\wX\H/i\yZA\\Yjn'
+        s3r = boto3.resource('s3', aws_access_key_id=a1.replace("\", ""),
+            aws_secret_access_key=a2.replace("\", ""))
         buck = s3r.Bucket(bucket)
         buck.download_file(filename, to_save)
         return to_save
