@@ -78,4 +78,4 @@ class ModelBuilder():
         pruner = PrunerFactory.create_pruner(self.cfg.pruner.backend, self.cfg.pruner.algo, self.cfg.pruner.layer_list, self.cfg.pruner.exclude_list)
         pruner.prune(self.model, self.cfg.pruner.sparsity)
         if self.cfg.pruner.speedup:
-            optimize_model(self.model)
+            self.model = optimize_model(self.model)

@@ -14,7 +14,6 @@ from e2eAIOK.DeNas.nlp.utils import bert_is_legal, bert_populate_random_func, ge
 from e2eAIOK.DeNas.asr.utils.asr_nas import asr_is_legal, asr_populate_random_func
 from e2eAIOK.DeNas.thirdparty.utils import hf_is_legal, hf_populate_random_func
 from e2eAIOK.DeNas.thirdparty.supernet_hf import SuperHFModel
-from e2eAIOK.DeNas.pruner.pruner import Pruner
 from e2eAIOK.DeNas.pruner.PrunerFactory import PrunerFactory
 from e2eAIOK.DeNas.pruner.model_speedup.speedup import optimize_model
 

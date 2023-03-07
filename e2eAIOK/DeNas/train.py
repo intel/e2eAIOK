@@ -26,7 +26,6 @@ from e2eAIOK.DeNas.cv.cv_trainer import CVTrainer
 from e2eAIOK.DeNas.nlp.utils import bert_create_optimizer, bert_create_criterion, bert_create_scheduler, bert_create_metric
 from e2eAIOK.DeNas.nlp.bert_trainer import BERTTrainer
 from e2eAIOK.DeNas.search.utils import parse_config
-from e2eAIOK.DeNas.pruner.PrunerFactory import PrunerFactory
 
 
 def parse_args(args):

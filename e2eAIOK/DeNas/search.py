@@ -16,7 +16,6 @@ from e2eAIOK.DeNas.search.SearchEngineFactory import SearchEngineFactory
 from e2eAIOK.DeNas.search.utils import Timer, parse_config
 from transformers import logging
 logging.set_verbosity_error()
-from e2eAIOK.DeNas.asr.model_builder_denas_asr import load_pretrained_model
 from e2eAIOK.DeNas.asr.model_builder_denas_asr import ModelBuilderASRDeNas
 
 def parse_args(args):
