@@ -16,7 +16,7 @@ class SparkDataFrameToRDDConverter:
                 return [pdf]
             return df.rdd.mapPartitions(transform)            
         return convert
-    
+   
 class RDDToSparkDataFrameConverter:
     @staticmethod
     def get_function(rdp):
@@ -80,4 +80,12 @@ class DataFrameToSparkDataFrameConverter:
         print("append DataFrameToSparkDataFrameConverter")
         def convert(pdf):
             return rdp.spark.createDataFrame(pdf) 
+        return convert
+    
+class SparkDataFrameToDataFrameConverter:
+    @staticmethod
+    def get_function(rdp):
+        print("append SparkDataFrameToDataFrameConverter")
+        def convert(df):
+            return df.to_pandas()          
         return convert

@@ -1,1 +1,1 @@
-__all__ = ["generators", "operations", "spark_data_processor"]
+__all__ = ["generators", "operations", "estimators", "spark_data_processor"]

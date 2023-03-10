@@ -33,6 +33,9 @@ class BasePipeline:
                 if label in data.columns:
                     main_table = data_key
                     break
+            self.y = None
+        else:
+            self.y = label
         if not main_table:
             raise ValueError(f"label {label} is not found in dataset")
         
@@ -41,8 +44,9 @@ class BasePipeline:
             original_data = self.dataset[main_table]
         else:
             original_data = sample_read(self.dataset[main_table])
-        y = original_data[label]
-        to_select = [i for i in original_data.columns if i != y.name]
+        if not self.y:
+            self.y = original_data[label]
+        to_select = [i for i in original_data.columns if i != self.y.name]
         self.feature_data = original_data[to_select]
             
         self.generators = []
@@ -165,7 +169,7 @@ class BasePipeline:
                 with Timer(f"execute with spark"):
                     df = _convert(ret)
             else:
-                raise ValueError(f"unrecognized {ret} produced by execute with spark")
+                df = ret
         else:
             raise NotImplementedError('pipeline only support pandas and spark as engine')
         

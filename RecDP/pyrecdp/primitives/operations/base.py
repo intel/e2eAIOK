@@ -38,6 +38,7 @@ class Operation:
         from .nlp import BertDecodeOperation, TextFeatureGenerator
         from .type import TypeInferOperation
         from .tuple import TupleOperation
+        from pyrecdp.primitives.estimators.lightgbm import LightGBM
 
         operations_ = {
             'DataFrame': DataFrameOperation,
@@ -52,7 +53,8 @@ class Operation:
             'tuple': TupleOperation,
             'bert_decode': BertDecodeOperation,
             'text_feature': TextFeatureGenerator,
-            'type_infer': TypeInferOperation
+            'type_infer': TypeInferOperation,
+            'lightgbm': LightGBM
         }
 
         if self.op in operations_:
@@ -97,22 +99,30 @@ class BaseOperation:
             if isinstance(child_output, SparkDataFrame):
                 if self.support_spark_dataframe:
                     _proc = self.get_function_spark(rdp)
-                else:
+                elif self.support_spark_rdd:
                     _convert = SparkDataFrameToRDDConverter().get_function(rdp)
                     _proc = self.get_function_spark_rdd(rdp)
+                else:
+                    _convert = SparkDataFrameToDataFrameConverter().get_function(rdp)
+                    _proc = self.get_function_pd()
             elif isinstance(child_output, SparkRDD):
                 if self.support_spark_rdd:
                     _proc = self.get_function_spark_rdd(rdp)
-                else:
+                elif self.support_spark_dataframe:
                     _convert = RDDToSparkDataFrameConverter().get_function(rdp)
                     _proc = self.get_function_spark(rdp)
+                else:
+                    _convert = RDDToDataFrameConverter().get_function(rdp)
+                    _proc = self.get_function_pd()
             elif isinstance(child_output, pd.DataFrame):
                 if self.support_spark_rdd:
                     _convert = DataFrameToRDDConverter().get_function(rdp)
                     _proc = self.get_function_spark_rdd(rdp)
-                else:
+                elif self.support_spark_dataframe:
                     _convert = DataFrameToSparkDataFrameConverter().get_function(rdp)
                     _proc = self.get_function_spark(rdp)
+                else:
+                    _proc = self.get_function_pd()
             else:
                 raise ValueError(f"child cache is not recognized {child_output}")
         

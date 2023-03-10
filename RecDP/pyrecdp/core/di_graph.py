@@ -69,7 +69,10 @@ class Graph:
         return ret
         
 
-class DiGraph(dict):    
+class DiGraph(dict):
+    def get_max_idx(self):
+        return max(list(self.keys()))
+    
     def convert_to_node_chain(self):
         graph = Graph()
         edges = []

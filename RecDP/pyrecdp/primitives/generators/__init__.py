@@ -1,4 +1,3 @@
-from .dataframe import DataframeConvertFeatureGenerator, DataframeTransformFeatureGenerator
 from .binned import BinnedFeatureGenerator
 from .category import CategoryFeatureGenerator
 from .datetime import DatetimeFeatureGenerator
