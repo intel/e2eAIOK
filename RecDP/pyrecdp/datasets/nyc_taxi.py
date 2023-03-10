@@ -4,15 +4,17 @@ class nyc_taxi(base_api):
     def __init__(self, scale = 'test'):
         super().__init__()
         self.scale = scale
-        if scale == 'test':            
-            self.saved_path = self.download_s3("pyrecdp-testdata", "test_nyc_taxi_fare.parquet")
+        if scale == 'test':
+            name = "test_nyc_taxi_fare.parquet"
+            url = f"https://pyrecdp-testdata.s3.us-west-2.amazonaws.com/{name}"  
         elif scale == 'test_large':
-            self.saved_path = self.download_s3("pyrecdp-testdata", "nyc_taxi_fare_1M.csv")
+            name = "nyc_taxi_fare_1M.csv"
+            url = f"https://pyrecdp-testdata.s3.us-west-2.amazonaws.com/{name}"
         elif scale == 'full':
-            self.name = "nyc_taxi_fare_cleaned.csv"
-            self.url = "https://huggingface.co/datasets/Chendi/NYC_TAXI_FARE_CLEANED/resolve/main/nyc_taxi_fare_cleaned.csv"
-            
-            self.saved_path = self.download_url(self.name, self.url)
+            name = "nyc_taxi_fare_cleaned.csv"
+            url = "https://huggingface.co/datasets/Chendi/NYC_TAXI_FARE_CLEANED/resolve/main/nyc_taxi_fare_cleaned.csv"
+                  
+        self.saved_path = self.download_url(name, url)
 
     def to_pandas(self, nrows = None):
         import pandas as pd

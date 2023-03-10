@@ -50,6 +50,5 @@ setuptools.setup(
         "distro",
         "pyspark==3.3.1",
         "lightgbm",
-        "jupyter",
-        "boto3"
+        "jupyter"
         ])
