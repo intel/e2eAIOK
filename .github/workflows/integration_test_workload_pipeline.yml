@@ -45,7 +45,3 @@ jobs:
         if [[ $(docker ps -q --filter "name=test-workload-horovod" | wc -l) -ne 0 ]]; then docker ps -q --filter "name=test-workload-horovod" | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi
         docker run --rm --name test-workload-horovod --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-tensorflow /bin/bash -c "USE_SIGOPT=0 . /home/vmagent/app/e2eaiok/tests/cicd/docker_horovod_test.sh"
 
-#    - name: Test TorchCCL
-#      run: |
-#        if [[ $(docker ps -q --filter "name=test-workload-torchccl" | wc -l) -ne 0 ]]; then docker ps -q --filter "name=test-workload-torchccl" | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi
-#        docker run --rm --name test-workload-torchccl --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch110 /bin/bash -c "USE_SIGOPT=0 . /home/vmagent/app/e2eaiok/tests/cicd/docker_torchccl_test.sh"
