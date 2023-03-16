@@ -1,6 +1,7 @@
 import os
 import sys
 from setuptools import setup, find_packages
+from setuptools.command.install import install
 try:
     # pip >=20
     from pip._internal.network.session import PipSession
@@ -43,9 +44,18 @@ def setup_package(args):
         package_data = args["package_data"],
         python_requires=">=3.6",
         zip_safe=False,
+        cmdclass=args.get("cmdclass", {}),
         install_requires=args["install_requires"]
     )
     setup(**metadata)
+
+class post_install_ma(install):
+    def run(self):
+        install.run(self)
+        import os
+        print(f"pip install tllib==0.4")
+        os.system(f"pip install git+https://github.com/thuml/Transfer-Learning-Library.git")
+        
 
 if __name__ == '__main__':
     args = dict(
@@ -86,6 +96,7 @@ if __name__ == '__main__':
                                                 "e2eAIOK.SDA", "e2eAIOK.SDA.*", "e2eAIOK.dataloader", "e2eAIOK.utils",\
                                                 "e2eAIOK.DeNas", "e2eAIOK.DeNas.*"])
         args["package_data"] = {'e2eAIOK': ['version','common/default.conf','ModelAdapter/default_ma.conf']}
+        args['cmdclass'] = {'install': post_install_ma}
         install_reqs = parse_requirements("e2eAIOK/ModelAdapter/requirements.txt", session=False)
         # handle pip version compatibility
         try:
