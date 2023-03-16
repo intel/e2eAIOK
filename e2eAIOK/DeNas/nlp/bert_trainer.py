@@ -12,9 +12,6 @@ import e2eAIOK.common.trainer.utils.utils as utils
 import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 from e2eAIOK.common.trainer.torch_trainer import TorchTrainer
 
-from e2eAIOK.DeNas.nlp.model_builder_denas_nlp import ModelBuilderNLPDeNas
-from e2eAIOK.ModelAdapter.engine_core import transferrable_model
-from e2eAIOK.ModelAdapter.engine_core.distiller import kd
 
 class BERTTrainer(TorchTrainer):
     def __init__(self, cfg, model, train_dataloader, eval_dataloader, other_data, optimizer, criterion, scheduler, metric):
@@ -39,7 +36,12 @@ class BERTTrainer(TorchTrainer):
             custom_ops_thop = customer_ops_map_thop()
             macs_thop, _ = profile(self.model, inputs=(inputs,), custom_ops=custom_ops_thop)
             logging.info("(THOP) MACs: %.2f" % (macs_thop/(1000**3)))
+        
+        #whether to use the KD from MA
         if 'teacher_model' in self.cfg and self.cfg.teacher_model != 'None':
+            from e2eAIOK.DeNas.nlp.model_builder_denas_nlp import ModelBuilderNLPDeNas
+            from e2eAIOK.ModelAdapter.engine_core import transferrable_model
+            from e2eAIOK.ModelAdapter.engine_core.distiller import kd
             try:
                 self.teacher_model = ModelBuilderNLPDeNas(self.cfg)._init_extra_model(self.cfg.teacher_model, self.cfg.teacher_model_structure)
             except Exception:
@@ -56,6 +58,7 @@ class BERTTrainer(TorchTrainer):
             # TODO: Integrate saving logits and transfer learning into one stage process
             self.model = transferrable_model.make_transferrable_with_knowledge_distillation(self.model, self.criterion, self.teacher_distiller)
         else:
+            logging.info("Please set the 'teacher_model' if you want to use the KD within the BERT training process")
             if not hasattr(self.model, "loss"):
                 setattr(self.model, 'loss', self.criterion)
 
