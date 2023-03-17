@@ -4,13 +4,16 @@ import pandas as pd
 class DataFrameOperation(BaseOperation):
     def __init__(self, op_base):
         super().__init__(op_base)
+        self.support_spark_dataframe = False
+        self.support_spark_rdd = True
 
     def set(self, dataset):
-        self.cache = dataset[self.op.config]
+        if self.op.children is None or len(self.op.children) == 0:
+            self.cache = dataset[self.op.config]
         
     def get_function_pd(self):
-        def get_dataframe():
-            return self.cache
+        def get_dataframe(df):
+            return df
         return get_dataframe
     
 class DataLoader(BaseOperation):

@@ -27,7 +27,24 @@ def try_datetime(s):
         if len(s) > 500:
             # Sample to speed-up type inference
             result = s.sample(n=500, random_state=0)
-        result = pd.to_datetime(result, errors='coerce')
+        result = pd.to_datetime(result, errors='coerce', infer_datetime_format=True)
+        if result.isnull().mean() > 0.8:  # If over 80% of the rows are NaN
+            return False
+        else:
+            return True
+    except:
+        return False
+    
+def try_numeric(s):
+    if pdt.is_numeric_dtype(s):
+        return True
+    if s.isnull().all():
+        return True
+    try:
+        if len(s) > 500:
+            # Sample to speed-up type inference
+            result = s.sample(n=500, random_state=0)
+        result = pd.to_numeric(result, errors='coerce')
         if result.isnull().mean() > 0.8:  # If over 80% of the rows are NaN
             return False
         else:
@@ -44,10 +61,13 @@ class TypeInferFeatureGenerator(super_class):
         pa_schema = pipeline[children[0]].output
         for pa_field, feature_name in zip(pa_schema, df.columns):
             config = {}
-            if try_category(df[feature_name]):
-                config['is_categorical'] = True
             if try_datetime(df[feature_name]):
                 config['is_datetime'] = True
+            elif try_category(df[feature_name]):
+                config['is_categorical'] = True
+            if try_numeric(df[feature_name]):
+                config['is_numeric'] = True
+            
             pa_field.copy_config_from(config)
             ret_pa_fields.append(pa_field)
         

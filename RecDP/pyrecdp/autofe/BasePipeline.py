@@ -38,6 +38,7 @@ class BasePipeline:
             self.y = label
         if not main_table:
             raise ValueError(f"label {label} is not found in dataset")
+        self.main_table = main_table
         
         # Set properties for BasePipeline
         if not input_is_path:
@@ -46,30 +47,35 @@ class BasePipeline:
             original_data = sample_read(self.dataset[main_table])
         if not self.y:
             self.y = original_data[label]
-        to_select = [i for i in original_data.columns if i != self.y.name]
-        self.feature_data = original_data[to_select]
+        self.feature_columns = [i for i in original_data.columns if i != self.y.name]
+        feature_data = original_data[self.feature_columns]
             
         self.generators = []
         self.pipeline = DiGraph()
         if not input_is_path:
-            self.pipeline[0] = Operation(
-                0, None, output = DataFrameSchema(self.feature_data), op = 'DataFrame', config = main_table)
+            op = 'DataFrame'
+            config = main_table
         else:
-            self.pipeline[0] = Operation(
-                0, None, output = DataFrameSchema(self.feature_data), op = 'DataLoader', config = {'table_name': main_table, 'file_path': self.dataset[main_table]})
+            op = 'DataLoader'
+            config = {'table_name': main_table, 'file_path': self.dataset[main_table]}
+        
+        cur_id = 0
+        self.pipeline[cur_id] = Operation(
+            cur_id, None, output = DataFrameSchema(feature_data), op = op, config = config)
 
         if len(self.dataset) > 1:
             self.supplementary = dict((k, v) for k, v in self.dataset.items() if k != main_table)
         else:
             self.supplementary = None
         self.rdp = None
-    
+     
     def fit_analyze(self, *args, **kwargs):
         child = list(self.pipeline.keys())[-1]
         max_id = child
         for i in range(len(self.generators)):
             for generator in self.generators[i]:
                 self.pipeline, child, max_id = generator.fit_prepare(self.pipeline, [child], max_id)
+        return child, max_id
 
     def __repr__(self):
         return repr(self.pipeline)
@@ -182,4 +188,4 @@ class BasePipeline:
         ret = self.execute(engine_type)
         if engine_type == "spark":
             del self.rdp 
-        return ret
+        return ret  

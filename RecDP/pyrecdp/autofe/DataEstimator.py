@@ -32,7 +32,7 @@ class DataEstimator(BasePipeline):
         cur_idx = max_idx + 1
         if model_name == 'lightgbm':
             if not model_file:
-                model_file = 'lightgbm_regression_'+'label.mdl'
+                model_file = 'lightgbm_regression_'+label+'.mdl'
             if metrics == 'rmse':
                 objective = 'regression'
         config = {'label': label, 'metrics': metrics, 'objective': objective, 'model_file': model_file, 'method': method}

@@ -22,10 +22,10 @@ relation_builder_list = [
 pre_feature_generator_list = [
     CoordinatesInferFeatureGenerator,
     FillNaFeatureGenerator,
-    DecodedTextFeatureGenerator,
 ]
 
 transformation_generator_list = [
+    DecodedTextFeatureGenerator,
     DatetimeFeatureGenerator,
     GeoFeatureGenerator,
     TextFeatureGenerator,

@@ -90,11 +90,11 @@ class BaseOperation:
     def execute_spark(self, pipeline, rdp):
         if self.cache is not None:
             return
+
+        _convert = None
         if not self.op.children or len(self.op.children) == 0:
-            _proc = self.get_function_spark(rdp)
-            self.cache = _proc()
+            pass
         else:
-            _convert = None
             child_output = pipeline[self.op.children[0]].cache
             if isinstance(child_output, SparkDataFrame):
                 if self.support_spark_dataframe:

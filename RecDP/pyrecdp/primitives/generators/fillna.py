@@ -8,10 +8,10 @@ def get_default_value(at: SeriesSchema):
         return False
     elif at.is_numeric:
         return -1
-    elif at.is_string:
-        return ""
     elif at.is_datetime:
         return pd.Timestamp(0)
+    elif at.is_string:
+        return ""
     return None
 
 class FillNaFeatureGenerator(super_class):
@@ -23,7 +23,7 @@ class FillNaFeatureGenerator(super_class):
         self._fillna_feature_map = {}
         for field in pa_schema:
             default_value = get_default_value(field)
-            if default_value:
+            if default_value != None:
                 self._fillna_feature_map[field.name] = default_value
         if len(self._fillna_feature_map) > 0:
             cur_idx = max_idx + 1

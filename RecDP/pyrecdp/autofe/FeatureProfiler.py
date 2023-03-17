@@ -49,9 +49,7 @@ class FeatureProfiler(BasePipeline):
         self.data_stats = None
         self._processed_data = self.feature_data
 
-        self.generators.append([DataframeConvertFeatureGenerator()])
         self.generators.append([cls() for cls in feature_infer_list])
-        self.generators.append([DataframeTransformFeatureGenerator()])
 
         self.fit_analyze()
     
