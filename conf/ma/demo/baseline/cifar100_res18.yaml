@@ -2,14 +2,15 @@ experiment:
     project: "demo"
     tag: "cifar100_res18"
 
-output_dir: "/home/vmagent/app/data/model"
+output_dir: "./data"
 train_epochs: 1
 
 data_set: "cifar100"
-data_path:  "/home/vmagent/app/data/dataset/cifar"
+data_path:  "./data"
 num_workers: 0
+input_size: 224
 
-model_type: "resnet18_cifar"
+model_type: "resnet18"
 
 optimizer: "SGD"
 learning_rate: 0.1

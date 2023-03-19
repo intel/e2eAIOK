@@ -3,18 +3,19 @@ experiment:
   tag: "cifar100_kd_vit_res18"
   strategy: "OnlyDistillationStrategy"
   
-output_dir: "/home/vmagent/app/data/model"
+output_dir: "./data"
 train_epochs: 1
 
 ### dataset
 data_set: "cifar100"
-data_path:  "/home/vmagent/app/data/dataset/cifar"
+data_path:  "./data"
 num_workers: 4
 train_transform: "vit"
 test_transform: "vit"
+input_size: 224
 
 ### model
-model_type: "resnet18_cifar"
+model_type: "resnet18"
 
 # loss
 loss_weight:
@@ -27,9 +28,6 @@ distiller:
     teacher: 
         type: "huggingface_vit_base_224_in21k_ft_cifar100"
         initial_pretrain: True
-    use_saved_logits: True
-    logits_path: "/home/vmagent/app/data/model/demo/distiller/cifar100_kd_vit/logits"
-    logits_topk: 0
 
 ## optimizer
 optimizer: "SGD"
