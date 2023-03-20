@@ -4,7 +4,7 @@ FROM intel/oneapi-aikit:2023.0.0-devel-ubuntu20.04
 SHELL ["/bin/bash", "-c"]
 WORKDIR /root/
 ENV PATH /opt/intel/oneapi/intelpython/latest/condabin:$PATH
-RUN apt-get update -y && apt-get install -y openssh-server openjdk-8-jdk sshpass numactl vim time
+RUN apt-get update -y && apt-get install -y openssh-server openjdk-8-jdk sshpass numactl
 RUN add-apt-repository ppa:ubuntu-toolchain-r/test && \
     apt-get update && \
     apt-get upgrade libstdc++6 -y
