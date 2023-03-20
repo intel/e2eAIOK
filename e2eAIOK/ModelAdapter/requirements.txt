@@ -9,4 +9,5 @@ timm
 nnunet
 transformers
 thop
+wandb
 intel_extension_for_pytorch==1.12.100 -f https://developer.intel.com/ipex-whl-stable    
