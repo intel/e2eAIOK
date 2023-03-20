@@ -37,10 +37,10 @@ class DIENAdvisor(BaseModelAdvisor):
         self.test_path = eval_path
         self.dataset_meta_path = dataset_meta_path
         # self.saved_path = settings['model_saved_path']
-        self.python_path = "/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/"
+        self.python_path = self.params['python_path']
         self.train_python = f"{self.python_path}/python"
         self.horovodrun_path = f"{self.python_path}/horovodrun"
-        self.train_script = "/home/vmagent/app/e2eaiok/modelzoo/dien/train/ai-matrix/script/train.py"
+        self.train_script = self.params['train_script']
 
     def get_cpu_info(self):
         # get cpu physical cores and virtual cores per core as return
