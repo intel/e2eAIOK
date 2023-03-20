@@ -396,22 +396,26 @@ def main(settings):
 
     ##### 1. Start spark and initialize data processor #####
     t0 = timer()
-    spark = SparkSession.builder.master(f'spark://{hname}:7077')\
-        .appName("dien_data_process")\
-        .config("spark.driver.memory", "20G")\
-        .config("spark.driver.memoryOverhead", "10G")\
-        .config("spark.executor.instances", "4")\
-        .config("spark.executor.cores", "32")\
-        .config("spark.executor.memory", "100G")\
-        .config("spark.executor.memoryOverhead", "20G")\
-        .config("spark.driver.extraClassPath", f"{scala_udf_jars}")\
-        .config("spark.executor.extraClassPath", f"{scala_udf_jars}")\
-        .getOrCreate()
-    spark.sparkContext.setLogLevel("ERROR")
+    try:
+        spark = SparkSession.builder.master(f'spark://{hname}:7077')\
+            .appName("dien_data_process")\
+            .config("spark.driver.memory", "20G")\
+            .config("spark.driver.memoryOverhead", "10G")\
+            .config("spark.executor.instances", "4")\
+            .config("spark.executor.cores", "32")\
+            .config("spark.executor.memory", "100G")\
+            .config("spark.executor.memoryOverhead", "20G")\
+            .config("spark.driver.extraClassPath", f"{scala_udf_jars}")\
+            .config("spark.executor.extraClassPath", f"{scala_udf_jars}")\
+            .getOrCreate()
+        spark.sparkContext.setLogLevel("ERROR")
+    except:
+        spark = None
 
     # 1.1 prepare dataFrames
     # 1.2 create RecDP DataProcessor
     proc = DataProcessor(spark, path_prefix, current_path=current_path, shuffle_disk_capacity="1200GB", spark_mode='standalone')
+    spark = proc.spark
     t1 = timer()
     print(f"start spark process took {(t1 - t0)} secs")
 
