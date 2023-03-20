@@ -8,6 +8,31 @@ from py4j.java_gateway import JavaObject
 from py4j.java_collections import ListConverter, JavaArray, JavaList, JavaMap
 import pyspark.sql.types as spk_type
 import pyspark.sql.functions as spk_func
+import psutil
+
+from pathlib import Path
+pathlib = Path(__file__).parent.parent.resolve()
+pyrecdp_path = Path(__file__).parent.resolve()
+print(pyrecdp_path)
+
+def create_spark_context():
+    hname = os.uname()[1]
+    paral = psutil.cpu_count(logical=False)
+    total_mem = int((psutil.virtual_memory().total / (1 << 20)) * 0.8)
+    print(f"Will assign {paral} cores and {total_mem} M memory for spark")
+    scala_udf_jars = f"{pyrecdp_path}/ScalaProcessUtils/target/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
+
+    spark = SparkSession.builder.master(f'local[{paral}]')\
+            .appName("pyrecdp_spark_local")\
+            .config("spark.executorEnv.PYTHONPATH", pathlib)\
+            .config("spark.driver.memory", f"{total_mem}M")\
+            .config("spark.driver.maxResultSize","16g")\
+            .config("spark.sql.execution.arrow.pyspark.enabled","true")\
+            .config("spark.driver.extraClassPath", f"{scala_udf_jars}")\
+            .config("spark.executor.extraClassPath", f"{scala_udf_jars}")\
+            .getOrCreate()
+    spark.sparkContext.setLogLevel("ERROR")
+    return spark
 
 def convert_to_spark_dict(orig_dict, schema=['dict_col', 'dict_col_id']):
     ret = []
