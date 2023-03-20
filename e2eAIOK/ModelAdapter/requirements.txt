@@ -10,4 +10,3 @@ nnunet
 transformers
 thop
 intel_extension_for_pytorch==1.12.100 -f https://developer.intel.com/ipex-whl-stable    
-tllib==0.4 -i https://test.pypi.org/simple/ 
