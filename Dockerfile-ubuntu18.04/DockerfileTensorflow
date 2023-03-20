@@ -6,7 +6,7 @@ SHELL ["/bin/bash", "-c"]
 WORKDIR /root/
 ENV PATH /opt/intel/oneapi/intelpython/latest/condabin:$PATH
 RUN apt-get update -y && apt-get install -y git openssh-server gcc-8 g++-8 \
-        openssh-server openjdk-8-jdk sshpass vim \
+        openssh-server openjdk-8-jdk sshpass \
         && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 7 \
         && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 8 \
         && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 7 \
