@@ -228,7 +228,7 @@ class RNNTAdvisor(BaseModelAdvisor):
         cmd = f"{self.train_python} -m intel_extension_for_pytorch.cpu.launch --distributed --nproc_per_node={ppn} --nnodes={len(hosts)} --hostfile hosts "
         cmd += f"{self.train_script} "
         cmd += f"--output_dir {args['model_saved_path']} "
-        cmd += f"--dist --dist_backend ccl "
+        cmd += f"--dist --dist_backend gloo "
         cmd += f"--batch_size {args['train_batch_size']} "
         cmd += f"--val_batch_size {args['eval_batch_size']} "
         cmd += f"--lr {args['model_parameter']['tuned_parameters']['learning_rate']} "
