@@ -1,5 +1,123 @@
+diff --git a/demo/builtin/dien/DIEN_DEMO_Colab.ipynb b/demo/builtin/dien/DIEN_DEMO_Colab.ipynb
+index 1a29061..baaf093 100644
+--- a/demo/builtin/dien/DIEN_DEMO_Colab.ipynb
++++ b/demo/builtin/dien/DIEN_DEMO_Colab.ipynb
+@@ -99,7 +99,7 @@
+   {
+    "cell_type": "code",
+    "execution_count": 7,
+-   "id": "c399282e",
++   "id": "41add45b",
+    "metadata": {},
+    "outputs": [
+     {
+@@ -171,7 +171,7 @@
+   {
+    "cell_type": "code",
+    "execution_count": 3,
+-   "id": "f335f61e",
++   "id": "cd318c1b",
+    "metadata": {
+     "scrolled": false
+    },
+@@ -317,7 +317,7 @@
+   {
+    "cell_type": "code",
+    "execution_count": 9,
+-   "id": "eb8844ae",
++   "id": "2864495f",
+    "metadata": {},
+    "outputs": [],
+    "source": [
+@@ -326,7 +326,7 @@
+   },
+   {
+    "cell_type": "markdown",
+-   "id": "a76a5faf",
++   "id": "42741ea5",
+    "metadata": {},
+    "source": [
+     "## Prepare data"
+@@ -335,7 +335,7 @@
+   {
+    "cell_type": "code",
+    "execution_count": null,
+-   "id": "69c3c4d1",
++   "id": "7b8a76c9",
+    "metadata": {},
+    "outputs": [],
+    "source": [
+@@ -463,7 +463,7 @@
+   {
+    "cell_type": "code",
+    "execution_count": 11,
+-   "id": "784569ab",
++   "id": "975d7ca5",
+    "metadata": {},
+    "outputs": [
+     {
+@@ -490,7 +490,7 @@
+   },
+   {
+    "cell_type": "markdown",
+-   "id": "158e5cc6",
++   "id": "248d1358",
+    "metadata": {},
+    "source": [
+     "set data path"
+@@ -525,7 +525,7 @@
+   },
+   {
+    "cell_type": "code",
+-   "execution_count": null,
++   "execution_count": 10,
+    "id": "587cb9c9",
+    "metadata": {
+     "scrolled": false
+@@ -814,7 +814,40 @@
+       "iter: 11000 ----> train_loss: 1.3868 ---- train_accuracy: 0.7080 ---- train_aux_loss: 1.1112 ---- train_time: 54.838\n",
+       "current auc is 0.8200 and test auc is 0.8178\n",
+       " test_auc: 0.8178 ----test_loss: 1.2562 ---- test_accuracy: 0.7543 ---- test_aux_loss: 1.0352 ---- eval_time: 25.361 ---- num_iters: 474\n",
+-      "current auc is 0.8199946532215329, target auc is 0.82\n"
++      "current auc is 0.8199946532215329, target auc is 0.82\n",
++      "iter: 11500 ----> train_loss: 1.3730 ---- train_accuracy: 0.7138 ---- train_aux_loss: 1.1008 ---- train_time: 55.691\n",
++      " test_auc: 0.8276 ----test_loss: 1.1949 ---- test_accuracy: 0.7594 ---- test_aux_loss: 1.0336 ---- eval_time: 25.306 ---- num_iters: 474\n",
++      "current auc is 0.8276467909469867, target auc is 0.82\n",
++      "current AUC 0.8276467909469867 is greater than target 0.82, stop training\n",
++      "iteration:  474\n",
++      "iter: 11500\n",
++      "Total recommendations: 5120000\n",
++      "process time breakdown in seconds are session_init 2.824, train_prepare 114.690, train 1078.318, test_prepare 13.663, test 577.897, model save 0.000\n"
++     ]
++    },
++    {
++     "name": "stderr",
++     "output_type": "stream",
++     "text": [
++      "2023-03-20 19:48:20,540 - sigopt - INFO - Training completed based in sigopt suggestion, took 1078.3184671401978 secs\n",
++      "2023-03-20 19:48:20,541 - E2EAIOK.SDA - INFO - training script completed\n"
++     ]
++    },
++    {
++     "name": "stdout",
++     "output_type": "stream",
++     "text": [
++      "\n",
++      "===============================================\n",
++      "***    Best Trained Model    ***\n",
++      "===============================================\n",
++      "  Model Type: DIEN\n",
++      "  Model Saved Path: /home/vmagent/app/e2eaiok/result/DIEN/20230320_191704/74ee8e1d3e5b4458a4b60da27e1b4540e0503a691670915b44a6d643f933ed2f\n",
++      "  Sigopt Experiment id is None\n",
++      "  === Result Metrics ===\n",
++      "    AUC: 0.8276467909469867\n",
++      "    training_time: 1078.3184671401978\n",
++      "===============================================\n"
+      ]
+     }
+    ],
 diff --git a/modelzoo/dien/train/ai-matrix/infer.sh b/modelzoo/dien/train/ai-matrix/infer.sh
-index e973f6a..c8c55bd 100755
+index e973f6a..b1c745d 100755
 --- a/modelzoo/dien/train/ai-matrix/infer.sh
 +++ b/modelzoo/dien/train/ai-matrix/infer.sh
 @@ -1,29 +1,33 @@
@@ -15,10 +133,10 @@ index e973f6a..c8c55bd 100755
 -mkdir results
 +/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python script/train.py --mode=test --advanced --slice_id=0 --batch_size=128 --num-inter-threads=4 --num-intra-threads=32 --train_path /home/vmagent/app/dataset/amazon_reviews/train/local_train_splitByUser --test_path /home/vmagent/app/dataset/amazon_reviews/valid/local_test_splitByUser --meta_path /home/vmagent/app/dataset/amazon_reviews/meta.yaml
 +exit
++
++batchs='128'
  
 -batchs='256 512 1024'
-+batchs='128'
-+
  
  for batch in $batchs
  do
@@ -56,175 +174,8 @@ index e973f6a..c8c55bd 100755
  
 -python process_results.py --infer
 +#python process_results.py --infer
-diff --git a/modelzoo/dien/train/ai-matrix/run_infer.sh b/modelzoo/dien/train/ai-matrix/run_infer.sh
-new file mode 100755
-index 0000000..0e2bc3d
---- /dev/null
-+++ b/modelzoo/dien/train/ai-matrix/run_infer.sh
-@@ -0,0 +1,10 @@
-+NUM_INSTANCES=$1
-+NUM_INSTANCES_END=$2
-+OUT_SHIFT=$3
-+batch=128
-+CORES_PER_INST=1
-+mkdir -p results
-+for (( i=${NUM_INSTANCES} ; i < ${NUM_INSTANCES_END}; i++ ))
-+do
-+    numactl -C$((${i} - ${NUM_INSTANCES})) --localalloc python script/train.py --mode=test --advanced --slice_id=${i} --batch_size=$batch --num-inter-threads=1 --num-intra-threads=1 2>results/result_infer_${batch}_$((${i}+${OUT_SHIFT}))_err.txt >results/result_infer_${batch}_$((${i}+${OUT_SHIFT})).txt &
-+done
-diff --git a/modelzoo/dien/train/ai-matrix/script/adv_data_iterator.py b/modelzoo/dien/train/ai-matrix/script/adv_data_iterator.py
-new file mode 100644
-index 0000000..bd27e5a
---- /dev/null
-+++ b/modelzoo/dien/train/ai-matrix/script/adv_data_iterator.py
-@@ -0,0 +1,145 @@
-+import numpy
-+import json
-+import pickle as pkl
-+import random
-+
-+import gzip
-+
-+import shuffle
-+
-+def unicode_to_utf8(d):
-+    return dict((key, value) for (key,value) in d.items())
-+
-+def load_dict(filename):
-+    try:
-+        with open(filename, 'rb') as f:
-+            return unicode_to_utf8(json.load(f))
-+    except:
-+        with open(filename, 'rb') as f:
-+            data = pkl.load(f)
-+            if isinstance(data, dict):
-+                return unicode_to_utf8(pkl.load(f))
-+            return data
-+
-+def fopen(filename, mode='r'):
-+    if filename.endswith('.gz'):
-+        return gzip.open(filename, mode)
-+    return open(filename, mode)
-+
-+
-+class AdvDataIterator:
-+
-+    def __init__(self, source,
-+                 uid_voc,
-+                 mid_voc,
-+                 cat_voc,
-+                 batch_size=128,
-+                 maxlen=100,
-+                 skip_empty=False,
-+                 shuffle_each_epoch=False,
-+                 sort_by_length=True,
-+                 max_batch_size=20,
-+                 minlen=None):
-+        if shuffle_each_epoch:
-+            self.source_orig = source
-+            self.source = shuffle.main(self.source_orig, temporary=True)
-+        else:
-+            self.source = fopen(source, 'r')
-+        self.source_dicts = []
-+        for source_dict in [uid_voc, mid_voc, cat_voc]:
-+            self.source_dicts.append(load_dict(source_dict))
-+
-+        self.batch_size = batch_size
-+        self.maxlen = maxlen
-+        self.minlen = minlen
-+        self.skip_empty = skip_empty
-+
-+        self.n_uid = self.source_dicts[0]
-+        self.n_mid = self.source_dicts[1]
-+        self.n_cat = self.source_dicts[2]
-+
-+        self.shuffle = shuffle_each_epoch
-+        self.sort_by_length = sort_by_length
-+
-+        self.source_buffer = []
-+        self.k = batch_size * max_batch_size
-+
-+        self.end_of_data = False
-+
-+    def get_n(self):
-+        return self.n_uid, self.n_mid, self.n_cat
-+
-+    def __iter__(self):
-+        return self
-+
-+    def reset(self):
-+        if self.shuffle:
-+            self.source= shuffle.main(self.source_orig, temporary=True)
-+        else:
-+            self.source.seek(0)
-+
-+    def next(self):
-+        return self.__next__()
-+
-+    def __next__(self):
-+        if self.end_of_data:
-+            self.end_of_data = False
-+            self.reset()
-+            raise StopIteration
-+
-+        source = []
-+        target = []
-+
-+        # load next batch and sort batch by mid hist len
-+        if len(self.source_buffer) == 0:
-+            for k_ in range(self.k):
-+                ss = self.source.readline()
-+                if ss == "":
-+                    break
-+                self.source_buffer.append(ss.strip("\n").split("\t"))
-+
-+            # sort by  history behavior length
-+            if self.sort_by_length:
-+                his_length = numpy.array([len(s[4].split("")) for s in self.source_buffer])
-+                tidx = his_length.argsort()
-+
-+                _sbuf = [self.source_buffer[i] for i in tidx]
-+                self.source_buffer = _sbuf
-+            else:
-+                self.source_buffer.reverse()
-+
-+        # if there is no next batch
-+        if len(self.source_buffer) == 0:
-+            self.end_of_data = False
-+            self.reset()
-+            raise StopIteration
-+
-+        try:
-+
-+            # actual work here
-+            while True:
-+
-+                # read from source file and map to word index
-+                try:
-+                    ss = self.source_buffer.pop()
-+                except IndexError:
-+                    # end of file
-+                    break
-+
-+                # split ss hist colums
-+                source.append(
-+                    [ss[1], ss[2], ss[3], ss[4].split(""), ss[5].split(""),
-+                    [x.split("|") for x in ss[6].split("")],
-+                    [x.split("|") for x in ss[7].split("")]])
-+                target.append([float(ss[0]), 1-float(ss[0])])
-+
-+                if len(source) >= self.batch_size or len(target) >= self.batch_size:
-+                    break
-+        except IOError:
-+            self.end_of_data = True
-+
-+        # all sentence pairs in maxibatch filtered out because of length
-+        if len(source) == 0 or len(target) == 0:
-+            source, target = self.next()
-+
-+        return source, target
 diff --git a/modelzoo/dien/train/ai-matrix/script/model.py b/modelzoo/dien/train/ai-matrix/script/model.py
-index c22edf6..c8fa877 100644
+index c22edf6..7ed60ab 100644
 --- a/modelzoo/dien/train/ai-matrix/script/model.py
 +++ b/modelzoo/dien/train/ai-matrix/script/model.py
 @@ -1,5 +1,6 @@
@@ -234,22 +185,26 @@ index c22edf6..c8fa877 100644
  from tensorflow.python.ops.rnn_cell import LSTMCell
  from tensorflow.python.ops.rnn import bidirectional_dynamic_rnn as bi_rnn
  #from tensorflow.python.ops.rnn import dynamic_rnn
-@@ -8,6 +9,14 @@ from utils import *
+@@ -8,6 +9,18 @@ from utils import *
  from Dice import dice
  import numpy as np
  
 +from tensorflow.python.client import timeline
 +from tensorflow.python.platform import gfile
 +
-+import horovod.tensorflow as hvd
-+hvd.init()
-+print('local_rank=%d, rank=%d, size=%d' % (hvd.local_rank(), hvd.rank(), hvd.size()))
-+print('one_ccl is_enabled: ', hvd.ccl_built())
++try:
++    import horovod.tensorflow as hvd
++    hvd.init()
++    print('local_rank=%d, rank=%d, size=%d' % (hvd.local_rank(), hvd.rank(), hvd.size()))
++    print('one_ccl is_enabled: ', hvd.ccl_built())
++    hvd_size = hvd.size()
++except:
++    hvd_size = 1
 +
  class Model(object):
      def __init__(self, n_uid, n_mid, n_cat, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE, 
       data_type='FP32', use_negsampling = False, synthetic_input = False, batch_size = 32,
-@@ -111,6 +120,9 @@ class Model(object):
+@@ -111,6 +124,9 @@ class Model(object):
                      self.cat_his_batch_embedded = tf.nn.embedding_lookup(self.cat_embeddings_var, self.cat_his_batch_ph)
                      if self.use_negsampling:
                          self.noclk_cat_his_batch_embedded = tf.nn.embedding_lookup(self.cat_embeddings_var, self.noclk_cat_batch_ph)
@@ -259,7 +214,7 @@ index c22edf6..c8fa877 100644
              else:
                  print('embedding on ' + device)
                  self.uid_embeddings_var = tf.compat.v1.get_variable("uid_embedding_var", [n_uid, EMBEDDING_DIM], dtype=self.model_dtype)
-@@ -145,6 +157,13 @@ class Model(object):
+@@ -145,6 +161,13 @@ class Model(object):
              self.noclk_his_eb_sum_1 = tf.reduce_sum(self.noclk_his_eb, 2)
              self.noclk_his_eb_sum = tf.reduce_sum(self.noclk_his_eb_sum_1, 1)
  
@@ -273,7 +228,7 @@ index c22edf6..c8fa877 100644
      def build_fcn_net(self, inp, use_dice = False):
          def dtype_getter(getter, name, dtype=None, *args, **kwargs):
              var = getter(name, dtype=self.model_dtype, *args, **kwargs)
-@@ -174,13 +193,23 @@ class Model(object):
+@@ -174,13 +197,23 @@ class Model(object):
                  if self.use_negsampling:
                      self.loss += self.aux_loss
                  tf.compat.v1.summary.scalar('loss', self.loss)
@@ -283,8 +238,8 @@ index c22edf6..c8fa877 100644
 +                # self.optimizer = tf.compat.v1.train.MomentumOptimizer(learning_rate=self.lr, momentum=0.9).minimize(self.loss)
 +
 +                # convert sparse optimizer to dense optimizer
-+                adam_optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=self.lr * hvd.size())
-+                if hvd.size() > 1:
++                adam_optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=self.lr * hvd_size)
++                if hvd_size > 1:
 +                    adam_optimizer = hvd.DistributedOptimizer(adam_optimizer)
 +                gradients = adam_optimizer.compute_gradients(self.loss)
 +                gradients = self._sparse_to_dense_grads(gradients)
@@ -299,7 +254,7 @@ index c22edf6..c8fa877 100644
  
      def auxiliary_loss(self, h_states, click_seq, noclick_seq, mask, stag = None):
          def dtype_getter(getter, name, dtype=None, *args, **kwargs):
-@@ -217,21 +246,49 @@ class Model(object):
+@@ -217,21 +250,49 @@ class Model(object):
          loss, accuracy, _ = sess.run([self.loss, self.accuracy, self.optimizer])
          return loss, accuracy, 0
  
@@ -363,7 +318,7 @@ index c22edf6..c8fa877 100644
              return loss, accuracy, aux_loss
          else:
              loss, accuracy, _ = sess.run([self.loss, self.accuracy, self.optimizer], feed_dict={
-@@ -247,20 +304,43 @@ class Model(object):
+@@ -247,20 +308,43 @@ class Model(object):
              })
              return loss, accuracy, 0
  
@@ -420,7 +375,7 @@ index c22edf6..c8fa877 100644
              return probs, loss, accuracy, aux_loss
          else:
              probs, loss, accuracy = sess.run([self.y_hat, self.loss, self.accuracy], feed_dict={
-@@ -370,7 +450,7 @@ class Model_WideDeep(Model):
+@@ -370,7 +454,7 @@ class Model_WideDeep(Model):
              # Accuracy metric
              self.accuracy = tf.reduce_mean(tf.cast(tf.equal(tf.round(self.y_hat), self.target_ph), tf.float32))
              tf.compat.v1.summary.scalar('accuracy', self.accuracy)
@@ -429,7 +384,7 @@ index c22edf6..c8fa877 100644
  
  
  class Model_DIN_V2_Gru_QA_attGru(Model):
-@@ -454,9 +534,12 @@ class Model_DIN_V2_Gru_Vec_attGru_Neg(Model):
+@@ -454,9 +538,12 @@ class Model_DIN_V2_Gru_Vec_attGru_Neg(Model):
          with tf.compat.v1.variable_scope("dien", custom_getter=dtype_getter, dtype=self.model_dtype):
              # RNN layer(-s)
              with tf.name_scope('rnn_1'):
@@ -443,7 +398,7 @@ index c22edf6..c8fa877 100644
                  tf.compat.v1.summary.histogram('GRU_outputs', rnn_outputs)
  
              aux_loss_1 = self.auxiliary_loss(rnn_outputs[:, :-1, :], self.item_his_eb[:, 1:, :],
-@@ -466,7 +549,7 @@ class Model_DIN_V2_Gru_Vec_attGru_Neg(Model):
+@@ -466,7 +553,7 @@ class Model_DIN_V2_Gru_Vec_attGru_Neg(Model):
  
              # Attention layer
              with tf.name_scope('Attention_layer_1'):
@@ -452,7 +407,7 @@ index c22edf6..c8fa877 100644
                                                          softmax_stag=1, stag='1_1', mode='LIST', return_alphas=True)
                  tf.compat.v1.summary.histogram('alpha_outputs', alphas)
  
-@@ -474,11 +557,15 @@ class Model_DIN_V2_Gru_Vec_attGru_Neg(Model):
+@@ -474,11 +561,15 @@ class Model_DIN_V2_Gru_Vec_attGru_Neg(Model):
                  rnn_outputs2, final_state2 = dynamic_rnn(VecAttGRUCell(HIDDEN_SIZE), inputs=rnn_outputs,
                                                           att_scores = tf.expand_dims(alphas, -1),
                                                           sequence_length=self.seq_len_ph, dtype=self.model_dtype,
@@ -498,17 +453,25 @@ index dc61b74..8c3c616 100644
      # If any new minibatch entries are marked as finished, mark these.
      finished = tf.logical_or(finished, next_finished)
 diff --git a/modelzoo/dien/train/ai-matrix/script/train.py b/modelzoo/dien/train/ai-matrix/script/train.py
-index 2cd436a..ab03c02 100644
+index 2cd436a..c0f9390 100644
 --- a/modelzoo/dien/train/ai-matrix/script/train.py
 +++ b/modelzoo/dien/train/ai-matrix/script/train.py
-@@ -1,5 +1,5 @@
+@@ -1,5 +1,13 @@
++import os
++os.environ['KMP_AFFINITY'] = 'granularity=fine,verbose,compact,1,0'
++os.environ['OMP_NUM_THREADS'] = '4'
++os.environ['HOROVOD_CPU_OPERATIONS'] = 'CCL'
++os.environ['CCL_WORKER_COUNT'] = '1'
++os.environ['CCL_WORKER_AFFINITY'] = '0, 32'
++os.environ['HOROVOD_THREAD_AFFINITY'] = '1, 33'
++os.environ['I_MPI_PIN_PROCESSOR_EXCLUDE_LIST'] = '0, 1, 32, 33'
 +import pickle
  import numpy
 -from data_iterator import DataIterator
  import tensorflow as tf
  from model import *
  import time
-@@ -8,26 +8,66 @@ import sys
+@@ -8,26 +16,69 @@ import sys
  from utils import *
  
  import argparse
@@ -557,8 +520,11 @@ index 2cd436a..ab03c02 100644
 +    os.environ["HOROVOD_CPU_OPERATIONS"] = "CCL"
 +    os.environ["HOROVOD_CCL_CACHE"] = "1"
 +    #os.environ["OMP_NUM_THREADS"] = "22"
-+
-+    import horovod.tensorflow as hvd
++    try:
++        import horovod.tensorflow as hvd
++        hvd_size = hvd.size()
++    except:
++        hvd_size = 1
 +else:
 +    os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID" # see issue #152
 +    os.environ["CUDA_VISIBLE_DEVICES"]="0"
@@ -584,7 +550,7 @@ index 2cd436a..ab03c02 100644
      # x: a list of sentences
      lengths_x = [len(s[4]) for s in input]
      seqs_mid = [inp[3] for inp in input]
-@@ -61,16 +101,17 @@ def prepare_data(input, target, maxlen = None, return_neg = False):
+@@ -61,16 +112,17 @@ def prepare_data(input, target, maxlen = None, return_neg = False):
  
          if len(lengths_x) < 1:
              return None, None, None, None
@@ -606,7 +572,7 @@ index 2cd436a..ab03c02 100644
      if args.data_type == 'FP32':
          data_type = 'float32'
      elif args.data_type == 'FP16':
-@@ -95,325 +136,494 @@ def prepare_data(input, target, maxlen = None, return_neg = False):
+@@ -95,325 +147,494 @@ def prepare_data(input, target, maxlen = None, return_neg = False):
      else:
          return uids, mids, cats, mid_his, cat_his, mid_mask, numpy.array(target), numpy.array(lengths_x)
  
@@ -933,7 +899,7 @@ index 2cd436a..ab03c02 100644
          sess.run(tf.compat.v1.global_variables_initializer())
          sess.run(tf.compat.v1.local_variables_initializer())
 +
-+        if hvd.size() > 1:
++        if hvd_size > 1:
 +            sess.run(hvd.broadcast_global_variables(0))
          sys.stdout.flush()
 -        #print('test_auc: %.4f ---- test_loss: %.4f ---- test_accuracy: %.4f ---- test_aux_loss: %.4f ---- eval_time: %.3f ---- num_iters: %d' % eval(sess, test_data, model, best_model_path))
@@ -1053,9 +1019,9 @@ index 2cd436a..ab03c02 100644
 +
 +                if CURRENT_AUC >= TARGET_AUC:
 +                    print(f"current AUC {CURRENT_AUC} is greater than target {TARGET_AUC}, stop training")
-+                    break
-+                if LOWER_THAN_CURRENT_CNT >= 6:
                      break
++                if LOWER_THAN_CURRENT_CNT >= 6:
++                    break
 +
 +            print("iteration: ", nums)
 +
@@ -1226,14 +1192,14 @@ index 2cd436a..ab03c02 100644
 -        approximate_accelerator_time += eval_time
 -        print('test_auc: %.4f ----test_loss: %.4f ---- test_accuracy: %.9f ---- test_aux_loss: %.4f ---- eval_time: %.3f' % (test_auc, test_loss, test_accuracy, test_aux_loss, eval_time))
 -        test_auc, test_loss, test_accuracy, test_aux_loss, eval_time, num_iters = eval(sess, test_data, model, model_path)
+-        approximate_accelerator_time += eval_time
+-        print('test_auc: %.4f ----test_loss: %.4f ---- test_accuracy: %.9f ---- test_aux_loss: %.4f ---- eval_time: %.3f' % (test_auc, test_loss, test_accuracy, test_aux_loss, eval_time))
+-        test_auc, test_loss, test_accuracy, test_aux_loss, eval_time, num_iters = eval(sess, test_data, model, model_path)
 +        test_elapse_time = 0
 +        prepare_elapse_time = 0
 +        test_auc, test_loss, test_accuracy, test_aux_loss, eval_time, prepare_time, num_iters, test_prepared = eval(
 +            sess, test_data, model, model_path)
          approximate_accelerator_time += eval_time
--        print('test_auc: %.4f ----test_loss: %.4f ---- test_accuracy: %.9f ---- test_aux_loss: %.4f ---- eval_time: %.3f' % (test_auc, test_loss, test_accuracy, test_aux_loss, eval_time))
--        test_auc, test_loss, test_accuracy, test_aux_loss, eval_time, num_iters = eval(sess, test_data, model, model_path)
--        approximate_accelerator_time += eval_time
 -        print('test_auc: %.4f ----test_loss: %.4f ---- test_accuracy: %.9f ---- test_aux_loss: %.4f ---- eval_time: %.3f' % (test_auc, test_loss, test_accuracy, test_aux_loss, eval_time))
 -        test_auc, test_loss, test_accuracy, test_aux_loss, eval_time, num_iters = eval(sess, test_data, model, model_path)
 -        approximate_accelerator_time += eval_time
@@ -1310,7 +1276,7 @@ index 2cd436a..ab03c02 100644
 -
 -
 diff --git a/modelzoo/dien/train/ai-matrix/script/utils.py b/modelzoo/dien/train/ai-matrix/script/utils.py
-index 51150d6..937c126 100644
+index 51150d6..8750618 100644
 --- a/modelzoo/dien/train/ai-matrix/script/utils.py
 +++ b/modelzoo/dien/train/ai-matrix/script/utils.py
 @@ -1,12 +1,11 @@
@@ -1356,14 +1322,3 @@ index 51150d6..937c126 100644
      return output
  
  def self_attention(facts, ATTENTION_SIZE, mask, stag='null'):
-diff --git a/modelzoo/dien/train/ai-matrix/start_service.sh b/modelzoo/dien/train/ai-matrix/start_service.sh
-new file mode 100755
-index 0000000..73003ef
---- /dev/null
-+++ b/modelzoo/dien/train/ai-matrix/start_service.sh
-@@ -0,0 +1,5 @@
-+source /etc/profile.d/spark-env.sh
-+/etc/init.d/ssh start
-+$HADOOP_HOME/sbin/start-dfs.sh
-+$SPARK_HOME/sbin/start-master.sh
-+$SPARK_HOME/sbin/start-worker.sh spark://`hostname`:7077
