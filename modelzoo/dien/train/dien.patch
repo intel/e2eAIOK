@@ -1,125 +1,7 @@
-diff --git a/demo/builtin/dien/DIEN_DEMO_Colab.ipynb b/demo/builtin/dien/DIEN_DEMO_Colab.ipynb
-index 1a29061..baaf093 100644
---- a/demo/builtin/dien/DIEN_DEMO_Colab.ipynb
-+++ b/demo/builtin/dien/DIEN_DEMO_Colab.ipynb
-@@ -99,7 +99,7 @@
-   {
-    "cell_type": "code",
-    "execution_count": 7,
--   "id": "c399282e",
-+   "id": "41add45b",
-    "metadata": {},
-    "outputs": [
-     {
-@@ -171,7 +171,7 @@
-   {
-    "cell_type": "code",
-    "execution_count": 3,
--   "id": "f335f61e",
-+   "id": "cd318c1b",
-    "metadata": {
-     "scrolled": false
-    },
-@@ -317,7 +317,7 @@
-   {
-    "cell_type": "code",
-    "execution_count": 9,
--   "id": "eb8844ae",
-+   "id": "2864495f",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-@@ -326,7 +326,7 @@
-   },
-   {
-    "cell_type": "markdown",
--   "id": "a76a5faf",
-+   "id": "42741ea5",
-    "metadata": {},
-    "source": [
-     "## Prepare data"
-@@ -335,7 +335,7 @@
-   {
-    "cell_type": "code",
-    "execution_count": null,
--   "id": "69c3c4d1",
-+   "id": "7b8a76c9",
-    "metadata": {},
-    "outputs": [],
-    "source": [
-@@ -463,7 +463,7 @@
-   {
-    "cell_type": "code",
-    "execution_count": 11,
--   "id": "784569ab",
-+   "id": "975d7ca5",
-    "metadata": {},
-    "outputs": [
-     {
-@@ -490,7 +490,7 @@
-   },
-   {
-    "cell_type": "markdown",
--   "id": "158e5cc6",
-+   "id": "248d1358",
-    "metadata": {},
-    "source": [
-     "set data path"
-@@ -525,7 +525,7 @@
-   },
-   {
-    "cell_type": "code",
--   "execution_count": null,
-+   "execution_count": 10,
-    "id": "587cb9c9",
-    "metadata": {
-     "scrolled": false
-@@ -814,7 +814,40 @@
-       "iter: 11000 ----> train_loss: 1.3868 ---- train_accuracy: 0.7080 ---- train_aux_loss: 1.1112 ---- train_time: 54.838\n",
-       "current auc is 0.8200 and test auc is 0.8178\n",
-       " test_auc: 0.8178 ----test_loss: 1.2562 ---- test_accuracy: 0.7543 ---- test_aux_loss: 1.0352 ---- eval_time: 25.361 ---- num_iters: 474\n",
--      "current auc is 0.8199946532215329, target auc is 0.82\n"
-+      "current auc is 0.8199946532215329, target auc is 0.82\n",
-+      "iter: 11500 ----> train_loss: 1.3730 ---- train_accuracy: 0.7138 ---- train_aux_loss: 1.1008 ---- train_time: 55.691\n",
-+      " test_auc: 0.8276 ----test_loss: 1.1949 ---- test_accuracy: 0.7594 ---- test_aux_loss: 1.0336 ---- eval_time: 25.306 ---- num_iters: 474\n",
-+      "current auc is 0.8276467909469867, target auc is 0.82\n",
-+      "current AUC 0.8276467909469867 is greater than target 0.82, stop training\n",
-+      "iteration:  474\n",
-+      "iter: 11500\n",
-+      "Total recommendations: 5120000\n",
-+      "process time breakdown in seconds are session_init 2.824, train_prepare 114.690, train 1078.318, test_prepare 13.663, test 577.897, model save 0.000\n"
-+     ]
-+    },
-+    {
-+     "name": "stderr",
-+     "output_type": "stream",
-+     "text": [
-+      "2023-03-20 19:48:20,540 - sigopt - INFO - Training completed based in sigopt suggestion, took 1078.3184671401978 secs\n",
-+      "2023-03-20 19:48:20,541 - E2EAIOK.SDA - INFO - training script completed\n"
-+     ]
-+    },
-+    {
-+     "name": "stdout",
-+     "output_type": "stream",
-+     "text": [
-+      "\n",
-+      "===============================================\n",
-+      "***    Best Trained Model    ***\n",
-+      "===============================================\n",
-+      "  Model Type: DIEN\n",
-+      "  Model Saved Path: /home/vmagent/app/e2eaiok/result/DIEN/20230320_191704/74ee8e1d3e5b4458a4b60da27e1b4540e0503a691670915b44a6d643f933ed2f\n",
-+      "  Sigopt Experiment id is None\n",
-+      "  === Result Metrics ===\n",
-+      "    AUC: 0.8276467909469867\n",
-+      "    training_time: 1078.3184671401978\n",
-+      "===============================================\n"
-      ]
-     }
-    ],
-diff --git a/modelzoo/dien/train/ai-matrix/infer.sh b/modelzoo/dien/train/ai-matrix/infer.sh
+diff --git a/infer.sh b/infer.sh
 index e973f6a..b1c745d 100755
---- a/modelzoo/dien/train/ai-matrix/infer.sh
-+++ b/modelzoo/dien/train/ai-matrix/infer.sh
+--- a/infer.sh
++++ b/infer.sh
 @@ -1,29 +1,33 @@
  #!/bin/bash
  
@@ -174,10 +56,177 @@ index e973f6a..b1c745d 100755
  
 -python process_results.py --infer
 +#python process_results.py --infer
-diff --git a/modelzoo/dien/train/ai-matrix/script/model.py b/modelzoo/dien/train/ai-matrix/script/model.py
+diff --git a/run_infer.sh b/run_infer.sh
+new file mode 100755
+index 0000000..0e2bc3d
+--- /dev/null
++++ b/run_infer.sh
+@@ -0,0 +1,10 @@
++NUM_INSTANCES=$1
++NUM_INSTANCES_END=$2
++OUT_SHIFT=$3
++batch=128
++CORES_PER_INST=1
++mkdir -p results
++for (( i=${NUM_INSTANCES} ; i < ${NUM_INSTANCES_END}; i++ ))
++do
++    numactl -C$((${i} - ${NUM_INSTANCES})) --localalloc python script/train.py --mode=test --advanced --slice_id=${i} --batch_size=$batch --num-inter-threads=1 --num-intra-threads=1 2>results/result_infer_${batch}_$((${i}+${OUT_SHIFT}))_err.txt >results/result_infer_${batch}_$((${i}+${OUT_SHIFT})).txt &
++done
+diff --git a/script/adv_data_iterator.py b/script/adv_data_iterator.py
+new file mode 100644
+index 0000000..e3ae7d5
+--- /dev/null
++++ b/script/adv_data_iterator.py
+@@ -0,0 +1,145 @@
++import numpy
++import json
++import pickle as pkl
++import random
++
++import gzip
++
++import shuffle
++
++def unicode_to_utf8(d):
++    return dict((key, value) for (key,value) in d.items())
++
++def load_dict(filename):
++    try:
++        with open(filename, 'rb') as f:
++            return unicode_to_utf8(json.load(f))
++    except:
++        with open(filename, 'rb') as f:
++            data = pkl.load(f)
++            if isinstance(data, dict):
++                return unicode_to_utf8(pkl.load(f))
++            return data
++
++def fopen(filename, mode='r'):
++    if filename.endswith('.gz'):
++        return gzip.open(filename, mode)
++    return open(filename, mode)
++
++
++class AdvDataIterator:
++
++    def __init__(self, source,
++                 uid_voc,
++                 mid_voc,
++                 cat_voc,
++                 batch_size=128,
++                 maxlen=100,
++                 skip_empty=False,
++                 shuffle_each_epoch=False,
++                 sort_by_length=True,
++                 max_batch_size=20,
++                 minlen=None):
++        if shuffle_each_epoch:
++            self.source_orig = source
++            self.source = shuffle.main(self.source_orig, temporary=True)
++        else:
++            self.source = fopen(source, 'r')
++        self.source_dicts = []
++        for source_dict in [uid_voc, mid_voc, cat_voc]:
++            self.source_dicts.append(load_dict(source_dict))
++
++        self.batch_size = batch_size
++        self.maxlen = maxlen
++        self.minlen = minlen
++        self.skip_empty = skip_empty
++
++        self.n_uid = self.source_dicts[0]
++        self.n_mid = self.source_dicts[1]
++        self.n_cat = self.source_dicts[2]
++
++        self.shuffle = shuffle_each_epoch
++        self.sort_by_length = sort_by_length
++
++        self.source_buffer = []
++        self.k = batch_size * max_batch_size
++
++        self.end_of_data = False
++
++    def get_n(self):
++        return self.n_uid, self.n_mid, self.n_cat
++
++    def __iter__(self):
++        return self
++
++    def reset(self):
++        if self.shuffle:
++            self.source= shuffle.main(self.source_orig, temporary=True)
++        else:
++            self.source.seek(0)
++
++    def next(self):
++        return self.__next__()
++
++    def __next__(self):
++        if self.end_of_data:
++            self.end_of_data = False
++            self.reset()
++            raise StopIteration
++
++        source = []
++        target = []
++
++        # load next batch and sort batch by mid hist len
++        if len(self.source_buffer) == 0:
++            for k_ in range(self.k):
++                ss = self.source.readline()
++                if ss == "":
++                    break
++                self.source_buffer.append(ss.strip("\n").split("\t"))
++
++            # sort by  history behavior length
++            if self.sort_by_length:
++                his_length = numpy.array([len(s[4].split("")) for s in self.source_buffer])
++                tidx = his_length.argsort()
++
++                _sbuf = [self.source_buffer[i] for i in tidx]
++                self.source_buffer = _sbuf
++            else:
++                self.source_buffer.reverse()
++
++        # if there is no next batch
++        if len(self.source_buffer) == 0:
++            self.end_of_data = False
++            self.reset()
++            raise StopIteration
++
++        try:
++
++            # actual work here
++            while True:
++
++                # read from source file and map to word index
++                try:
++                    ss = self.source_buffer.pop()
++                except IndexError:
++                    # end of file
++                    break
++
++                # split ss hist colums
++                source.append(
++                    [ss[1], ss[2], ss[3], ss[4].split(""), ss[5].split(""),
++                    [x.split("|") for x in ss[6].split("")],
++                    [x.split("|") for x in ss[7].split("")]])
++                target.append([float(ss[0]), 1-float(ss[0])])
++
++                if len(source) >= self.batch_size or len(target) >= self.batch_size:
++                    break
++        except IOError:
++            self.end_of_data = True
++
++        # all sentence pairs in maxibatch filtered out because of length
++        if len(source) == 0 or len(target) == 0:
++            source, target = self.next()
++
++        return source, target
+diff --git a/script/model.py b/script/model.py
 index c22edf6..7ed60ab 100644
---- a/modelzoo/dien/train/ai-matrix/script/model.py
-+++ b/modelzoo/dien/train/ai-matrix/script/model.py
+--- a/script/model.py
++++ b/script/model.py
 @@ -1,5 +1,6 @@
  import tensorflow as tf
  from tensorflow.python.ops.rnn_cell import GRUCell
@@ -424,10 +473,10 @@ index c22edf6..7ed60ab 100644
  
  
  class Model_DIN_V2_Gru_Vec_attGru(Model):
-diff --git a/modelzoo/dien/train/ai-matrix/script/rnn.py b/modelzoo/dien/train/ai-matrix/script/rnn.py
+diff --git a/script/rnn.py b/script/rnn.py
 index dc61b74..8c3c616 100644
---- a/modelzoo/dien/train/ai-matrix/script/rnn.py
-+++ b/modelzoo/dien/train/ai-matrix/script/rnn.py
+--- a/script/rnn.py
++++ b/script/rnn.py
 @@ -668,6 +668,12 @@ def _dynamic_rnn_loop(cell,
      ValueError: If the input depth cannot be inferred via shape inference
        from the inputs.
@@ -452,10 +501,10 @@ index dc61b74..8c3c616 100644
      emit_ta = emit_ta.write(time, emit)
      # If any new minibatch entries are marked as finished, mark these.
      finished = tf.logical_or(finished, next_finished)
-diff --git a/modelzoo/dien/train/ai-matrix/script/train.py b/modelzoo/dien/train/ai-matrix/script/train.py
+diff --git a/script/train.py b/script/train.py
 index 2cd436a..c0f9390 100644
---- a/modelzoo/dien/train/ai-matrix/script/train.py
-+++ b/modelzoo/dien/train/ai-matrix/script/train.py
+--- a/script/train.py
++++ b/script/train.py
 @@ -1,5 +1,13 @@
 +import os
 +os.environ['KMP_AFFINITY'] = 'granularity=fine,verbose,compact,1,0'
@@ -1275,10 +1324,10 @@ index 2cd436a..c0f9390 100644
          print('do nothing...')
 -
 -
-diff --git a/modelzoo/dien/train/ai-matrix/script/utils.py b/modelzoo/dien/train/ai-matrix/script/utils.py
+diff --git a/script/utils.py b/script/utils.py
 index 51150d6..8750618 100644
---- a/modelzoo/dien/train/ai-matrix/script/utils.py
-+++ b/modelzoo/dien/train/ai-matrix/script/utils.py
+--- a/script/utils.py
++++ b/script/utils.py
 @@ -1,12 +1,11 @@
  import tensorflow as tf
  from tensorflow.python.ops.rnn_cell import *
@@ -1322,3 +1371,14 @@ index 51150d6..8750618 100644
      return output
  
  def self_attention(facts, ATTENTION_SIZE, mask, stag='null'):
+diff --git a/start_service.sh b/start_service.sh
+new file mode 100755
+index 0000000..73003ef
+--- /dev/null
++++ b/start_service.sh
+@@ -0,0 +1,5 @@
++source /etc/profile.d/spark-env.sh
++/etc/init.d/ssh start
++$HADOOP_HOME/sbin/start-dfs.sh
++$SPARK_HOME/sbin/start-master.sh
++$SPARK_HOME/sbin/start-worker.sh spark://`hostname`:7077
