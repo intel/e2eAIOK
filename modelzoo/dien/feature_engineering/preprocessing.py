@@ -389,14 +389,14 @@ def main(settings):
     meta_info.append(f"uid_voc: {original_folder}/uid_voc.pkl")
     meta_info.append(f"mid_voc: {original_folder}/mid_voc.pkl")
     meta_info.append(f"cat_voc: {original_folder}/cat_voc.pkl")
-    with open(f"{original_folder}/meta.ymal", "w") as f:
+    with open(f"{original_folder}/meta.yaml", "w") as f:
         f.write("\n".join(meta_info) + "\n")
 
     scala_udf_jars = f"{pyrecdp.__path__[0]}/ScalaProcessUtils/target/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
 
     ##### 1. Start spark and initialize data processor #####
     t0 = timer()
-    try:
+    if settings.standalone:
         spark = SparkSession.builder.master(f'spark://{hname}:7077')\
             .appName("dien_data_process")\
             .config("spark.driver.memory", "20G")\
@@ -409,12 +409,13 @@ def main(settings):
             .config("spark.executor.extraClassPath", f"{scala_udf_jars}")\
             .getOrCreate()
         spark.sparkContext.setLogLevel("ERROR")
-    except:
+    else:
         spark = None
 
     # 1.1 prepare dataFrames
     # 1.2 create RecDP DataProcessor
-    proc = DataProcessor(spark, path_prefix, current_path=current_path, shuffle_disk_capacity="1200GB", spark_mode='standalone')
+    spark_mode = "standalone" if settings.standalone else "local"
+    proc = DataProcessor(spark, path_prefix, current_path=current_path, shuffle_disk_capacity="1200GB", spark_mode=spark_mode)
     spark = proc.spark
     t1 = timer()
     print(f"start spark process took {(t1 - t0)} secs")
@@ -554,6 +555,7 @@ def parse_args(args):
     parser.add_argument('--train', action='store_true', help='target data to process')
     parser.add_argument('--test', action='store_true', help='target data to process')
     parser.add_argument('--infer', action='store_true', help='target data to process')
+    parser.add_argument('--standalone', action='store_true', help='use spark standalone mode')
 
     return parser.parse_args(args)
 
