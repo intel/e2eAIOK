@@ -34,7 +34,7 @@ class RNNTAdvisor(BaseModelAdvisor):
         self.dataset_meta_path = dataset_meta_path
         self.parse_meta_file(self.dataset_meta_path)
         self.saved_path = self.params['save_path']
-        self.train_python = "/opt/intel/oneapi/intelpython/latest/envs/pytorch-1.10.0/bin/python"
+        self.train_python = "/opt/intel/oneapi/intelpython/latest/envs/pytorch/bin/python"
         self.train_script = "/home/vmagent/app/e2eaiok/modelzoo/rnnt/pytorch/train.py"
 
     def init_default_params(self):
@@ -228,7 +228,7 @@ class RNNTAdvisor(BaseModelAdvisor):
         cmd = f"{self.train_python} -m intel_extension_for_pytorch.cpu.launch --distributed --nproc_per_node={ppn} --nnodes={len(hosts)} --hostfile hosts "
         cmd += f"{self.train_script} "
         cmd += f"--output_dir {args['model_saved_path']} "
-        cmd += f"--dist --dist_backend ccl "
+        cmd += f"--dist --dist_backend gloo "
         cmd += f"--batch_size {args['train_batch_size']} "
         cmd += f"--val_batch_size {args['eval_batch_size']} "
         cmd += f"--lr {args['model_parameter']['tuned_parameters']['learning_rate']} "

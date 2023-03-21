@@ -2,7 +2,7 @@
 FROM ubuntu:18.04
 
 WORKDIR /root/
-RUN apt-get update -y && apt-get install -y openjdk-8-jre build-essential cmake wget git libunwind-dev openssh-server sshpass vim
+RUN apt-get update -y && apt-get install -y openjdk-8-jre build-essential cmake wget git libunwind-dev openssh-server sshpass
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-py37_4.12.0-Linux-x86_64.sh -O ~/miniconda.sh && /bin/bash ~/miniconda.sh -b -p /opt/intel/oneapi/intelpython/latest
 ENV PATH /opt/intel/oneapi/intelpython/latest/condabin:$PATH
 RUN yes | conda create -n pytorch_mlperf python=3.7
