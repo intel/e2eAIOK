@@ -502,25 +502,18 @@ index dc61b74..8c3c616 100644
      # If any new minibatch entries are marked as finished, mark these.
      finished = tf.logical_or(finished, next_finished)
 diff --git a/script/train.py b/script/train.py
-index 2cd436a..c0f9390 100644
+index 2cd436a..9e73c3a 100644
 --- a/script/train.py
 +++ b/script/train.py
-@@ -1,5 +1,13 @@
+@@ -1,5 +1,6 @@
 +import os
-+os.environ['KMP_AFFINITY'] = 'granularity=fine,verbose,compact,1,0'
-+os.environ['OMP_NUM_THREADS'] = '4'
-+os.environ['HOROVOD_CPU_OPERATIONS'] = 'CCL'
-+os.environ['CCL_WORKER_COUNT'] = '1'
-+os.environ['CCL_WORKER_AFFINITY'] = '0, 32'
-+os.environ['HOROVOD_THREAD_AFFINITY'] = '1, 33'
-+os.environ['I_MPI_PIN_PROCESSOR_EXCLUDE_LIST'] = '0, 1, 32, 33'
 +import pickle
  import numpy
 -from data_iterator import DataIterator
  import tensorflow as tf
  from model import *
  import time
-@@ -8,26 +16,69 @@ import sys
+@@ -8,26 +9,74 @@ import sys
  from utils import *
  
  import argparse
@@ -566,9 +559,14 @@ index 2cd436a..c0f9390 100644
  
 +if args.embedding_device == 'cpu':
 +    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-+    os.environ["HOROVOD_CPU_OPERATIONS"] = "CCL"
 +    os.environ["HOROVOD_CCL_CACHE"] = "1"
-+    #os.environ["OMP_NUM_THREADS"] = "22"
++    os.environ['KMP_AFFINITY'] = 'granularity=fine,verbose,compact,1,0'
++    os.environ['OMP_NUM_THREADS'] = '4'
++    os.environ['HOROVOD_CPU_OPERATIONS'] = 'CCL'
++    os.environ['CCL_WORKER_COUNT'] = '1'
++    os.environ['CCL_WORKER_AFFINITY'] = '0, 32'
++    os.environ['HOROVOD_THREAD_AFFINITY'] = '1, 33'
++    os.environ['I_MPI_PIN_PROCESSOR_EXCLUDE_LIST'] = '0, 1, 32, 33'
 +    try:
 +        import horovod.tensorflow as hvd
 +        hvd_size = hvd.size()
@@ -599,7 +597,7 @@ index 2cd436a..c0f9390 100644
      # x: a list of sentences
      lengths_x = [len(s[4]) for s in input]
      seqs_mid = [inp[3] for inp in input]
-@@ -61,16 +112,17 @@ def prepare_data(input, target, maxlen = None, return_neg = False):
+@@ -61,16 +110,17 @@ def prepare_data(input, target, maxlen = None, return_neg = False):
  
          if len(lengths_x) < 1:
              return None, None, None, None
@@ -621,7 +619,7 @@ index 2cd436a..c0f9390 100644
      if args.data_type == 'FP32':
          data_type = 'float32'
      elif args.data_type == 'FP16':
-@@ -95,325 +147,494 @@ def prepare_data(input, target, maxlen = None, return_neg = False):
+@@ -95,325 +145,494 @@ def prepare_data(input, target, maxlen = None, return_neg = False):
      else:
          return uids, mids, cats, mid_his, cat_his, mid_mask, numpy.array(target), numpy.array(lengths_x)
  
