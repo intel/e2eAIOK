@@ -7,7 +7,8 @@ get_original_model () {
 apply_patch () {
     cp dien.patch ai-matrix
     cd ai-matrix
-    git init --initial-branch=main
+    git init
+    git checkout -b trunk
     git add *
     git apply dien.patch
     cd ..
