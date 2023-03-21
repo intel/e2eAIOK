@@ -16,7 +16,7 @@ class BERTAdvisor(BaseModelAdvisor):
             level=logging.INFO,
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         self.logger = logging.getLogger('sigopt')
-        self.python_path = "/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/"
+        self.python_path = self.params['python_path'] if "python_path" in self.params else "/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin"
         self.train_python = f"{self.python_path}/python"
         self.train_script = os.path.join(os.getcwd(),"modelzoo/bert/benchmarks/launch_benchmark.py")
         self.train_path = train_path
