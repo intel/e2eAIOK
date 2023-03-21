@@ -44,7 +44,8 @@ class BERTTrainer(TorchTrainer):
                 from e2eAIOK.ModelAdapter.engine_core import transferrable_model
                 from e2eAIOK.ModelAdapter.engine_core.distiller import kd
             except Exception:
-                self.logger.info("Please pre-check and install the e2eAIOK-ModelAdaptor to use the transfer learning features")
+                self.logger.info("Since you're using distiller feature, please use below cmdline to install e2eAIOK-ModelAdaptor\n \
+                                 pip install e2eAIOK-ModelAdaptor")
                 raise ModuleNotFoundError
             try:
                 self.teacher_model = ModelBuilderNLPDeNas(self.cfg)._init_extra_model(self.cfg.teacher_model, self.cfg.teacher_model_structure)
@@ -139,3 +140,4 @@ class BERTTrainer(TorchTrainer):
             if self.is_stop:
                 break
         self._post_process()
+        
