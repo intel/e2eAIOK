@@ -5,7 +5,7 @@ try:
 except:
     libpath = str(Path(__file__).parent.resolve())
     spark_home_dir = f"{libpath}/spark-3.2.1-bin-hadoop3.2"
-    py4j_path = f"spark_home_dir/python/lib/py4j-0.10.9.3-src.zip"
+    py4j_path = f"{spark_home_dir}/python/lib/py4j-0.10.9.3-src.zip"
     os.environ["SPARK_HOME"]=spark_home_dir
     # Add the PySpark classes to the Python path:
     os.environ["PYTHONPATH"]=os.environ["SPARK_HOME"]+"/python/:"+os.environ["PYTHONPATH"]+":"+py4j_path

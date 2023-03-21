@@ -1,7 +1,7 @@
 from .base_api import base_api
 
 class nyc_taxi(base_api):
-    def __init__(self, scale = 'test'):
+    def __init__(self, scale = 'full'):
         super().__init__()
         self.scale = scale
         if scale == 'test':

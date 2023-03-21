@@ -28,6 +28,7 @@ def create_spark_context():
                 .config("spark.sql.execution.arrow.pyspark.enabled","true")\
                 .config("spark.sql.parquet.int96RebaseModeInWrite","CORRECTED")\
                 .getOrCreate()
+    spark.sparkContext.setLogLevel("ERROR")
     # try:
     #     spark = SparkSession.builder.master(f'spark://{hname}:7077')\
     #             .appName("pyrecdp_spark_standalone").getOrCreate()

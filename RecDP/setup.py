@@ -50,5 +50,7 @@ setuptools.setup(
         "distro",
         "pyspark==3.3.1",
         "lightgbm",
-        "jupyter"
+        "jupyter",
+        "docx2txt",
+        "openpyxl"
         ])
