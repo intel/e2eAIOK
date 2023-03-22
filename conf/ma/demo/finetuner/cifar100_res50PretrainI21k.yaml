@@ -3,13 +3,13 @@ experiment:
   tag: "cifar100_res50_PretrainI21k"
   strategy: "OnlyFinetuneStrategy"
 
-output_dir: ".data/"
+output_dir: "./data/"
 train_epochs: 1
 enable_ipex: True
 
 ### dataset
 data_set: "cifar100"
-data_path:  ".data/"
+data_path:  "./data/"
 num_workers: 4
 input_size: 112
 
@@ -19,7 +19,7 @@ model_type: "resnet50"
 ## finetuner
 finetuner:
     type: "Basic"
-    pretrain: '.data/resnet50_miil_21k.pth'
+    pretrain: './data/resnet50_miil_21k.pth'
     pretrained_num_classes: 11221
     finetuned_lr: 0.00445
     frozen: False
