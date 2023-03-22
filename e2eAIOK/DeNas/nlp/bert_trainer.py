@@ -39,14 +39,9 @@ class BERTTrainer(TorchTrainer):
         
         #whether to use the KD from MA
         if 'teacher_model' in self.cfg and self.cfg.teacher_model != 'None':
-            try:
-                from e2eAIOK.DeNas.nlp.model_builder_denas_nlp import ModelBuilderNLPDeNas
-                from e2eAIOK.ModelAdapter.engine_core import transferrable_model
-                from e2eAIOK.ModelAdapter.engine_core.distiller import kd
-            except Exception:
-                self.logger.info("Since you're using distiller feature, please use below cmdline to install e2eAIOK-ModelAdaptor\n \
-                                 pip install e2eAIOK-ModelAdaptor")
-                raise ModuleNotFoundError
+            from e2eAIOK.DeNas.nlp.model_builder_denas_nlp import ModelBuilderNLPDeNas
+            from e2eAIOK.ModelAdapter.engine_core import transferrable_model
+            from e2eAIOK.ModelAdapter.engine_core.distiller import kd
             try:
                 self.teacher_model = ModelBuilderNLPDeNas(self.cfg)._init_extra_model(self.cfg.teacher_model, self.cfg.teacher_model_structure)
             except Exception:
