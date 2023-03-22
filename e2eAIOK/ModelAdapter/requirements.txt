@@ -10,4 +10,5 @@ nnunet
 transformers
 thop
 wandb
+git+https://github.com/thuml/Transfer-Learning-Library@master#egg=tllib
 intel_extension_for_pytorch==1.12.100 -f https://developer.intel.com/ipex-whl-stable    
