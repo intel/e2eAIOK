@@ -11,8 +11,6 @@ from e2eAIOK.DeNas.module.nlp.tokenization import BertTokenizer, whitespace_toke
 from e2eAIOK.common.trainer.data.data_builder_nlp import DataBuilderNLP, DataProcessor, InputExample
 import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 
-from e2eAIOK.ModelAdapter.engine_core.distiller.utils import logits_wrap_dataset
-
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',
                     level=logging.INFO)
@@ -28,7 +26,13 @@ class DataBuilderSQuAD(DataBuilderNLP):
         dataset_train, train_examples, train_dataset, labels = build_dataset(is_train=True, args=self.cfg)
         dataset_val, val_examples, val_dataset, val_features, tokenizer = build_dataset(is_train=False, args=self.cfg)
         if 'teacher_model' in self.cfg and self.cfg.teacher_model != 'None':
-            dataset_train = logits_wrap_dataset(dataset_train, self.cfg.logits_dir, num_classes=self.cfg.num_classes, save_logits=self.cfg.is_saving_logits)
+            try:
+                from e2eAIOK.ModelAdapter.engine_core.distiller.utils import logits_wrap_dataset
+                dataset_train = logits_wrap_dataset(dataset_train, self.cfg.logits_dir, num_classes=self.cfg.num_classes, save_logits=self.cfg.is_saving_logits)
+            except Exception:
+                self.logger.info("Since you're using distiller feature, please use below cmdline to install e2eAIOK-ModelAdaptor\n \
+                    pip install e2eAIOK-ModelAdaptor")
+                raise ModuleNotFoundError
         self.dataset_train = dataset_train
         self.dataset_val = dataset_val
         return (train_examples, val_examples, val_dataset, val_features, tokenizer)
