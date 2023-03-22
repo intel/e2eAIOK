@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import copy
 
 import timeit
 
@@ -15,7 +16,9 @@ import timeit
 #         elif isinstance(value, Operation):
 #             print('\t' * (indent+1) + str(value))
 
-
+def deepcopy(dict_df):
+    return copy.deepcopy(dict_df)
+    
 def get_sample_indices_pd(indices, target_num_rows):
     if isinstance(indices, pd.DataFrame):
         indices = indices.notna()

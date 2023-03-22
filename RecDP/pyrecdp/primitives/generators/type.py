@@ -8,13 +8,15 @@ import copy
 
 def try_category(s):
     if pdt.is_categorical_dtype(s) and not pdt.is_bool_dtype(s):
-        return False
+        return -1
     n_unique = s.nunique()
     total_len = len(s)
-    threshold = (total_len / 5) if (total_len / 5) < 10000 else 10000
+    threshold = (total_len / 5)
     if 1 <= n_unique <= threshold:
-        return True
-    return False
+        if n_unique < 10:
+            return 2
+        return 1        
+    return -1
 
 def try_datetime(s):
     if pdt.is_datetime64_any_dtype(s):
@@ -63,10 +65,14 @@ class TypeInferFeatureGenerator(super_class):
             config = {}
             if try_datetime(df[feature_name]):
                 config['is_datetime'] = True
-            elif try_category(df[feature_name]):
-                config['is_categorical'] = True
-            if try_numeric(df[feature_name]):
-                config['is_numeric'] = True
+            else:
+                ret = try_category(df[feature_name])
+                if ret > 0:
+                    config['is_categorical'] = True
+                    if ret == 2:
+                        config['is_onehot'] = True
+                elif try_numeric(df[feature_name]):
+                    config['is_numeric'] = True
             
             pa_field.copy_config_from(config)
             ret_pa_fields.append(pa_field)

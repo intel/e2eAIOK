@@ -4,6 +4,7 @@ from .dataframe import *
 from pyspark.sql import DataFrame as SparkDataFrame
 from pyspark import RDD as SparkRDD
 from pyrecdp.core.utils import dump_fix
+from IPython.display import display
 
 class Operation:
     def __init__(self, idx, children, output, op, config):
@@ -38,6 +39,7 @@ class Operation:
         from .nlp import BertDecodeOperation, TextFeatureGenerator
         from .type import TypeInferOperation
         from .tuple import TupleOperation
+        from .custom import CustomOperation
         from pyrecdp.primitives.estimators.lightgbm import LightGBM
 
         operations_ = {
@@ -54,7 +56,8 @@ class Operation:
             'bert_decode': BertDecodeOperation,
             'text_feature': TextFeatureGenerator,
             'type_infer': TypeInferOperation,
-            'lightgbm': LightGBM
+            'lightgbm': LightGBM,
+            'custom_operator': CustomOperation
         }
 
         if self.op in operations_:
@@ -77,20 +80,19 @@ class BaseOperation:
     def __repr__(self) -> str:
         return self.op.op
         
-    def execute_pd(self, pipeline):
-        if self.cache is not None:
+    def execute_pd(self, pipeline, no_cache = False):
+        if self.cache is not None and not no_cache:
             return
         _proc = self.get_function_pd()
         if not self.op.children or len(self.op.children) == 0:
-            self.cache = _proc()
+            pass
         else:
             child_output = pipeline[self.op.children[0]].cache
             self.cache = _proc(child_output)
             
-    def execute_spark(self, pipeline, rdp):
-        if self.cache is not None:
+    def execute_spark(self, pipeline, rdp, no_cache = False):
+        if self.cache is not None and not no_cache:
             return
-
         _convert = None
         if not self.op.children or len(self.op.children) == 0:
             pass

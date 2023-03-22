@@ -56,7 +56,30 @@ sh start-jupyter.sh
 ## run
 ![nyc taxi demo](https://github.com/intel-innersource/frameworks.bigdata.AIDK/assets/4355494/03d8c2fe-de47-41f9-9fef-8513bc4aaf42)
 
+## modify pipeline (add user defined function or remove operation)
+``` python
+def filter_with_cond(df):
+    df = df[df['Year'] <= 2018]
+    return df
+operation = {
+    "children": [6], # will to append this new op
+    "next": [7], # who will be connected to this new op
+    "inline_function": filter_with_cond, # function
+}
+pipeline.add_operation(operation)
+```
+``` python
+operation = {
+    "idx": 6, # OP id to be deleted
+    "next": [10] # who is connected to the to_be_deleted op
+}
+pipeline.delete_operation(operation)
+```
+
 ## export pipeline
+``` python
+pipeline.export(file_path = "exported_pipeline.json")
+```
 ``` json
 {
     "0": {

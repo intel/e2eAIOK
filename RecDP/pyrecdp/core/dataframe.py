@@ -28,8 +28,8 @@ class DataFrameAPI:
             from pandas_flavor import register_dataframe_method
             @register_dataframe_method
             def may_sample(df):
-                if df.shape[0] > 10000:
-                    return df.sample(n=10000, random_state = 123)
+                if df.shape[0] > 100000:
+                    return df.sample(n=100000, random_state = 123)
                 else:
                     return df
             return df

@@ -5,9 +5,10 @@ import pandas as pd
 import logging
 import graphviz
 import json
-from pyrecdp.core.utils import Timer, sample_read
+from pyrecdp.core.utils import Timer, sample_read, deepcopy
 from pyspark.sql import DataFrame as SparkDataFrame
 from pyspark import RDD as SparkRDD
+from IPython.display import display
 
 logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', level=logging.ERROR, datefmt='%I:%M:%S')
 logger = logging.getLogger(__name__)
@@ -107,7 +108,88 @@ class BasePipeline:
             executable_pipeline[idx] = self.pipeline[idx].instantiate()
             executable_sequence.append(executable_pipeline[idx])
         return executable_pipeline, executable_sequence
+    
+    def add_operation(self, config):
+        # check if below keys are existing
+        # children: who is its child
+        # next: who is will use this operation
+        # inline_function: the function to process data
+        example = """
+            def add_one_print(df):
+                df['col_1'] = df['col_1'] + 1
+                display(df)
+                return df
+            {
+                "children": [7],
+                "next": [8],
+                "inline_function": add_one_print,
+            }"""
+        try:
+            children = config["children"]
+            next = config["next"]
+            inline_function = config["inline_function"]
+        except:
+            raise ValueError(f"please follow this example to create customer operator: {example}")
+        if not isinstance(children, list):
+            children = [children]
+        if not isinstance(next, list):
+            next = [next]
+        if len(children) > 1 and len(next) > 1:
+            raise NotImplementedError("Current we didn't support add operation to case that children and next are all multiple operators.")
         
+        # get current max operator id
+        max_idx = self.pipeline.get_max_idx()
+        cur_idx = max_idx + 1
+        
+        config = {
+            "func_name": inline_function,
+        }
+        self.pipeline[cur_idx] = Operation(
+            cur_idx, children, output = None, op = "custom_operator", config = config)
+        for idx in next:
+            # replace next's children with new added operator
+            children_in_next = self.pipeline[idx].children
+            found = {}
+            for id, child in enumerate(children_in_next):
+                if child in children:
+                    found[id] = cur_idx
+            for k, v in found.items():
+                self.pipeline[idx].children[k] = v
+        display(self.plot())
+
+    def delete_operation(self, config):
+        example = """
+            config = {
+                "idx": 7,
+                "next": [8]
+            }"""
+        try:
+            cur_idx = config["idx"]
+            next = config["next"]
+        except:
+            raise ValueError(f"please follow this example to create customer operator: {example}")
+        if not isinstance(next, list):
+            next = [next]
+            
+        children = self.pipeline[cur_idx].children
+        if len(children) > 1 and len(next) > 1:
+            raise NotImplementedError("Current we didn't support add operation to case that children and next are all multiple operators.")
+        
+        if len(next) == 1:
+            self.pipeline[next[0]].children = children
+        else:            
+            for idx in next:
+                # replace next's children with new added operator
+                children_in_next = self.pipeline[idx].children
+                found = {}
+                for id, child in enumerate(children_in_next):
+                    if child == cur_idx:
+                        found[id] = children[0]
+                for k, v in found.items():
+                    self.pipeline[idx].children[k] = v
+        del self.pipeline[cur_idx]
+        display(self.plot())        
+           
     def plot(self):
         f = graphviz.Digraph()
         edges = []
@@ -134,7 +216,7 @@ class BasePipeline:
             return input
 
         for node_id, config in self.pipeline.items():
-            nodes.append([str(node_id), f"{config.op} |{add_escape(str(add_break(config.config)))}"])
+            nodes.append([str(node_id), f"{node_id}:{config.op} |{add_escape(str(add_break(config.config)))}"])
             if config.children:
                 for src_id in config.children:
                     edges.append([str(src_id), str(node_id)])
@@ -147,25 +229,26 @@ class BasePipeline:
     def to_chain(self):
         return self.pipeline.convert_to_node_chain()
         
-    def execute(self, engine_type = "pandas"):
+    def execute(self, engine_type = "pandas", no_cache = False):
         # prepare pipeline
         executable_pipeline, executable_sequence = self.create_executable_pipeline()
+        print(executable_pipeline)
 
         # execute
         if engine_type == 'pandas':
             with Timer(f"execute with pandas"):
                 for op in executable_sequence:
                     if isinstance(op, DataFrameOperation):
-                        op.set(self.dataset)
+                        op.set(deepcopy(self.dataset))
                     with Timer(f"execute {op}"):
-                        op.execute_pd(executable_pipeline)
+                        op.execute_pd(executable_pipeline, no_cache)
             df = executable_sequence[-1].cache
         elif engine_type == 'spark':
             for op in executable_sequence:
                 if isinstance(op, DataFrameOperation):
-                    op.set(self.dataset)
+                    op.set(deepcopy(self.dataset))
                 print(f"append {op}")
-                op.execute_spark(executable_pipeline, self.rdp)
+                op.execute_spark(executable_pipeline, self.rdp, no_cache)
             ret = executable_sequence[-1].cache
             if isinstance(ret, SparkDataFrame):
                 with Timer(f"execute with spark"):
@@ -182,10 +265,10 @@ class BasePipeline:
         # fetch result
         return df
 
-    def fit_transform(self, engine_type = 'pandas', *args, **kwargs):
+    def fit_transform(self, engine_type = 'pandas', no_cache = False, *args, **kwargs):
         if engine_type == "spark":
             self.rdp = SparkDataProcessor()
-        ret = self.execute(engine_type)
+        ret = self.execute(engine_type, no_cache)
         if engine_type == "spark":
             del self.rdp 
         return ret  
