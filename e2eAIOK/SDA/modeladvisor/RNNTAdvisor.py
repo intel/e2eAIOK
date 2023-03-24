@@ -34,8 +34,8 @@ class RNNTAdvisor(BaseModelAdvisor):
         self.dataset_meta_path = dataset_meta_path
         self.parse_meta_file(self.dataset_meta_path)
         self.saved_path = self.params['save_path']
-        self.train_python = "/opt/intel/oneapi/intelpython/latest/envs/pytorch/bin/python"
-        self.train_script = "/home/vmagent/app/e2eaiok/modelzoo/rnnt/pytorch/train.py"
+        self.train_python = self.params['python_path'] if 'python_path' in self.params else "/opt/intel/oneapi/intelpython/latest/envs/pytorch/bin/python"
+        self.train_script = self.params['train_path'] if 'train_path' in self.params else "/home/vmagent/app/e2eaiok/modelzoo/rnnt/pytorch/train.py"
 
     def init_default_params(self):
         self.params[
