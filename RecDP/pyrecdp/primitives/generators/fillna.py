@@ -9,7 +9,7 @@ def get_default_value(at: SeriesSchema):
     elif at.is_numeric:
         return -1
     elif at.is_datetime:
-        return pd.Timestamp(0)
+        return 0
     elif at.is_string:
         return ""
     return None

@@ -169,7 +169,9 @@ pipeline.export(file_path = "exported_pipeline.json")
 
 
 ## Quick Example
-* [nyc taxi fare](examples/notebooks/autofe/demo/nyc_taxi_workflow_train.ipynb) - geographic, datetime feature engineering, lgbm - [colab_notebook](https://colab.research.google.com/drive/1Ob9-JwwUmYdXoFMq6rR7N1pBjN7-c1_0?usp=sharing)
+* [nyc taxi fare](examples/notebooks/autofe/demo/nyc_taxi_workflow_train.ipynb) - geographic, datetime, lgbm regression - [colab_notebook](https://colab.research.google.com/drive/1Ob9-JwwUmYdXoFMq6rR7N1pBjN7-c1_0?usp=sharing)
+
+* [IBM Card Transaction Fraud Detect](examples/notebooks/autofe/demo/fraud_detect_train.ipynb) - onehot encode, lgbm, binary classification
 
 * [twitter recsys](examples/notebooks/autofe/demo/twitter_workflow_test.ipynb) - text nlp, datetime feature engineering - [colab_notebook](https://colab.research.google.com/drive/19gI4n8WqH9Oem9Vfanmb3JG0RDXnVKxP?usp=sharing) 
 

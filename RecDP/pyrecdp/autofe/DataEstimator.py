@@ -9,19 +9,19 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', level=loggin
 logger = logging.getLogger(__name__)
 
 class DataEstimator(BasePipeline):
-    def __init__(self, metrics, model_name, method = 'predict', model_file = None, dataset = None, label = None, data_pipeline = None):
+    def __init__(self, objective, metrics, model_name, method = 'predict', model_file = None, dataset = None, label = None, data_pipeline = None):
         if dataset and label:
             super().__init__(dataset, label)
             if isinstance(data_pipeline, DiGraph):
-                self.pipeline = copy.deepcopy(data_pipeline)
+                self.pipeline = data_pipeline
             elif isinstance(data_pipeline, str):
                 self.import_from_json(data_pipeline)
         else:
             if isinstance(data_pipeline, BasePipeline):
-                self.pipeline = copy.deepcopy(data_pipeline.pipeline)
+                self.pipeline = data_pipeline.pipeline
                 self.dataset = data_pipeline.dataset
                 self.rdp = data_pipeline.rdp
-                label = data_pipeline.y.name
+                label = data_pipeline.y.name if label is None else label
             else:
                 raise NotImplementedError(f"Unsupport input datapipeline is {data_pipeline}")
         if not label:
@@ -32,9 +32,8 @@ class DataEstimator(BasePipeline):
         cur_idx = max_idx + 1
         if model_name == 'lightgbm':
             if not model_file:
-                model_file = 'lightgbm_regression_'+label+'.mdl'
-            if metrics == 'rmse':
-                objective = 'regression'
+                model_file = f"lightgbm_{objective}_{metrics}_{label}.mdl"              
+                
         config = {'label': label, 'metrics': metrics, 'objective': objective, 'model_file': model_file, 'method': method}
         op = Operation(cur_idx, [leaf_idx], None, model_name, config)
         self.pipeline[cur_idx] = op

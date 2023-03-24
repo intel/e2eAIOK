@@ -209,7 +209,10 @@ class BasePipeline:
             if isinstance(input, dict):
                 input = [f"{k}: {add_break(v)}" for k, v in input.items()]
             if isinstance(input, list):
-                ret = ""
+                try_str = str(input)
+                if len(try_str) < 200:
+                    return try_str
+                ret = "" + "\l"
                 for line in input:
                     ret += str(add_break(line)) + "\l"
                 return ret
@@ -271,4 +274,5 @@ class BasePipeline:
         ret = self.execute(engine_type, no_cache)
         if engine_type == "spark":
             del self.rdp 
+            self.rdp = None
         return ret  

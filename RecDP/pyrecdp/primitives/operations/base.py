@@ -32,14 +32,14 @@ class Operation:
         from .merge import MergeOperation
         from .name import RenameOperation
         from .category import CategorifyOperation
-        from .datetime import DatetimeOperation
         from .drop import DropOperation
         from .fillna import FillNaOperation
+        from .featuretools_adaptor import FeaturetoolsOperation
         from .geograph import HaversineOperation
-        from .nlp import BertDecodeOperation, TextFeatureGenerator
         from .type import TypeInferOperation
         from .tuple import TupleOperation
         from .custom import CustomOperation
+        from .encode import OnehotEncodeOperation, ListOnehotEncodeOperation, TargetEncodeOperation
         from pyrecdp.primitives.estimators.lightgbm import LightGBM
 
         operations_ = {
@@ -48,22 +48,25 @@ class Operation:
             'merge': MergeOperation,
             'rename': RenameOperation,
             'categorify': CategorifyOperation,
-            'datetime_feature': DatetimeOperation,
             'drop': DropOperation,
             'fillna': FillNaOperation,
             'haversine': HaversineOperation,
             'tuple': TupleOperation,
-            'bert_decode': BertDecodeOperation,
-            'text_feature': TextFeatureGenerator,
             'type_infer': TypeInferOperation,
             'lightgbm': LightGBM,
+            'onehot_encode': OnehotEncodeOperation,
+            'list_onehot_encode': ListOnehotEncodeOperation,
+            'target_encode': TargetEncodeOperation,
             'custom_operator': CustomOperation
         }
 
         if self.op in operations_:
             return operations_[self.op](self)
         else:
-            raise NotImplementedError(f"operation {self.op} is not implemented.")
+            try:
+                return FeaturetoolsOperation(self)
+            except:
+                raise NotImplementedError(f"operation {self.op} is not implemented.")
  
     @staticmethod
     def load(idx, dump_dict):

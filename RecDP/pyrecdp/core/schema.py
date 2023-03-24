@@ -33,7 +33,6 @@ class SeriesSchema:
             from pandas.api.types import is_string_dtype
             from pandas.api.types import is_numeric_dtype
             from pandas.api.types import is_float_dtype
-            from pandas.api.types import is_int64_dtype
             from pandas.api.types import is_integer_dtype
             from pandas.api.types import is_datetime64_any_dtype
             from pandas.api.types import is_categorical_dtype
@@ -42,7 +41,6 @@ class SeriesSchema:
             self.config['is_string'] = is_string_dtype(in_type)
             self.config['is_numeric'] = is_numeric_dtype(in_type)
             self.config['is_float'] = is_float_dtype(in_type)
-            self.config['is_int64'] = is_int64_dtype(in_type)
             self.config['is_integer'] = is_integer_dtype(in_type)
             self.config['is_datetime'] = is_datetime64_any_dtype(in_type)
             self.config['is_categorical'] = is_categorical_dtype(in_type)
@@ -69,15 +67,15 @@ class SeriesSchema:
     
     def copy_config_from(self, config):
         for k, v in config.items():
-            if v:
+            if v is not False:
                 self.config[k] = v
         self.post_fix()
 
-    def dump(self):
-        return (self.name, list(k for k, v in self.config.items() if v))
+    def mydump(self):
+        return (self.name, list(k for k, v in self.config.items() if v is not False))
 
     def __repr__(self):
-        return f"{self.dump()}"
+        return f"{self.mydump()}"
    
     @property
     def dtype_str(self):
@@ -94,14 +92,14 @@ class SeriesSchema:
     @property
     def is_numeric(self):
         return 'is_numeric' in self.config and self.config['is_numeric']
+    
+    @property
+    def is_re_numeric(self):
+        return 'is_re_numeric' in self.config and self.config['is_re_numeric']
 
     @property
     def is_float(self):
         return 'is_float' in self.config and self.config['is_float']
-
-    @property
-    def is_int64(self):
-        return 'is_int64' in self.config and self.config['is_int64']
 
     @property
     def is_integer(self):
@@ -116,8 +114,16 @@ class SeriesSchema:
         return 'is_categorical' in self.config and self.config['is_categorical']
     
     @property
+    def is_onehot(self):
+        return 'is_onehot' in self.config and self.config['is_onehot'] is not False
+    
+    @property
     def is_list(self):
         return 'is_list' in self.config and self.config['is_list']
+    
+    @property
+    def is_list_string(self):
+        return 'is_list_string' in self.config and self.config['is_list_string'] is not False
 
     @property
     def is_categorical_and_string(self):

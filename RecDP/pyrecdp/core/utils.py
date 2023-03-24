@@ -44,15 +44,15 @@ def dump_fix(x):
     if isinstance(x, dict):
         for k, v in x.items():
             x[k] = dump_fix(v)
-    elif isinstance(x, list):
+    elif isinstance(x, list) or isinstance(x, np.ndarray):
         for idx in range(len(x)):
             x[idx] = dump_fix(x[idx])
     elif isinstance(x, type):
         x = (x.__module__, x.__name__)
     elif isinstance(x, tuple):
         x = (dump_fix(x[0]), dump_fix(x[1]))
-    elif hasattr(x, 'dump'):
-        x = x.dump()
+    elif hasattr(x, 'mydump'):
+        x = x.mydump()
     else:
         x = x
     return x

@@ -13,9 +13,10 @@ class FeaturetoolsOperation(BaseOperation):
         feature_in_out_map = copy.deepcopy(self.feature_in_out_map)
         def generate_ft_feature(df):
             for in_feat_name, ops in feature_in_out_map.items():
-                for op in ops:
-                    op_object = class_name_fix(op[1])()
-                    df[op[0]] = op_object(df[in_feat_name])
+                if in_feat_name in df.columns:
+                    for op in ops:
+                        op_object = class_name_fix(op[1])()
+                        df[op[0]] = op_object(df[in_feat_name])
             return df
         return generate_ft_feature
     

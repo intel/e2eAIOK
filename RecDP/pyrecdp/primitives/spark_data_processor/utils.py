@@ -24,7 +24,7 @@ def create_spark_context():
                 .config("spark.executorEnv.TF_CPP_MIN_LOG_LEVEL", "2")\
                 .config("spark.executorEnv.PYTHONPATH", pathlib)\
                 .config("spark.driver.memory", f"{total_mem}M")\
-                .config("spark.driver.maxResultSize","16g")\
+                .config("spark.driver.maxResultSize","64g")\
                 .config("spark.sql.execution.arrow.pyspark.enabled","true")\
                 .config("spark.sql.parquet.int96RebaseModeInWrite","CORRECTED")\
                 .getOrCreate()

@@ -13,13 +13,14 @@ class FeatureWrangler(BasePipeline):
     def __init__(self, dataset, label, supplementary_datasets = None, *args, **kwargs):
         super().__init__(dataset, label)
         self.data_profiler = [cls() for cls in feature_infer_list]
-        self.pre_feature = [cls() for cls in pre_feature_generator_list]
+        self.pre_feature = [cls() for cls in label_feature_generator_list]
         # If we provided multiple datasets in this workload
         self.generators.append([cls() for cls in pre_feature_generator_list])
         self.generators.append([cls() for cls in transformation_generator_list])
-        self.generators.append([cls() for cls in post_feature_generator_list])
+        self.generators.append([cls() for cls in pre_enocode_feature_generator_list])
         self.generators.append([cls() for cls in index_generator_list])
         self.generators.append([cls() for cls in encode_generator_list])
+        self.generators.append([cls() for cls in post_feature_generator_list])
         self.generators.append([cls(final = True) for cls in final_generator_list])
 
         self.fit_analyze()

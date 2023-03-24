@@ -10,9 +10,18 @@ class RenameFeatureGenerator(super_class):
         pa_schema = pipeline[children[0]].output
         is_useful = False
         for pa_field in pa_schema:
-            if '.' in pa_field.name:
-                self.renamed[pa_field.name] = pa_field.name.replace('.', '__')
+            feature_name = pa_field.name
+            if '.' in feature_name:
+                feature_name = feature_name.replace('.', '__')
                 is_useful = True
+            if ' ' in feature_name:
+                feature_name = feature_name.replace(' ', '_')
+                is_useful = True
+            if '?' in feature_name:
+                feature_name = feature_name.replace('?', '')
+                is_useful = True
+            if is_useful:
+                self.renamed[pa_field.name] = feature_name
         ret_schema = []
         for pa_field in pa_schema:
             if pa_field.name in self.renamed:
