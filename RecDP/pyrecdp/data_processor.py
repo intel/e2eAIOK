@@ -1,3 +1,4 @@
+from pyrecdp.utils import create_spark_context
 import uuid
 from pyrecdp.utils import *
 from pyspark.ml.feature import *
@@ -983,8 +984,12 @@ class CollapseByHist(Operation):
 
 
 class DataProcessor:
-    def __init__(self, spark, path_prefix="hdfs://", current_path="", shuffle_disk_capacity="unlimited", dicts_path="dicts", spark_mode='local', enable_gazelle=False):
+    def __init__(self, spark = None, path_prefix="hdfs://", current_path="", shuffle_disk_capacity="unlimited", dicts_path="dicts", spark_mode='local', enable_gazelle=False):
         self.ops = []
+        self.stop_spark_in_del = False
+        if not spark:
+            spark = create_spark_context()
+            self.stop_spark_in_del = True
         self.spark = spark
         self.uuid = uuid.uuid1()
         self.tmp_id = 0
@@ -1019,6 +1024,8 @@ class DataProcessor:
         print("per core memory size is %.3f GB and shuffle_disk maximum capacity is %.3f GB" % (self.per_core_memory_size * 1.0/(2**30), self.flush_threshold * 1.0/(2**30)))
 
     def __del__(self):
+        if self.stop_spark_in_del:
+            self.spark.stop()
         for tmp_file in self.tmp_materialzed_list:
             shutil.rmtree(tmp_file, ignore_errors=True)
 
