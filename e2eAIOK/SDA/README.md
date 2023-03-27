@@ -89,13 +89,13 @@ hydro_model.explain()
 ```
 
 ## use cases
-* [DLRM](http://vsr140:8891/notebooks/builtin/dlrm/DLRM_DEMO.ipynb) - [Readme](modelzoo/dlrm/README.md) - recsys, facebook, pytorch_mlperf
-* [DIEN](http://vsr140:8892/notebooks/builtin/dien/DIEN_DEMO.ipynb) - [Readme](modelzoo/dien/README.md) - recsys, alibaba, tensorflow
-* [WnD](http://vsr140:8892/notebooks/builtin/wnd/WND_DEMO.ipynb) - [Readme](modelzoo/WnD/README.md) - recsys, google, tensorflow
-* [RNNT](http://vsr140:8890/notebooks/builtin/rnnt/RNNT_DEMO.ipynb) - [Readme](modelzoo/rnnt/README.md) - speech recognition, pytorch
-* [RESNET](http://vsr140:8892/notebooks/builtin/resnet/RESNET_DEMO.ipynb) - [Readme](modelzoo/resnet/README.md) - computer vision, tensorflow
-* [BERT](http://vsr140:8892/notebooks/builtin/bert/BERT_DEMO.ipynb) - [Readme](modelzoo/bert/README.md) - Natual Language Processing, tensorflow
-* [MiniGO](http://sr141:8888/notebooks/demo/MiniGo_DEMO.ipynb) - [Readme](modelzoo/minigo/README.md) - minimalist engine modeled after AlphaGo Zero, tensorflow
+* [DLRM](http://vsr140:8891/notebooks/builtin/dlrm/DLRM_DEMO.ipynb) - [Readme](../../modelzoo/dlrm/README.md) - recsys, facebook, pytorch_mlperf
+* [DIEN](http://vsr140:8892/notebooks/builtin/dien/DIEN_DEMO.ipynb) - [Readme](../../modelzoo/dien/README.md) - recsys, alibaba, tensorflow
+* [WnD](http://vsr140:8892/notebooks/builtin/wnd/WND_DEMO.ipynb) - [Readme](../../modelzoo/WnD/README.md) - recsys, google, tensorflow
+* [RNNT](http://vsr140:8890/notebooks/builtin/rnnt/RNNT_DEMO.ipynb) - [Readme](../../modelzoo/rnnt/README.md) - speech recognition, pytorch
+* [RESNET](http://vsr140:8892/notebooks/builtin/resnet/RESNET_DEMO.ipynb) - [Readme](../../modelzoo/resnet/README.md) - computer vision, tensorflow
+* [BERT](http://vsr140:8892/notebooks/builtin/bert/BERT_DEMO.ipynb) - [Readme](../../modelzoo/bert/README.md) - Natual Language Processing, tensorflow
+* [MiniGO](http://sr141:8888/notebooks/demo/MiniGo_DEMO.ipynb) - [Readme](../../modelzoo/minigo/README.md) - minimalist engine modeled after AlphaGo Zero, tensorflow
 
 ## LICENSE
 * Apache 2.0
