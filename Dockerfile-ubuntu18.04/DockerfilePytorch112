@@ -26,6 +26,10 @@ RUN git clone https://github.com/HawkAaron/warp-transducer && cd warp-transducer
 RUN python -m pip install e2eAIOK --pre
 RUN python -m pip install e2eAIOK-denas --pre --no-deps --ignore-installed
 
+SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
+RUN python -m pip install --no-cache-dir --ignore-installed sigopt pyarrow
+RUN python -m pip install e2eAIOK --pre
+
 SHELL ["/bin/bash", "-c"]
 RUN sed -i 's/#Port 22/Port 12347/g' /etc/ssh/sshd_config
 RUN sed -i 's/#   Port 22/    Port 12347/g' /etc/ssh/ssh_config
