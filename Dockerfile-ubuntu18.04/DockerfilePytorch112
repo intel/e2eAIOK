@@ -1,3 +1,4 @@
+# For v0.2 workload: RNNT
 # For v1.0 DeNas
 FROM intel/oneapi-aikit:2023.0.0-devel-ubuntu20.04
 
