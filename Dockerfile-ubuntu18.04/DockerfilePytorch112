@@ -28,7 +28,7 @@ RUN python -m pip install e2eAIOK --pre
 RUN python -m pip install e2eAIOK-denas --pre --no-deps --ignore-installed
 
 SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
-RUN python -m pip install --no-cache-dir --ignore-installed sigopt pyarrow
+RUN python -m pip install --no-cache-dir --ignore-installed sigopt pyarrow psutil
 RUN python -m pip install e2eAIOK --pre
 
 SHELL ["/bin/bash", "-c"]
