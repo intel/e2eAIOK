@@ -38,6 +38,6 @@ ENTRYPOINT [""]
 SHELL ["conda", "run", "-n", "pytorch", "/bin/bash", "-c"]
 RUN python -m pip install jupyterlab
 SHELL ["/bin/bash", "-c"]
-ADD ./notebook/start.sh /home/vmagent/app
-RUN chmod a+x /home/vmagent/app/start.sh
-CMD ["/home/vmagent/app/start.sh"]
+ADD ./notebook/start-notebook.sh /root
+RUN chmod a+x /root/start-notebook.sh
+CMD ["/root/start-notebook.sh"]
