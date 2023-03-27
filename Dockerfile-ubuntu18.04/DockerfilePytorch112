@@ -34,3 +34,10 @@ RUN conda init bash
 RUN echo "source /opt/intel/oneapi/setvars.sh --force" >> /root/.bashrc
 RUN echo "root:docker" | chpasswd
 ENTRYPOINT [""]
+
+SHELL ["conda", "run", "-n", "pytorch", "/bin/bash", "-c"]
+RUN python -m pip install jupyterlab
+SHELL ["/bin/bash", "-c"]
+ADD ./notebook/start.sh /home/vmagent/app
+RUN chmod a+x /home/vmagent/app/start.sh
+CMD ["/home/vmagent/app/start.sh"]
