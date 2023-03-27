@@ -12,10 +12,9 @@ data_path:  "/home/vmagent/app/data/dataset/cifar"
 num_workers: 4
 train_transform: "vit"
 test_transform: "vit"
-input_size: 224
 
 ### model
-model_type: "resnet18"
+model_type: "resnet18_cifar"
 
 # loss
 loss_weight:
@@ -28,6 +27,9 @@ distiller:
     teacher: 
         type: "huggingface_vit_base_224_in21k_ft_cifar100"
         initial_pretrain: True
+    use_saved_logits: True
+    logits_path: "/home/vmagent/app/data/model/demo/distiller/cifar100_kd_vit/logits"
+    logits_topk: 0
 
 ## optimizer
 optimizer: "SGD"

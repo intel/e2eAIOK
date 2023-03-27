@@ -14,8 +14,11 @@ import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 e2eaiok_dir = e2eAIOK.__path__[0]
 
 safe_base_dir = "/home/vmagent/app"
-def is_safe_path(basedir, path):
-    return os.path.abspath(path).startswith(basedir)
+def is_safe_path(basedir, path, check=False):
+    if check:
+        return os.path.abspath(path).startswith(basedir)
+    else:
+        return True
 
 def main(args):
     ''' main function

@@ -44,8 +44,9 @@ class WnDAdvisor(BaseModelAdvisor):
         self.test_path = os.path.join(eval_path, 'part*')
         self.dataset_meta_path = dataset_meta_path
         self.saved_path = self.params['save_path']
-        self.train_python = "/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python"
-        self.train_script = "/home/vmagent/app/e2eaiok/modelzoo/WnD/TensorFlow2/main.py"
+        self.train_python = self.params['python_path'] if 'python_path' in self.params else "/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin/python"
+        self.train_script = self.params['train_path'] if 'train_path' in self.params else "/home/vmagent/app/e2eaiok/modelzoo/WnD/TensorFlow2/main.py"
+        print(f"params: {self.params}")
 
     def update_metrics(self):
         result_metrics_file = os.path.join(self.saved_path, "metric.txt")

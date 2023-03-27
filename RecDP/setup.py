@@ -10,16 +10,12 @@ class post_install(install):
         install.run(self)
         import os
         try:
-            import pyspark
-            vspark = str(pyspark.__version__)
-            print(f"Detect system pyspark, version is {vspark}")
+            os.system("DEBIAN_FRONTEND=noninteractive apt-get install -y openjdk-8-jre")
         except:
-            vspark = "3.2.0"
-            print(f"Didn't find system pyspark, use default version {vspark}, other version can be found {self.install_lib}/pyrecdp/ScalaProcessUtils/")
+            print("failed to install openjdk, need manual setup, cmdline is DEBIAN_FRONTEND=noninteractive apt-get install -y openjdk-8-jre")
+
         import shutil
-        scala_jar = "/30/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar" if vspark.startswith(
-            "3.0"
-        ) else "/31/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
+        scala_jar = "/31/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
         print(f"mkdir {self.install_lib}/pyrecdp/ScalaProcessUtils/target/")
         os.makedirs(os.path.dirname(
             f"{self.install_lib}/pyrecdp/ScalaProcessUtils/target/"),
@@ -38,7 +34,7 @@ class post_install(install):
 
 setuptools.setup(
     name="pyrecdp",
-    version="0.1.2",
+    version="0.1.4",
     author="INTEL AIA BDF",
     author_email="chendi.xue@intel.com",
     description=
@@ -61,4 +57,8 @@ setuptools.setup(
     python_requires=">=3.6",
     cmdclass={'install': post_install},
     zip_safe=False,
-    install_requires=[])
+    install_requires=[
+        "pyspark==3.3.1",
+        "pyarrow",
+        "psutil"
+    ])

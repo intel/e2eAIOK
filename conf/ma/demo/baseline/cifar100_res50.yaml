@@ -2,12 +2,12 @@ experiment:
   project: "demo"
   tag: "cifar100_res50"
   
-output_dir: "/home/vmagent/app/data/model"
+output_dir: "./data"
 train_epochs: 1
 
 ### dataset
 data_set: "cifar100"
-data_path:  "/home/vmagent/app/data/dataset/cifar"
+data_path:  "./data"
 num_workers: 4
 
 ### model

@@ -1,6 +1,6 @@
 experiment:
     project: "baselines"
-    tag: "cifar100_res18_ReduceLROnPlateau"
+    tag: "cifar100_res18"
 
 output_dir: "/home/vmagent/app/data/model"
 train_epochs: 80

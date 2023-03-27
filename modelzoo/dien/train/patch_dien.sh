@@ -5,10 +5,13 @@ get_original_model () {
 }
 
 apply_patch () {
+    cp dien.patch ai-matrix
+    cd ai-matrix
+    git init
+    git checkout -b trunk
+    git add *
     git apply dien.patch
-    cat setvars.sh > tmp
-    cat ai-matrix/script/train.py >> tmp
-    mv tmp ai-matrix/script/train.py
+    cd ..
 }
 
 get_original_model
