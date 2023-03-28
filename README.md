@@ -51,7 +51,7 @@ For more information, you may [read the docs](https://github.com/intel/e2eAIOK).
 ``` bash
 git clone https://github.com/intel/e2eAIOK.git
 git submodule update --init --recursive
-cd e2eAIOK; python scripts/start_e2eaiok_docker.py --backend [tensorflow, pytorch, pytorch110, pytorch112] --dataset_path ../ --workers host1, host2, host3, host4 --proxy "http://addr:ip"
+cd e2eAIOK; python scripts/start_e2eaiok_docker.py --backend [tensorflow, pytorch, pytorch112] --dataset_path ../ --workers host1, host2, host3, host4 --proxy "http://addr:ip"
 ```
 
 ## Demos
