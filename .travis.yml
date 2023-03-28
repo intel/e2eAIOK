@@ -8,6 +8,7 @@ before_install:
   - pip install codecov
   - pip install build wheel
   - pip install -r e2eAIOK/DeNas/requirements.txt
+  - pip install -r e2eAIOK/ModelAdapter/requirements.txt
 install:
   - python setup.py sdist && pip install dist/e2eAIOK-*.*.*.tar.gz
 script: pytest tests/unittest

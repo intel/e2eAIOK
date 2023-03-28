@@ -20,7 +20,7 @@ Firstly, build e2eaiok docker image.
 $ cd Dockerfile-ubuntu18.04
 $ docker build -t e2eaiok-tensorflow . -f DockerfileTensorflow
 $ docker build -t e2eaiok-pytorch . -f DockerfilePytorch
-$ docker build -t e2eaiok-pytorch110 . -f DockerfilePytorch110
+$ docker build -t e2eaiok-pytorch112 . -f DockerfilePytorch112
 ```
 
 Then, run test script for specific workflow.\
@@ -42,7 +42,7 @@ $ docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_lo
 ```
 For RNNT:
 ```
-docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v ${e2eaiok_codebase}:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch110 /bin/bash -c "SIGOPT_API_TOKEN=${SIGOPT_API_TOKEN} USE_SIGOPT=${USE_SIGOPT} . /home/vmagent/app/e2eaiok/tests/cicd/jenkins_rnnt_test.sh"
+docker run --rm --privileged --network host --device=/dev/dri -v /root/cicd_logs:/home/vmagent/app/cicd_logs -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v ${e2eaiok_codebase}:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch112 /bin/bash -c "SIGOPT_API_TOKEN=${SIGOPT_API_TOKEN} USE_SIGOPT=${USE_SIGOPT} . /home/vmagent/app/e2eaiok/tests/cicd/jenkins_rnnt_test.sh"
 ```
 For BERT:
 ```

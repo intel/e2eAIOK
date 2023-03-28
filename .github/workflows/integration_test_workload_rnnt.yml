@@ -38,4 +38,4 @@ jobs:
       run: |
         if [[ $(docker ps -q --filter "name=test-workload-rnnt" | wc -l) -ne 0 ]]; then docker ps -q --filter "name=test-workload-rnnt" | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi
         cd modelzoo/rnnt/pytorch && bash patch_rnnt.sh && cd ../../..
-        docker run --rm --name test-workload-rnnt --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch110 /bin/bash -c "USE_SIGOPT=0 . /home/vmagent/app/e2eaiok/tests/cicd/jenkins_rnnt_test.sh"
+        docker run --rm --name test-workload-rnnt --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ e2eaiok-pytorch112 /bin/bash -c "USE_SIGOPT=0 . /home/vmagent/app/e2eaiok/tests/cicd/jenkins_rnnt_test.sh"
