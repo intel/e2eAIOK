@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import copy
+import os
 
 import timeit
 
@@ -16,6 +17,42 @@ import timeit
 #         elif isinstance(value, Operation):
 #             print('\t' * (indent+1) + str(value))
 
+def callable_string_fix(func_str):
+    func_str_lines = func_str.split('\n')
+    import re
+    bad_indent = "".join(re.findall("^(\s+)", func_str_lines[0]))
+    if len(bad_indent) == 0:
+        return func_str
+    func_str = '\n'.join([i[len(bad_indent):] for i in func_str_lines])
+    return func_str
+    
+def sequenced_union1d(a, b):
+    if isinstance(a, np.ndarray):
+        a_list = a.tolist()
+    elif isinstance(a, list):
+        a_list = a
+    if isinstance(b, np.ndarray):
+        b_list = b.tolist()
+    elif isinstance(b, list):
+        b_list = b
+    a_dict = dict((i, 0) for i in a_list)
+    [a_list.append(i) for i in b_list if i not in a_dict]
+    return np.array(a_list)
+
+def increment_encoder(encoder, dict_path):
+    dirname = os.path.dirname(dict_path)
+    if not os.path.exists(dirname):
+        os.mkdir(dirname)
+    if os.path.exists(dict_path):
+        saved_dict = np.load(dict_path)
+        # update dict
+        ret = sequenced_union1d(encoder.classes_, saved_dict)
+        encoder.classes_ = ret
+    # save dictionary
+    np.save(dict_path, encoder.classes_)
+    
+    return encoder
+    
 def deepcopy(dict_df):
     return copy.deepcopy(dict_df)
     
@@ -53,6 +90,9 @@ def dump_fix(x):
         x = (dump_fix(x[0]), dump_fix(x[1]))
     elif hasattr(x, 'mydump'):
         x = x.mydump()
+    elif callable(x):
+        import inspect
+        x = inspect.getsource(x)
     else:
         x = x
     return x

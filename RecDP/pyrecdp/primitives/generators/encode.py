@@ -11,11 +11,12 @@ class LabelEncodeFeatureGenerator(super_class):
         is_useful = False
         pa_schema = pipeline[children[0]].output
         feature_in_out = {}
+        folder = 'pipeline_default'
         for idx, pa_field in enumerate(pa_schema):
             if pa_field.is_categorical_and_string:
                 feature = pa_field.name
                 out_schema = SeriesSchema(f"{feature}", pd.CategoricalDtype())
-                feature_in_out[feature] = feature
+                feature_in_out[feature] = (f"{folder}/{feature}_categorify_dict", feature)
                 is_useful = True
                 pa_schema[idx] = out_schema
         if is_useful:

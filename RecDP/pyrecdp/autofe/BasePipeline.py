@@ -34,9 +34,11 @@ class BasePipeline:
                 if label in data.columns:
                     main_table = data_key
                     break
-            self.y = None
-        else:
             self.y = label
+        elif isinstance(label, pd.Series):
+            self.y = label.name
+        else:
+            self.y = None
         if not main_table:
             raise ValueError(f"label {label} is not found in dataset")
         self.main_table = main_table
@@ -46,9 +48,8 @@ class BasePipeline:
             original_data = self.dataset[main_table]
         else:
             original_data = sample_read(self.dataset[main_table])
-        if not self.y:
-            self.y = original_data[label]
-        self.feature_columns = [i for i in original_data.columns if i != self.y.name]
+        
+        self.feature_columns = [i for i in original_data.columns if i != self.y]
         feature_data = original_data[self.feature_columns]
             
         self.generators = []
@@ -269,10 +270,21 @@ class BasePipeline:
         return df
 
     def fit_transform(self, engine_type = 'pandas', no_cache = False, *args, **kwargs):
+        if not no_cache and hasattr(self, 'transformed_cache') and self.transformed_cache is not None:
+            print("Detect pre-transformed cache, return cached data")
+            print("If re-transform is required, please use fit_transform(no_cache = True)")
+            return self.transformed_cache
         if engine_type == "spark":
             self.rdp = SparkDataProcessor()
         ret = self.execute(engine_type, no_cache)
         if engine_type == "spark":
             del self.rdp 
             self.rdp = None
-        return ret  
+        self.transformed_cache = ret
+        return ret
+    
+    def get_transformed_cache(self):
+        if hasattr(self, 'transformed_cache') and self.transformed_cache is not None:
+            return self.transformed_cache
+        else:
+            print("No transformed data detected.")

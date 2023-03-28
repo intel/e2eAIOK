@@ -2,7 +2,7 @@ from .base import BaseOperation
 import pandas as pd
 from pyspark.sql import DataFrame as SparkDataFrame
 import copy
-from IPython.display import display
+from pyrecdp.core.utils import increment_encoder
 
 class OnehotEncodeOperation(BaseOperation):
     def __init__(self, op_base):

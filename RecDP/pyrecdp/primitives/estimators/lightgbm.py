@@ -5,21 +5,17 @@ import lightgbm as lgbm
 class LightGBM(BaseEstimator):
     def __init__(self, op_base):
         super().__init__(op_base)
-        self.label = self.config['label']
-        self.metrics = self.config['metrics']
-        self.objective = self.config['objective']
-        self.model_file = self.config['model_file']
         self.support_spark_dataframe = False
         self.support_spark_rdd = False
 
     def get_func_train(self):
-        label = self.label
-        metrics = self.metrics
-        objective = self.objective
-        model_file = self.model_file
+        label = self.config['label']
+        metrics = self.config['metrics']
+        objective = self.config['objective']
+        model_file = self.config['model_file']
+        train_test_splitter = self.get_splitter_func(self.config['train_test_splitter'])
         def train(df):
-            test_sample = df.sample(frac = 0.05)
-            train_sample = df.drop(test_sample.index)
+            train_sample, test_sample = train_test_splitter(df)
             
             x_train = train_sample.drop(columns=[label])
             y_train = train_sample[label].values
@@ -59,10 +55,11 @@ class LightGBM(BaseEstimator):
         return train
         
     def get_func_predict(self):
-        label = self.label
-        metrics = self.metrics
+        label = self.config['label']
+        metrics = self.config['metrics']
+        model_file = self.config['model_file']
         evalute_func = self.get_evaluate_func(metrics)
-        model = lgbm.Booster(model_file = self.model_file)
+        model = lgbm.Booster(model_file = model_file)
         def predict(test_df):
             contain_label = False
             if label in test_df.columns:

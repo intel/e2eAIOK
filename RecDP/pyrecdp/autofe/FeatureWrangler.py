@@ -34,10 +34,10 @@ class FeatureWrangler(BasePipeline):
             # insert label process to pipeline            
             cur_id = child
             original_first_op = copy.deepcopy(self.pipeline[cur_id])
-            self.pipeline[cur_id] .output = [SeriesSchema(self.y)]
+            self.pipeline[cur_id].output = [SeriesSchema(sampled_data[self.y])]
             
             for generator in self.data_profiler:
-                self.pipeline, child, max_id = generator.fit_prepare(self.pipeline, [child], max_id, pd.DataFrame(sampled_data[self.y.name]))
+                self.pipeline, child, max_id = generator.fit_prepare(self.pipeline, [child], max_id, pd.DataFrame(sampled_data[self.y]))
             for generator in self.pre_feature:
                 self.pipeline, child, max_id = generator.fit_prepare(self.pipeline, [child], max_id)
             
@@ -45,6 +45,7 @@ class FeatureWrangler(BasePipeline):
             original_first_op.idx = cur_id
             original_first_op.op = "DataFrame"
             original_first_op.children = [child]
+            self.y = [i.name for i in self.pipeline[child].output][0]
             self.pipeline[cur_id] = original_first_op            
             max_id = cur_id
             child = cur_id

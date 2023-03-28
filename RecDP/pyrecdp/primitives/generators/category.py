@@ -11,11 +11,12 @@ class CategoryFeatureGenerator(super_class):
         is_useful = False
         pa_schema = pipeline[children[0]].output
         feature_in_out = {}
+        folder = 'pipeline_default'
         for pa_field in pa_schema:
             if pa_field.is_categorical_and_string:
                 feature = pa_field.name
                 out_schema = SeriesSchema(f"{feature}__idx", pd.CategoricalDtype())
-                feature_in_out[feature] = out_schema.name
+                feature_in_out[feature] = (f"{folder}/{feature}_categorify_dict", out_schema.name)
                 is_useful = True
                 pa_schema.append(out_schema)
         if is_useful:
