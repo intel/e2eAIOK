@@ -69,22 +69,23 @@ cd e2eAIOK; python scripts/start_e2eaiok_docker.py --backend [tensorflow, pytorc
 ## Demos
 
 * Built-in Models
-  * [DLRM](demo/builtin/dlrm/DLRM_DEMO.ipynb) - [Readme](modelzoo/dlrm/README.md) - RecSys, PyTorch
-  * [DIEN](demo/builtin/dien/DIEN_DEMO.ipynb) - [Readme](modelzoo/dien/README.md) - RecSys, TensorFlow
-  * [WnD](demo/builtin/wnd/WND_DEMO.ipynb) - [Readme](modelzoo/WnD/README.md) - RecSys, TensorFlow
-  * [RNNT](demo/builtin/rnnt/RNNT_DEMO.ipynb) - [Readme](modelzoo/rnnt/README.md) - Speech Recognition, PyTorch
-  * [RESNET](demo/builtin/resnet/RESNET_DEMO.ipynb) - [Readme](modelzoo/resnet/README.md) - Computer vision, TensorFlow
-  * [BERT](demo/builtin/bert/BERT_DEMO.ipynb) - [Readme](modelzoo/bert/README.md) - Natual Language Processing, TensorFlow
-  * [MiniGO](demo/builtin/minigo/MiniGo_DEMO.ipynb) - [Readme](modelzoo/minigo/README.md) - minimalist engine modeled after AlphaGo Zero, TensorFlow
+  * [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/demo/builtin/dlrm/DLRM_DEMO.ipynb) - [DLRM](demo/builtin/dlrm/DLRM_DEMO.ipynb) - [Readme](modelzoo/dlrm/README.md) - RecSys, PyTorch
+  * [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/demo/builtin/dien/DIEN_DEMO.ipynb) - [DIEN](demo/builtin/dien/DIEN_DEMO.ipynb) - [Readme](modelzoo/dien/README.md) - RecSys, TensorFlow
+  * [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/demo/builtin/wnd/WND_DEMO.ipynb) - [WnD](demo/builtin/wnd/WND_DEMO.ipynb) - [Readme](modelzoo/WnD/README.md) - RecSys, TensorFlow
+  * [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/demo/builtin/rnnt/RNNT_DEMO.ipynb) - [RNNT](demo/builtin/rnnt/RNNT_DEMO.ipynb) - [Readme](modelzoo/rnnt/README.md) - Speech Recognition, PyTorch
+  * [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/demo/builtin/resnet/RESNET_DEMO.ipynb) - [RESNET](demo/builtin/resnet/RESNET_DEMO.ipynb) - [Readme](modelzoo/resnet/README.md) - Computer vision, TensorFlow
+  * [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/demo/builtin/bert/BERT_DEMO.ipynb) - [BERT](demo/builtin/bert/BERT_DEMO.ipynb) - [Readme](modelzoo/bert/README.md) - Natual Language Processing, TensorFlow
+  * [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/demo/builtin/minigo/MiniGo_DEMO.ipynb) - [MiniGO](demo/builtin/minigo/MiniGo_DEMO.ipynb) - [Readme](modelzoo/minigo/README.md) - minimalist engine modeled after AlphaGo Zero, TensorFlow
 
 * Neural network constructor 
 
   * DE-NAS demos:
     * [DE-NAS Overview](demo/denas/DENAS_SUMMARY.ipynb) 
-      * Computer Vision - [CNN](demo/denas/computer_vision/DENAS_CNN_DEMO.ipynb)/[ViT](demo/denas/computer_vision/DENAS_ViT_DEMO.ipynb), PyTorch
-      * NLP - [BERT](demo/denas/bert/DENAS_BERT_DEMO.ipynb), PyTorch
-      * Speech Recognition - [ASR](demo/denas/asr/DENAS_ASR_DEMO.ipynb), PyTorch
-      * Hugging Face - [BERT](demo/denas/hf/DENAS_HF_DEMO.ipynb), Pytorch
+      * [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/demo/denas/computer_vision/DENAS_CNN_DEMO.ipynb) - Computer Vision - [CNN](demo/denas/computer_vision/DENAS_CNN_DEMO.ipynb), PyTorch
+      * [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/demo/denas/computer_vision/DENAS_ViT_DEMO.ipynb) - Computer Vision - [ViT](demo/denas/computer_vision/DENAS_ViT_DEMO.ipynb), PyTorch
+      * [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/demo/denas/bert/DENAS_BERT_DEMO.ipynb) - NLP - [BERT](demo/denas/bert/DENAS_BERT_DEMO.ipynb), PyTorch
+      * [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/demo/denas/asr/DENAS_ASR_DEMO.ipynb) - Speech Recognition - [ASR](demo/denas/asr/DENAS_ASR_DEMO.ipynb), PyTorch
+      * [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/demo/denas/hf/DENAS_HF_DEMO.ipynb) - Hugging Face - [BERT](demo/denas/hf/DENAS_HF_DEMO.ipynb), Pytorch
   
   * Model Aadapter demos
      * [Model Adapter Overview](demo/ma/Model_Adapter_Summary.ipynb)
