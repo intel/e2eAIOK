@@ -1,4 +1,4 @@
-## Build Dockerfile for e2eAIOK workloads
+## Build Dockerfile for About Intel® End-to-End AI Optimization Kit
 
 ```
 $ cd Dockerfile-ubuntu18.04
