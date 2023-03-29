@@ -50,16 +50,11 @@ For more information, you may [read the docs](https://github.com/intel/e2eAIOK).
 
 ### Install with Baremetal Environment
 
- - To install e2eAIOK in baremetal environment, we recommend using [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/):
+ - To install all components:
+   - To install e2eAIOK in baremetal environment, use `pip install e2eAIOK`
+   - To install latest nightly build, use `pip install e2eAIOK --pre`
 
-    ```bash
-    conda create -n my_env 
-    conda activate my_env
-    pip install e2eAIOK
-    ```
-    To install latest nightly build, use `pip install --pre --upgrade e2eAIOK`
-
- - To install each individual library:
+ - To install each individual component:
    - To install SDA, use `pip install e2eAIOK-sda`
    - To install DE-NAS, use `pip install e2eAIOK-denas`
    - To install Model Adapter, use `pip install e2eAIOK-ModelAdapter`
