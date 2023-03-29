@@ -68,7 +68,7 @@ For more information, you may [read the docs](https://github.com/intel/e2eAIOK).
 ``` bash
 git clone https://github.com/intel/e2eAIOK.git
 git submodule update --init --recursive
-cd e2eAIOK; python scripts/start_e2eaiok_docker.py --backend [tensorflow, pytorch, pytorch110, pytorch112] --dataset_path ../ --workers host1, host2, host3, host4 --proxy "http://addr:ip"
+cd e2eAIOK; python scripts/start_e2eaiok_docker.py --backend [tensorflow, pytorch, pytorch112] --dataset_path ../ --workers host1, host2, host3, host4 --proxy "http://addr:ip"
 ```
 
 ## Demos
@@ -84,10 +84,12 @@ cd e2eAIOK; python scripts/start_e2eaiok_docker.py --backend [tensorflow, pytorc
 
 * Neural network constructor 
 
-  * DE-NAS demos: 
-    * [Computer Vision](demo/denas/computer_vision/DENAS_COMPUTER_VISION_DEMO.ipynb) - CNN/Vit, PyTorch
-    * [NLP](demo/denas/bert/DENAS_BERT_DEMO.ipynb) - BERT, PyTorch
-    * [Speech Recognition](demo/denas/asr/DENAS_ASR_DEMO.ipynb) - ASR, PyTorch
+  * DE-NAS demos:
+    * [DE-NAS Overview](demo/denas/DENAS_SUMMARY.ipynb) 
+      * Computer Vision - [CNN](demo/denas/computer_vision/DENAS_CNN_DEMO.ipynb)/[ViT](demo/denas/computer_vision/DENAS_ViT_DEMO.ipynb), PyTorch
+      * NLP - [BERT](demo/denas/bert/DENAS_BERT_DEMO.ipynb), PyTorch
+      * Speech Recognition - [ASR](demo/denas/asr/DENAS_ASR_DEMO.ipynb), PyTorch
+      * Hugging Face - [BERT](demo/denas/hf/DENAS_HF_DEMO.ipynb), Pytorch
   
   * Model Aadapter demos
      * [Model Adapter Overview](demo/ma/Model_Adapter_Summary.ipynb) 
