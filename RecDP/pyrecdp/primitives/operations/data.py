@@ -8,12 +8,14 @@ class DataFrameOperation(BaseOperation):
         self.support_spark_rdd = True
 
     def set(self, dataset):
-        if self.op.children is None or len(self.op.children) == 0:
-            self.cache = dataset[self.op.config]
+        self.cache = dataset[self.op.config]
         
     def get_function_pd(self):
         def get_dataframe(df):
-            return df
+            if df is not None:
+                return df
+            else:
+                return self.cache
         return get_dataframe
     
 class DataLoader(BaseOperation):

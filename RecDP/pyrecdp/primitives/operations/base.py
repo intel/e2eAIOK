@@ -84,8 +84,6 @@ class BaseOperation:
         return self.op.op
         
     def execute_pd(self, pipeline, no_cache = False):
-        if self.cache is not None and not no_cache:
-            return
         _proc = self.get_function_pd()
         if not self.op.children or len(self.op.children) == 0:
             pass
@@ -94,8 +92,6 @@ class BaseOperation:
             self.cache = _proc(child_output)
             
     def execute_spark(self, pipeline, rdp, no_cache = False):
-        if self.cache is not None and not no_cache:
-            return
         _convert = None
         if not self.op.children or len(self.op.children) == 0:
             pass

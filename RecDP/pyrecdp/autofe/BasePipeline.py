@@ -233,7 +233,7 @@ class BasePipeline:
     def to_chain(self):
         return self.pipeline.convert_to_node_chain()
         
-    def execute(self, engine_type = "pandas", no_cache = False):
+    def execute(self, engine_type = "pandas", start_op_idx = 0, no_cache = False, transformed_end = -1):
         # prepare pipeline
         executable_pipeline, executable_sequence = self.create_executable_pipeline()
         print(executable_pipeline)
@@ -241,19 +241,39 @@ class BasePipeline:
         # execute
         if engine_type == 'pandas':
             with Timer(f"execute with pandas"):
+                start = False
                 for op in executable_sequence:
+                    if op.op.idx == start_op_idx:
+                        start = True
+                    if not start:
+                        continue
                     if isinstance(op, DataFrameOperation):
-                        op.set(deepcopy(self.dataset))
+                        input_df = self.dataset if start_op_idx == 0 else {'main_table': self.transformed_cache}
+                        input_df = deepcopy(input_df) if no_cache else input_df
+                        op.set(input_df)
                     with Timer(f"execute {op}"):
                         op.execute_pd(executable_pipeline, no_cache)
-            df = executable_sequence[-1].cache
+            if transformed_end == -1:
+                df = executable_sequence[-1].cache
+            else:
+                df = executable_pipeline[transformed_end].cache
         elif engine_type == 'spark':
+            start = False
             for op in executable_sequence:
+                if op.op.idx == start_op_idx:
+                    start = True
+                if not start:
+                    continue
                 if isinstance(op, DataFrameOperation):
-                    op.set(deepcopy(self.dataset))
+                    input_df = self.dataset if start_op_idx == 0 else {'main_table': self.transformed_cache}
+                    input_df = deepcopy(input_df) if no_cache else input_df
+                    op.set(input_df)
                 print(f"append {op}")
                 op.execute_spark(executable_pipeline, self.rdp, no_cache)
-            ret = executable_sequence[-1].cache
+            if transformed_end == -1:
+                ret = executable_sequence[-1].cache
+            else:
+                ret = executable_pipeline[transformed_end].cache
             if isinstance(ret, SparkDataFrame):
                 with Timer(f"execute with spark"):
                     df = self.rdp.transform(ret)
