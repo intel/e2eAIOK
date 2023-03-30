@@ -87,15 +87,10 @@ cd e2eAIOK; python scripts/start_e2eaiok_docker.py --backend [tensorflow, pytorc
       * Hugging Face - [BERT](demo/denas/hf/DENAS_HF_DEMO.ipynb), Pytorch
   
   * Model Aadapter demos
-     * [Model Adapter Overview](demo/ma/Model_Adapter_Summary.ipynb) 
-     * Built-in Demos
-       * [Finetuner on Image Classification](demo/ma/finetuner/Model_Adapter_Finetuner_builtin_ResNet50_CIFAR100.ipynb)
-       * [Distiller on Image Classification](demo/ma/distiller/Model_Adapter_Distiller_builtin_VIT_to_ResNet18_CIFAR100.ipynb)
-       * [Domain Adapter on Medical Segmentation](demo/ma/domain_adapter/Model_Adapter_Domain_Adapter_builtin_Unet_KITS19.ipynb)
-     * API usage for Customized usage
-       * [Finetuner on Image Classification](demo/ma/finetuner/Model_Adapter_Finetuner_Walkthrough_ResNet50_CIFAR100.ipynb)
-       * [Distiller on Image Classification](demo/ma/distiller/Model_Adapter_Distiller_Walkthrough_VIT_to_ResNet18_CIFAR100.ipynb)
-       * [Domain Adapter on Medical Segmentation](demo/ma/domain_adapter/Model_Adapter_Domain_Adapter_Walkthrough_Unet_KITS19.ipynb)
+     * [Model Adapter Overview](demo/ma/Model_Adapter_Summary.ipynb)
+     * [Finetuner on Image Classification](demo/ma/finetuner/Model_Adapter_Finetuner_Walkthrough_ResNet50_CIFAR100.ipynb) - ResNet50, PyTorch
+     * [Distiller on Image Classification](demo/ma/distiller/Model_Adapter_Distiller_Walkthrough_VIT_to_ResNet18_CIFAR100.ipynb) - ResNet18, PyTorch
+     * [Domain Adapter on Medical Segmentation](demo/ma/domain_adapter/Model_Adapter_Domain_Adapter_Walkthrough_Unet_KITS19.ipynb) - 3D Unet, PyTorch
 
 ## Performance
 
