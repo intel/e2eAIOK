@@ -1,4 +1,9 @@
 # Intel® End-to-End AI Optimization Kit for Resnet
+
+
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/demo/builtin/resnet/RESNET_DEMO.ipynb)&emsp;&emsp;  <img width="20" height="20" src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"> [view DEMO source codes](https://github.com/intel/e2eAIOK/blob/main/demo/builtin/resnet/RESNET_DEMO.ipynb)
+---
+
 ## Original source disclose
 Source repo: https://github.com/mlcommons/training_results_v1.0/tree/master/Intel/benchmarks/resnet/2-nodes-16s-8376H-tensorflow
 

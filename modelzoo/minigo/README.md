@@ -1,4 +1,9 @@
 # Intel® End-to-End AI Optimization Kit for MiniGO
+
+
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/demo/builtin/minigo/MiniGo_DEMO.ipynb)&emsp;&emsp;  <img width="20" height="20" src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"> [view DEMO source codes](https://github.com/intel/e2eAIOK/blob/main/demo/builtin/minigo/MiniGo_DEMO.ipynb)
+---
+
 ## Original source disclose
 * Since MiniGo is a reinforcement learning model, it generates training dataset in each iteration during train loop and doesn't need dataset. We evaluate winrate with target model(based on MLPerf submission) and final winrate>=0.5, and all our optimizations guarantee that target metric.
 

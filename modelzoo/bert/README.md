@@ -1,5 +1,9 @@
 # Intel® End-to-End AI Optimization Kit for BERT
 
+
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/demo/builtin/bert/BERT_DEMO.ipynb)&emsp;&emsp;  <img width="20" height="20" src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"> [view DEMO source codes](https://github.com/intel/e2eAIOK/blob/main/demo/builtin/bert/BERT_DEMO.ipynb)
+---
+
 ## Original source disclose
 
 Stanford Question Answering Dataset (SQuAD) is a reading comprehension dataset, consisting of questions posed by crowdworkers on a set of Wikipedia articles, where the answer to every question is a segment of text, or span, from the corresponding reading passage, or the question might be unanswerable. SQuAD 1.1 contains 100,000+ question-answer pairs on 500+ articles.

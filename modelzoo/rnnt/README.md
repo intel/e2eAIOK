@@ -1,4 +1,9 @@
 # Intel® End-to-End AI Optimization Kit for RNN-T
+
+
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/demo/builtin/rnnt/RNNT_DEMO.ipynb)&emsp;&emsp;  <img width="20" height="20" src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"> [view DEMO source codes](https://github.com/intel/e2eAIOK/blob/main/demo/builtin/rnnt/RNNT_DEMO.ipynb)
+---
+
 ## Original source disclose
 Notes: RNN-T training is based on LibriSpeech train-clean-100 and evaluated on dev-clean, we evaluated WER with stock model (based on MLPerf submission) at train-clean-100 dataset, and final WER is 0.25, all the following optimization guarantee 0.25 WER. MLPerf submission took 38.7min with 8x A100 on LibriSpeech train-960h dataset.
 
