@@ -1,7 +1,7 @@
 # Intel® End-to-End AI Optimization Kit for DLRM
 
 
-[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/demo/builtin/dlrm/DLRM_DEMO.ipynb)&emsp;&emsp;  <img width="20" height="20" src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"> [view DEMO source codes](https://github.com/intel/e2eAIOK/blob/main/demo/builtin/dlrm/DLRM_DEMO.ipynb)
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/demo/builtin/dlrm/DLRM_DEMO.ipynb)&emsp;&emsp;  <img width="20" height="20" src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"> [View source on GitHub](https://github.com/intel/e2eAIOK/blob/main/demo/builtin/dlrm/DLRM_DEMO.ipynb)
 ---
 
 ## Original source disclose
