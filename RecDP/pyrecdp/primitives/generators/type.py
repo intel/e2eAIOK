@@ -119,7 +119,9 @@ class TypeInferFeatureGenerator(super_class):
                 config['is_categorical'] = True
             config['is_list_string'] = try_list_string(df[feature_name])
             if config['is_list_string'] is False:
-                config['is_onehot'] = try_onehot(df[feature_name])
+                skip = ('is_numeric' in config and config['is_numeric']) or ('is_re_numeric' in config and config['is_re_numeric'])
+                if not skip:
+                    config['is_onehot'] = try_onehot(df[feature_name])
             
             pa_field.copy_config_from(config)
             ret_pa_fields.append(pa_field)
@@ -195,16 +197,10 @@ class TypeConvertFeatureGenerator(FeaturetoolsBasedFeatureGenerator):
                 op_class = FloatTransformer
                 feature_in[pa_field.name] = op_class
 
-        tmp = dict((field.name, idx) for idx, field in enumerate(pa_schema))
         for in_feat_name, op_clz in feature_in.items():
             is_useful = True
             feature_in_out_map[in_feat_name] = []
-            op = op_clz()
-            out_feat_name = f"{in_feat_name}"
-            out_feat_type = op.return_type
-            out_schema = SeriesSchema(out_feat_name, out_feat_type)
-            pa_schema[tmp[in_feat_name]] = out_schema
-            feature_in_out_map[in_feat_name].append((out_schema.name, op_clz))
+            feature_in_out_map[in_feat_name].append((in_feat_name, op_clz))
         if is_useful:
             cur_idx = max_idx + 1
             pipeline[cur_idx] = Operation(cur_idx, children, pa_schema, op = "astype", config = feature_in_out_map)

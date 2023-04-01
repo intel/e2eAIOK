@@ -79,6 +79,7 @@ class BaseOperation:
         self.cache = None
         self.support_spark_dataframe = False
         self.support_spark_rdd = False
+        self.fast_without_dpp = False
        
     def __repr__(self) -> str:
         return self.op.op
@@ -116,7 +117,9 @@ class BaseOperation:
                     _convert = RDDToDataFrameConverter().get_function(rdp)
                     _proc = self.get_function_pd()
             elif isinstance(child_output, pd.DataFrame):
-                if self.support_spark_rdd:
+                if self.fast_without_dpp:
+                    _proc = self.get_function_pd()
+                elif self.support_spark_rdd:
                     _convert = DataFrameToRDDConverter().get_function(rdp)
                     _proc = self.get_function_spark_rdd(rdp)
                 elif self.support_spark_dataframe:

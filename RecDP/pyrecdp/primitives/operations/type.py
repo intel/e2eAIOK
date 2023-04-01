@@ -15,9 +15,9 @@ class TypeInferOperation(BaseOperation):
         def type_infer(df):
             for feature in astype_feature_map:
                 feature_name, dest_type_list = feature[0], feature[1]
-                if 'is_datetime' in dest_type_list:
-                    df[feature_name] = pd.to_datetime(df[feature_name], errors='coerce', infer_datetime_format=True)
-                elif 'is_numeric' in dest_type_list:
+                # if 'is_datetime' in dest_type_list:
+                #     df[feature_name] = pd.to_datetime(df[feature_name], errors='coerce', infer_datetime_format=True)
+                if 'is_numeric' in dest_type_list:
                     df[feature_name] = pd.to_numeric(df[feature_name], errors='coerce')
             return df
         return type_infer

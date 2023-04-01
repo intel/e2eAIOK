@@ -71,3 +71,10 @@ class TestFeatureWranglerSparkBased(unittest.TestCase):
         # test with shape
         self.assertEqual(ret_df.shape[0], 9667)
         self.assertTrue(ret_df.shape[1] >= 16)
+
+    def test_frauddetect(self):
+        from pyrecdp.datasets import ibm_fraud_detect
+        train_data = ibm_fraud_detect().to_pandas('test')
+        pipeline = FeatureWrangler(dataset=train_data, label="Is Fraud?")
+        ret_df = pipeline.fit_transform(engine_type = 'spark')
+        display(ret_df)

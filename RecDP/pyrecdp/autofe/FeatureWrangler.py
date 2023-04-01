@@ -18,8 +18,8 @@ class FeatureWrangler(BasePipeline):
         self.generators.append([cls() for cls in pre_feature_generator_list])
         self.generators.append([cls() for cls in transformation_generator_list])
         self.generators.append([cls() for cls in pre_enocode_feature_generator_list])
-        self.generators.append([cls() for cls in index_generator_list])
-        self.generators.append([cls() for cls in encode_generator_list])
+        self.generators.append([cls() for cls in local_encode_generator_list])
+        self.generators.append([cls() for cls in global_dict_index_generator_list])
         self.generators.append([cls() for cls in post_feature_generator_list])
         self.generators.append([cls(final = True) for cls in final_generator_list])
 

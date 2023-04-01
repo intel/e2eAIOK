@@ -9,7 +9,7 @@ class CategorifyOperation(BaseOperation):
         super().__init__(op_base)
         self.feature_in_out = op_base.config
         self.support_spark_dataframe = False
-        self.support_spark_rdd = True
+        self.support_spark_rdd = False
     
     def get_function_pd(self):
         feature_in_out = copy.deepcopy(self.feature_in_out)

@@ -2,14 +2,15 @@ from .base import BaseOperation
 import pandas as pd
 from pyspark.sql import DataFrame as SparkDataFrame
 import copy
-from pyrecdp.core.utils import increment_encoder
+import numpy as np
+from IPython.display import display
 
 class OnehotEncodeOperation(BaseOperation):
     def __init__(self, op_base):
         super().__init__(op_base)
         self.config = op_base.config
         self.support_spark_dataframe = False
-        self.support_spark_rdd = True
+        self.support_spark_rdd = False
     
     def get_function_pd(self):
         config = copy.deepcopy(self.config)
@@ -18,6 +19,15 @@ class OnehotEncodeOperation(BaseOperation):
                 selected_columns = [f"{feature}__{key}" for key in keys]
                 one_hot_df = pd.get_dummies(df[feature], prefix = f"{feature}_")
                 one_hot_df = one_hot_df.loc[:, one_hot_df.columns.isin(selected_columns)]
+                #there is possibility designed keys are not included or new keys added
+                # ret = {}
+                # len_df = one_hot_df.shape[0]
+                # for col_name in selected_columns:
+                #     if col_name in one_hot_df.columns:
+                #         ret[col_name] = one_hot_df[col_name].to_numpy()
+                #     else:
+                #         ret[col_name] = np.zeros(len_df, dtype=np.uint8)
+                # one_hot_df = pd.DataFrame(ret, dtype=np.uint8, index=df.index)
                 df = pd.concat([df, one_hot_df], axis=1)
             return df
         return encode
@@ -27,7 +37,7 @@ class ListOnehotEncodeOperation(BaseOperation):
         super().__init__(op_base)
         self.config = op_base.config
         self.support_spark_dataframe = False
-        self.support_spark_rdd = True
+        self.support_spark_rdd = False
     
     def get_function_pd(self):
         config = copy.deepcopy(self.config)
@@ -39,9 +49,17 @@ class ListOnehotEncodeOperation(BaseOperation):
                 mlb = MultiLabelBinarizer()
                 encoded = mlb.fit_transform(splitted_s)
                 names = [f"{feature}_{key}" for key in mlb.classes_]
-                selected = [f"{feature}_{key}" for key in keys]
+                selected_columns = [f"{feature}_{key}" for key in keys]
                 one_hot_df = pd.DataFrame(encoded, columns=names)
-                one_hot_df = one_hot_df.loc[:, one_hot_df.columns.isin(selected)]
+                one_hot_df = one_hot_df.loc[:, one_hot_df.columns.isin(selected_columns)]
+                # ret = {}
+                # len_df = one_hot_df.shape[0]
+                # for col_name in selected_columns:
+                #     if col_name in one_hot_df.columns:
+                #         ret[col_name] = one_hot_df[col_name].to_numpy()
+                #     else:
+                #         ret[col_name] = np.zeros(len_df, dtype=np.uint8)
+                # one_hot_df = pd.DataFrame(ret, dtype=np.uint8, index=df.index)
                 df = pd.concat([df, one_hot_df], axis=1)
             return df
         return encode

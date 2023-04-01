@@ -6,16 +6,18 @@ class DataFrameOperation(BaseOperation):
         super().__init__(op_base)
         self.support_spark_dataframe = False
         self.support_spark_rdd = True
+        self.fast_without_dpp = True
 
     def set(self, dataset):
         self.cache = dataset[self.op.config]
         
     def get_function_pd(self):
+        cache = self.cache.copy() if self.cache is not None else None
         def get_dataframe(df):
             if df is not None:
                 return df
             else:
-                return self.cache
+                return cache
         return get_dataframe
     
 class DataLoader(BaseOperation):

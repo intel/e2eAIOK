@@ -258,31 +258,30 @@ class BasePipeline:
             else:
                 df = executable_pipeline[transformed_end].cache
         elif engine_type == 'spark':
-            start = False
-            for op in executable_sequence:
-                if op.op.idx == start_op_idx:
-                    start = True
-                if not start:
-                    continue
-                if isinstance(op, DataFrameOperation):
-                    input_df = self.dataset if start_op_idx == 0 else {'main_table': self.transformed_cache}
-                    input_df = deepcopy(input_df) if no_cache else input_df
-                    op.set(input_df)
-                print(f"append {op}")
-                op.execute_spark(executable_pipeline, self.rdp, no_cache)
-            if transformed_end == -1:
-                ret = executable_sequence[-1].cache
-            else:
-                ret = executable_pipeline[transformed_end].cache
-            if isinstance(ret, SparkDataFrame):
-                with Timer(f"execute with spark"):
+            with Timer(f"execute with spark"):
+                start = False
+                for op in executable_sequence:
+                    if op.op.idx == start_op_idx:
+                        start = True
+                    if not start:
+                        continue
+                    if isinstance(op, DataFrameOperation) and op.op.idx == start_op_idx:
+                        input_df = self.dataset if start_op_idx == 0 else {'main_table': self.transformed_cache}
+                        input_df = deepcopy(input_df) if no_cache else input_df
+                        op.set(input_df)
+                    print(f"append {op}")
+                    op.execute_spark(executable_pipeline, self.rdp, no_cache)
+                if transformed_end == -1:
+                    ret = executable_sequence[-1].cache
+                else:
+                    ret = executable_pipeline[transformed_end].cache
+                if isinstance(ret, SparkDataFrame):
                     df = self.rdp.transform(ret)
-            elif isinstance(ret, SparkRDD):
-                _convert = RDDToDataFrameConverter().get_function(self.rdp)
-                with Timer(f"execute with spark"):
+                elif isinstance(ret, SparkRDD):
+                    _convert = RDDToDataFrameConverter().get_function(self.rdp)
                     df = _convert(ret)
-            else:
-                df = ret
+                else:
+                    df = ret
         else:
             raise NotImplementedError('pipeline only support pandas and spark as engine')
         

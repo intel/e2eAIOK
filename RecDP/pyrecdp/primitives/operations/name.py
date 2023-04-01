@@ -7,6 +7,7 @@ class RenameOperation(BaseOperation):
         self.renamed = op_base.config
         self.support_spark_dataframe = True
         self.support_spark_rdd = True
+        self.fast_without_dpp = True
         
     def get_function_pd(self):
         renamed = copy.deepcopy(self.renamed)

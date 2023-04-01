@@ -10,6 +10,7 @@ class DropOperation(BaseOperation):
         self.feature_in = op_base.config
         self.support_spark_dataframe = True
         self.support_spark_rdd = True
+        self.fast_without_dpp = True
 
     def get_function_pd(self):
         feature_in = copy.deepcopy(self.feature_in)

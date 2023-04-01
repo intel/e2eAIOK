@@ -30,8 +30,9 @@ label_feature_generator_list = [
 pre_feature_generator_list = [
     CoordinatesInferFeatureGenerator,
     ConvertToNumberFeatureGenerator,
+    TypeConvertFeatureGenerator,
     FillNaFeatureGenerator,
-    RenameFeatureGenerator
+    RenameFeatureGenerator,
 ]
 
 transformation_generator_list = [
@@ -41,19 +42,19 @@ transformation_generator_list = [
     TextFeatureGenerator,
 ]
 
-index_generator_list = [
-    BinnedFeatureGenerator,
-    CategoryFeatureGenerator,
-]
-
-encode_generator_list = [
+local_encode_generator_list = [
     OneHotFeatureGenerator,
     ListOneHotFeatureGenerator,
-    #TargetEncodeFeatureGenerator
 ]
 
 pre_enocode_feature_generator_list = [
     DropUselessFeatureGenerator,
+]
+
+global_dict_index_generator_list = [
+    BinnedFeatureGenerator,
+    CategoryFeatureGenerator,
+    #TargetEncodeFeatureGenerator
 ]
 
 post_feature_generator_list = [
@@ -63,5 +64,4 @@ post_feature_generator_list = [
 final_generator_list = [
     TypeCheckFeatureGenerator,
     DropUselessFeatureGenerator,
-    TypeConvertFeatureGenerator,
 ]
