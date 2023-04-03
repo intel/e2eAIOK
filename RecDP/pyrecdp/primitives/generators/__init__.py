@@ -21,9 +21,9 @@ relation_builder_list = [
 ]
 
 label_feature_generator_list = [
-    FillNaFeatureGenerator,
     RenameFeatureGenerator,
     TypeConvertFeatureGenerator,
+    FillNaFeatureGenerator,
     LabelEncodeFeatureGenerator,
 ]
 

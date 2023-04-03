@@ -9,5 +9,11 @@ class amazon_product_review(base_api):
 
     def to_pandas(self, nrows = None):
         import pandas as pd
-        return pd.read_table(self.saved_path, on_bad_lines='skip')
+        df = pd.read_table(self.saved_path, on_bad_lines='skip')
+        
+        # fix train
+        df = df.loc[df['star_rating'].apply(lambda x: len(str(x)) <= 3)]
+        df['star_rating'] = df['star_rating'].astype(float)
+        
+        return df
          
