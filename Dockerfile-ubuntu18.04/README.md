@@ -23,8 +23,9 @@ $ docker build -t e2eaiok-pytorch112 . -f DockerfilePytorch112 --build-arg http_
 ### To start a cluster via one-click script
 ``` bash
 git clone https://github.com/intel/e2eAIOK.git
+cd e2eAIOK
 git submodule update --init --recursive
-cd e2eAIOK; python scripts/start_e2eaiok_docker.py --backend [tensorflow, pytorch, pytorch112] --dataset_path ../ --workers host1, host2, host3, host4 --proxy "http://addr:ip"
+python scripts/start_e2eaiok_docker.py --backend [tensorflow, pytorch, pytorch112] --dataset_path ../ --workers host1, host2, host3, host4 --proxy "http://addr:ip"
 ```
 
 ### To start a notebook directly
