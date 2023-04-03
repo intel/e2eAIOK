@@ -23,7 +23,7 @@ python3 scripts/start_e2eaiok_docker.py -b pytorch112 -w ${host0} ${host1} ${hos
 
 ## Enter Docker
 ```
-sshpass -p docker ssh ${host0} -p 12345
+sshpass -p docker ssh ${host0} -p 12347
 ```
 
 ## Workflow Prepare
