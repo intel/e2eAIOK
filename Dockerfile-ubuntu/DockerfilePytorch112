@@ -45,4 +45,3 @@ RUN echo "source activate pytorch" >> /root/.bashrc
 ENV PATH /opt/intel/oneapi/intelpython/latest/envs/pytorch/bin:$PATH
 ADD ./notebook/start-notebook.sh /root
 RUN chmod a+x /root/start-notebook.sh
-CMD /bin/bash -c '/root/start-notebook.sh; /bin/bash'

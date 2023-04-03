@@ -65,3 +65,8 @@ RUN echo "KMP_BLOCKTIME=1" >> /root/.bashrc
 RUN echo "KMP_AFFINITY=\"granularity=fine,compact,1,0\"" >> /root/.bashrc
 RUN echo "root:docker" | chpasswd
 ENTRYPOINT [""]
+
+RUN echo "source activate pytorch_mlperf" >> /root/.bashrc
+ENV PATH /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin:$PATH
+ADD ./notebook/start-notebook.sh /root
+RUN chmod a+x /root/start-notebook.sh
