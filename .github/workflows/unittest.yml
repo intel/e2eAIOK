@@ -8,7 +8,7 @@ on:
     - '.github/workflows/**'
     - 'conf/**'
     - 'demo/**'
-    - 'Dockerfile-ubuntu18.04/**'
+    - 'Dockerfile-ubuntu/**'
     - 'e2eAIOK/**'
     - 'modelzoo/**'
     - 'tests/unittest/**'

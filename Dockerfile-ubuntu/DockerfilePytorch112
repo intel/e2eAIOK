@@ -26,6 +26,7 @@ RUN git clone https://github.com/HawkAaron/warp-transducer && cd warp-transducer
 
 RUN python -m pip install e2eAIOK --pre
 RUN python -m pip install e2eAIOK-denas --pre --no-deps --ignore-installed
+RUN python -m pip install jupyterlab
 
 SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
 RUN python -m pip install --no-cache-dir --ignore-installed sigopt pyarrow psutil
@@ -39,3 +40,8 @@ RUN conda init bash
 RUN echo "source /opt/intel/oneapi/setvars.sh --force" >> /root/.bashrc
 RUN echo "root:docker" | chpasswd
 ENTRYPOINT [""]
+
+RUN echo "source activate pytorch" >> /root/.bashrc
+ENV PATH /opt/intel/oneapi/intelpython/latest/envs/pytorch/bin:$PATH
+ADD ./notebook/start-notebook.sh /root
+RUN chmod a+x /root/start-notebook.sh

@@ -17,7 +17,7 @@ copy model specific dataset to `/mnt/DP_disk1/dataset/{model_specific_dataset}`
 The easiest way to run test scripts is with Docker.\
 Firstly, build e2eaiok docker image.
 ```
-$ cd Dockerfile-ubuntu18.04
+$ cd Dockerfile-ubuntu
 $ docker build -t e2eaiok-tensorflow . -f DockerfileTensorflow
 $ docker build -t e2eaiok-pytorch . -f DockerfilePytorch
 $ docker build -t e2eaiok-pytorch112 . -f DockerfilePytorch112

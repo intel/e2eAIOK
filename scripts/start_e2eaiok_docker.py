@@ -17,6 +17,7 @@ def parse_args(args):
     parser.add_argument('--proxy', type=str, default=None, help='proxy for pip and apt install')
     parser.add_argument('--log_path',type=str,default="./e2eaiok_docker_building.log",help='large capacity folder for dataset storing')
     parser.add_argument('-w', '--workers',nargs='+', default=[], help='worker host list')
+    parser.add_argument('--jupyter_mode', dest="jupyter_mode", action="store_true", default=False)
     parser.add_argument('--no_push', action="store_true")
 
     return parser.parse_args(args)
@@ -203,7 +204,7 @@ def build_docker(docker_name, docker_file, logger, proxy=None, local="localhost"
     # step 3
     if next_step == 3:
         # start to build
-        cmdline = ["docker", "build",  "-t",  docker_name, "Dockerfile-ubuntu18.04", "-f", f"Dockerfile-ubuntu18.04/{docker_file}"] + proxy_config
+        cmdline = ["docker", "build",  "-t",  docker_name, "Dockerfile-ubuntu", "-f", f"Dockerfile-ubuntu/{docker_file}"] + proxy_config
         if execute(cmdline, logger):
             next_step = 4 if is_push else 6
         else:
@@ -240,7 +241,7 @@ def start_docker_registry(logger):
     cmdline = "docker run -d -e REGISTRY_HTTP_ADDR=0.0.0.0:5000 -p 5000:5000 --restart=always --name registry registry:2"
     return execute(cmdline, logger)
 
-def run_docker(docker_name, docker_nickname, port, dataset_path, logger, workers=[]):
+def run_docker(docker_name, docker_nickname, port, dataset_path, logger, workers=[], jupyter_mode = False):
     # prepare dataset path
     cmdline = f"mkdir -p {dataset_path}"
     execute(cmdline, logger, workers)
@@ -265,8 +266,11 @@ def run_docker(docker_name, docker_nickname, port, dataset_path, logger, workers
     if len(workers) == 0:
         return True, port
 
-    # run
-    cmdline = ["docker", "run",  "--shm-size=100g", "--privileged",  "--network",  "host", "--device=/dev/dri", "-d", "-v", f"{dataset_path}/:/home/vmagent/app/dataset", "-v", f"{current_folder}/:/home/vmagent/app/e2eaiok",  "-w",  "/home/vmagent/app/", "--name", docker_nickname,  docker_name, "/bin/bash", "-c", "\"service ssh start & sleep infinity\""]
+    # run w/wo jupyter
+    if(jupyter_mode):
+        cmdline = ["docker", "run",  "--shm-size=100g", "--privileged",  "--network",  "host", "--device=/dev/dri", "-d", "-v", f"{dataset_path}/:/home/vmagent/app/dataset", "-v", f"{current_folder}/:/home/vmagent/app/e2eaiok",  "-w",  "/home/vmagent/app/", "--name", docker_nickname,  docker_name, "/bin/bash", "-c", "\"(service ssh start && /root/start-notebook.sh) & sleep infinity\""]
+    else:
+        cmdline = ["docker", "run",  "--shm-size=100g", "--privileged",  "--network",  "host", "--device=/dev/dri", "-d", "-v", f"{dataset_path}/:/home/vmagent/app/dataset", "-v", f"{current_folder}/:/home/vmagent/app/e2eaiok",  "-w",  "/home/vmagent/app/", "--name", docker_nickname,  docker_name, "/bin/bash", "-c", "\"service ssh start & sleep infinity\""]
 
     return execute(cmdline, logger, workers), port
 
@@ -354,7 +358,7 @@ def main(input_args):
         docker_name = f"e2eaiok/{docker_name}"
 
     # 2. start docker
-    r, port = run_docker(docker_name, docker_nickname, port, input_args.dataset_path, logger, input_args.workers)
+    r, port = run_docker(docker_name, docker_nickname, port, input_args.dataset_path, logger, input_args.workers, jupyter_mode=input_args.jupyter_mode)
     if r:
         cmd = [f"ssh {n} -p {port}" for n in input_args.workers]
         print_success = True

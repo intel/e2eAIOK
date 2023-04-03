@@ -8,7 +8,7 @@ on:
     - '.github/workflows/integration_test_workload_resnet.yml'
     - 'conf/e2eaiok_defaults_resnet_example.conf'
     - 'demo/builtin/resnet/**'
-    - 'Dockerfile-ubuntu18.04/DockerfileTensorflow'
+    - 'Dockerfile-ubuntu/DockerfileTensorflow'
     - 'e2eAIOK/SDA/**'
     - 'e2eAIOK/common/**'
     - 'e2eAIOK/dataloader/**'
@@ -32,7 +32,7 @@ jobs:
 
     - name: Build Docker
       run: |
-        cd Dockerfile-ubuntu18.04 && docker build -t e2eaiok-tensorflow . -f DockerfileTensorflow && cd .. && yes | docker container prune && yes | docker image prune
+        cd Dockerfile-ubuntu && docker build -t e2eaiok-tensorflow . -f DockerfileTensorflow && cd .. && yes | docker container prune && yes | docker image prune
  
     - name: Test ResNet
       run: |
