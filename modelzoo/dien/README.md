@@ -10,6 +10,22 @@ Source repo: https://github.com/alibaba/ai-matrix
 ---
 
 # Quick Start
+## option 1: Use notebook (recommended)
+* setup notebook
+``` bash
+docker run --shm-size=100g -it --privileged --network host -v `pwd`:/home/vmagent/app -w /home/vmagent/app ubuntu /bin/bash
+apt-get update -y &&  DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-pip python-is-python3
+pip install jupyter
+jupyter notebook --allow-root --ip 0.0.0.0 --NotebookApp.token='' --NotebookApp.password='' --notebook-dir /home/vmagent/app/
+```
+
+* open jupyter notebook
+access "http://${hostname}:8888/notebooks/demo/builtin/dien/DIEN_DEMO.ipynb"
+
+* scroll down to 'Getting Started' and follow guide to run code blocks
+
+
+## option 2: use docker
 ## Enviroment Setup
 ``` bash
 # Setup ENV
@@ -30,53 +46,37 @@ sshpass -p docker ssh ${host0} -p 12344
 # prepare model codes
 cd /home/vmagent/app/e2eaiok/modelzoo/dien/train
 sh patch_dien.sh
+```
 
+## Download data
+```
 # Download Dataset
-cd /home/vmagent/app/e2eaiok/modelzoo/dien/feature_engineering/
-./download_dataset /home/vmagent/app/dataset/
+cd /home/vmagent/app/e2eaiok/modelzoo/dien/
+! wget wget https://zenodo.org/record/3463683/files/data.tar.gz
+! wget http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Books.json.gz
+! wget http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/meta_Books.json.gz
+! tar -jxvf data.tar.gz
+! gunzip reviews_Books.json.gz
+! gunzip meta_Books.json.gz
 
-# source spark env
-source /home/spark-env.sh
+! mkdir -p data/raw_data
+! mkdir -p data/train
+! mkdir -p data/valid
 
-# Start services
-# only if there is no spark service running, may check ${localhost}:8080 to confirm
-/home/start_spark_service.sh
+! mv *json data/raw_data/; cp data/local_test_splitByUser data/raw_data/
+! mv data/local_test_splitByUser data/valid/
 ```
 
 ## Data Process
 ```
-cd /home/vmagent/app/e2eaiok/modelzoo/dien/feature_engineering/;
-python preprocessing.py --train --dataset_path /home/vmagent/app/dataset/amazon_reviews/
-python preprocessing.py --test --dataset_path /home/vmagent/app/dataset/amazon_reviews/
+cd /home/vmagent/app/e2eaiok/modelzoo/dien;
+python3 feature_engineering/preprocessing.py --train --dataset_path `pwd`/data
+python3 feature_engineering/preprocessing.py --test --dataset_path `pwd`/data
 ```
 
 ## Training
 ```
-# edit /home/vmagent/app/dataset/amazon_reviews/meta.yaml
-uid_voc: /home/vmagent/app/dataset/amazon_reviews/uid_voc.pkl
-mid_voc: /home/vmagent/app/dataset/amazon_reviews/mid_voc.pkl
-cat_voc: /home/vmagent/app/dataset/amazon_reviews/cat_voc.pkl
-```
-
-```
-cd /home/vmagent/app/e2eaiok/; python -u run_e2eaiok.py --data_path /home/vmagent/app/dataset/amazon_reviews --model_name dien 
-```
-
-## Distributed Training
-```
-# edit below config with correct nic and hosts name
-cat conf/e2eaiok_defaults_dien_example.conf
-ppn: ${num_copy}
-iface: ${nic}
-hosts:
-- ${node1}
-- ${node2}
-- ${node3}
-- ${node4}
-
-# run distributed training
-cd /home/vmagent/app/e2eaiok/modelzoo/dien/feature_engineering/; sh split_for_distribute.sh
-cd /home/vmagent/app/e2eaiok/; python -u run_e2eaiok.py --data_path /home/vmagent/app/dataset/amazon_reviews_distributed --model_name dien  --conf conf/e2eaiok_defaults_dien_example.conf
+data_path=/home/vmagent/app/e2eaiok/modelzoo/dien; cd /home/vmagent/app/e2eaiok/; python -u run_e2eaiok.py --data_path ${data_path}/data --model_name dien 
 ```
 
 ## Result
@@ -100,10 +100,14 @@ We found the best model! Here is the model explaination
 
 ## Inference
 ```
-cd /home/vmagent/app/e2eaiok/modelzoo/dien/
-rm /home/vmagent/app/e2eaiok/modelzoo/dien/train/ai-matrix/dnn_best_model_trained/ -rf
-cp -r ${path to your result}/dnn_best_model/ dnn_best_model_trained
-sh infer.sh
+conda activate tensorflow
+
+best_train_model_path=`find /home/vmagent/app/e2eaiok/result/ -name dnn_best_model | sort -u | tail -1`
+data_path=`pwd`"/data/"
+
+cd /home/vmagent/app/e2eaiok/modelzoo/dien/; rm -rf ./dnn_best_model_trained; cp -r ${best_train_model_path} ./dnn_best_model_trained
+cd /home/vmagent/app/e2eaiok/modelzoo/dien/; python train/ai-matrix/script/train.py --mode=test --advanced --slice_id=0 --batch_size=128 --num-inter-threads=1 --num-intra-threads=1 --train_path ${data_path}/train/local_train_splitByUser --test_path ${data_path}/valid/local_test_splitByUser --meta_path ${data_path}/meta.yaml
+
 <!--
 ----------------------------------------------------------------
 Running inference with num_instance of 64
@@ -116,4 +120,21 @@ Inference prepare avg is
 Inference eval avg is
 34.5014
 -->
+```
+
+## Distributed Training
+```
+# edit below config with correct nic and hosts name
+cat conf/e2eaiok_defaults_dien_example.conf
+ppn: ${num_copy}
+iface: ${nic}
+hosts:
+- ${node1}
+- ${node2}
+- ${node3}
+- ${node4}
+
+# run distributed training
+cd /home/vmagent/app/e2eaiok/modelzoo/dien/feature_engineering/; sh split_for_distribute.sh
+cd /home/vmagent/app/e2eaiok/; python -u run_e2eaiok.py --data_path /home/vmagent/app/dataset/amazon_reviews_distributed --model_name dien  --conf conf/e2eaiok_defaults_dien_example.conf
 ```
