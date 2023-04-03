@@ -4,7 +4,7 @@
 
 ### By default, you can build e2eAIOK docker image with latest nightly-build e2eAIOK PyPI distributions.
 ```
-$ cd Dockerfile-ubuntu18.04
+$ cd Dockerfile-ubuntu
 $ docker build -t e2eaiok-tensorflow . -f DockerfileTensorflow
 $ docker build -t e2eaiok-pytorch . -f DockerfilePytorch
 $ docker build -t e2eaiok-pytorch112 . -f DockerfilePytorch112
@@ -12,7 +12,7 @@ $ docker build -t e2eaiok-pytorch112 . -f DockerfilePytorch112
 
 ### If you need http and https proxy to build docker image:
 ```
-$ cd Dockerfile-ubuntu18.04
+$ cd Dockerfile-ubuntu
 $ docker build -t e2eaiok-tensorflow . -f DockerfileTensorflow --build-arg http_proxy=http://proxy-ip:proxy-port --build-arg https_proxy=http://proxy-ip:proxy-port
 $ docker build -t e2eaiok-pytorch . -f DockerfilePytorch --build-arg http_proxy=http://proxy-ip:proxy-port --build-arg https_proxy=http://proxy-ip:proxy-port
 $ docker build -t e2eaiok-pytorch112 . -f DockerfilePytorch112 --build-arg http_proxy=http://proxy-ip:proxy-port --build-arg https_proxy=http://proxy-ip:proxy-port

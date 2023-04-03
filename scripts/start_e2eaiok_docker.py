@@ -203,7 +203,7 @@ def build_docker(docker_name, docker_file, logger, proxy=None, local="localhost"
     # step 3
     if next_step == 3:
         # start to build
-        cmdline = ["docker", "build",  "-t",  docker_name, "Dockerfile-ubuntu18.04", "-f", f"Dockerfile-ubuntu18.04/{docker_file}"] + proxy_config
+        cmdline = ["docker", "build",  "-t",  docker_name, "Dockerfile-ubuntu", "-f", f"Dockerfile-ubuntu/{docker_file}"] + proxy_config
         if execute(cmdline, logger):
             next_step = 4 if is_push else 6
         else:

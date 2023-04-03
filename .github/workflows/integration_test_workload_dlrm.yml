@@ -8,7 +8,7 @@ on:
     - '.github/workflows/integration_test_workload_dlrm.yml'
     - 'conf/e2eaiok_defaults_dlrm_example.conf'
     - 'demo/builtin/dlrm/**'
-    - 'Dockerfile-ubuntu18.04/DockerfilePytorch'
+    - 'Dockerfile-ubuntu/DockerfilePytorch'
     - 'e2eAIOK/SDA/**'
     - 'e2eAIOK/common/**'
     - 'e2eAIOK/dataloader/**'
@@ -32,7 +32,7 @@ jobs:
 
     - name: Build Docker
       run: |
-        cd Dockerfile-ubuntu18.04 && docker build -t e2eaiok-pytorch . -f DockerfilePytorch && cd .. && yes | docker container prune && yes | docker image prune
+        cd Dockerfile-ubuntu && docker build -t e2eaiok-pytorch . -f DockerfilePytorch && cd .. && yes | docker container prune && yes | docker image prune
 
     - name: Test DLRM
       run: |

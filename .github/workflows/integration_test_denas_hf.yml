@@ -7,7 +7,7 @@ on:
     paths:
     - '.github/workflows/integration_test_denas_hf.yml'
     - 'conf/denas/hf/**'
-    - 'Dockerfile-ubuntu18.04/DockerfilePytorch112'
+    - 'Dockerfile-ubuntu/DockerfilePytorch112'
     - 'e2eAIOK/DeNas/**'
     - 'e2eAIOK/common/**'
     - 'tests/cicd/DeNasJenkinsfile'
@@ -26,7 +26,7 @@ jobs:
 
     - name: Build Docker
       run: |
-        cd Dockerfile-ubuntu18.04 && docker build -t e2eaiok-pytorch112 . -f DockerfilePytorch112 && cd .. && yes | docker container prune && yes | docker image prune
+        cd Dockerfile-ubuntu && docker build -t e2eaiok-pytorch112 . -f DockerfilePytorch112 && cd .. && yes | docker container prune && yes | docker image prune
 
     - name: Test HF
       run: |

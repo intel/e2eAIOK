@@ -10,7 +10,7 @@ on:
     branches:
       - main
     paths:
-      - 'Dockerfile-ubuntu18.04/DockerfilePytorch'
+      - 'Dockerfile-ubuntu/DockerfilePytorch'
       - '.github/workflows/release_docker_pytorch.yml'
 
 jobs:
@@ -46,8 +46,8 @@ jobs:
         name: Build and Push Docker images
         uses: docker/build-push-action@v3
         with:
-          context: ./Dockerfile-ubuntu18.04
-          file: ./Dockerfile-ubuntu18.04/DockerfilePytorch
+          context: ./Dockerfile-ubuntu
+          file: ./Dockerfile-ubuntu/DockerfilePytorch
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/e2eaiok-pytorch:${{ env.RELEASE_VERSION }} , ${{ secrets.DOCKER_HUB_USERNAME }}/e2eaiok-pytorch:latest
           build-args: |
