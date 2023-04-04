@@ -1,6 +1,6 @@
 from woodwork.column_schema import ColumnSchema
 from pandas import StringDtype
-from pyrecdp.core.utils import is_text_series, is_tuple, is_encoded
+from pyrecdp.core.utils import is_text_series, is_tuple, is_encoded, is_integer_convertable
 class TextDtype(StringDtype):
     pass
 
@@ -15,6 +15,7 @@ class SeriesSchema:
             if self.config['is_text']:
                 self.config['is_encoded'] = is_encoded(s)
             self.config['is_tuple'] = is_tuple(s)
+            self.config['is_integer'] = is_integer_convertable(s)
         elif len(args) >= 2:
             # s_dtype is possible to be pandas.dtype or woodwork.dtype       
             self.name = args[0]
@@ -24,6 +25,7 @@ class SeriesSchema:
                 self.config = args[2]
             else:
                 self.config = {}
+            self.config['is_integer'] = False
         else:
             raise ValueError(f"SeriesSchema unsupport input as {args}")
 
@@ -40,8 +42,8 @@ class SeriesSchema:
             self.config['is_boolean'] = is_bool_dtype(in_type)
             self.config['is_string'] = is_string_dtype(in_type)
             self.config['is_numeric'] = is_numeric_dtype(in_type)
-            self.config['is_float'] = is_float_dtype(in_type)
-            self.config['is_integer'] = is_integer_dtype(in_type)
+            self.config['is_integer'] = is_integer_dtype(in_type) or self.config['is_integer']
+            self.config['is_float'] = is_float_dtype(in_type) if not self.config['is_integer'] else False
             self.config['is_datetime'] = is_datetime64_any_dtype(in_type)
             self.config['is_categorical'] = is_categorical_dtype(in_type)
             self.config['is_list'] = is_object_dtype(in_type) and is_list_like(in_type)

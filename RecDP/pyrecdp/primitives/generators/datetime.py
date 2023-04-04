@@ -36,6 +36,7 @@ class DatetimeFeatureGenerator(FeaturetoolsBasedFeatureGenerator):
         self.op_name = 'datetime_feature'            
 
     def fit_prepare(self, pipeline, children, max_idx):
+        cur_idx = max_idx
         pa_schema = pipeline[children[0]].output
         for pa_field in pa_schema:
             if pa_field.is_datetime:

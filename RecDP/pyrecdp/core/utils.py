@@ -129,7 +129,16 @@ def is_text_series(s):
 def is_tuple(s):
     t = type(s.loc[s.first_valid_index()]) if s.first_valid_index() >= 0 else None
     return isinstance(t, tuple)
-           
+       
+def is_integer_convertable(s):
+    from pandas.api.types import is_numeric_dtype
+    if not is_numeric_dtype(s.dtype):
+        return False
+    s = s.fillna(0)
+    if np.array_equal(s, s.astype(int)):
+        return True
+    return False
+        
 def is_encoded(s):
     line_id = s.first_valid_index()
     if line_id < 0:
