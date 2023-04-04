@@ -33,13 +33,15 @@ RUN source /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/.local/env/s
 # install dependencies
 RUN python -m pip install --no-cache-dir --ignore-installed sigopt pandas pytest prefetch_generator tensorboardX psutil
 RUN python -m pip install "git+https://github.com/mlperf/logging.git@1.0.0"
-RUN python -m pip install lightgbm transformers xgboost jupyterlab
+RUN python -m pip install lightgbm transformers xgboost
 
 SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
 RUN python -m pip install --no-cache-dir --ignore-installed sigopt pandas pytest
-RUN python -m pip install pyrecdp pyarrow
+RUN python -m pip install pyrecdp pyarrow notebook
 RUN python -m pip install e2eAIOK --pre
 RUN python -m pip install e2eAIOK-sda --pre --no-deps --ignore-installed
+SHELL ["conda", "run", "-n", "pytorch_mlperf", "/bin/bash", "-c"]
+RUN python -m pip install jupyterlab
 
 SHELL ["/bin/bash", "-c"]
 RUN sed -i 's/#Port 22/Port 12346/g' /etc/ssh/sshd_config
