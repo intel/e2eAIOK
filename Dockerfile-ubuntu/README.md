@@ -34,12 +34,12 @@ cd e2eAIOK
 git submodule update --init --recursive
 ```
 
-#### Option 2.1: one-click cluster wo/ jupyter notebook service enabled
+#### Option 2.1: Start a cluster w/o jupyter notebook service enabled
 ``` bash
 python scripts/start_e2eaiok_docker.py --backend [tensorflow, pytorch, pytorch112] --dataset_path ../ --workers host1, host2, host3, host4 --proxy "http://addr:ip"
 ```
 
-#### Option 2.2: one-click cluster w/ jupyter notebook service enabled
+#### Option 2.2: Start a cluster w/ jupyter notebook service enabled
 ``` bash
 python scripts/start_e2eaiok_docker.py --backend [tensorflow, pytorch, pytorch112] --dataset_path ../ --workers host1, host2, host3, host4 --proxy "http://addr:ip" --jupyter_mode
 ```
