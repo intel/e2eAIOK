@@ -68,7 +68,7 @@ model_info["result_file_name"] = "best_auc.txt"
 
 # config for sigopt
 model_info["experiment_name"] = "dlrm"
-model_info["sigopt_config"] = [
+model_info["hpo_config"] = [
     {'name':'learning_rate','bounds':{'min':5,'max':50},'type':'int'},
     {'name':'lamb_lr','bounds':{'min':5,'max':50},'type':'int'},
     {'name':'warmup_steps','bounds':{'min':2000,'max':4500},'type':'int'},
