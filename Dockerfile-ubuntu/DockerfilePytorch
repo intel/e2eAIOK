@@ -33,7 +33,7 @@ RUN source /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/.local/env/s
 # install dependencies
 RUN python -m pip install --no-cache-dir --ignore-installed sigopt pandas pytest prefetch_generator tensorboardX psutil
 RUN python -m pip install "git+https://github.com/mlperf/logging.git@1.0.0"
-RUN python -m pip install lightgbm transformers xgboost
+RUN python -m pip install lightgbm transformers xgboost jupyterlab
 
 SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
 RUN python -m pip install --no-cache-dir --ignore-installed sigopt pandas pytest

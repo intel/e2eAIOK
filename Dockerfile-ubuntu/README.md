@@ -20,18 +20,26 @@ $ docker build -t e2eaiok-pytorch112 . -f DockerfilePytorch112 --build-arg http_
 
 ## How to use the image.
 
+### Option 1: To start a notebook directly with a specified port(e.g. 12888).
+``` bash
+docker run -it --rm -p 12888:12888 e2eaiok-tensorflow:latest
+docker run -it --rm -p 12888:12888 e2eaiok-pytorch:latest
+docker run -it --rm -p 12888:12888 e2eaiok-pytorch112:latest
+```
+
+### Option 2: To start a cluster via one-click script
 ``` bash
 git clone https://github.com/intel/e2eAIOK.git
 cd e2eAIOK
 git submodule update --init --recursive
 ```
 
-### To start a cluster via one-click script
+#### Option 2.1: Start a cluster w/o jupyter notebook service enabled
 ``` bash
 python scripts/start_e2eaiok_docker.py --backend [tensorflow, pytorch, pytorch112] --dataset_path ../ --workers host1, host2, host3, host4 --proxy "http://addr:ip"
 ```
 
-### To start a cluster with jupyter mode via one-click script
+#### Option 2.2: Start a cluster w/ jupyter notebook service enabled
 ``` bash
 python scripts/start_e2eaiok_docker.py --backend [tensorflow, pytorch, pytorch112] --dataset_path ../ --workers host1, host2, host3, host4 --proxy "http://addr:ip" --jupyter_mode
 ```

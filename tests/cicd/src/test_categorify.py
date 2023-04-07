@@ -1,6 +1,5 @@
 #!/env/bin/python
-
-import pathlib
+from pathlib import Path
 
 import pyrecdp
 import pyspark.sql.functions as f
@@ -12,8 +11,8 @@ from pyspark.sql import *
 
 def main():
     path_prefix = "file://"
-    cur_folder = str(pathlib.Path(__file__).parent.absolute())
-    folder = cur_folder + "/../test_data"
+    cur_folder = str(Path(__file__).parent.parent.absolute())
+    folder = cur_folder + "/test_data"
     path = path_prefix + folder
     recdp_path = pyrecdp.__path__[0]
     scala_udf_jars = recdp_path + "/ScalaProcessUtils/target/recdp-scala-extensions-0.1.0-jar-with-dependencies.jar"
