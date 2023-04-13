@@ -23,7 +23,7 @@ class RegisteredAdvisor(BaseModelAdvisor):
             'learning_rate':float(0.9),
             'min_split_loss':float(7)
         }
-        self.sigopt_config = [{
+        self.hpo_config = [{
             'name': 'learning_rate',
             'bounds': {
                 'min': 0.0,
@@ -37,23 +37,23 @@ class RegisteredAdvisor(BaseModelAdvisor):
         self.sigopt_enable_parameters = []
         self.sigopt_list_parameters = {}
 
-    def __fix(self, sigopt_config):
-        for k, v in enumerate(sigopt_config):
+    def __fix(self, hpo_config):
+        for k, v in enumerate(hpo_config):
             if 'grid' in v:
                 if ('type' in v and v['type'] in ['str', 'bool']) or (not 'type' in v):
                      # handle config with string grid
                      # handle config with bool config
                      max_len = len(v['grid'])
                      self.sigopt_list_parameters[v['name']] = v['grid']
-                     sigopt_config[k]['grid'] = list(range(max_len))
-                     sigopt_config[k]['type'] = 'int'
+                     hpo_config[k]['grid'] = list(range(max_len))
+                     hpo_config[k]['type'] = 'int'
             if len(v) == 1 and 'name' in v:
                 # handle config with no option
-                sigopt_config[k]['grid'] = [0, 1]
-                sigopt_config[k]['type'] = 'int'
+                hpo_config[k]['grid'] = [0, 1]
+                hpo_config[k]['type'] = 'int'
                 self.sigopt_enable_parameters.append(v['name'])
 
-        return sigopt_config
+        return hpo_config
 
 
     # ====== Implementation of required methods ======
@@ -86,7 +86,7 @@ class RegisteredAdvisor(BaseModelAdvisor):
         config = {}
         config['project'] = 'e2eaiok'
         config['experiment'] = self.experiment_name
-        config['parameters'] = self.__fix(self.sigopt_config)
+        config['parameters'] = self.__fix(self.hpo_config)
         config['metrics'] = []
         for metric in self.metrics:
             config['metrics'].append({

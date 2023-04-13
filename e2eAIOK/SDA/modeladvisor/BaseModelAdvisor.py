@@ -64,16 +64,16 @@ class BaseModelAdvisor:
           sigopt experiment id for this task
         """
         # 1. create sigopt yaml
-        sigopt_config = self.generate_sigopt_yaml()
-        yaml.dump(sigopt_config, sys.stdout)
+        hpo_config = self.generate_sigopt_yaml()
+        yaml.dump(hpo_config, sys.stdout)
         n = timeout_input("Please confirm with sigopt parameters?(n for exit)",
                           default='y', interactive=self.interative)
         if n != 'y':
             exit()
-        self.params['model_parameter'] = sigopt_config
+        self.params['model_parameter'] = hpo_config
         # 2. create sigopt connection
         self.conn, self.experiment = self._setup_sigopt_connection(
-            sigopt_config, experiment_id)
+            hpo_config, experiment_id)
         return self.experiment.id
 
     def register(self, info):
@@ -92,10 +92,10 @@ class BaseModelAdvisor:
         [Register advisor] hyper_parameters should be a dict, ex: 
         {'max_depth':11, 'learning_rate':float(0.9), 'min_split_loss':float(7)}""")
                 self.parameters = v
-            if k == "sigopt_config" and 'sigopt_config' in dir(self):
+            if k == "hpo_config" and 'hpo_config' in dir(self):
                 if not isinstance(v, list) or not (len(v) > 0 and isinstance(v[0], dict)):
                     raise ValueError("""
-        [Register advisor] sigopt_config should be a list, ex: 
+        [Register advisor] hpo_config should be a list, ex: 
         [{
             'name': 'learning_rate',
             'bounds': {
@@ -104,7 +104,7 @@ class BaseModelAdvisor:
             },
             'type': 'double'
         }]""")
-                self.sigopt_config = v
+                self.hpo_config = v
                 self.parameters = dict((i["name"], None) for i in v)
             if k == "execute_cmd" and "execute_cmd_base" in dir(self):
                 self.execute_cmd_base = v
@@ -113,12 +113,12 @@ class BaseModelAdvisor:
             if k == "observation_budget" and "observation_budget" in dir(self):
                 self.observation_budget = v
 
-    def _setup_sigopt_connection(self, sigopt_config, experiment_id=None):
-        name = sigopt_config["experiment"]
-        parameters = sigopt_config["parameters"]
-        metrics = sigopt_config["metrics"]
-        observation_budget = sigopt_config["observation_budget"]
-        project = sigopt_config["project"]
+    def _setup_sigopt_connection(self, hpo_config, experiment_id=None):
+        name = hpo_config["experiment"]
+        parameters = hpo_config["parameters"]
+        metrics = hpo_config["metrics"]
+        observation_budget = hpo_config["observation_budget"]
+        project = hpo_config["project"]
 
         num_tried = 0
         while True:
