@@ -18,12 +18,12 @@ class BERTAdvisor(BaseModelAdvisor):
         self.logger = logging.getLogger('sigopt')
         self.python_path = self.params['python_path'] if "python_path" in self.params else "/opt/intel/oneapi/intelpython/latest/envs/tensorflow/bin"
         self.train_python = f"{self.python_path}/python"
-        self.train_script = os.path.join(os.getcwd(),"modelzoo/bert/benchmarks/launch_benchmark.py")
+        self.train_script =  self.params["train_script"] if "train_script" in self.params else os.path.join(os.getcwd(),"modelzoo/bert/benchmarks/launch_benchmark.py")
         self.train_path = train_path
         self.test_path = eval_path
         self.dataset_meta_path = dataset_meta_path
-        self.current_path = os.getcwd()
-        self.extra_pythonpath = f"{self.current_path}/modelzoo/bert/benchmarks/"
+        self.current_path = self.params["current_path"] if "current_path" in self.params else os.getcwd()
+        self.extra_pythonpath = os.path.join(self.current_path, "modelzoo/bert/benchmarks/")
 
     def initialize_model_parameter(self, assignments=None):
         '''
@@ -111,7 +111,7 @@ class BERTAdvisor(BaseModelAdvisor):
 
     def dist_launch(self, args):
         # construct BERT launch command
-        os.environ["MODEL_DIR"] = MODEL_DIR = os.path.join(os.getcwd(),"modelzoo/bert")
+        os.environ["MODEL_DIR"] = MODEL_DIR = os.path.join(self.current_path,"modelzoo/bert")
         os.environ["OUTPUT_DIR"] = OUT_DIR = self.params['model_saved_path']
         os.environ["DATASET_DIR"] = os.path.dirname(self.dataset_meta_path)
         os.environ["CHECKPOINT_DIR"] = "$DATASET_DIR/pre-trained-model/bert-large-uncased/wwm_uncased_L-24_H-1024_A-16"
@@ -171,7 +171,7 @@ class BERTAdvisor(BaseModelAdvisor):
 
     def launch(self, args):
         # construct BERT launch command
-        os.environ["MODEL_DIR"] = MODEL_DIR = os.path.join(os.getcwd(),"modelzoo/bert")
+        os.environ["MODEL_DIR"] = MODEL_DIR = os.path.join(self.current_path,"modelzoo/bert")
         os.environ["OUTPUT_DIR"] = OUT_DIR = self.params['model_saved_path']
         os.environ["DATASET_DIR"] = os.path.dirname(self.dataset_meta_path)
         os.environ["CHECKPOINT_DIR"] = "$DATASET_DIR/pre-trained-model/bert-large-uncased/wwm_uncased_L-24_H-1024_A-16"
