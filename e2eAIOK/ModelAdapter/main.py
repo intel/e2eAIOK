@@ -13,12 +13,14 @@ from e2eAIOK.common.utils import update_dict
 import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 e2eaiok_dir = e2eAIOK.__path__[0]
 
-safe_base_dir = "/home/vmagent/app"
-def is_safe_path(basedir, path, check=False):
-    if check:
-        return os.path.abspath(path).startswith(basedir)
-    else:
-        return True
+def parse_config(conf_file):
+    settings = {}
+    if not os.path.exists(conf_file):
+        print(f"{conf_file} do not exist!")
+        return settings
+    with open(conf_file) as f:
+        settings.update(yaml.safe_load(f))
+    return settings
 
 def main(args):
     ''' main function
@@ -30,12 +32,7 @@ def main(args):
         cfg = yaml.safe_load(f)
     with open(os.path.join(e2eaiok_dir, "ModelAdapter/default_ma.conf")) as f:
         cfg = update_dict(cfg, yaml.safe_load(f))
-    if not is_safe_path(safe_base_dir, args.cfg):
-        print(f"{args.cfg} is not safe.")
-        sys.exit()      
-    if os.access(args.cfg, os.R_OK):
-        with open(args.cfg) as f:
-            cfg = edict(update_dict(cfg, yaml.safe_load(f)))
+    cfg = edict(update_dict(cfg, parse_config(args["cfg"])))
     torch.manual_seed(cfg.seed)
 
     #################### directory conguration ################
@@ -91,7 +88,7 @@ def main(args):
     print(cfg)
     ###################### create task ###############
     task = ModelAdapterTask(cfg, cfg.model_save_path, is_distributed)
-    metric = task.run(eval=args.eval, resume=args.resume)
+    metric = task.run(eval=args["eval"], resume=args["resume"])
     ############### destroy dist ###############
     if is_distributed:
         dist.destroy_process_group()
@@ -105,7 +102,8 @@ if __name__ == '__main__':
     parser.add_argument('--eval',action='store_true')
     parser.add_argument('--resume',action='store_true')
     # parser.add_argument("--opts", default=None, nargs=argparse.REMAINDER)
-    args = parser.parse_args()
+    args = {}
+    args.update(parser.parse_args().__dict__)
     main(args)
 
     print(f"Totally take {(time.time()-start_time)} seconds")
