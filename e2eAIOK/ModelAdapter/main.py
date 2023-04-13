@@ -47,28 +47,16 @@ def main(args):
     prefix_time = "%s_%s"%(prefix,int(time.time()))
     cfg.experiment.tag = cfg.experiment.tag + "%s" % ("_dist%s" % ext_dist.my_size if is_distributed else "")
     root_dir = os.path.join(cfg.output_dir, cfg.experiment.project,cfg.experiment.tag)
-    LOG_DIR = os.path.join(root_dir,"log")                      # to save training log
-    PROFILE_DIR = os.path.join(root_dir,"profile")              # to save profiling result
-    model_save_path = os.path.join(root_dir, prefix)
+    # LOG_DIR = os.path.join(root_dir,"log")                      # to save training log
+    # PROFILE_DIR = os.path.join(root_dir,"profile")              # to save profiling result
+    # model_save_path = os.path.join(root_dir, prefix)
     if "tensorboard_dir" in cfg and cfg.tensorboard_dir != "":
         cfg.tensorboard_dir = os.path.join(cfg.tensorboard_dir,"%s_%s"%(cfg.experiment.tag,prefix))  # to save tensorboard log
-        if not is_safe_path(safe_base_dir, cfg.tensorboard_dir):
-            print(f"{cfg.tensorboard_dir} is not safe.")
-            sys.exit()
         os.makedirs(cfg.tensorboard_dir,exist_ok=True)
-    cfg.profiler_config.trace_file = os.path.join(PROFILE_DIR,"profile_%s"%prefix_time)
-    if not is_safe_path(safe_base_dir, LOG_DIR):
-        print(f"{LOG_DIR} is not safe.")
-        sys.exit()
-    if not is_safe_path(safe_base_dir, PROFILE_DIR):
-        print(f"{PROFILE_DIR} is not safe.")
-        sys.exit()
-    if not is_safe_path(safe_base_dir, model_save_path):
-        print(f"{model_save_path} is not safe.")
-        sys.exit()    
-    os.makedirs(LOG_DIR,exist_ok=True)
-    os.makedirs(PROFILE_DIR,exist_ok=True) 
-    os.makedirs(model_save_path,exist_ok=True)
+    cfg.profiler_config.trace_file = os.path.join(cfg.profile_dir,"profile_%s"%prefix_time) 
+    os.makedirs(cfg.log_dir,exist_ok=True)
+    os.makedirs(cfg.profile_dir,exist_ok=True) 
+    os.makedirs(cfg.model_save_path,exist_ok=True)
 
     ###################### Distiller check ################
     if "distill" in cfg.experiment.strategy.lower():
@@ -87,7 +75,7 @@ def main(args):
     for handler in logging.root.handlers[:]: 
         logging.root.removeHandler(handler)
     
-    log_filename = os.path.join(LOG_DIR, "%s.txt"%prefix_time)
+    log_filename = os.path.join(cfg.log_dir, "%s.txt"%prefix_time)
     logging.basicConfig(filename=log_filename, level=logging.INFO,
                         format='%(asctime)s %(levelname)s [%(filename)s %(funcName)s %(lineno)d]: %(message)s',
                         datefmt='%m/%d/%Y %I:%M:%S %p',
@@ -102,7 +90,7 @@ def main(args):
     print("configurations:")
     print(cfg)
     ###################### create task ###############
-    task = ModelAdapterTask(cfg, model_save_path, is_distributed)
+    task = ModelAdapterTask(cfg, cfg.model_save_path, is_distributed)
     metric = task.run(eval=args.eval, resume=args.resume)
     ############### destroy dist ###############
     if is_distributed:

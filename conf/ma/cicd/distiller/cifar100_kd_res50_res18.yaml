@@ -4,6 +4,9 @@ experiment:
   strategy: "OnlyDistillationStrategy"
   
 output_dir: "/home/vmagent/app/data/model"
+log_dir: "/home/vmagent/app/data/model/demo/cifar100_kd_res50_res18/log"
+profile_dir: "/home/vmagent/app/data/model/demo/cifar100_kd_res50_res18/profile"
+model_save_path: "/home/vmagent/app/data/model/demo/cifar100_kd_res50_res18/resnet18_cifar_OnlyDistillationStrategy_cifar100"
 train_epochs: 1
 
 ### dataset

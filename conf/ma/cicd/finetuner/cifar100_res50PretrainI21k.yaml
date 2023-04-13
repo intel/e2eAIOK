@@ -4,6 +4,9 @@ experiment:
   strategy: "OnlyFinetuneStrategy"
 
 output_dir: "/home/vmagent/app/data/model"
+log_dir: "/home/vmagent/app/data/model/finetuner/cifar100_res50_PretrainI21k/log"
+profile_dir: "/home/vmagent/app/data/model/finetuner/cifar100_res50_PretrainI21k/profile"
+model_save_path: "/home/vmagent/app/data/model/finetuner/cifar100_res50_PretrainI21k/resnet50_OnlyFinetuneStrategy_cifar100"
 train_epochs: 1
 enable_ipex: True
 
