@@ -34,9 +34,8 @@ class post_install(install):
 
 setuptools.setup(
     name="pyrecdp",
-    version="0.1.4",
+    version="0.1.5",
     author="INTEL AIA BDF",
-    author_email="chendi.xue@intel.com",
     description=
     "A data processing bundle for spark based recommender system operations",
     long_description=long_description,
