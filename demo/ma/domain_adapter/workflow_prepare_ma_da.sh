@@ -15,10 +15,17 @@
 #!/bin/bash
 set -x
 
+current_dir=`pwd`
+
 # clone code
 git clone https://github.com/intel/e2eAIOK.git
 cd e2eAIOK
-git submodule update --init -recursive
+git submodule update --init modelzoo/third_party/nnUNet
 
 # unpack patch
 cd modelzoo/unet && sh patch_unet.sh 
+
+# remove useless code
+cd $current_dir
+mv e2eAIOK/modelzoo/unet .
+rm -rf e2eAIOK
