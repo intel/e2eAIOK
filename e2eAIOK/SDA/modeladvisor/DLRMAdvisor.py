@@ -18,8 +18,10 @@ class DLRMAdvisor(BaseModelAdvisor):
             level=logging.INFO,
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         self.logger = logging.getLogger('sigopt')
-        self.train_python = "/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin/python"
-        self.train_script = "/home/vmagent/app/e2eaiok/modelzoo/dlrm/dlrm/launch.py"
+        self.python_path = self.params['python_path'] if "python_path" in self.params else "/opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin"
+        self.train_python = f"{self.python_path}/python"
+        self.train_script_path = self.params['train_script'] if "train_script" in self.params else "/home/vmagent/app/e2eaiok/modelzoo/dlrm/dlrm"
+        self.train_script = f"{self.train_script_path}/launch.py"
         self.train_path = train_path
         self.test_path = eval_path
         self.dataset_meta_path = dataset_meta_path
@@ -118,7 +120,7 @@ class DLRMAdvisor(BaseModelAdvisor):
         # construct WnD launch command
         cmd = f"{self.train_python} -u {self.train_script} "
         model_saved_path = args['model_saved_path']
-        cmd +=f"/home/vmagent/app/e2eaiok/modelzoo/dlrm/dlrm/dlrm_s_pytorch.py --mini-batch-size={args['train_batch_size']} --print-freq=16  " \
+        cmd +=f"{self.train_script_path}/dlrm_s_pytorch.py --mini-batch-size={args['train_batch_size']} --print-freq=16  " \
             + f"--test-mini-batch-size={args['test_batch_size']} --test-freq=800 " \
             + f"--train-data-path={self.train_path} --eval-data-path={self.test_path} " \
             + f"--nepochs=1 --day-feature-count={args['data_path'] + '/day_fea_count.npz'} " \
@@ -147,7 +149,7 @@ class DLRMAdvisor(BaseModelAdvisor):
         else:
             hostfile = args['hostfile']
             cmd = f"{self.train_python} -u {self.train_script}  --distributed --nproc_per_node={ppn} --nnodes={len(hosts)} --hostfile {hostfile} "  
-        cmd +=f"/home/vmagent/app/e2eaiok/modelzoo/dlrm/dlrm/dlrm_s_pytorch.py --mini-batch-size={args['train_batch_size']} --print-freq=16  " \
+        cmd +=f"{self.train_script_path}/dlrm_s_pytorch.py --mini-batch-size={args['train_batch_size']} --print-freq=16  " \
             + f"--test-mini-batch-size={args['test_batch_size']} --test-freq=800 " \
             + f"--train-data-path={self.train_path} --eval-data-path={self.test_path} " \
             + f"--nepochs=1 --day-feature-count={args['data_path'] + '/day_fea_count.npz'} " \
