@@ -13,12 +13,14 @@ from e2eAIOK.common.utils import update_dict
 import e2eAIOK.common.trainer.utils.extend_distributed as ext_dist
 e2eaiok_dir = e2eAIOK.__path__[0]
 
-safe_base_dir = "/home/vmagent/app"
-def is_safe_path(basedir, path, check=False):
-    if check:
-        return os.path.abspath(path).startswith(basedir)
-    else:
-        return True
+def parse_config(conf_file):
+    settings = {}
+    if not os.path.exists(conf_file):
+        print(f"{conf_file} do not exist!")
+        return settings
+    with open(conf_file) as f:
+        settings.update(yaml.safe_load(f))
+    return settings
 
 def main(args):
     ''' main function
@@ -30,12 +32,7 @@ def main(args):
         cfg = yaml.safe_load(f)
     with open(os.path.join(e2eaiok_dir, "ModelAdapter/default_ma.conf")) as f:
         cfg = update_dict(cfg, yaml.safe_load(f))
-    if not is_safe_path(safe_base_dir, args.cfg):
-        print(f"{args.cfg} is not safe.")
-        sys.exit()      
-    if os.access(args.cfg, os.R_OK):
-        with open(args.cfg) as f:
-            cfg = edict(update_dict(cfg, yaml.safe_load(f)))
+    cfg = edict(update_dict(cfg, parse_config(args["cfg"])))
     torch.manual_seed(cfg.seed)
 
     #################### directory conguration ################
@@ -47,28 +44,16 @@ def main(args):
     prefix_time = "%s_%s"%(prefix,int(time.time()))
     cfg.experiment.tag = cfg.experiment.tag + "%s" % ("_dist%s" % ext_dist.my_size if is_distributed else "")
     root_dir = os.path.join(cfg.output_dir, cfg.experiment.project,cfg.experiment.tag)
-    LOG_DIR = os.path.join(root_dir,"log")                      # to save training log
-    PROFILE_DIR = os.path.join(root_dir,"profile")              # to save profiling result
-    model_save_path = os.path.join(root_dir, prefix)
+    # LOG_DIR = os.path.join(root_dir,"log")                      # to save training log
+    # PROFILE_DIR = os.path.join(root_dir,"profile")              # to save profiling result
+    # model_save_path = os.path.join(root_dir, prefix)
     if "tensorboard_dir" in cfg and cfg.tensorboard_dir != "":
         cfg.tensorboard_dir = os.path.join(cfg.tensorboard_dir,"%s_%s"%(cfg.experiment.tag,prefix))  # to save tensorboard log
-        if not is_safe_path(safe_base_dir, cfg.tensorboard_dir):
-            print(f"{cfg.tensorboard_dir} is not safe.")
-            sys.exit()
         os.makedirs(cfg.tensorboard_dir,exist_ok=True)
-    cfg.profiler_config.trace_file = os.path.join(PROFILE_DIR,"profile_%s"%prefix_time)
-    if not is_safe_path(safe_base_dir, LOG_DIR):
-        print(f"{LOG_DIR} is not safe.")
-        sys.exit()
-    if not is_safe_path(safe_base_dir, PROFILE_DIR):
-        print(f"{PROFILE_DIR} is not safe.")
-        sys.exit()
-    if not is_safe_path(safe_base_dir, model_save_path):
-        print(f"{model_save_path} is not safe.")
-        sys.exit()    
-    os.makedirs(LOG_DIR,exist_ok=True)
-    os.makedirs(PROFILE_DIR,exist_ok=True) 
-    os.makedirs(model_save_path,exist_ok=True)
+    cfg.profiler_config.trace_file = os.path.join(cfg.profile_dir,"profile_%s"%prefix_time) 
+    os.makedirs(cfg.log_dir,exist_ok=True)
+    os.makedirs(cfg.profile_dir,exist_ok=True) 
+    os.makedirs(cfg.model_save_path,exist_ok=True)
 
     ###################### Distiller check ################
     if "distill" in cfg.experiment.strategy.lower():
@@ -87,7 +72,7 @@ def main(args):
     for handler in logging.root.handlers[:]: 
         logging.root.removeHandler(handler)
     
-    log_filename = os.path.join(LOG_DIR, "%s.txt"%prefix_time)
+    log_filename = os.path.join(cfg.log_dir, "%s.txt"%prefix_time)
     logging.basicConfig(filename=log_filename, level=logging.INFO,
                         format='%(asctime)s %(levelname)s [%(filename)s %(funcName)s %(lineno)d]: %(message)s',
                         datefmt='%m/%d/%Y %I:%M:%S %p',
@@ -102,8 +87,8 @@ def main(args):
     print("configurations:")
     print(cfg)
     ###################### create task ###############
-    task = ModelAdapterTask(cfg, model_save_path, is_distributed)
-    metric = task.run(eval=args.eval, resume=args.resume)
+    task = ModelAdapterTask(cfg, cfg.model_save_path, is_distributed)
+    metric = task.run(eval=args["eval"], resume=args["resume"])
     ############### destroy dist ###############
     if is_distributed:
         dist.destroy_process_group()
@@ -117,7 +102,8 @@ if __name__ == '__main__':
     parser.add_argument('--eval',action='store_true')
     parser.add_argument('--resume',action='store_true')
     # parser.add_argument("--opts", default=None, nargs=argparse.REMAINDER)
-    args = parser.parse_args()
+    args = {}
+    args.update(parser.parse_args().__dict__)
     main(args)
 
     print(f"Totally take {(time.time()-start_time)} seconds")

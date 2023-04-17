@@ -166,9 +166,9 @@ class _Reader:
 
             # delay to create handle
             self.values_file = None
+            self._ensure_handle_created()
 
         def __getitem__(self, idx: int):
-            self._ensure_handle_created()
             self.values_file.seek(self.item_size * idx)
             try:
                 values_content = self.values_file.read(self.item_size)

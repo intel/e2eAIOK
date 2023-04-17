@@ -3,12 +3,14 @@ experiment:
     tag: "cifar100_res18"
 
 output_dir: "/home/vmagent/app/data/model"
+log_dir: "/home/vmagent/app/data/model/demo/cifar100_res18/log"
+profile_dir: "/home/vmagent/app/data/model/demo/cifar100_res18/profile"
+model_save_path: "/home/vmagent/app/data/model/demo/cifar100_res18/resnet18_cifar_cifar100"
 train_epochs: 1
 
 data_set: "cifar100"
 data_path:  "/home/vmagent/app/data/dataset/cifar"
 num_workers: 0
-input_size: 224
 
 model_type: "resnet18_cifar"
 
