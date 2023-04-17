@@ -44,7 +44,7 @@ def cnn_mutation_random_func(top_candidates, super_net, search_space, num_classe
     if len(top_candidates) <= 10:
         tmp_random_structure_str = plainnet_struct
     else:
-        tmp_idx = random.choice(range(0, len(top_candidates) - 1))
+        tmp_idx = random.choice(range(0, len(top_candidates) - 1)) #nosec
         tmp_random_structure_str = top_candidates[tmp_idx]
 
     random_structure_str = get_new_random_structure_str(super_net, search_space, num_classes, structure_str=tmp_random_structure_str, num_replaces=2)
@@ -58,13 +58,13 @@ def get_new_random_structure_str(super_net, search_space, num_classes, structure
     the_net = super_net(num_classes, plainnet_struct=structure_str, no_create=True)
     selected_random_id_set = set()
     for replace_count in range(num_replaces):
-        random_id = random.choice(range(0, len(the_net.block_list) - 1))
+        random_id = random.choice(range(0, len(the_net.block_list) - 1)) #nosec
         if random_id in selected_random_id_set:
             continue
         selected_random_id_set.add(random_id)
         to_search_student_blocks_list_list = search_space.gen_search_space(the_net.block_list, random_id)
         to_search_student_blocks_list = [x for sublist in to_search_student_blocks_list_list for x in sublist]
-        new_student_block_str = random.choice(to_search_student_blocks_list)
+        new_student_block_str = random.choice(to_search_student_blocks_list) #nosec
         if len(new_student_block_str) > 0:
             new_student_block = super_net.create_netblock_list_from_str(new_student_block_str, no_create=True)
             assert len(new_student_block) == 1

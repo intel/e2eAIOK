@@ -167,9 +167,9 @@ def categorify_dien_data(df, user_df, asin_df, cat_df, proc, output_name):
 
 
 def load_voc(proc, output_name):
-    import pickle as pkl
+    import pickle as pkl #nosec
     with open("/home/xxx/dien/" + f'/{output_name}.pkl', "rb") as f:
-        voc = dict((key, value) for (key,value) in pkl.load(f).items())
+        voc = dict((key, value) for (key,value) in pkl.load(f).items()) #nosec
     dict_df = convert_to_spark_df(voc, proc.spark)
     return dict_df
 

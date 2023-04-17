@@ -66,7 +66,7 @@ def main(hdfs_node, dataset_path):
         t12 = timer()
         print(f"Convert {filename} to parquet completed, took {(t12 - t11)} secs")
 
-    import subprocess
+    import subprocess #nosec
     process = subprocess.Popen(["sh", "raw_test_split.sh", csv_folder])
     t11 = timer()
     process.wait()

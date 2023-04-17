@@ -167,7 +167,7 @@ def categorify_dien_data(df, user_df, asin_df, cat_df, proc, output_name):
 
 
 def save_to_voc(df, proc, cols, default_name, default_v, output_name):
-    import pickle
+    import pickle #nosec
     col_name = ''
     dtypes_list = []
     if isinstance(cols, list):

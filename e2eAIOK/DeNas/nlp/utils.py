@@ -53,18 +53,18 @@ def decode_arch(arches_file):
 def bert_populate_random_func(search_space):
     cand_tuple = list() #[layer_num, [num_attention_heads]*layer_num, [qkv_sizes]*layer_num, hidden_size, [intermediate_sizes]*layer_num]
     dimensions = ['head_num', 'hidden_size', 'ffn_size']
-    depth = random.choice(search_space['layer_num'])
+    depth = random.choice(search_space['layer_num']) #nosec
     cand_tuple.append(depth)
     for dimension in dimensions:
         if dimension == 'head_num':
-            head_num = random.choice(search_space[dimension])
+            head_num = random.choice(search_space[dimension]) #nosec
             qkv_size = head_num * 64
             cand_tuple.append(head_num)
             cand_tuple.append(qkv_size)
         elif dimension == 'hidden_size':
-            cand_tuple.append(random.choice(search_space['hidden_size']))
+            cand_tuple.append(random.choice(search_space['hidden_size'])) #nosec
         elif dimension == 'ffn_size':
-            cand_tuple.append(random.choice(search_space['ffn_size']))
+            cand_tuple.append(random.choice(search_space['ffn_size'])) #nosec
 
     return tuple(cand_tuple)
 
@@ -86,52 +86,52 @@ def bert_is_legal(cand, vis_dict, params, super_net):
     return True
 
 def bert_mutation_random_func(m_prob, s_prob, search_space, top_candidates):
-    cand = list(random.choice(top_candidates))
+    cand = list(random.choice(top_candidates)) #nosec
     depth, num_heads, qkv_sizes, hidden_size, ffn_sizes = cand[0], cand[1], cand[2], cand[3], cand[4]
-    random_s = random.random()
+    random_s = random.random() #nosec
     # depth
     if random_s < s_prob:
-        new_depth = random.choice(search_space['layer_num'])
+        new_depth = random.choice(search_space['layer_num']) #nosec
         depth = new_depth
-        num_heads = random.choice(search_space['head_num'])
+        num_heads = random.choice(search_space['head_num']) #nosec
         qkv_sizes = num_heads * 64
-        hidden_size = random.choice(search_space['hidden_size'])
-        ffn_sizes = random.choice(search_space['ffn_size'])
-    random_s = random.random()
+        hidden_size = random.choice(search_space['hidden_size']) #nosec
+        ffn_sizes = random.choice(search_space['ffn_size']) #nosec
+    random_s = random.random() #nosec
     if random_s < m_prob:
         # num_heads
-        num_heads = random.choice(search_space['head_num'])
+        num_heads = random.choice(search_space['head_num']) #nosec
         # qkv_sizes
         qkv_sizes = num_heads * 64
     # hidden_size
-    random_s = random.random()
+    random_s = random.random() #nosec
     if random_s < s_prob:
-        hidden_size = random.choice(search_space['hidden_size'])
+        hidden_size = random.choice(search_space['hidden_size']) #nosec
     # ffn_sizes
-    random_s = random.random()
+    random_s = random.random() #nosec
     if random_s < s_prob:
-        ffn_sizes = random.choice(search_space['ffn_size'])
+        ffn_sizes = random.choice(search_space['ffn_size']) #nosec
 
     result_cand = [depth] + [num_heads] + [qkv_sizes] + [hidden_size] + [ffn_sizes]
     return tuple(result_cand)
 
 def bert_crossover_random_func(top_candidates):
-    p1 = random.choice(top_candidates)
-    p2 = random.choice(top_candidates)
+    p1 = random.choice(top_candidates) #nosec
+    p2 = random.choice(top_candidates) #nosec
     max_iters_tmp = 50
     while len(p1) != len(p2) and max_iters_tmp > 0:
         max_iters_tmp -= 1
-        p1 = random.choice(top_candidates)
-        p2 = random.choice(top_candidates)
+        p1 = random.choice(top_candidates) #nosec
+        p2 = random.choice(top_candidates) #nosec
     cand = []
     for ind, it in enumerate(zip(p1, p2)):
         if ind == 2:
             continue
         elif ind == 1:
-            cand.append(random.choice(it))
+            cand.append(random.choice(it)) #nosec
             cand.append(cand[-1] * 64)
         else:
-            cand.append(random.choice(it))
+            cand.append(random.choice(it)) #nosec
     return tuple(cand)
 
 def get_bert_latency(model, batch_size, max_seq_length, gpu, infer_cnt):

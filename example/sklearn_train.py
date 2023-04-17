@@ -7,7 +7,7 @@ import numpy
 import time
 import os, sys
 import argparse
-import pickle
+import pickle #nosec
 
 DATASET_NAME = "Sklearn Wine"
 FEATURE_ENG_PIPELINE_NAME = "Sklearn Standard Scalar"

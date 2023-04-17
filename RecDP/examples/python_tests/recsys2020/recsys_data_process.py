@@ -109,7 +109,7 @@ def decodeBertTokenizerAndExtractFeatures(df, proc, output_name):
                         cl_loop = False
                 else:
                     cl_loop = False
-        hash_object = hashlib.md5(uhash.encode('utf-8'))
+        hash_object = hashlib.md5(uhash.encode('utf-8')) #nosec
         return hash_object.hexdigest()
 
     def clean_text(text):

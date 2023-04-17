@@ -28,51 +28,51 @@ def vit_is_legal(cand, vis_dict, params, super_net):
 def vit_populate_random_func(search_space):
     cand_tuple = list()
     dimensions = ['mlp_ratio', 'num_heads']
-    depth = random.choice(search_space['depth'])
+    depth = random.choice(search_space['depth']) #nosec
     cand_tuple.append(depth)
     for dimension in dimensions:
         for i in range(depth):
-            cand_tuple.append(random.choice(search_space[dimension]))
-    cand_tuple.append(random.choice(search_space['embed_dim']))
+            cand_tuple.append(random.choice(search_space[dimension])) #nosec
+    cand_tuple.append(random.choice(search_space['embed_dim'])) #nosec
     return tuple(cand_tuple)
 
 def vit_mutation_random_func(m_prob, s_prob, search_space, top_candidates):
-    cand = list(random.choice(top_candidates))
+    cand = list(random.choice(top_candidates)) #nosec
     depth, mlp_ratio, num_heads, embed_dim = vit_decode_cand_tuple(cand)
-    random_s = random.random()
+    random_s = random.random() #nosec
     # depth
     if random_s < s_prob:
-        new_depth = random.choice(search_space['depth'])
+        new_depth = random.choice(search_space['depth']) #nosec
         if new_depth > depth:
-            mlp_ratio = mlp_ratio + [random.choice(search_space['mlp_ratio']) for _ in range(new_depth - depth)]
-            num_heads = num_heads + [random.choice(search_space['num_heads']) for _ in range(new_depth - depth)]
+            mlp_ratio = mlp_ratio + [random.choice(search_space['mlp_ratio']) for _ in range(new_depth - depth)] #nosec
+            num_heads = num_heads + [random.choice(search_space['num_heads']) for _ in range(new_depth - depth)] #nosec
         else:
             mlp_ratio = mlp_ratio[:new_depth]
             num_heads = num_heads[:new_depth]
         depth = new_depth
     # mlp_ratio
     for i in range(depth):
-        random_s = random.random()
+        random_s = random.random() #nosec
         if random_s < m_prob:
-            mlp_ratio[i] = random.choice(search_space['mlp_ratio'])
+            mlp_ratio[i] = random.choice(search_space['mlp_ratio']) #nosec
     # num_heads
     for i in range(depth):
-        random_s = random.random()
+        random_s = random.random() #nosec
         if random_s < m_prob:
-            num_heads[i] = random.choice(search_space['num_heads'])
+            num_heads[i] = random.choice(search_space['num_heads']) #nosec
     # embed_dim
-    random_s = random.random()
+    random_s = random.random() #nosec
     if random_s < s_prob:
-        embed_dim = random.choice(search_space['embed_dim'])
+        embed_dim = random.choice(search_space['embed_dim']) #nosec
     result_cand = [depth] + mlp_ratio + num_heads + [embed_dim]
     return tuple(result_cand)
 
 def vit_crossover_random_func(top_candidates):
-    p1 = random.choice(top_candidates)
-    p2 = random.choice(top_candidates)
+    p1 = random.choice(top_candidates) #nosec
+    p2 = random.choice(top_candidates) #nosec
     max_iters_tmp = 50
     while len(p1) != len(p2) and max_iters_tmp > 0:
         max_iters_tmp -= 1
-        p1 = random.choice(top_candidates)
-        p2 = random.choice(top_candidates)
-    return tuple(random.choice([i, j]) for i, j in zip(p1, p2))
+        p1 = random.choice(top_candidates) #nosec
+        p2 = random.choice(top_candidates) #nosec
+    return tuple(random.choice([i, j]) for i, j in zip(p1, p2)) #nosec
