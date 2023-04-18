@@ -14,8 +14,9 @@ RUN cp -r /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/lib/* /opt/in
 # install dependencies
 RUN python -m pip install onnx tqdm lark-parser pyyaml
 RUN conda install ninja cffi typing --no-update-deps
-RUN conda install intel-openmp mkl mkl-include numpy -c intel --no-update-deps
+RUN conda install intel-openmp mkl mkl-include -c intel --no-update-deps
 RUN conda install -c conda-forge gperftools
+RUN python -m pip install numpy==1.18.5
 # git clone pytorch v1.5.0-rc3
 RUN git clone https://github.com/pytorch/pytorch.git && cd pytorch && git checkout tags/v1.5.0-rc3 -b v1.5-rc3 && git submodule sync && git submodule update --init --recursive
 # git clone ipex v0.2
