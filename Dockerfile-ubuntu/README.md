@@ -43,3 +43,21 @@ python scripts/start_e2eaiok_docker.py --backend [tensorflow, pytorch, pytorch11
 ``` bash
 python scripts/start_e2eaiok_docker.py --backend [tensorflow, pytorch, pytorch112] --dataset_path ../ --workers host1, host2, host3, host4 --proxy "http://addr:ip" --jupyter_mode
 ```
+
+## Versions and Components
+
+### DockerfilePytorch
+* PyTorch 1.5
+* Intel® Extension for Pytorch 0.2, 1.12.x
+* 3.7.16
+
+### DockerfilePytorch112
+* PyTorch 1.12
+* Intel® Extension for Pytorch 1.12.x
+* Python 3.9.15
+
+### DockerfileTensorflow
+* TensorFlow 2.10.0
+* Intel® Extension for TensorFlow 2.10.x
+* Horovod 0.26
+* Python 3.9.12
