@@ -814,7 +814,7 @@ class NegativeSample(Operation):
             asin_total_len = len(item_list)
             asin_neg = asin
             while True:
-                asin_neg_index = random.randint(0, asin_total_len - 1)
+                asin_neg_index = random.randint(0, asin_total_len - 1) #nosec
                 asin_neg = item_list[asin_neg_index]
                 if asin_neg == None or asin_neg == asin:
                     continue
@@ -866,7 +866,7 @@ class NegativeFeature(Operation):
                 for asin in asin_list:
                     asin_neg = asin
                     while True:
-                        asin_neg_index = random.randint(0, asin_total_len - 1)
+                        asin_neg_index = random.randint(0, asin_total_len - 1) #nosec
                         asin_neg = item_list[asin_neg_index]
                         if asin_neg == None or asin_neg == asin:
                             continue
@@ -882,7 +882,7 @@ class NegativeFeature(Operation):
                 asin_total_len = len(item_list)
                 asin_neg = asin
                 while True:
-                    asin_neg_index = random.randint(0, asin_total_len - 1)
+                    asin_neg_index = random.randint(0, asin_total_len - 1) #nosec
                     asin_neg = item_list[asin_neg_index]
                     if asin_neg == None or asin_neg == asin:
                         continue

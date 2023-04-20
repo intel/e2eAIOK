@@ -2,7 +2,7 @@ import os
 import torch
 import logging
 import numpy as np
-import pickle
+import pickle #nosec
 import csv
 import time
 import torchaudio
@@ -216,7 +216,7 @@ def load_pkl(file):
         with open(file + ".lock", "w"):
             pass
         with open(file, "rb") as f:
-            return pickle.load(f)
+            return pickle.load(f) #nosec
     finally:
         if os.path.isfile(file + ".lock"):
             os.remove(file + ".lock")

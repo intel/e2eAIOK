@@ -33,7 +33,7 @@ def decode_arch(arches_file):
 def hf_populate_random_func(search_space):
     cand_tuple = dict()
     for search_key in search_space:
-        cand_tuple[search_key] = random.choice(search_space[search_key])
+        cand_tuple[search_key] = random.choice(search_space[search_key]) #nosec
 
     cand_tuple["hidden_size"] = int(cand_tuple["hidden_size"]/cand_tuple["num_attention_heads"]) * cand_tuple["num_attention_heads"]
 
@@ -57,35 +57,35 @@ def hf_is_legal(cand, vis_dict, params):
     return True
 
 def hf_mutation_random_func(m_prob, s_prob, search_space, top_candidates):
-    cand = random.choice(top_candidates)
-    random_s = random.random()
+    cand = random.choice(top_candidates) #nosec
+    random_s = random.random() #nosec
     result_cand = json.loads(cand)
     
     if random_s < m_prob:
         # num_heads
-        result_cand['num_attention_heads'] = random.choice(search_space['num_attention_heads'])
+        result_cand['num_attention_heads'] = random.choice(search_space['num_attention_heads']) #nosec
     for search_key in search_space:
         if search_key == 'num_attention_heads':
             continue
-        random_s = random.random()
+        random_s = random.random() #nosec
         if random_s < s_prob:
-            result_cand[search_key] = random.choice(search_space[search_key])
+            result_cand[search_key] = random.choice(search_space[search_key]) #nosec
 
     result_cand["hidden_size"] = int(result_cand["hidden_size"]/result_cand["num_attention_heads"]) * result_cand["num_attention_heads"]
 
     return json.dumps(result_cand)
 
 def hf_crossover_random_func(top_candidates):
-    p1 = json.loads(random.choice(top_candidates))
-    p2 = json.loads(random.choice(top_candidates))
+    p1 = json.loads(random.choice(top_candidates)) #nosec
+    p2 = json.loads(random.choice(top_candidates)) #nosec
     max_iters_tmp = 50
     while len(p1) != len(p2) and max_iters_tmp > 0:
         max_iters_tmp -= 1
-        p1 = json.loads(random.choice(top_candidates))
-        p2 = json.loads(random.choice(top_candidates))
+        p1 = json.loads(random.choice(top_candidates)) #nosec
+        p2 = json.loads(random.choice(top_candidates)) #nosec
     cand = {}
     for it1, it2 in zip(p1, p2):
-        select_item = random.choice([p1[it1], p2[it2]])
+        select_item = random.choice([p1[it1], p2[it2]]) #nosec
         cand[it1] = select_item
     cand["hidden_size"] = int(cand["hidden_size"]/cand["num_attention_heads"]) * cand["num_attention_heads"]
     return json.dumps(cand)

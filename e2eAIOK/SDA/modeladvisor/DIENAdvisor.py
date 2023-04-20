@@ -1,5 +1,5 @@
 import logging
-import subprocess
+import subprocess #nosec
 import yaml
 
 from e2eAIOK.common.utils import *

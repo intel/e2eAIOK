@@ -58,7 +58,7 @@ class SDA:
             data_loader = HydroDataLoaderAdvisor.create_data_loader(
                 settings['data_path'], self.model)
         self.data_loader = data_loader
-        self.custom_result_path = custom_result_path
+        self.custom_result_path = custom_result_path if custom_result_path is not None else "./"
         if self.data_loader != None:
             self.dataset_meta = self.data_loader.get_meta()
             self.dataset_train = self.data_loader.get_train()
@@ -68,7 +68,7 @@ class SDA:
             self.dataset_train = None
             self.dataset_valid = None
         self.settings = default_settings(model, settings)
-        self.hydro_model = hydro_model
+        self.hydro_model = hydro_model if hydro_model is not None else HydroModel(settings)
         logging.basicConfig(
             level=logging.INFO,
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')

@@ -68,12 +68,12 @@ class random:
 
     @staticmethod
     def uniform(a, b):
-        return random.random() * (b - a) + a
+        return random.random() * (b - a) + a #nosec
 
     @staticmethod
     def randint(a, b):
         # [low, high]
-        return min(int(random.random() * (b - a + 1)) + a, b)
+        return min(int(random.random() * (b - a + 1)) + a, b) #nosec
 
     @staticmethod
     def gauss(mu, sigma):
@@ -90,8 +90,8 @@ class np_random:
     def randint(low, high, size=None, dtype=int):
         # [low, high)
         if size is None:
-            return dtype(random.randint(low, high - 1))
-        out = [random.randint(low, high - 1) for _ in range(size)]
+            return dtype(random.randint(low, high - 1)) #nosec
+        out = [random.randint(low, high - 1) for _ in range(size)] #nosec
         return np.array(out, dtype=dtype)
 
     @staticmethod

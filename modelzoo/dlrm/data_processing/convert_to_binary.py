@@ -3,7 +3,7 @@ from timeit import default_timer as timer
 import os, sys
 import numpy as np
 import pandas as pd
-import subprocess
+import subprocess #nosec
 import argparse
 from math import ceil
 import shutil

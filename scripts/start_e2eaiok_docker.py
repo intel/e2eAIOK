@@ -1,8 +1,8 @@
 
 import argparse
 import os, sys
-import subprocess
-from subprocess import PIPE, STDOUT
+import subprocess #nosec
+from subprocess import PIPE, STDOUT #nosec
 import shutil
 import logging
 from time import sleep

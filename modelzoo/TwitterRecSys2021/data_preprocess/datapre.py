@@ -410,7 +410,7 @@ def extract_rt(x_org):
 
 def hashit(x):
     uhash = '0' if len(x)<=2 else x
-    hash_object = hashlib.md5(uhash.encode('utf-8'))
+    hash_object = hashlib.md5(uhash.encode('utf-8')) #nosec
     return int(hash_object.hexdigest(),16)%2**32
 
 def ret_word( x, rw=0 ):

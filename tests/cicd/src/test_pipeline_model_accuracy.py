@@ -1,4 +1,4 @@
-import pickle
+import pickle #nosec
 import os
 import pytest
 import sqlite3
@@ -14,6 +14,6 @@ def test_pipeline_sklearn_train_accuracy():
             accuracy_metric = hydro_metrics[0]
     model_path = os.path.join(model_saved_path, "saved_dictionary.pkl")
     with open(model_path, 'rb') as f:
-        loaded_dict = pickle.load(f)
+        loaded_dict = pickle.load(f) #nosec
     mean_accuracy = evaluate_xgboost_model(**loaded_dict)
     assert mean_accuracy == pytest.approx(accuracy_metric["value"])

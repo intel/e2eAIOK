@@ -178,9 +178,7 @@ def download_file(
                     miniters=1,
                     desc=source.split("/")[-1],
                 ) as t:
-                    urllib.request.urlretrieve(
-                        source, filename=dest, reporthook=t.update_to
-                    )
+                    urllib.request.urlretrieve(source, filename=dest, reporthook=t.update_to) #nosec
             else:
                 print(f"{dest} exists. Skipping download")
 

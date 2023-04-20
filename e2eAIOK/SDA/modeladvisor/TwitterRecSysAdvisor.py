@@ -1,4 +1,4 @@
-import subprocess
+import subprocess #nosec
 import yaml
 import logging
 import time
