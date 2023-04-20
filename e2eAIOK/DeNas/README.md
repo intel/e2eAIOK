@@ -43,30 +43,43 @@ cd /home/vmagent/app/e2eaiok/e2eAIOK/DeNas
 ```
 #### Trial for CNN model
 
-```
+```bash
+# search
 python -u search.py --domain cnn --conf ../../conf/denas/cv/e2eaiok_denas_cnn.conf
+# train
+python -u train.py --domain cnn --conf ../../conf/denas/cv/e2eaiok_denas_train_cnn.conf
 ```
 
 #### Trial for ViT model
 
-```
+```bash
+# search
 python -u search.py --domain vit --conf ../../conf/denas/cv/e2eaiok_denas_vit.conf
+# train
+python -u train.py --domain vit --conf ../../conf/denas/cv/e2eaiok_denas_train_vit.conf
 ```
 
-##### Trial for Transfomer(Bert) model
+#### Trial for Transfomer(Bert) model
 
-```
+```bash
+# search
 python -u search.py --domain bert --conf ../../conf/denas/nlp/e2eaiok_denas_bert.conf
+# train
+python -u train.py --domain bert --conf ../../conf/denas/nlp/e2eaiok_denas_train_bert.conf
 ```
 
 #### Trial for ASR model
 
-```
+```bash
+# search
 python -u search.py --domain asr --conf ../../conf/denas/asr/e2eaiok_denas_asr.conf
+# train
+python -u train.py --domain asr --conf ../../conf/denas/asr/e2eaiok_denas_train_asr.conf
 ```
 
 #### Trial for HF model
 
-```
+```bash
+# search
 python -u search.py --domain hf --conf ../../conf/denas/hf/e2eaiok_denas_hf.conf
 ```
