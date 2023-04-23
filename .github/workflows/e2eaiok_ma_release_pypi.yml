@@ -27,7 +27,8 @@ jobs:
     - name: Build Package
       run: |
         pip install build wheel
-        python3 setup.py bdist_wheel --ma
+        cp .github/workflows/setup_template/setup.py .
+        python3 setup.py sdist
 
     - name: Upload Package
       uses: pypa/gh-action-pypi-publish@master
