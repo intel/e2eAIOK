@@ -43,7 +43,8 @@ jobs:
         nightly_build_date=`date '+%Y%m%d%H'`
         nightly_version=${next_release_version}b${nightly_build_date}
         echo $nightly_version > e2eAIOK/version
-        python3 setup.py bdist_wheel --ma
+        cp .github/workflows/setup_template/setup.py .
+        python3 setup.py sdist
 
     - name: Upload Package
       if: env.COMMIT_TODAY == 'true'
