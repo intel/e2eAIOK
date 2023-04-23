@@ -5,10 +5,10 @@ For [MiniGO](modelzoo/minigo/README.md), [BERT](modelzoo/bert/README.md), [ResNe
 > Noted: Optimized lighter models' accuracy are slightly lower: ResNet -5% accuracy, BERT -1% F1 score, RNN-T -1% WER.
 
 | Model | Training | Accuracy Ratio |
-| ----- | --- -----| -------------- |
+| ----- | ---------| -------------- |
 | ResNet | 8.77 | -5% |
 | BERT | 10.10 | -1% |
 | RNN-T | 11.61 | -1% |
-| MiniGo | 0% |
+| MiniGo | 13.06 | 0% |
 
 ![Performance](./e2eaiok_v02_performance.png "Intel® End-to-End AI Optimization Kit Performance")

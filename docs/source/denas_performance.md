@@ -5,7 +5,7 @@ For [DE-NAS](e2eAIOK/DeNas/README.md) CNN and ViT, Intel® End-to-End AI Optimiz
 
 ### DE-NAS performance over SOTA NAS
 | Model | Search | Training | Model Size Reduction | Accuracy Ratio |
-| ----- | --- -----| -------------- |
+| ----- | -------| -------- | -------------------- | -------------- |
 | CNN | 40.73 | 82.57 | 1.62 | -5% |
 | ViT | 35.63 | 4.44 | 0.83 | -5% |
 
@@ -13,7 +13,7 @@ For [DE-NAS](e2eAIOK/DeNas/README.md) CNN and ViT, Intel® End-to-End AI Optimiz
 
 ### DE-NAS searched models' performance
 | Model | Training | Model Size Reduction | Accuracy Ratio |
-| ----- | --- -----| -------------- |
+| ----- | ---------| -------------------- | -------------- |
 | CNN | 9.86 | 37.81 | -3% |
 | ViT | 4.44 | 0.83 | -5% |
 | BERT | 7.68 | 1.61 | -4% |
