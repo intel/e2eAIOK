@@ -70,13 +70,13 @@ python scripts/start_e2eaiok_docker.py --backend [tensorflow, pytorch, pytorch11
 ## Demos
 
 * Built-in Models
-  * [DLRM](modelzoo/dlrm/README.md) - RecSys, PyTorch
-  * [DIEN](modelzoo/dien/README.md) - RecSys, TensorFlow
-  * [WND](modelzoo/WnD/README.md) - RecSys, TensorFlow
-  * [RNNT](modelzoo/rnnt/README.md) - Speech Recognition, PyTorch
-  * [RESNET](modelzoo/resnet/README.md) - Computer vision, TensorFlow
-  * [BERT](modelzoo/bert/README.md) - Natual Language Processing, TensorFlow
-  * [MiniGo](modelzoo/minigo/README.md) - minimalist engine modeled after AlphaGo Zero, TensorFlow
+  * [DLRM](demo/builtin/dlrm/DLRM_DEMO.ipynb) - RecSys, PyTorch
+  * [DIEN](demo/builtin/dien/DIEN_DEMO.ipynb) - RecSys, TensorFlow
+  * [WND](demo/builtin/wnd/WND_DEMO.ipynb) - RecSys, TensorFlow
+  * [RNNT](demo/builtin/rnnt/RNNT_DEMO.ipynb) - Speech Recognition, PyTorch
+  * [RESNET](demo/builtin/resnet/RESNET_DEMO.ipynb) - Computer vision, TensorFlow
+  * [BERT](demo/builtin/bert/BERT_DEMO.ipynb) - Natual Language Processing, TensorFlow
+  * [MiniGo](demo/builtin/minigo/MiniGo_DEMO.ipynb) - minimalist engine modeled after AlphaGo Zero, TensorFlow
 
 * Neural network constructor 
 
