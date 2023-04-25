@@ -17,7 +17,7 @@ on:
 jobs:
   unit_tests:
     name: Unit Test
-    runs-on: xeon6140
+    runs-on: self-hosted
     steps:
     - name: Checkout
       uses: actions/checkout@v2

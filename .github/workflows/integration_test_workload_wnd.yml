@@ -23,7 +23,7 @@ on:
 jobs:
   integration_test:
     name: Integration Test Workload WnD
-    runs-on: xeon8170
+    runs-on: self-hosted
     steps:
     - name: Checkout
       uses: actions/checkout@v2

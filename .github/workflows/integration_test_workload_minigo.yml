@@ -22,7 +22,7 @@ on:
 jobs:
   integration_test:
     name: Integration Test Workload MiniGo
-    runs-on: sr612
+    runs-on: xeon6140
     steps:
     - name: Cleanup for MiniGo
       run: |
