@@ -11,4 +11,4 @@ For [MiniGO](../../modelzoo/minigo/README.md), [BERT](../../modelzoo/bert/README
 | RNN-T | 11.61 | -1% |
 | MiniGo | 13.06 | 0% |
 
-![Performance](./e2eaiok_v02_performance.png "Intel® End-to-End AI Optimization Kit Performance")
+<img src="./e2eaiok_v02_performance.png" width="500"/>
