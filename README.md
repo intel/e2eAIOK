@@ -20,13 +20,6 @@ Making AI more accessible:  Through built-in optimized, parameterized models gen
 
 This solution is intended for citizen data scientists, enterprise users, independent software vendor and partial of cloud service provider.
 
-## Papers and Blogs
-
-* [ICYMI – SigOpt Summit Recap Democratizing End-to-End Recommendation Systems](https://sigopt.com/blog/icymi-sigopt-summit-recap-democratizing-end-to-end-recommendation-systems-with-jian-zhang/)
-* [The SigOpt Intelligent Experimentation Platform](https://www.intel.com/content/www/us/en/developer/articles/technical/sigopt-intelligent-experimentation-platform.html#gs.gz2ls6)
-* [SDC2022 - Data Platform for End-to-end AI Democratization](https://storagedeveloper.org/events/sdc-2022/agenda/session/326)
-* [SIHG4SR: Side Information Heterogeneous Graph for Session Recommender](https://dl.acm.org/doi/abs/10.1145/3556702.3556852)
-
 # ARCHITECTURE
 
 ## Intel® End-to-End AI Optimization Kit
@@ -100,6 +93,14 @@ python scripts/start_e2eaiok_docker.py --backend [tensorflow, pytorch, pytorch11
 * [SDA Model Performance](docs/source/sda_model_performance.md) - ResNet, BERT, RNN-T, MiniGo
 * [DE-NAS Performance](docs/source/denas_performance.md) - CNN, ViT, BERT, ASR
 
+## Papers and Blogs
+
+* [ICYMI – SigOpt Summit Recap Democratizing End-to-End Recommendation Systems](https://sigopt.com/blog/icymi-sigopt-summit-recap-democratizing-end-to-end-recommendation-systems-with-jian-zhang/)
+* [The SigOpt Intelligent Experimentation Platform](https://www.intel.com/content/www/us/en/developer/articles/technical/sigopt-intelligent-experimentation-platform.html#gs.gz2ls6)
+* [SDC2022 - Data Platform for End-to-end AI Democratization](https://storagedeveloper.org/events/sdc-2022/agenda/session/326)
+* [SIHG4SR: Side Information Heterogeneous Graph for Session Recommender](https://dl.acm.org/doi/abs/10.1145/3556702.3556852)
+* [The Parallel Universe Magazine](https://www.intel.com/content/www/us/en/developer/community/parallel-universe-magazine/overview.html#gs.nznx3b)
+* [Accelerating Artificial Intelligence with Intel® End-to-End AI Optimization Kit](https://www.intel.com/content/www/us/en/developer/articles/technical/accelerate-ai-with-intel-e2e-ai-optimization-kit.html#gs.ox779w)
 
 ## Getting Support
 
