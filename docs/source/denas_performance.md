@@ -21,5 +21,5 @@ For [DE-NAS](../../e2eAIOK/DeNas/README.md) CNN and ViT, Intel® End-to-End AI O
 
 > Noted: Stock model for CNN, ViT, BERT and ASR are ResNet, AutoFormer, BERT-base and RNN-T. Optimized lighter models' accuracy are slightly lower: CNN -3% accuracy, ViT -5% accuracy, BERT -4% F1 score.
 
-![Performance](./e2eaiok_v10_performance_nas.png "Intel® End-to-End AI Optimization Kit Performance")
-![Performance](./e2eaiok_v10_performance_stock.png "Intel® End-to-End AI Optimization Kit Performance")
+<img src="./e2eaiok_v10_performance_nas.png" width="800"/>
+<img src="./e2eaiok_v10_performance_stock.png" width="800"/>

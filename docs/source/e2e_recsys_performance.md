@@ -9,4 +9,4 @@ For [WnD](../../modelzoo/WnD/README.md), [DIEN](../../modelzoo/dien/README.md) a
 | DIEN | 14.86 | 11.91 | 14.11 |
 | WnD | 5.02 | 113.03 | 21.18 |
 
-![Performance](./e2eaiok_v01_performance.png "Intel® End-to-End AI Optimization Kit Performance")
+<img src="./e2eaiok_v01_performance.png" width="800"/>
