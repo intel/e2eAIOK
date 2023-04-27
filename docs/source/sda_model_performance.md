@@ -11,4 +11,4 @@ For [MiniGO](../../modelzoo/minigo/README.md), [BERT](../../modelzoo/bert/README
 | RNN-T | 11.61 | -1% |
 | MiniGo | 13.06 | 0% |
 
-<img src="./e2eaiok_v02_performance.png" width="500"/>
+<img src="./e2eaiok_v02_performance.png" width="800"/>
