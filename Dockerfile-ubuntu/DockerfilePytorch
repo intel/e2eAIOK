@@ -51,10 +51,10 @@ ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64
 ENV SPARK_HOME /home/spark-3.2.1-bin-hadoop3.2
 ENV PYTHONPATH $SPARK_HOME/python/:$PYTHONPATH
 ENV PYTHONPATH $SPARK_HOME/python/lib/py4j-0.10.9.3-src.zip:$PYTHONPATH
-ADD spark/spark-defaults.conf /home/spark-3.2.1-bin-hadoop3.2/conf/spark-defaults.conf
-ADD spark/start_spark_service.sh /home/start_spark_service.sh
+COPY spark/spark-defaults.conf /home/spark-3.2.1-bin-hadoop3.2/conf/spark-defaults.conf
+COPY spark/start_spark_service.sh /home/start_spark_service.sh
 RUN chmod +x /home/start_spark_service.sh
-ADD spark/spark-env.sh /home/spark-env.sh
+COPY spark/spark-env.sh /home/spark-env.sh
 RUN echo "if [ -z \$SPARK_HOME ]; then source /home/spark-env.sh; fi" >> /etc/bash.bashrc
 RUN mkdir -p /home/vmagent/app/e2eaiok/spark_data_processing/spark_local_dir
 RUN mkdir -p /home/mnt/applicationHistory
@@ -69,5 +69,5 @@ ENTRYPOINT [""]
 
 RUN echo "source activate pytorch_mlperf" >> /root/.bashrc
 ENV PATH /opt/intel/oneapi/intelpython/latest/envs/pytorch_mlperf/bin:$PATH
-ADD ./notebook/start-notebook.sh /root
+COPY ./notebook/start-notebook.sh /root
 RUN chmod a+x /root/start-notebook.sh
