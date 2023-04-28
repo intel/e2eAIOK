@@ -60,7 +60,7 @@ git submodule update --init --recursive
 python scripts/start_e2eaiok_docker.py --backend [tensorflow, pytorch, pytorch112] --dataset_path ../ --workers host1, host2, host3, host4 --proxy "http://addr:ip"
 ```
 
-Intel® End-to-End AI Optimization Kit provides step-by-step demos. Once completed installtion, please refer to the Demo section to use the click-to-run notebook on colab or get familar with the APIs of each individual componment for a specific workload. 
+Intel® End-to-End AI Optimization Kit provides step-by-step demos. Once completed installtion, please refer to the Demo section to use the click-to-run notebooks on colab or get familar with the APIs of each individual componment for a specific workload. 
 
 ## Demos
 
