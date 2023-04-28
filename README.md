@@ -97,12 +97,10 @@ Intel® End-to-End AI Optimization Kit provides step-by-step demos. Once complet
 
 ## Papers and Blogs
 
-* Published in 2023
   * [The Parallel Universe Magazine - Accelerate AI Pipelines with New End-to-End AI Kit](https://www.intel.com/content/www/us/en/developer/articles/technical/accelerate-ai-with-intel-e2e-ai-optimization-kit.html)
   * [Multi-Model, Hardware-Aware Train-Free Neural Architecture Search](https://community.intel.com/t5/Blogs/Tech-Innovation/Artificial-Intelligence-AI/Multi-Model-Hardware-Aware-Train-Free-Neural-Architecture-Search/post/1479863)
   * [SigOpt Blog - Enhance Multi-Model Hardware-Aware Train-Free NAS with SigOpt](https://sigopt.com/blog/enhance-multi-model-hardware-aware-train-free-nas-with-sigopt)
   * [The Intel® SIHG4SR Solution for the ACM RecSys Challenge 2022](https://www.intel.com/content/www/us/en/developer/articles/technical/sihg4sr-graph-solution-for-recsys-challenge-2022.html)
-* Published in 2022
   * [ACM - SIHG4SR: Side Information Heterogeneous Graph for Session Recommender](https://dl.acm.org/doi/abs/10.1145/3556702.3556852)
   * [ICYMI – SigOpt Summit Recap Democratizing End-to-End Recommendation Systems](https://sigopt.com/blog/icymi-sigopt-summit-recap-democratizing-end-to-end-recommendation-systems-with-jian-zhang/)
   * [The SigOpt Intelligent Experimentation Platform](https://www.intel.com/content/www/us/en/developer/articles/technical/sigopt-intelligent-experimentation-platform.html#gs.gz2ls6)
