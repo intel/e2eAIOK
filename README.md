@@ -60,6 +60,8 @@ git submodule update --init --recursive
 python scripts/start_e2eaiok_docker.py --backend [tensorflow, pytorch, pytorch112] --dataset_path ../ --workers host1, host2, host3, host4 --proxy "http://addr:ip"
 ```
 
+When installation completed, please go to the demos to run specific workflows.
+
 ## Demos
 
 * Built-in Models
