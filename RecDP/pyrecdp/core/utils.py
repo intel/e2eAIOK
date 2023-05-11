@@ -127,7 +127,10 @@ def is_text_series(s):
     return try_text(s)
 
 def is_tuple(s):
-    t = type(s.loc[s.first_valid_index()]) if s.first_valid_index() >= 0 else None
+    if isinstance(s.first_valid_index(), type(None)):
+        t = None
+    else:
+        t = type(s.loc[s.first_valid_index()]) if s.first_valid_index() >= 0 else None
     return isinstance(t, tuple)
        
 def is_integer_convertable(s):

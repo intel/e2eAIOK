@@ -25,7 +25,8 @@ class TestRelationalBuilder(unittest.TestCase):
         dir_path = f"{pathlib}/tests/data/outbrain/"
         train_data = dict((f_name, pd.read_csv(f"{dir_path}/{f_path}")) for f_name, f_path in train_data.items())
         pipeline = RelationalBuilder(dataset=train_data, label="clicked")
-        #ret_df = pipeline.fit_transform(engine_type = 'pandas')
+        #print(pipeline.export())
+        ret_df = pipeline.fit_transform(engine_type = 'pandas')
         # test with shape
         #self.assertEqual(ret_df.shape[0], 10000)
         #print(ret_df.dtypes)

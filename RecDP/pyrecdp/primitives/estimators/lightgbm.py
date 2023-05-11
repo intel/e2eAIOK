@@ -10,48 +10,39 @@ class LightGBM(BaseEstimator):
 
     def get_func_train(self):
         label = self.config['label']
-        metrics = self.config['metrics']
         objective = self.config['objective']
-        model_file = self.config['model_file']
         train_test_splitter = self.get_splitter_func(self.config['train_test_splitter'])
         def train(df):
             train_sample, test_sample = train_test_splitter(df)
-            
             x_train = train_sample.drop(columns=[label])
             y_train = train_sample[label].values
-
-            x_val = test_sample.drop(columns=[label])
-            y_val = test_sample[label].values
-
-            lgbm_train = lgbm.Dataset(x_train, y_train, silent=False)
-            lgbm_val = lgbm.Dataset(x_val, y_val, silent=False)
+            lgbm_train = lgbm.Dataset(x_train, y_train)
+            has_valid = False
+            if not isinstance(test_sample, type(None)):
+                x_val = test_sample.drop(columns=[label])
+                y_val = test_sample[label].values
+                lgbm_val = lgbm.Dataset(x_val, y_val)
+                has_valid = True
             
             params = {
                 'boosting_type':'gbdt',
                 'objective': objective,
-                'nthread': 4,
                 'num_leaves': 31,
-                'learning_rate': 0.05,
-                'max_depth': -1,
-                'subsample': 0.8,
-                'bagging_fraction' : 1,
-                'max_bin' : 5000 ,
-                'bagging_freq': 20,
-                'colsample_bytree': 0.6,
-                'metric': metrics,
-                'min_split_gain': 0.5,
-                'min_child_weight': 1,
-                'min_child_samples': 10,
-                'scale_pos_weight':1,
-                'zero_as_missing': True,
+                'learning_rate': 0.01,
                 'seed':0,
-                'num_rounds':2000,
-                'num_boost_round': 2000,
-                'early_stopping_rounds': 50
+                'verbose': 1
             }
-            model = lgbm.train(params=params, train_set=lgbm_train, valid_sets=lgbm_val, verbose_eval=100)
-            model.save_model(model_file, num_iteration=model.best_iteration) 
-            return model
+            if has_valid:
+                model = lgbm.train(params=params, train_set=lgbm_train, valid_sets=lgbm_val, verbose_eval=100)
+            else:
+                model = lgbm.train(params=params, train_set=lgbm_train)
+            #model.save_model(model_file, num_iteration=model.best_iteration)
+
+            f_imp = model.feature_importance(importance_type='split').tolist()
+            f_names = model.feature_name()
+            ret = dict((fn, fi) for fn, fi in zip(f_names, f_imp))
+            ret = sorted(ret.items(), key = lambda x:x[1], reverse = True)
+            return ret
         return train
         
     def get_func_predict(self):

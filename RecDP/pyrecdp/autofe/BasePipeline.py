@@ -15,6 +15,12 @@ logger = logging.getLogger(__name__)
 
 class BasePipeline:
     def __init__(self, dataset, label, *args, **kwargs):
+        # properties
+        # self.main_table: main table names
+        # self.dataset: a dictionary, main_table will be indicated with key 'main_table'
+        # self.y: target label
+        # self.pipeline: a direct graph to store the operation
+
         if isinstance(dataset, pd.DataFrame):
             self.dataset = {'main_table': dataset}
         elif isinstance(dataset, list):
@@ -106,8 +112,10 @@ class BasePipeline:
         executable_pipeline = DiGraph()
         executable_sequence = []
         for idx in node_chain:
-            executable_pipeline[idx] = self.pipeline[idx].instantiate()
-            executable_sequence.append(executable_pipeline[idx])
+            actual_op = self.pipeline[idx].instantiate()
+            if actual_op:
+                executable_pipeline[idx] = actual_op
+                executable_sequence.append(executable_pipeline[idx])
         return executable_pipeline, executable_sequence
     
     def add_operation(self, config):
@@ -233,9 +241,12 @@ class BasePipeline:
     def to_chain(self):
         return self.pipeline.convert_to_node_chain()
         
-    def execute(self, engine_type = "pandas", start_op_idx = 0, no_cache = False, transformed_end = -1):
+    def execute(self, engine_type = "pandas", start_op_idx = -1, no_cache = False, transformed_end = -1, data = None):
         # prepare pipeline
-        executable_pipeline, executable_sequence = self.create_executable_pipeline()
+        if not hasattr(self, 'executable_pipeline') or not hasattr(self, 'executable_sequence'):
+            self.executable_pipeline, self.executable_sequence = self.create_executable_pipeline()
+        executable_pipeline = self.executable_pipeline
+        executable_sequence = self.executable_sequence
         print(executable_pipeline)
 
         # execute
@@ -243,16 +254,19 @@ class BasePipeline:
             with Timer(f"execute with pandas"):
                 start = False
                 for op in executable_sequence:
-                    if op.op.idx == start_op_idx:
+                    if start_op_idx == -1 or op.op.idx == start_op_idx:
                         start = True
                     if not start:
                         continue
                     if isinstance(op, DataFrameOperation):
-                        input_df = self.dataset if start_op_idx == 0 else {'main_table': self.transformed_cache}
+                        if data:
+                            input_df = data
+                        else:
+                            input_df = self.dataset if start_op_idx == -1 else {'main_table': self.transformed_cache}
                         input_df = deepcopy(input_df) if no_cache else input_df
                         op.set(input_df)
                     with Timer(f"execute {op}"):
-                        op.execute_pd(executable_pipeline, no_cache)
+                        op.execute_pd(executable_pipeline)
             if transformed_end == -1:
                 df = executable_sequence[-1].cache
             else:
@@ -261,16 +275,19 @@ class BasePipeline:
             with Timer(f"execute with spark"):
                 start = False
                 for op in executable_sequence:
-                    if op.op.idx == start_op_idx:
+                    if start_op_idx == -1 or op.op.idx == start_op_idx:
                         start = True
                     if not start:
                         continue
                     if isinstance(op, DataFrameOperation) and op.op.idx == start_op_idx:
-                        input_df = self.dataset if start_op_idx == 0 else {'main_table': self.transformed_cache}
+                        if data:
+                            input_df = data
+                        else:
+                            input_df = self.dataset if start_op_idx == -1 else {'main_table': self.transformed_cache}
                         input_df = deepcopy(input_df) if no_cache else input_df
                         op.set(input_df)
                     print(f"append {op}")
-                    op.execute_spark(executable_pipeline, self.rdp, no_cache)
+                    op.execute_spark(executable_pipeline, self.rdp)
                 if transformed_end == -1:
                     ret = executable_sequence[-1].cache
                 else:
@@ -288,14 +305,14 @@ class BasePipeline:
         # fetch result
         return df
 
-    def fit_transform(self, engine_type = 'pandas', no_cache = False, *args, **kwargs):
+    def fit_transform(self, engine_type = 'pandas', no_cache = False, data = None, *args, **kwargs):
         if not no_cache and hasattr(self, 'transformed_cache') and self.transformed_cache is not None:
             print("Detect pre-transformed cache, return cached data")
             print("If re-transform is required, please use fit_transform(no_cache = True)")
             return self.transformed_cache
         if engine_type == "spark":
             self.rdp = SparkDataProcessor()
-        ret = self.execute(engine_type, no_cache)
+        ret = self.execute(engine_type = engine_type, no_cache = no_cache, data = data)
         if engine_type == "spark":
             del self.rdp 
             self.rdp = None

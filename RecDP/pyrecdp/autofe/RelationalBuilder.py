@@ -35,3 +35,4 @@ class RelationalBuilder(BasePipeline):
             for generator in self.generators[i]:
                 child = child if isinstance(child, list) else [child]
                 self.pipeline, child, max_id = generator.fit_prepare(self.pipeline, child, max_id)
+        return child, max_id

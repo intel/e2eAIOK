@@ -1,4 +1,5 @@
 from pyrecdp.primitives.generators import *
+from pyrecdp.primitives.profilers import *
 from .BasePipeline import BasePipeline
 import logging
 from pyrecdp.core.dataframe import DataFrameAPI
@@ -10,7 +11,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', level=loggin
 logger = logging.getLogger(__name__)
 
 class FeatureWrangler(BasePipeline):
-    def __init__(self, dataset, label, supplementary_datasets = None, *args, **kwargs):
+    def __init__(self, dataset, label, *args, **kwargs):
         super().__init__(dataset, label)
         self.data_profiler = [cls() for cls in feature_infer_list]
         self.pre_feature = [cls() for cls in label_feature_generator_list]
@@ -25,11 +26,13 @@ class FeatureWrangler(BasePipeline):
 
         self.fit_analyze()
 
-    def fit_analyze(self, *args, **kwargs):
-        X = DataFrameAPI().instiate(self.dataset[self.main_table])
-        sampled_data = X.may_sample()
+    def fit_analyze(self, *args, **kwargs): 
         child = list(self.pipeline.keys())[-1]
         max_id = child
+        # sample data
+        X = DataFrameAPI().instiate(self.dataset[self.main_table])
+        sampled_data = X.may_sample()
+        
         if self.y is not None:
             # insert label process to pipeline            
             cur_id = child
@@ -51,6 +54,7 @@ class FeatureWrangler(BasePipeline):
             child = cur_id
             sampled_data = sampled_data[self.feature_columns]
         
+        # firstly, call data profiler to analyze data
         for generator in self.data_profiler:
             self.pipeline, child, max_id = generator.fit_prepare(self.pipeline, [child], max_id, sampled_data)
-        super().fit_analyze(*args, **kwargs)
+        return super().fit_analyze(*args, **kwargs)

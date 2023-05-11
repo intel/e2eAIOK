@@ -83,8 +83,11 @@ class BaseOperation:
        
     def __repr__(self) -> str:
         return self.op.op
+
+    def describe(self) -> str:
+        return str(self.op.dump())
         
-    def execute_pd(self, pipeline, no_cache = False):
+    def execute_pd(self, pipeline):
         _proc = self.get_function_pd()
         if not self.op.children or len(self.op.children) == 0:
             pass
@@ -92,7 +95,7 @@ class BaseOperation:
             child_output = pipeline[self.op.children[0]].cache
             self.cache = _proc(child_output)
             
-    def execute_spark(self, pipeline, rdp, no_cache = False):
+    def execute_spark(self, pipeline, rdp):
         _convert = None
         if not self.op.children or len(self.op.children) == 0:
             pass

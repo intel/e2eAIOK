@@ -1,6 +1,13 @@
 from jinja2 import Environment, PackageLoader
+from pyrecdp.primitives.profilers import *
 from pyrecdp.primitives.generators import *
 from .BasePipeline import BasePipeline
+from pyrecdp.core.dataframe import DataFrameAPI
+from pyrecdp.core import SeriesSchema
+import pandas as pd
+import copy
+from IPython.display import display
+
 from bokeh.resources import INLINE
 ENV_LOADER = Environment(
     loader=PackageLoader("pyrecdp", "widgets/templates"),
@@ -42,23 +49,34 @@ class FeatureVisulizer:
         Display report inside a notebook
         """
         return f"{CELL_HEIGHT_OVERRIDE}<div style='background-color: #fff;'>{self.report}</div>"
+
 class FeatureProfiler(BasePipeline):        
     def __init__(self, dataset, label, *args, **kwargs):
         super().__init__(dataset, label)
 
-        self.data_stats = None
-        self._processed_data = self.feature_data
-
-        self.generators.append([cls() for cls in feature_infer_list])
-
+        self.data_profiler = [cls() for cls in feature_infer_list]
+        self.generators.append([cls() for cls in profiler_feature_generator_list])
         self.fit_analyze()
+        
+    def fit_analyze(self, *args, **kwargs): 
+        child = list(self.pipeline.keys())[-1]
+        max_id = child
+        # sample data
+        X = DataFrameAPI().instiate(self.dataset[self.main_table])
+        sampled_data = X.may_sample()
+
+        self.pipeline[child].output.append(SeriesSchema(sampled_data[self.y]))
+        
+        # firstly, call data profiler to analyze data
+        for generator in self.data_profiler:
+            self.pipeline, child, max_id = generator.fit_prepare(self.pipeline, [child], max_id, sampled_data)
+            
+        child, max_id = super().fit_analyze(*args, **kwargs)
+        
+        feature_data = self.fit_transform()
+        self.data_stats = StatisticsFeatureGenerator().update_feature_statistics(feature_data, self.dataset[self.main_table][self.y])
     
     def visualize_analyze(self, engine_type = 'pandas', display = True):
         if not self.data_stats:
-            feature_data = self.fit_transform(engine_type)
-            self.data_stats = StatisticsFeatureGenerator().update_feature_statistics(feature_data, self.y)
-            self._processed_data = feature_data
+            raise NotImplementedError("We didn't detect data statistics for thiis data")            
         return FeatureVisulizer(self.data_stats)
-
-    def _debug_get_processed_data(self):
-        return self._processed_data

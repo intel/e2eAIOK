@@ -4,20 +4,21 @@ from .datetime import DatetimeFeatureGenerator
 from .drop import DropUselessFeatureGenerator
 from .name import RenameFeatureGenerator
 from .fillna import FillNaFeatureGenerator
-from .statics import StatisticsFeatureGenerator
-from .type import TypeInferFeatureGenerator, TypeCheckFeatureGenerator,TypeConvertFeatureGenerator
+from .type import TypeCheckFeatureGenerator,TypeConvertFeatureGenerator
 from .nlp import DecodedTextFeatureGenerator, TextFeatureGenerator
 from .geograph import GeoFeatureGenerator, CoordinatesInferFeatureGenerator
 from .relation import RelationalFeatureGenerator
 from .encode import OneHotFeatureGenerator, ListOneHotFeatureGenerator, TargetEncodeFeatureGenerator, LabelEncodeFeatureGenerator
 from .feature_transform import ConvertToNumberFeatureGenerator
 
-feature_infer_list = [
-    TypeInferFeatureGenerator,   
-]
-
 relation_builder_list = [
     RelationalFeatureGenerator
+]
+
+profiler_feature_generator_list = [
+    CoordinatesInferFeatureGenerator,
+    ConvertToNumberFeatureGenerator,
+    TypeConvertFeatureGenerator,
 ]
 
 label_feature_generator_list = [

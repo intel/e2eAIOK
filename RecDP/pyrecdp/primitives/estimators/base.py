@@ -7,10 +7,6 @@ class BaseEstimator(BaseOperation):
     def __init__(self, op_base):
         super().__init__(op_base)
         self.config = self.op.config
-        if 'method' in self.config:
-            self.method = self.config['method']
-        else:
-            self.method = 'predict'
 
     def get_func_train(self):
         raise NotImplementedError("BaseEstimator is an abstract class")
@@ -19,10 +15,7 @@ class BaseEstimator(BaseOperation):
         raise NotImplementedError("BaseEstimator is an abstract class")
 
     def get_function_pd(self):
-        if self.method == 'train':
-            return self.get_func_train()
-        else:
-            return self.get_func_predict()
+        return self.get_func_train()
         
     def get_evaluate_func(self, metric):
         if metric == 'rmse':
@@ -50,7 +43,5 @@ class BaseEstimator(BaseOperation):
                 raise NotImplementedError(f"Unable to inteprete {splitter_func_str}as train_test_splitter")
         else:
             def splitter_func(df):
-                test_sample = df.sample(frac = 0.05)
-                train_sample = df.drop(test_sample.index)
-                return train_sample, test_sample
+                return df, None
             return splitter_func
