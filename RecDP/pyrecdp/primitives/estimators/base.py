@@ -43,5 +43,9 @@ class BaseEstimator(BaseOperation):
                 raise NotImplementedError(f"Unable to inteprete {splitter_func_str}as train_test_splitter")
         else:
             def splitter_func(df):
-                return df, None
+                total_len = df.shape[0]
+                test_len = int(total_len * 0.1)
+                test_sample = df.iloc[-test_len:]
+                train_sample = df.drop(test_sample.index)
+                return train_sample, test_sample
             return splitter_func

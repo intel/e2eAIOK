@@ -106,7 +106,17 @@ def class_name_fix(s):
         module = importlib.import_module(s[0])
         ret = eval("module." + s[1])
     return ret
-    
+
+def infer_problem_type(y):
+    unique_count = y.nunique()
+    if unique_count == 2:
+        problem_type = 'binary'
+    elif y.dtype.name in ['object', 'category', 'string']:
+        problem_type = 'multiclass'
+    else:
+        problem_type = 'regression'
+    return problem_type
+ 
 def is_text_series(s):
     from pandas.api import types as pdt
     import pandas as pd

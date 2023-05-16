@@ -20,6 +20,9 @@ class RenameFeatureGenerator(super_class):
             if '?' in feature_name:
                 feature_name = feature_name.replace('?', '')
                 is_useful = True
+            if ',' in feature_name:
+                feature_name = feature_name.replace(',', '')
+                is_useful = True
             if is_useful:
                 self.renamed[pa_field.name] = feature_name
         ret_schema = []

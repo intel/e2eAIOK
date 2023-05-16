@@ -9,7 +9,9 @@ class DataFrameOperation(BaseOperation):
         self.fast_without_dpp = True
 
     def set(self, dataset):
-        self.cache = dataset[self.op.config]
+        # this condition is very important, so place holder dataframe won't copy data
+        if self.op.children is None or len(self.op.children) == 0:
+            self.cache = dataset[self.op.config]
         
     def get_function_pd(self):
         cache = self.cache.copy() if self.cache is not None else None

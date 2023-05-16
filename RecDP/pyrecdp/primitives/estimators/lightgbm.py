@@ -11,18 +11,19 @@ class LightGBM(BaseEstimator):
     def get_func_train(self):
         label = self.config['label']
         objective = self.config['objective']
+        if 'metrics' in self.config:
+            metrics = self.config['metrics']
+        else:
+            metrics = None
         train_test_splitter = self.get_splitter_func(self.config['train_test_splitter'])
         def train(df):
             train_sample, test_sample = train_test_splitter(df)
             x_train = train_sample.drop(columns=[label])
             y_train = train_sample[label].values
             lgbm_train = lgbm.Dataset(x_train, y_train)
-            has_valid = False
-            if not isinstance(test_sample, type(None)):
-                x_val = test_sample.drop(columns=[label])
-                y_val = test_sample[label].values
-                lgbm_val = lgbm.Dataset(x_val, y_val)
-                has_valid = True
+            x_val = test_sample.drop(columns=[label])
+            y_val = test_sample[label].values
+            lgbm_val = lgbm.Dataset(x_val, y_val)
             
             params = {
                 'boosting_type':'gbdt',
@@ -32,10 +33,9 @@ class LightGBM(BaseEstimator):
                 'seed':0,
                 'verbose': 1
             }
-            if has_valid:
-                model = lgbm.train(params=params, train_set=lgbm_train, valid_sets=lgbm_val, verbose_eval=100)
-            else:
-                model = lgbm.train(params=params, train_set=lgbm_train)
+            if not isinstance(metrics, type(None)):
+                params['metrics'] = metrics
+            model = lgbm.train(params=params, train_set=lgbm_train, valid_sets=lgbm_val, verbose_eval=100)
             #model.save_model(model_file, num_iteration=model.best_iteration)
 
             f_imp = model.feature_importance(importance_type='split').tolist()

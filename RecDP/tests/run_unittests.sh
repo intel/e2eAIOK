@@ -15,4 +15,5 @@
 # python -m unittest tests.test_pipeline_json.TestPipielineJson.test_import_twitter_execute_spark
 # python -m unittest tests.test_pipeline_json.TestPipielineJson.test_import_amazon_execute_spark
 
-python -m unittest tests.test_feature_profiler.TestFeatureProfiler.test_nyc_taxi
+#python -m unittest tests.test_feature_profiler.TestFeatureProfiler.test_nyc_taxi
+python -m unittest tests.test_autofe.TestFE.test_fraud_detect

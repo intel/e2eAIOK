@@ -42,6 +42,7 @@ def draw_xy_scatter_plot(xy_scatter_features, feature_data, y, row_height, n_plo
 
 def draw_mapbox_plot(mapbox_scatter_features, feature_data):
     import plotly.graph_objs as go
+
     from shapely.geometry import MultiPoint
     fig_list = go.Figure()
 
@@ -113,8 +114,6 @@ class StatisticsFeatureGenerator():
         return data_stats
     
     def get_interactive_plot(self, feature_data, y):
-        from plotly.subplots import make_subplots
-        import plotly.graph_objs as go
         from plotly.offline import plot
         row_height = 300
         n_plot_per_row = 2
@@ -150,5 +149,5 @@ class StatisticsFeatureGenerator():
             with Timer("Draw mapbox plot"):
                 fig_list = draw_mapbox_plot(mapbox_scatter_features, feature_data)
             ret['html'] += plot(fig_list, output_type='div')
-        
+
         return ret

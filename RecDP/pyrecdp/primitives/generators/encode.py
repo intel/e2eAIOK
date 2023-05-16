@@ -62,7 +62,7 @@ class ListOneHotFeatureGenerator(super_class):
         for pa_field in pa_schema:
             if pa_field.is_list_string:
                 feature = pa_field.name
-                out_schema = [SeriesSchema(f"{feature}_{key}", int) for key in pa_field.config["is_list_string"][1] if key is not None or key is not ""]
+                out_schema = [SeriesSchema(f"{feature}_{key}", int) for key in pa_field.config["is_list_string"][1] if key != None or key != ""]
                 config[pa_field.name] = pa_field.config["is_list_string"]
                 is_useful = True
                 pa_schema.extend(out_schema)

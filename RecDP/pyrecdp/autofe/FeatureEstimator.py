@@ -48,11 +48,15 @@ class FeatureEstimator(BasePipeline):
         
         max_idx = self.pipeline.get_max_idx()
         leaf_idx = self.pipeline.convert_to_node_chain()[-1]
-        self.transformed_end_idx = leaf_idx
+
         
         if self.pipeline[leaf_idx].op not in ["lightgbm"]:
             model_name = config['model_name']
             objective = config['objective']
+            if objective == 'binary':
+                config['metrics'] = 'auc'
+            elif objective == 'regression':
+                config['metrics'] = 'rmse'
             if method == 'train':
                 train_test_splitter = config['train_test_splitter'] if 'train_test_splitter' in config else None
             if model_file is None:
@@ -60,26 +64,28 @@ class FeatureEstimator(BasePipeline):
             cur_idx = max_idx + 1
             self.estimator_pipeline_start = cur_idx
             # we need to add two op, one to prepare dataset, one for estimator
-            op_config = {'label': label, 'objective': objective, 'train_test_splitter': train_test_splitter}
             op = Operation(cur_idx, [leaf_idx], None, 'DataFrame', 'main_table')
             self.pipeline[cur_idx] = op
+            self.transformed_end_idx = cur_idx
             
             child_idx = cur_idx
             cur_idx += 1
             op_config = {'label': label, 'objective': objective, 'train_test_splitter': train_test_splitter}
+            if 'metrics' in config:
+                op_config['metrics'] = config['metrics']
             op = Operation(cur_idx, [child_idx], None, model_name, op_config)
             self.pipeline[cur_idx] = op
         else:
             self.pipeline[leaf_idx].config['method'] = method  
 
-    def fit_transform(self, engine_type = 'pandas', no_cache = False, *args, **kwargs):
+    def fit_transform(self, engine_type = 'pandas', no_cache = False, data = None, *args, **kwargs):
         if self.transformed_cache is not None and not no_cache: # we can skip data process steps
             start_op_idx = self.estimator_pipeline_start
         else:
             start_op_idx = -1
         if engine_type == "spark":
             self.rdp = SparkDataProcessor()
-        ret = self.execute(engine_type, start_op_idx, no_cache, transformed_end = self.transformed_end_idx)
+        ret = self.execute(engine_type, start_op_idx, no_cache, data = data, transformed_end = self.transformed_end_idx)
         if engine_type == "spark":
             del self.rdp 
             self.rdp = None

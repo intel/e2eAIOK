@@ -48,7 +48,9 @@ class FeatureVisulizer:
         """
         Display report inside a notebook
         """
-        return f"{CELL_HEIGHT_OVERRIDE}<div style='background-color: #fff;'>{self.report}</div>"
+        with open("feature_profile.html", "w") as fh:
+            fh.write(self.report)
+        return f"{CELL_HEIGHT_OVERRIDE}</script><div style='background-color: #fff;'>{self.report}</div>"
 
 class FeatureProfiler(BasePipeline):        
     def __init__(self, dataset, label, *args, **kwargs):
@@ -72,11 +74,10 @@ class FeatureProfiler(BasePipeline):
             self.pipeline, child, max_id = generator.fit_prepare(self.pipeline, [child], max_id, sampled_data)
             
         child, max_id = super().fit_analyze(*args, **kwargs)
-        
-        feature_data = self.fit_transform()
-        self.data_stats = StatisticsFeatureGenerator().update_feature_statistics(feature_data, self.dataset[self.main_table][self.y])
     
     def visualize_analyze(self, engine_type = 'pandas', display = True):
+        feature_data = self.fit_transform(engine_type)
+        self.data_stats = StatisticsFeatureGenerator().update_feature_statistics(feature_data, self.dataset[self.main_table][self.y])
         if not self.data_stats:
             raise NotImplementedError("We didn't detect data statistics for thiis data")            
         return FeatureVisulizer(self.data_stats)

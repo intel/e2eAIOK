@@ -16,7 +16,6 @@ relation_builder_list = [
 ]
 
 profiler_feature_generator_list = [
-    CoordinatesInferFeatureGenerator,
     ConvertToNumberFeatureGenerator,
     TypeConvertFeatureGenerator,
 ]

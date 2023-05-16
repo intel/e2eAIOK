@@ -7,9 +7,8 @@ with open("README.md", "r", encoding="utf-8") as fh:
     
 setuptools.setup(
     name="pyrecdp",
-    version="1.0.1",
+    version="1.0.1b202305134",
     author="INTEL AIA",
-    author_email="chendi.xue@intel.com",
     description=
     "A data processing bundle for spark based recommender system operations",
     long_description=long_description,
@@ -50,7 +49,6 @@ setuptools.setup(
         "distro",
         "pyspark==3.3.1",
         "lightgbm",
-        "jupyter",
-        "docx2txt",
-        "openpyxl"
+        "jupyterlab",
+        "matplotlib"
         ])

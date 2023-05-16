@@ -200,7 +200,7 @@ class BasePipeline:
         display(self.plot())        
            
     def plot(self):
-        f = graphviz.Digraph()
+        f = graphviz.Digraph(format='svg')
         edges = []
         nodes = []
         f.attr(fontsize='10')
@@ -236,7 +236,11 @@ class BasePipeline:
             f.node(node[0], node[1], shape='record', fontsize='12')
         for edge in edges:
             f.edge(*edge)
-        return f  
+        try:
+            f.render(filename='pipeline', view = False)
+        except:
+            pass
+        return f
 
     def to_chain(self):
         return self.pipeline.convert_to_node_chain()
@@ -247,7 +251,6 @@ class BasePipeline:
             self.executable_pipeline, self.executable_sequence = self.create_executable_pipeline()
         executable_pipeline = self.executable_pipeline
         executable_sequence = self.executable_sequence
-        print(executable_pipeline)
 
         # execute
         if engine_type == 'pandas':
@@ -279,7 +282,7 @@ class BasePipeline:
                         start = True
                     if not start:
                         continue
-                    if isinstance(op, DataFrameOperation) and op.op.idx == start_op_idx:
+                    if isinstance(op, DataFrameOperation):
                         if data:
                             input_df = data
                         else:

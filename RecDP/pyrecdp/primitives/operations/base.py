@@ -135,6 +135,7 @@ class BaseOperation:
         
             if _convert:
                 child_output = _convert(child_output)
+                pipeline[self.op.children[0]].cache = child_output
             self.cache = _proc(child_output)
             #print(self.cache.take(1))
 

@@ -33,7 +33,7 @@ def try_datetime(s):
         if len(s) > 500:
             # Sample to speed-up type inference
             result = s.sample(n=500, random_state=0)
-        result = pd.to_datetime(result, errors='coerce', infer_datetime_format=True)
+        result = pd.to_datetime(result, errors='coerce')
         if result.isnull().mean() > 0.8:  # If over 80% of the rows are NaN
             return False
         else:

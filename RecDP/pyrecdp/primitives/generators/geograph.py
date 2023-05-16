@@ -98,6 +98,8 @@ class CoordinatesInferFeatureGenerator(super_class):
                         point = Point(longitude = f_name, prefix = get_prefix(f_name, to_detect))
                     elif to_detect == "latitude":
                         point = Point(latitude = f_name, prefix = get_prefix(f_name, to_detect))
+                    else:
+                        continue
                     
                     update_inline = False
                     for exist_point in self.points:
