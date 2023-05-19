@@ -48,7 +48,7 @@ class FeatureEstimator(BasePipeline):
         
         max_idx = self.pipeline.get_max_idx()
         leaf_idx = self.pipeline.convert_to_node_chain()[-1]
-
+        self.transformed_end_idx = -1
         
         if self.pipeline[leaf_idx].op not in ["lightgbm"]:
             model_name = config['model_name']

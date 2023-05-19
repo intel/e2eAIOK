@@ -5,7 +5,7 @@ from pyrecdp.core.utils import class_name_fix
 class FeaturetoolsOperation(BaseOperation):
     def __init__(self, op_base):
         super().__init__(op_base)
-        self.feature_in_out_map = op_base.config
+        self.feature_in_out_map = self.op.config
         self.support_spark_dataframe = False
         self.support_spark_rdd = True
 

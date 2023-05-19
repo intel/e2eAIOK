@@ -3,6 +3,8 @@ from pyrecdp.core.utils import is_text_series
 from pyrecdp.core.utils import Timer
 import pandas as pd
 import numpy as np
+from tqdm import tqdm
+from pyrecdp.core.dataframe import DataFrameAPI
 
 def draw_xy_scatter_plot(xy_scatter_features, feature_data, y, row_height, n_plot_per_row):
     from plotly.subplots import make_subplots
@@ -16,27 +18,27 @@ def draw_xy_scatter_plot(xy_scatter_features, feature_data, y, row_height, n_plo
 
     fig_list = make_subplots(rows=n_row, cols=n_col, subplot_titles  = subplot_titles, y_title = y.name)
 
-    indices = y.notna()
-    if indices.size > 1000:
-        frac = 1000/indices.size
-        mask = pd.Series(np.random.choice(a=[False, True], size=(indices.size), p=[1-frac, frac]))
-        indices = indices & mask
+    X = DataFrameAPI().instiate(feature_data)
+    sampled_data = X.may_sample(nrows = 1000)
+    y = sampled_data[y.name]
 
-    for idx, c_name in enumerate(xy_scatter_features):
-        feature = feature_data[c_name]
+    for idx, c_name in tqdm(enumerate(xy_scatter_features), total=len(xy_scatter_features)):
+        feature = sampled_data[c_name]
         # if string, wrap when too long
         sch = SeriesSchema(feature)
         is_feature_string = True if (sch.is_string or sch.is_categorical_and_string) else False
         
         if is_feature_string:
-            tmp = feature[indices].str.slice(0, 12, 1)
-            fig = go.Scatter(x=tmp, y=y[indices], mode='markers', name=c_name, showlegend=False)
+            tmp = feature.str.slice(0, 12, 1)
+            fig = go.Scatter(x=tmp, y=y, mode='markers', name=c_name, showlegend=False)
         else:
-            fig = go.Scatter(x=feature[indices], y=y[indices], mode='markers', name=c_name, showlegend=False)
+            fig = go.Scatter(x=feature, y=y, mode='markers', name=c_name, showlegend=False)
 
         fig_list.add_trace(fig, row = int(idx / n_plot_per_row) + 1, col = ((idx % n_plot_per_row) + 1))
 
+    print("prepare xy scatter subplot completed, start to add them as one global plot")
     fig_list.update_layout(height=row_height * n_row, width=400 * n_col)
+    print("prepare xy scatter plot completed")
     
     return fig_list
 

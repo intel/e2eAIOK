@@ -4,7 +4,7 @@ import copy
 class RenameOperation(BaseOperation):
     def __init__(self, op_base):
         super().__init__(op_base)
-        self.renamed = op_base.config
+        self.renamed = self.op.config
         self.support_spark_dataframe = True
         self.support_spark_rdd = True
         self.fast_without_dpp = True

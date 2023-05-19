@@ -5,8 +5,8 @@ class TupleOperation(BaseOperation):
         super().__init__(op_base)
         self.support_spark_dataframe = False
         self.support_spark_rdd = True
-        self.feature_in = op_base.config['src']
-        self.feature_out = op_base.config['dst']
+        self.feature_in = self.op.config['src']
+        self.feature_out = self.op.config['dst']
 
     def get_function_pd(self):
         feature_in = self.feature_in.copy()

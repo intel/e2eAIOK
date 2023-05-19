@@ -57,4 +57,5 @@ class FeatureWrangler(BasePipeline):
         # firstly, call data profiler to analyze data
         for generator in self.data_profiler:
             self.pipeline, child, max_id = generator.fit_prepare(self.pipeline, [child], max_id, sampled_data)
+        print("Feature List generated, using analyzed feature tags to create data pipeline")
         return super().fit_analyze(*args, **kwargs)

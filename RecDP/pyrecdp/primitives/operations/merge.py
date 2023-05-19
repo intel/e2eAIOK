@@ -4,7 +4,7 @@ import pandas as pd
 class MergeOperation(BaseOperation):
     def __init__(self, op_base):
         super().__init__(op_base)
-        self.config = op_base.config
+        self.config = self.op.config
         
     def execute_pd(self, pipeline):
         if self.cache is not None:

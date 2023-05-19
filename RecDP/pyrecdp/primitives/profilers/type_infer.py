@@ -5,6 +5,7 @@ import numpy as np
 from pandas.api import types as pdt
 import copy
 from featuretools.primitives.base import TransformPrimitive
+from tqdm import tqdm
 
 def try_category(s):
     if pdt.is_categorical_dtype(s) and not pdt.is_bool_dtype(s):
@@ -105,16 +106,16 @@ class TypeInferFeatureGenerator():
     def fit_prepare(self, pipeline, children, max_idx, df):
         ret_pa_fields = []
         pa_schema = pipeline[children[0]].output
-        for pa_field, feature_name in zip(pa_schema, df.columns):
+        for pa_field, feature_name in tqdm(zip(pa_schema, df.columns), total=len(df.columns)):
             config = {}
             if try_datetime(df[feature_name]):
-                config['is_datetime'] = True            
-            elif try_numeric(df[feature_name]):
+                config['is_datetime'] = True
+            if try_category(df[feature_name]):
+                config['is_categorical'] = True
+            if try_numeric(df[feature_name]):
                 config['is_numeric'] = True
             elif try_re_numeric(df[feature_name]):
                 config['is_re_numeric'] = True
-            elif try_category(df[feature_name]):
-                config['is_categorical'] = True
             config['is_list_string'] = try_list_string(df[feature_name])
             if config['is_list_string'] is False:
                 skip = ('is_numeric' in config and config['is_numeric']) or ('is_re_numeric' in config and config['is_re_numeric'])

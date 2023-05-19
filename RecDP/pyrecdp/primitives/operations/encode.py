@@ -3,12 +3,13 @@ import pandas as pd
 from pyspark.sql import DataFrame as SparkDataFrame
 import copy
 import numpy as np
+from pyrecdp.core.utils import *
 from IPython.display import display
 
 class OnehotEncodeOperation(BaseOperation):
     def __init__(self, op_base):
         super().__init__(op_base)
-        self.config = op_base.config
+        self.config = self.op.config
         self.support_spark_dataframe = False
         self.support_spark_rdd = False
     
@@ -19,15 +20,6 @@ class OnehotEncodeOperation(BaseOperation):
                 selected_columns = [f"{feature}__{key}" for key in keys]
                 one_hot_df = pd.get_dummies(df[feature], prefix = f"{feature}_")
                 one_hot_df = one_hot_df.loc[:, one_hot_df.columns.isin(selected_columns)]
-                #there is possibility designed keys are not included or new keys added
-                # ret = {}
-                # len_df = one_hot_df.shape[0]
-                # for col_name in selected_columns:
-                #     if col_name in one_hot_df.columns:
-                #         ret[col_name] = one_hot_df[col_name].to_numpy()
-                #     else:
-                #         ret[col_name] = np.zeros(len_df, dtype=np.uint8)
-                # one_hot_df = pd.DataFrame(ret, dtype=np.uint8, index=df.index)
                 df = pd.concat([df, one_hot_df], axis=1)
             return df
         return encode
@@ -35,7 +27,7 @@ class OnehotEncodeOperation(BaseOperation):
 class ListOnehotEncodeOperation(BaseOperation):
     def __init__(self, op_base):
         super().__init__(op_base)
-        self.config = op_base.config
+        self.config = self.op.config
         self.support_spark_dataframe = False
         self.support_spark_rdd = False
     
@@ -52,14 +44,6 @@ class ListOnehotEncodeOperation(BaseOperation):
                 selected_columns = [f"{feature}_{key}" for key in keys]
                 one_hot_df = pd.DataFrame(encoded, columns=names)
                 one_hot_df = one_hot_df.loc[:, one_hot_df.columns.isin(selected_columns)]
-                # ret = {}
-                # len_df = one_hot_df.shape[0]
-                # for col_name in selected_columns:
-                #     if col_name in one_hot_df.columns:
-                #         ret[col_name] = one_hot_df[col_name].to_numpy()
-                #     else:
-                #         ret[col_name] = np.zeros(len_df, dtype=np.uint8)
-                # one_hot_df = pd.DataFrame(ret, dtype=np.uint8, index=df.index)
                 df = pd.concat([df, one_hot_df], axis=1)
             return df
         return encode
@@ -68,15 +52,44 @@ class ListOnehotEncodeOperation(BaseOperation):
 class TargetEncodeOperation(BaseOperation):
     def __init__(self, op_base):
         super().__init__(op_base)
-        self.feature_in = op_base.config
+        self.feature_in = self.op.config
         self.support_spark_dataframe = False
         self.support_spark_rdd = True
     
     def get_function_pd(self):
+        from category_encoders import TargetEncoder
         feature_in = copy.deepcopy(self.feature_in)
         def encode(df):
+            added_data = {}
+            for feature, (dict_path, target_label) in feature_in.items():
+                encoder = TargetEncoder(cols=[feature], min_samples_leaf=20, smoothing=10)
+                encoder = get_encoder_np(encoder, dict_path)
+                added_data[f"{feature}_TE"] = encoder.fit_transform(df[feature], df[target_label])[feature]
+                save_encoder_np(encoder, dict_path)
+            to_concat_df = pd.DataFrame.from_dict(data = added_data)
+            df = pd.concat([df, to_concat_df], axis = 1)
+            return df
+        return encode
+    
+class CountEncodeOperation(BaseOperation):
+    def __init__(self, op_base):
+        super().__init__(op_base)
+        self.feature_in = self.op.config
+        self.support_spark_dataframe = False
+        self.support_spark_rdd = True
+    
+    def get_function_pd(self):
+        from category_encoders.count import CountEncoder
+        feature_in = copy.deepcopy(self.feature_in)
+        def encode(df):
+            added_data = {}
             for feature in feature_in:
-                codes, uniques = pd.factorize(df[feature])
-                df[f"{feature}__idx"] = pd.Series(codes, df[feature].index)
+                dict_path = None
+                encoder = CountEncoder(cols=[feature])
+                encoder = get_encoder_np(encoder, dict_path)
+                added_data[f"{feature}_CE"] = encoder.fit_transform(df[feature])[feature]
+                save_encoder_np(encoder, dict_path)
+            to_concat_df = pd.DataFrame.from_dict(data = added_data)
+            df = pd.concat([df, to_concat_df], axis = 1)
             return df
         return encode

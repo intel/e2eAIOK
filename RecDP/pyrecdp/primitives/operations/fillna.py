@@ -4,7 +4,7 @@ import copy
 class FillNaOperation(BaseOperation):
     def __init__(self, op_base):
         super().__init__(op_base)
-        self._fillna_feature_map = op_base.config
+        self._fillna_feature_map = self.op.config
         self.support_spark_dataframe = True
         self.support_spark_rdd = True
     

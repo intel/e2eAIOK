@@ -9,6 +9,7 @@ from pyrecdp.core.utils import Timer, sample_read, deepcopy
 from pyspark.sql import DataFrame as SparkDataFrame
 from pyspark import RDD as SparkRDD
 from IPython.display import display
+from tqdm import tqdm
 
 logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', level=logging.ERROR, datefmt='%I:%M:%S')
 logger = logging.getLogger(__name__)
@@ -80,9 +81,15 @@ class BasePipeline:
     def fit_analyze(self, *args, **kwargs):
         child = list(self.pipeline.keys())[-1]
         max_id = child
+        to_run = []
         for i in range(len(self.generators)):
             for generator in self.generators[i]:
-                self.pipeline, child, max_id = generator.fit_prepare(self.pipeline, [child], max_id)
+                to_run.append(generator)
+        
+        pbar = tqdm(to_run, total=len(to_run))
+        for generator in pbar:
+            pbar.set_description(f"{generator.__class__.__name__}")
+            self.pipeline, child, max_id = generator.fit_prepare(self.pipeline, [child], max_id)
         return child, max_id
 
     def __repr__(self):
@@ -120,31 +127,24 @@ class BasePipeline:
     
     def add_operation(self, config):
         # check if below keys are existing
-        # children: who is its child
-        # next: who is will use this operation
-        # inline_function: the function to process data
-        example = """
-            def add_one_print(df):
-                df['col_1'] = df['col_1'] + 1
-                display(df)
-                return df
-            {
-                "children": [7],
-                "next": [8],
-                "inline_function": add_one_print,
-            }"""
-        try:
-            children = config["children"]
-            next = config["next"]
-            inline_function = config["inline_function"]
-        except:
-            raise ValueError(f"please follow this example to create customer operator: {example}")
+        # config can be either a dict or function defininition
+        pipeline_chain = self.to_chain()
+        if not hasattr(self, 'transformed_end_idx'):            
+            leaf_child = pipeline_chain[-1]
+        else:
+            leaf_child = self.pipeline[self.transformed_end_idx].children[0]
+        
+        if not isinstance(config, dict):
+            op = config
+            config = {
+                "children": [leaf_child],
+                "inline_function": op,
+            }        
+        children = config["children"]
+        inline_function = config["inline_function"]
+        
         if not isinstance(children, list):
             children = [children]
-        if not isinstance(next, list):
-            next = [next]
-        if len(children) > 1 and len(next) > 1:
-            raise NotImplementedError("Current we didn't support add operation to case that children and next are all multiple operators.")
         
         # get current max operator id
         max_idx = self.pipeline.get_max_idx()
@@ -155,50 +155,49 @@ class BasePipeline:
         }
         self.pipeline[cur_idx] = Operation(
             cur_idx, children, output = None, op = "custom_operator", config = config)
-        for idx in next:
-            # replace next's children with new added operator
-            children_in_next = self.pipeline[idx].children
-            found = {}
-            for id, child in enumerate(children_in_next):
-                if child in children:
-                    found[id] = cur_idx
-            for k, v in found.items():
-                self.pipeline[idx].children[k] = v
-        display(self.plot())
-
-    def delete_operation(self, config):
-        example = """
-            config = {
-                "idx": 7,
-                "next": [8]
-            }"""
-        try:
-            cur_idx = config["idx"]
-            next = config["next"]
-        except:
-            raise ValueError(f"please follow this example to create customer operator: {example}")
-        if not isinstance(next, list):
-            next = [next]
-            
-        children = self.pipeline[cur_idx].children
-        if len(children) > 1 and len(next) > 1:
-            raise NotImplementedError("Current we didn't support add operation to case that children and next are all multiple operators.")
         
-        if len(next) == 1:
-            self.pipeline[next[0]].children = children
-        else:            
+        # we need to find nexts
+        for to_replace_child in children:
+            next = []
+            for idx in pipeline_chain:
+                if self.pipeline[idx].children and to_replace_child in self.pipeline[idx].children:
+                    next.append(idx)
             for idx in next:
                 # replace next's children with new added operator
                 children_in_next = self.pipeline[idx].children
                 found = {}
                 for id, child in enumerate(children_in_next):
-                    if child == cur_idx:
-                        found[id] = children[0]
+                    if child == to_replace_child:
+                        found[id] = cur_idx
                 for k, v in found.items():
                     self.pipeline[idx].children[k] = v
+
+    def delete_operation(self, id):
+        cur_idx = id
+        pipeline_chain = self.to_chain()
+        children = self.pipeline[cur_idx].children    
+        # we need to find nexts
+        for to_replace_child in children:
+            next = []
+            for idx in pipeline_chain:
+                if self.pipeline[idx].children and to_replace_child in self.pipeline[idx].children:
+                    next.append(idx)
+            if len(next) == 1:
+                self.pipeline[next[0]].children = children
+            else:            
+                for idx in next:
+                    # replace next's children with new added operator
+                    children_in_next = self.pipeline[idx].children
+                    found = {}
+                    for id, child in enumerate(children_in_next):
+                        if child == cur_idx:
+                            found[id] = to_replace_child
+                    for k, v in found.items():
+                        self.pipeline[idx].children[k] = v
+        if hasattr(self, 'transformed_end_idx'):
+            self.transformed_end_idx = children[0]
         del self.pipeline[cur_idx]
-        display(self.plot())        
-           
+          
     def plot(self):
         f = graphviz.Digraph(format='svg')
         edges = []

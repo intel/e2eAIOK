@@ -75,6 +75,10 @@ class Operation:
 
 class BaseOperation:
     def __init__(self, op_base):
+        # option1: for get_function_pd use
+        if not isinstance(op_base, Operation):
+            op_base = Operation(-1, None, [], f'{self.__class__.__name__}', op_base)
+        # option2: complete usage in recdp
         self.op = op_base
         self.cache = None
         self.support_spark_dataframe = False

@@ -39,19 +39,38 @@ def sequenced_union1d(a, b):
     [a_list.append(i) for i in b_list if i not in a_dict]
     return np.array(a_list)
 
-def increment_encoder(encoder, dict_path):
+def get_encoder_np(encoder, dict_path):
+    if isinstance(dict_path, type(None)):
+        return encoder
+    dirname = os.path.dirname(dict_path)
+    if not os.path.exists(dict_path):
+        return encoder
+    encoder.classes_ = np.load(dict_path)    
+    return encoder
+
+def save_encoder_np(encoder, dict_path):
+    if isinstance(dict_path, type(None)):
+        return
     dirname = os.path.dirname(dict_path)
     if not os.path.exists(dirname):
         os.mkdir(dirname)
-    if os.path.exists(dict_path):
-        saved_dict = np.load(dict_path)
-        # update dict
-        ret = sequenced_union1d(encoder.classes_, saved_dict)
-        encoder.classes_ = ret
-    # save dictionary
     np.save(dict_path, encoder.classes_)
-    
-    return encoder
+
+def get_encoder_df(dict_path):
+    if isinstance(dict_path, type(None)):
+        return None
+    dirname = os.path.dirname(dict_path)
+    if not os.path.exists(dict_path):
+        return None
+    return pd.read_parquet(dict_path)
+
+def save_encoder_df(encoder, dict_path):
+    if isinstance(dict_path, type(None)):
+        return
+    dirname = os.path.dirname(dict_path)
+    if not os.path.exists(dirname):
+        os.mkdir(dirname)
+    encoder.to_parquet(dict_path)
     
 def deepcopy(dict_df):
     return copy.deepcopy(dict_df)
