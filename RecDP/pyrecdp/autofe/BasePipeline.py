@@ -1,6 +1,6 @@
 from pyrecdp.primitives.generators import *
 from pyrecdp.core import DataFrameSchema, SparkDataProcessor, DiGraph
-from pyrecdp.primitives.operations import Operation, DataFrameOperation, RDDToDataFrameConverter
+from pyrecdp.primitives.operations import Operation, DataFrameOperation, RDDToDataFrameConverter, TargetEncodeOperation
 import pandas as pd
 import logging
 import graphviz
@@ -267,6 +267,8 @@ class BasePipeline:
                             input_df = self.dataset if start_op_idx == -1 else {'main_table': self.transformed_cache}
                         input_df = deepcopy(input_df) if no_cache else input_df
                         op.set(input_df)
+                    if isinstance(op, TargetEncodeOperation):
+                        op.set(self.y)
                     with Timer(f"execute {op}"):
                         op.execute_pd(executable_pipeline)
             if transformed_end == -1:

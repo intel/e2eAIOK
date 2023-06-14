@@ -41,6 +41,7 @@ class FeatureEstimator(BasePipeline):
             self.rdp = data_pipeline.rdp
             self.transformed_cache = data_pipeline.transformed_cache if hasattr(data_pipeline, 'transformed_cache') else None
             label = data_pipeline.y if label is None else label
+            self.y = label
         else:
             raise NotImplementedError(f"Unsupport input datapipeline is {data_pipeline}")
         if label is None and method != 'predict':

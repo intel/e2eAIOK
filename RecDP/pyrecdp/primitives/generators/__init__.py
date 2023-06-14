@@ -54,7 +54,7 @@ pre_enocode_feature_generator_list = [
 global_dict_index_generator_list = [
     BinnedFeatureGenerator,
     CategoryFeatureGenerator,
-    #TargetEncodeFeatureGenerator
+    TargetEncodeFeatureGenerator
 ]
 
 post_feature_generator_list = [
