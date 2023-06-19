@@ -31,3 +31,18 @@ class TestRelationalBuilder(unittest.TestCase):
         #self.assertEqual(ret_df.shape[0], 10000)
         #print(ret_df.dtypes)
         #self.assertTrue(ret_df.shape[1] >= 12)
+
+    def test_outbrain_path(self):
+        train_data = {
+            'clicks': "clicks_train.csv",
+            'documents_categories': "documents_categories.csv",
+            'documents_entities': "documents_entities.csv",
+            'documents_meta': "documents_meta.csv",
+            'documents_topics': "documents_topics.csv",
+            'events': "events.csv",
+            'page_views': "page_views_sample.csv",
+            'promoted_content': "promoted_content.csv"}
+        dir_path = f"{pathlib}/tests/data/outbrain/"
+        train_data = dict((f_name, f"{dir_path}/{f_path}") for f_name, f_path in train_data.items())
+        pipeline = RelationalBuilder(dataset=train_data, label="clicked")
+        ret_df = pipeline.fit_transform(engine_type = 'spark')

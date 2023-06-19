@@ -126,7 +126,16 @@ def class_name_fix(s):
         ret = eval("module." + s[1])
     return ret
 
-def infer_problem_type(y):
+def infer_problem_type(df, label):
+    if isinstance(df, str):
+        if df.endswith('.csv'):
+            y = pd.read_csv(df)[label]
+        elif df.endswith('.parquet'):
+            y = pd.read_parquet(df)[label]
+        else:
+            raise NotImplementedError("Load DataFrame based on path only support csv and parquet")
+    elif isinstance(df, pd.DataFrame):
+        y = df[label]
     unique_count = y.nunique()
     if unique_count == 2:
         problem_type = 'binary'

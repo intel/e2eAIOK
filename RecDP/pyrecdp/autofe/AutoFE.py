@@ -23,7 +23,7 @@ class AutoFE():
             pipeline = self.auto_pipeline['wrangler']
             config = {
                 'model_file': 'autofe_lightgbm.mdl',
-                'objective': infer_problem_type(pipeline.dataset[pipeline.main_table][label]),
+                'objective': infer_problem_type(pipeline.dataset[pipeline.main_table], label),
                 'model_name': 'lightgbm'}
             self.auto_pipeline['estimator'] = FeatureEstimator(data_pipeline = pipeline, config = config)
 
@@ -32,12 +32,12 @@ class AutoFE():
         ret_df = None
         if self.auto_pipeline['relational']:
             pipeline = self.auto_pipeline['relational']
-            ret_df = pipeline.fit_transform(engine_type, data = ret_df)
+            ret_df = pipeline.fit_transform(engine_type, data = ret_df, **kwargs)
             print("AutoFE started to profile data")
 
         if self.auto_pipeline['estimator']:
             pipeline = self.auto_pipeline['estimator']
-            ret_df = pipeline.fit_transform(engine_type, data = ret_df)
+            ret_df = pipeline.fit_transform(engine_type, data = ret_df, **kwargs)
         return ret_df
     
     def profile(self, engine_type = 'pandas'):

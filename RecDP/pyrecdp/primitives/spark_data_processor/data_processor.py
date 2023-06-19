@@ -987,11 +987,11 @@ class CollapseByHist(Operation):
 
 
 class DataProcessor:
-    def __init__(self, spark = None, path_prefix="file://", current_path="", shuffle_disk_capacity="unlimited", dicts_path="dicts", spark_mode='local', enable_gazelle=False):
+    def __init__(self, spark = None, path_prefix="file://", current_path="", shuffle_disk_capacity="unlimited", dicts_path="dicts", spark_mode='local', spark_master=None, enable_gazelle=False):
         self.ops = []
         self.stop_spark_in_del = False
         if not spark:
-            spark = create_spark_context()
+            spark = create_spark_context(spark_mode, spark_master)
             self.stop_spark_in_del = True
         self.spark = spark
         self.uuid = uuid.uuid1()

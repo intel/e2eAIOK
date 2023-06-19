@@ -12,22 +12,30 @@ import psutil
 from pathlib import Path
 pathlib = Path(__file__).parent.parent.resolve()
 
-def create_spark_context():
-    hname = os.uname()[1]
-    paral = psutil.cpu_count(logical=False)
-    total_mem = int((psutil.virtual_memory().total / (1 << 20)) * 0.8)
-    print(f"Will assign {paral} cores and {total_mem} M memory for spark")
-    spark = SparkSession.builder.master(f'local[{paral}]')\
-                .appName("pyrecdp_spark_local")\
-                .config("spark.executorEnv.HF_DATASETS_OFFLINE", "1")\
-                .config("spark.executorEnv.TRANSFORMERS_OFFLINE", "1")\
-                .config("spark.executorEnv.TF_CPP_MIN_LOG_LEVEL", "2")\
-                .config("spark.executorEnv.PYTHONPATH", pathlib)\
-                .config("spark.driver.memory", f"{total_mem}M")\
-                .config("spark.driver.maxResultSize","64g")\
-                .config("spark.sql.execution.arrow.pyspark.enabled","true")\
-                .config("spark.sql.parquet.int96RebaseModeInWrite","CORRECTED")\
-                .getOrCreate()
+def create_spark_context(spark_mode='local', spark_master=None):
+    if spark_mode == 'yarn' or spark_mode == 'standalone':
+        if spark_master is None:
+            raise ValueError("Spark master is None, please set correct spark master!")
+        spark = SparkSession.builder.master(spark_master)\
+                    .config("spark.sql.parquet.int96RebaseModeInWrite","CORRECTED")\
+                    .config("spark.sql.execution.arrow.pyspark.enabled","true")\
+                    .getOrCreate()
+    else:
+        hname = os.uname()[1]
+        paral = psutil.cpu_count(logical=False)
+        total_mem = int((psutil.virtual_memory().total / (1 << 20)) * 0.8)
+        print(f"Will assign {paral} cores and {total_mem} M memory for spark")
+        spark = SparkSession.builder.master(f'local[{paral}]')\
+                    .appName("pyrecdp_spark_local")\
+                    .config("spark.executorEnv.HF_DATASETS_OFFLINE", "1")\
+                    .config("spark.executorEnv.TRANSFORMERS_OFFLINE", "1")\
+                    .config("spark.executorEnv.TF_CPP_MIN_LOG_LEVEL", "2")\
+                    .config("spark.executorEnv.PYTHONPATH", pathlib)\
+                    .config("spark.driver.memory", f"{total_mem}M")\
+                    .config("spark.driver.maxResultSize","64g")\
+                    .config("spark.sql.execution.arrow.pyspark.enabled","true")\
+                    .config("spark.sql.parquet.int96RebaseModeInWrite","CORRECTED")\
+                    .getOrCreate()
     spark.sparkContext.setLogLevel("ERROR")
     # try:
     #     spark = SparkSession.builder.master(f'spark://{hname}:7077')\
@@ -76,6 +84,8 @@ def list_dir(path, only_get_one = True):
 
 def parse_size(size):
     units = {"B": 1, "KB": 2**10, "MB": 2**20, "GB": 2**30, "TB": 2**40, "K": 2**10, "M": 2**20, "G": 2**30, "T": 2**40}
+    if size is None:
+        return 0
     size = size.upper()
     number, unit = re.findall('(\d+)(\w*)', size)[0]
     return int(float(number)*units[unit])

@@ -49,3 +49,13 @@ class DataLoader(BaseOperation):
             else:
                 raise NotImplementedError("now sample read only support csv and parquet")
         return get_dataframe
+    
+    def execute_pd(self, pipeline):
+        assert not self.op.children or len(self.op.children) == 0
+        _proc = self.get_function_pd()
+        self.cache = _proc()
+    
+    def execute_spark(self, pipeline, rdp):
+        assert not self.op.children or len(self.op.children) == 0
+        _proc = self.get_function_spark(rdp)
+        self.cache = _proc()
