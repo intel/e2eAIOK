@@ -10,7 +10,9 @@ except:
     # Add the PySpark classes to the Python path:
     os.environ["PYTHONPATH"]=os.environ["SPARK_HOME"]+"/python/:"+os.environ["PYTHONPATH"]+":"+py4j_path
 
-os.environ["JAVA_HOME"]="/usr/lib/jvm/java-8-openjdk-amd64/"
+if not os.environ.get('JAVA_HOME', None): 
+    os.environ['JAVA_HOME'] = "/usr/lib/jvm/java-8-openjdk-amd64/"
+    print(f"JAVA_HOME is not set, use default value of /usr/lib/jvm/java-8-openjdk-amd64/")
 os.environ["PYSPARK_PYTHON"]=sys.executable
 os.environ["PYSPARK_DRIVER_PYTHON"]=sys.executable
 os.environ["PYSPARK_WORKER_PYTHON"]=sys.executable
