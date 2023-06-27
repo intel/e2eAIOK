@@ -5,18 +5,18 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 from pyrecdp.core.dataframe import DataFrameAPI
+import matplotlib.pyplot as plt
 
 def draw_xy_scatter_plot(xy_scatter_features, feature_data, y, row_height, n_plot_per_row):
-    from plotly.subplots import make_subplots
-    import plotly.graph_objs as go
     import math
     
     n_feat = len(xy_scatter_features)
     n_row = math.ceil(n_feat / n_plot_per_row)
     n_col = n_plot_per_row if n_feat > n_plot_per_row else n_feat
-    subplot_titles = xy_scatter_features
+    label = y.name
 
-    fig_list = make_subplots(rows=n_row, cols=n_col, subplot_titles  = subplot_titles, y_title = y.name)
+    height = int(n_row * 3)
+    fig, axs = plt.subplots(nrows=n_row, ncols=n_col, figsize=(10,height))
 
     X = DataFrameAPI().instiate(feature_data)
     sampled_data = X.may_sample(nrows = 1000)
@@ -28,19 +28,21 @@ def draw_xy_scatter_plot(xy_scatter_features, feature_data, y, row_height, n_plo
         sch = SeriesSchema(feature)
         is_feature_string = True if (sch.is_string or sch.is_categorical_and_string) else False
         
+        row_id = int(idx / n_plot_per_row)
+        col_id = idx % n_plot_per_row
         if is_feature_string:
             tmp = feature.str.slice(0, 12, 1)
-            fig = go.Scatter(x=tmp, y=y, mode='markers', name=c_name, showlegend=False)
+            axs[row_id, col_id].scatter(x=tmp, y=y, s=5)
         else:
-            fig = go.Scatter(x=feature, y=y, mode='markers', name=c_name, showlegend=False)
+            axs[row_id, col_id].scatter(x=feature, y=y, s=5)
 
-        fig_list.add_trace(fig, row = int(idx / n_plot_per_row) + 1, col = ((idx % n_plot_per_row) + 1))
+        axs[row_id, col_id].set_xlabel(c_name)
+        axs[row_id, col_id].set_ylabel(label)
 
-    print("prepare xy scatter subplot completed, start to add them as one global plot")
-    fig_list.update_layout(height=row_height * n_row, width=400 * n_col)
     print("prepare xy scatter plot completed")
     
-    return fig_list
+    fig.tight_layout()
+    return fig
 
 def draw_mapbox_plot(mapbox_scatter_features, feature_data):
     import plotly.graph_objs as go
@@ -116,7 +118,8 @@ class StatisticsFeatureGenerator():
         return data_stats
     
     def get_interactive_plot(self, feature_data, y):
-        from plotly.offline import plot
+        import base64
+        from io import BytesIO
         row_height = 300
         n_plot_per_row = 2
         
@@ -143,13 +146,18 @@ class StatisticsFeatureGenerator():
         # draw xy scatter
         if len(xy_scatter_features) > 0:
             with Timer("Draw xy scatter plot"):
-                fig_list = draw_xy_scatter_plot(xy_scatter_features, feature_data, y, row_height, n_plot_per_row)
-            ret['html'] = plot(fig_list, output_type='div')
+                fig = draw_xy_scatter_plot(xy_scatter_features, feature_data, y, row_height, n_plot_per_row)
+                tmpfile = BytesIO()
+                fig.savefig(tmpfile, format='png')
+                plt.close(fig)
+                encoded = base64.b64encode(tmpfile.getvalue()).decode('utf-8')
+                ret['html'] = '<div><img src=\'data:image/png;base64,{}\'></div>'.format(encoded)
         
         # draw mapbox
         if len(mapbox_scatter_features) > 0:
             with Timer("Draw mapbox plot"):
                 fig_list = draw_mapbox_plot(mapbox_scatter_features, feature_data)
+            from plotly.offline import plot
             ret['html'] += plot(fig_list, output_type='div')
 
         return ret

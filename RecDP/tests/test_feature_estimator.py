@@ -10,6 +10,10 @@ except:
     print("Not detect system installed pyrecdp, using local one")
     sys.path.append(pathlib)
 from pyrecdp.autofe import FeatureWrangler, FeatureEstimator
+
+import warnings
+warnings.filterwarnings("ignore")
+
 #from IPython.display import display
 
 

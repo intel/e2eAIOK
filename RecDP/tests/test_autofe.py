@@ -23,8 +23,7 @@ class TestFE(unittest.TestCase):
         #pipeline.feature_importance()
         
     def test_fraud_detect(self):
-        from pyrecdp.datasets import ibm_fraud_detect
-        train_data = ibm_fraud_detect().to_pandas('test')
+        train_data = pd.read_parquet(f"{pathlib}/tests/data/test_frdtct.parquet")
         pipeline = AutoFE(dataset=train_data, label="Is Fraud?")
         ret_df = pipeline.fit_transform(engine_type = 'pandas')
         # test with shape

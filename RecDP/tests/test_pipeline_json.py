@@ -28,7 +28,7 @@ class TestPipielineJson(unittest.TestCase):
         new_pipeline.fit_transform()
         
     def test_import_amazon(self):
-        train_data = pd.read_table(f"{pathlib}/tests/data/amazon_reviews_us_Books.tsv", on_bad_lines='skip')
+        train_data = pd.read_table(f"{pathlib}/tests/data/test_amz.tsv", on_bad_lines='skip')
         pipeline = FeatureWrangler(dataset=train_data, label="star_rating")
         
         # export pipeline to json
@@ -65,7 +65,7 @@ class TestPipielineJson(unittest.TestCase):
         
 
     def test_import_amazon_execute_spark(self):
-        train_data = pd.read_table(f"{pathlib}/tests/data/amazon_reviews_us_Books.tsv", on_bad_lines='skip')
+        train_data = pd.read_table(f"{pathlib}/tests/data/test_amz.tsv", on_bad_lines='skip')
         pipeline = FeatureWrangler(dataset=train_data, label="star_rating")
         
         # export pipeline to json

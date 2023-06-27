@@ -18,7 +18,7 @@ class DatetimeTransformer(TransformPrimitive):
 
     def get_function(self):
         def convert(array):
-            return pd.to_datetime(array, errors='coerce')
+            return pd.to_datetime(array, errors='coerce', infer_datetime_format=True)
 
         return convert
 

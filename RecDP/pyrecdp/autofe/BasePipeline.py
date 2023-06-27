@@ -317,9 +317,11 @@ class BasePipeline:
         if engine_type == "spark":
             if "spark_master" in kwargs:
                 spark_master = kwargs["spark_master"]
+                spark_mode = 'standalone'
             else:
                 spark_master = "local[*]"
-            self.rdp = SparkDataProcessor(spark_mode='standalone', spark_master=spark_master)
+                spark_mode = 'local'
+            self.rdp = SparkDataProcessor(spark_mode=spark_mode, spark_master=spark_master)
         ret = self.execute(engine_type = engine_type, no_cache = no_cache, data = data)
         if engine_type == "spark":
             del self.rdp 

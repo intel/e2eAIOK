@@ -7,7 +7,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     
 setuptools.setup(
     name="pyrecdp",
-    version="1.0.1b202305161",
+    version="1.0.1b202306261",
     author="INTEL AIA",
     description=
     "A data processing bundle for spark based recommender system operations",
@@ -42,14 +42,12 @@ setuptools.setup(
         "bokeh>=2.4.2",
         "transformers",
         "ipywidgets",
-        "plotly",
         "shapely",
         "graphviz",
         "requests",
         "distro",
-        "pyspark==3.3.1",
+        "pyspark",
         "lightgbm",
-        "jupyterlab",
         "matplotlib",
         "category_encoders"
         ])
