@@ -28,7 +28,7 @@ class TestFeatureProfiler(unittest.TestCase):
         display(pipeline.export())
     
     def test_amazon(self):
-        train_data = pd.read_table(f"{pathlib}/tests/data/amazon_reviews_us_Books.tsv", on_bad_lines='skip')
+        train_data = pd.read_table(f"{pathlib}/tests/data/test_amz.tsv", on_bad_lines='skip')
         pipeline = FeatureProfiler(dataset=train_data, label="star_rating")
         #display(pipeline.data_stats)
         display(pipeline.export())
