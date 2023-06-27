@@ -51,4 +51,5 @@ if [ -z ${failed_tests} ]; then
 else
     echo "*** Failed Tests are: ***"
     echo ${failed_tests}
+    exit 1
 fi
