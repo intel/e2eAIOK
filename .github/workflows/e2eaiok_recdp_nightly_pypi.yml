@@ -1,0 +1,50 @@
+name: Publish E2EAIOK RecDP nightly to PyPI
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+  push:
+    branches:
+      - RecDP_v2.0
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  e2eaiok-recdp-nightly-python-pypi:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@main
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.10'
+
+    - name: days since the commit date
+      run: |
+          :
+          timestamp=$(git log --no-walk --date=unix --format=%cd $GITHUB_SHA)
+          days=$(( ( $(date --utc +%s) - $timestamp ) / 86400 ))
+          if [ $days -eq 0 ]; then
+              echo COMMIT_TODAY=true >> $GITHUB_ENV
+          fi
+
+    - name: Build sdist
+      run: |
+        pip install build wheel
+        cd RecDP
+        release_version=$(cat version | head -1)
+        nightly_build_date=`date '+%Y%m%d%H'`
+        nightly_version=${release_version}b${nightly_build_date}
+        echo $nightly_version > version
+        python3 setup.py sdist
+
+    - name: Upload
+      if: env.COMMIT_TODAY == 'true'
+      uses: pypa/gh-action-pypi-publish@master
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}
+        packages_dir: RecDP/dist

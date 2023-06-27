@@ -4,10 +4,13 @@ from setuptools.command.install import install
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
-    
+
+with open("version", "r") as fh:
+    VERSION = fh.read().strip()
+
 setuptools.setup(
     name="pyrecdp",
-    version="1.0.1b202306261",
+    version=VERSION,
     author="INTEL AIA",
     description=
     "A data processing bundle for spark based recommender system operations",
