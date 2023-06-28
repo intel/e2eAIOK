@@ -290,6 +290,8 @@ class BasePipeline:
                             input_df = self.dataset if start_op_idx == -1 else {'main_table': self.transformed_cache}
                         input_df = deepcopy(input_df) if no_cache else input_df
                         op.set(input_df)
+                    if isinstance(op, TargetEncodeOperation):
+                        op.set(self.y)
                     print(f"append {op}")
                     op.execute_spark(executable_pipeline, self.rdp)
                 if transformed_end == -1:

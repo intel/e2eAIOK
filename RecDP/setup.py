@@ -28,7 +28,7 @@ setuptools.setup(
     include_package_data=True,
     package_dir={},
     packages=find_packages(),
-    package_data={"": ["*.jar"]},
+    package_data={"": ["*.jar"], "pyrecdp": ["version"]},
     python_requires=">=3.6",
     #cmdclass={'install': post_install},
     zip_safe=False,

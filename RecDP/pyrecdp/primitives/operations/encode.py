@@ -37,7 +37,7 @@ class ListOnehotEncodeOperation(BaseOperation):
             from sklearn.preprocessing import MultiLabelBinarizer
             
             for feature, (sep, keys) in config.items():
-                splitted_s = df[feature].str.split(sep).apply(lambda x: [i for i in x if i is not ""])
+                splitted_s = df[feature].str.split(sep).apply(lambda x: [i for i in x if i != ""])
                 mlb = MultiLabelBinarizer()
                 encoded = mlb.fit_transform(splitted_s)
                 names = [f"{feature}_{key}" for key in mlb.classes_]
@@ -54,7 +54,7 @@ class TargetEncodeOperation(BaseOperation):
         super().__init__(op_base)
         self.feature_in_out = self.op.config
         self.support_spark_dataframe = False
-        self.support_spark_rdd = True
+        self.support_spark_rdd = False
     
     def set(self, label):
         self.label = label
