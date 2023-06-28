@@ -7,6 +7,8 @@ on:
   push:
     branches:
       - RecDP_v2.0
+    paths:
+      - 'RecDP/version'
 
 permissions:
   contents: read
@@ -14,7 +16,7 @@ permissions:
 
 jobs:
   e2eaiok-recdp-nightly-python-pypi:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
     - uses: actions/checkout@main
 
