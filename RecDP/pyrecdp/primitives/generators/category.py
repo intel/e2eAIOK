@@ -17,7 +17,7 @@ class CategoryFeatureGenerator(super_class):
         for pa_field in pa_schema:
             if pa_field.is_categorical_and_string:
                 feature = pa_field.name
-                out_schema = SeriesSchema(f"{feature}__idx", pd.CategoricalDtype())
+                out_schema = SeriesSchema(f"{feature}__idx", int)
                 feature_in_out[feature] = (f"{folder}/{feature}_categorify_dict", out_schema.name)
                 is_useful = True
                 ret_pa_schema.append(out_schema)

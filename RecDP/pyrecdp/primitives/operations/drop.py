@@ -3,6 +3,7 @@ import pandas as pd
 from pyspark.sql import DataFrame as SparkDataFrame
 from pyspark import RDD
 import copy
+from pyrecdp.core.utils import is_unique
  
 class DropOperation(BaseOperation):
     def __init__(self, op_base):
@@ -14,7 +15,11 @@ class DropOperation(BaseOperation):
 
     def get_function_pd(self):
         feature_in = copy.deepcopy(self.feature_in)
+
         def drop_useless_feature(df):
+            for i in df.columns:
+                if i not in feature_in and is_unique(df[i]):
+                    feature_in.append(i)
             return df.drop(columns = feature_in)
         return drop_useless_feature
     
