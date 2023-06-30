@@ -4,6 +4,7 @@ from pyspark.sql import DataFrame as SparkDataFrame
 import copy
 import numpy as np
 from pyrecdp.core.utils import *
+from pyrecdp.core.parallel_iterator import ParallelIterator
 from IPython.display import display
 
 class OnehotEncodeOperation(BaseOperation):
@@ -58,13 +59,16 @@ class TargetEncodeOperation(BaseOperation):
         self.support_spark_rdd = False
     
     def get_function_pd(self):
-        from category_encoders import TargetEncoder
         feature_in_out = copy.deepcopy(self.feature_in_out)
         label = self.label
         def encode(df):
-            for feature, feature_out in feature_in_out.items():
-                encoder = TargetEncoder(cols=[feature], min_samples_leaf=20, smoothing=10)
-                df[f"{feature_out}"] = pd.Series(encoder.fit_transform(df[feature], df[label])[feature])
+            df_y = df[label]
+            df_features = [(col, df[col], df_y) for col in feature_in_out.keys()]
+            te_in_out = zip(df_features, feature_in_out.values())
+            parallel_iter = ParallelIterator(te_in_out, target_encode, len(feature_in_out), desc="TargetEncode")
+            results = parallel_iter()
+            to_concat_df = pd.concat(results, axis=1)
+            df = pd.concat([df, to_concat_df], axis=1)
             return df
         return encode
 
@@ -73,20 +77,16 @@ class CountEncodeOperation(BaseOperation):
         super().__init__(op_base)
         self.feature_in = self.op.config
         self.support_spark_dataframe = False
-        self.support_spark_rdd = True
+        self.support_spark_rdd = False
     
     def get_function_pd(self):
-        from category_encoders.count import CountEncoder
         feature_in = copy.deepcopy(self.feature_in)
         def encode(df):
-            added_data = {}
-            for feature in feature_in:
-                dict_path = None
-                encoder = CountEncoder(cols=[feature])
-                encoder = get_encoder_np(encoder, dict_path)
-                added_data[f"{feature}_CE"] = encoder.fit_transform(df[feature])[feature]
-                save_encoder_np(encoder, dict_path)
-            to_concat_df = pd.DataFrame.from_dict(data = added_data)
-            df = pd.concat([df, to_concat_df], axis = 1)
+            df_features = [df[col] for col in feature_in]
+            ce_items = zip(feature_in, df_features)
+            parallel_iter = ParallelIterator(ce_items, count_encode, len(feature_in), desc="CountEncode")
+            results = parallel_iter()
+            to_concat_df = pd.concat(results, axis=1)
+            df = pd.concat([df, to_concat_df], axis=1)
             return df
         return encode

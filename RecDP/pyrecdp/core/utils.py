@@ -2,6 +2,8 @@ import numpy as np
 import pandas as pd
 import copy
 import os
+from category_encoders import TargetEncoder
+from category_encoders.count import CountEncoder
 
 import timeit
 
@@ -223,3 +225,18 @@ def update_linklist(linklist, key, value):
         linklist[key] = []
     linklist[key].append(value)
     return linklist
+
+def target_encode(item):
+    (feature, df_x, df_y), feature_out = item
+    encoder = TargetEncoder(cols=[feature], min_samples_leaf=20, smoothing=10)
+    df_encoded = encoder.fit_transform(df_x, df_y).rename(columns={feature: feature_out})
+    return df_encoded
+
+def count_encode(item):
+    dict_path = None
+    feature, df_x = item
+    encoder = CountEncoder(cols=[feature])
+    encoder = get_encoder_np(encoder, dict_path)
+    df_encoded = encoder.fit_transform(df_x).rename(columns={feature: f"{feature}_CE"})
+    save_encoder_np(encoder, dict_path)
+    return df_encoded
