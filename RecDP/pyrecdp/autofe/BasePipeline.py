@@ -57,7 +57,7 @@ class BasePipeline:
             original_data = sample_read(self.dataset[main_table])
         
         self.feature_columns = [i for i in original_data.columns if i != self.y]
-        feature_data = original_data[self.feature_columns]
+        #feature_data = original_data[self.feature_columns]
             
         self.generators = []
         self.pipeline = DiGraph()
@@ -70,13 +70,19 @@ class BasePipeline:
         
         cur_id = 0
         self.pipeline[cur_id] = Operation(
-            cur_id, None, output = DataFrameSchema(feature_data), op = op, config = config)
+            cur_id, None, output = DataFrameSchema(original_data), op = op, config = config)
 
         if len(self.dataset) > 1:
             self.supplementary = dict((k, v) for k, v in self.dataset.items() if k != main_table)
         else:
             self.supplementary = None
         self.rdp = None
+
+    def update_label(self):
+        leaf_idx = self.pipeline.convert_to_node_chain()[-1]
+        pa_schema = self.pipeline[leaf_idx].output
+        label_list = [pa_field.name for pa_field in pa_schema if pa_field.is_label]
+        self.y = label_list[0]
      
     def fit_analyze(self, *args, **kwargs):
         child = list(self.pipeline.keys())[-1]
@@ -267,8 +273,6 @@ class BasePipeline:
                             input_df = self.dataset if start_op_idx == -1 else {'main_table': self.transformed_cache}
                         input_df = deepcopy(input_df) if no_cache else input_df
                         op.set(input_df)
-                    if isinstance(op, TargetEncodeOperation):
-                        op.set(self.y)
                     with Timer(f"execute {op}"):
                         op.execute_pd(executable_pipeline)
             if transformed_end == -1:
@@ -290,8 +294,6 @@ class BasePipeline:
                             input_df = self.dataset if start_op_idx == -1 else {'main_table': self.transformed_cache}
                         input_df = deepcopy(input_df) if no_cache else input_df
                         op.set(input_df)
-                    if isinstance(op, TargetEncodeOperation):
-                        op.set(self.y)
                     print(f"append {op}")
                     op.execute_spark(executable_pipeline, self.rdp)
                 if transformed_end == -1:

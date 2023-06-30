@@ -71,7 +71,7 @@ class FeatureProfiler(BasePipeline):
         
         # firstly, call data profiler to analyze data
         for generator in self.data_profiler:
-            self.pipeline, child, max_id = generator.fit_prepare(self.pipeline, [child], max_id, sampled_data)
+            self.pipeline, child, max_id = generator.fit_prepare(self.pipeline, [child], max_id, sampled_data, self.y)
             
         child, max_id = super().fit_analyze(*args, **kwargs)
     

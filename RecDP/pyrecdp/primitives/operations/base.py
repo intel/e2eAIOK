@@ -39,7 +39,7 @@ class Operation:
         from .type import TypeInferOperation
         from .tuple import TupleOperation
         from .custom import CustomOperation
-        from .encode import OnehotEncodeOperation, ListOnehotEncodeOperation, TargetEncodeOperation
+        from .encode import OnehotEncodeOperation, ListOnehotEncodeOperation, TargetEncodeOperation, CountEncodeOperation
         from pyrecdp.primitives.estimators.lightgbm import LightGBM
 
         operations_ = {
@@ -57,6 +57,7 @@ class Operation:
             'onehot_encode': OnehotEncodeOperation,
             'list_onehot_encode': ListOnehotEncodeOperation,
             'target_encode': TargetEncodeOperation,
+            'count_encode': CountEncodeOperation,
             'custom_operator': CustomOperation
         }
 

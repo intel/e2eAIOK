@@ -8,7 +8,7 @@ from .type import TypeCheckFeatureGenerator,TypeConvertFeatureGenerator
 from .nlp import DecodedTextFeatureGenerator, TextFeatureGenerator
 from .geograph import GeoFeatureGenerator, CoordinatesInferFeatureGenerator
 from .relation import RelationalFeatureGenerator
-from .encode import OneHotFeatureGenerator, ListOneHotFeatureGenerator, TargetEncodeFeatureGenerator, LabelEncodeFeatureGenerator
+from .encode import OneHotFeatureGenerator, ListOneHotFeatureGenerator, TargetEncodeFeatureGenerator, LabelEncodeFeatureGenerator, CountEncodeFeatureGenerator
 from .feature_transform import ConvertToNumberFeatureGenerator
 
 relation_builder_list = [
@@ -48,13 +48,15 @@ local_encode_generator_list = [
 ]
 
 pre_enocode_feature_generator_list = [
-    DropUselessFeatureGenerator,
+    #DropUselessFeatureGenerator,
 ]
 
 global_dict_index_generator_list = [
+    LabelEncodeFeatureGenerator,
     BinnedFeatureGenerator,
     CategoryFeatureGenerator,
-    TargetEncodeFeatureGenerator
+    TargetEncodeFeatureGenerator,
+    CountEncodeFeatureGenerator
 ]
 
 post_feature_generator_list = [

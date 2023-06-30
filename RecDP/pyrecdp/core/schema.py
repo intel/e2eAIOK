@@ -82,7 +82,15 @@ class SeriesSchema:
     @property
     def dtype_str(self):
         return str(dict((k, v) for k, v in self.config.items() if v))
-         
+
+    @property
+    def is_label(self):
+        return 'is_label' in self.config and self.config['is_label']
+
+    @property
+    def is_categorical_label(self):
+        return 'is_categorical_label' in self.config and self.config['is_categorical_label']
+
     @property
     def is_boolean(self):
         return 'is_boolean' in self.config and self.config['is_boolean']

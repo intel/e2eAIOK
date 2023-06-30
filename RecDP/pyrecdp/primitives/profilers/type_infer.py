@@ -103,24 +103,31 @@ class TypeInferFeatureGenerator():
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
    
-    def fit_prepare(self, pipeline, children, max_idx, df):
+    def fit_prepare(self, pipeline, children, max_idx, df, y = None):
         ret_pa_fields = []
         pa_schema = pipeline[children[0]].output
         for pa_field, feature_name in tqdm(zip(pa_schema, df.columns), total=len(df.columns)):
             config = {}
-            if try_datetime(df[feature_name]):
-                config['is_datetime'] = True
-            if try_category(df[feature_name]):
-                config['is_categorical'] = True
-            if try_numeric(df[feature_name]):
-                config['is_numeric'] = True
-            elif try_re_numeric(df[feature_name]):
-                config['is_re_numeric'] = True
-            config['is_list_string'] = try_list_string(df[feature_name])
-            if config['is_list_string'] is False:
-                skip = ('is_numeric' in config and config['is_numeric']) or ('is_re_numeric' in config and config['is_re_numeric'])
-                if not skip:
-                    config['is_onehot'] = try_onehot(df[feature_name])
+            # Add y_label to y column
+            if feature_name == y:
+                config['is_label'] = True
+                if pa_field.is_string:
+                    config['is_categorical_label'] = True
+            else:
+                if try_datetime(df[feature_name]):
+                    config['is_datetime'] = True
+                if try_category(df[feature_name]):
+                    config['is_categorical'] = True
+                if try_numeric(df[feature_name]):
+                    config['is_numeric'] = True
+                elif try_re_numeric(df[feature_name]):
+                    config['is_re_numeric'] = True
+                    config['is_categorical'] = False
+                config['is_list_string'] = try_list_string(df[feature_name])
+                if config['is_list_string'] is False:
+                    skip = ('is_numeric' in config and config['is_numeric']) or ('is_re_numeric' in config and config['is_re_numeric'])
+                    if not skip:
+                        config['is_onehot'] = try_onehot(df[feature_name])
             
             pa_field.copy_config_from(config)
             ret_pa_fields.append(pa_field)

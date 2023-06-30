@@ -52,23 +52,22 @@ class ListOnehotEncodeOperation(BaseOperation):
 class TargetEncodeOperation(BaseOperation):
     def __init__(self, op_base):
         super().__init__(op_base)
-        self.feature_in_out = self.op.config
+        self.feature_in_out = self.op.config['feature_in_out']
+        self.label = self.op.config['label']
         self.support_spark_dataframe = False
         self.support_spark_rdd = False
-    
-    def set(self, label):
-        self.label = label
     
     def get_function_pd(self):
         from category_encoders import TargetEncoder
         feature_in_out = copy.deepcopy(self.feature_in_out)
+        label = self.label
         def encode(df):
             for feature, feature_out in feature_in_out.items():
                 encoder = TargetEncoder(cols=[feature], min_samples_leaf=20, smoothing=10)
-                df[f"{feature_out}"] = pd.Series(encoder.fit_transform(df[feature], df[self.label])[feature])
+                df[f"{feature_out}"] = pd.Series(encoder.fit_transform(df[feature], df[label])[feature])
             return df
         return encode
-    
+
 class CountEncodeOperation(BaseOperation):
     def __init__(self, op_base):
         super().__init__(op_base)
