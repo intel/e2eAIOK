@@ -105,7 +105,7 @@ Intel® End-to-End AI Optimization Kit provides step-by-step demos. Once complet
 * [ICYMI – SigOpt Summit Recap Democratizing End-to-End Recommendation Systems](https://sigopt.com/blog/icymi-sigopt-summit-recap-democratizing-end-to-end-recommendation-systems-with-jian-zhang/)
 * [The SigOpt Intelligent Experimentation Platform](https://www.intel.com/content/www/us/en/developer/articles/technical/sigopt-intelligent-experimentation-platform.html#gs.gz2ls6)
 * [SDC2022 - Data Platform for End-to-end AI Democratization](https://storagedeveloper.org/events/sdc-2022/agenda/session/326)
-
+* [“Model Adapter”: Enhance Your AI Pipeline with Efficient Knowledge Transfer](https://community.intel.com/t5/Blogs/Tech-Innovation/Artificial-Intelligence-AI/Model-Adapter-Enhance-Your-AI-Pipeline-with-Efficient-Knowledge/post/1499303)
 
 
 ## Getting Support
