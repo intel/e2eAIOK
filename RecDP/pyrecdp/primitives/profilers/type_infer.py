@@ -10,10 +10,12 @@ from tqdm import tqdm
 def try_category(s):
     if pdt.is_categorical_dtype(s) and not pdt.is_bool_dtype(s):
         return False
+    if pdt.is_float_dtype(s):
+        return False
     n_unique = s.nunique()
     total_len = len(s)
     threshold = (total_len / 5)
-    if 1 <= n_unique <= threshold:
+    if 1 < n_unique <= threshold:
         return True     
     return False
 
