@@ -44,7 +44,6 @@ jobs:
         python3 setup.py sdist
 
     - name: Upload
-      if: env.COMMIT_TODAY == 'true'
       uses: pypa/gh-action-pypi-publish@master
       with:
         password: ${{ secrets.PYPI_API_TOKEN }}
