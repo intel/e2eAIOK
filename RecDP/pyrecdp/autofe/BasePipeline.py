@@ -1,6 +1,6 @@
 from pyrecdp.primitives.generators import *
 from pyrecdp.core import DataFrameSchema, SparkDataProcessor, DiGraph
-from pyrecdp.primitives.operations import Operation, DataFrameOperation, RDDToDataFrameConverter, TargetEncodeOperation
+from pyrecdp.primitives.operations import Operation, DataFrameOperation, RDDToDataFrameConverter, SparkDataFrameToDataFrameConverter, TargetEncodeOperation
 import pandas as pd
 import logging
 import graphviz
@@ -77,6 +77,7 @@ class BasePipeline:
         else:
             self.supplementary = None
         self.rdp = None
+        self.input_is_path = input_is_path
 
     def update_label(self):
         leaf_idx = self.pipeline.convert_to_node_chain()[-1]
@@ -301,7 +302,11 @@ class BasePipeline:
                 else:
                     ret = executable_pipeline[transformed_end].cache
                 if isinstance(ret, SparkDataFrame):
-                    df = self.rdp.transform(ret)
+                    if self.input_is_path:
+                        df = self.rdp.transform(ret)
+                    else:
+                        _convert = SparkDataFrameToDataFrameConverter().get_function(self.rdp)
+                        df = _convert(ret)
                 elif isinstance(ret, SparkRDD):
                     _convert = RDDToDataFrameConverter().get_function(self.rdp)
                     df = _convert(ret)

@@ -22,8 +22,13 @@ class RDDToSparkDataFrameConverter:
     def get_function(rdp):
         print("append RDDToSparkDataFrameConverter")
         def convert(rdd):
-            df = rdd.flatMap(lambda pdf: pdf.to_dict('records')).toDF()
-            return df
+            start_time = time.time()
+            sdf = rdd.flatMap(lambda pdf: pdf.to_dict('records')).toDF()
+            sdf.cache()
+            sdf.count()
+            end_time = time.time()
+            print(f"SparkRDD To SparkDataFrame Conversion took {(end_time - start_time):.3f} secs")
+            return sdf
             
         return convert
 
@@ -68,7 +73,7 @@ class RDDToDataFrameConverter:
             ordered_pdfs = pdfs
             print(f"DataframeTransform took {(end_time - start_time):.3f} secs, processed {sum(nr_pdfs)} rows with num_partitions as {len(pdfs)}")
             start_time = time.time()
-            combined = pd.concat(ordered_pdfs)
+            combined = pd.concat(ordered_pdfs, ignore_index=True)
             end_time = time.time()
             print(f"DataframeTransform combine to one pandas dataframe took {(end_time - start_time):.3f} secs")
             return combined
@@ -76,10 +81,17 @@ class RDDToDataFrameConverter:
         return convert
 
 class DataFrameToSparkDataFrameConverter:
+    @staticmethod
     def get_function(rdp):
         print("append DataFrameToSparkDataFrameConverter")
         def convert(pdf):
-            return rdp.spark.createDataFrame(pdf) 
+            start_time = time.time()
+            sdf = rdp.spark.createDataFrame(pdf)
+            sdf.cache()
+            sdf.count()
+            end_time = time.time()
+            print(f"Dataframe To SparkDataFrame Conversion took {(end_time - start_time):.3f} secs")
+            return sdf
         return convert
     
 class SparkDataFrameToDataFrameConverter:
@@ -87,5 +99,9 @@ class SparkDataFrameToDataFrameConverter:
     def get_function(rdp):
         print("append SparkDataFrameToDataFrameConverter")
         def convert(df):
-            return df.to_pandas()          
+            start_time = time.time()
+            pdf = df.toPandas()          
+            end_time = time.time()
+            print(f"SparkDataFrame to DataFrame Conversion took {(end_time - start_time):.3f} secs")
+            return pdf        
         return convert

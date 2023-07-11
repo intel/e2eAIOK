@@ -46,7 +46,7 @@ class Encoder:
 
 
 class TargetEncoder(Encoder):
-    def __init__(self, proc, x_col_list, y_col_list, out_col_list, out_name, out_dtype=None, y_mean_list=None, smooth=20, seed=42,threshold=0):
+    def __init__(self, proc, x_col_list, y_col_list, out_col_list, out_name, out_dtype=None, y_mean_list=None, smooth=20, seed=42,threshold=0, with_fold=True):
         super().__init__(proc)
         self.op_name = "TargetEncoder"
         self.x_col_list = x_col_list
@@ -59,6 +59,7 @@ class TargetEncoder(Encoder):
         self.smooth = smooth
         self.expected_list_size = len(y_col_list)
         self.threshold = threshold
+        self.with_fold = with_fold
         if len(self.out_col_list) < self.expected_list_size:
             raise ValueError("TargetEncoder __init__, input out_col_list should be same size as y_col_list")      
         if y_mean_list != None and len(self.y_mean_list) < self.expected_list_size:
@@ -66,6 +67,9 @@ class TargetEncoder(Encoder):
 
     def transform(self, df):
         x_col = self.x_col_list
+        if not self.with_fold or "fold" not in df.columns:
+            numFolds = 5
+            df = df.withColumn("fold", f.round(f.rand(seed=42)*(numFolds-1)).cast("int"))
         cols = ['fold', x_col] if isinstance(x_col, str) else ['fold'] + x_col
         agg_per_fold = df.groupBy(cols)
         agg_all = df.groupBy(x_col)
@@ -97,8 +101,6 @@ class TargetEncoder(Encoder):
                 y_mean = np.array(df.groupBy().mean(y_col).collect())[0][0]
             mean = float(y_mean)
             smooth = self.smooth
-
-            # print(agg_per_fold.dtypes)
 
             # prepare for agg_per_fold
             agg_per_fold = agg_per_fold.withColumn(

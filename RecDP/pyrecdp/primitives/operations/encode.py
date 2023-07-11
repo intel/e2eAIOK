@@ -9,6 +9,8 @@ from IPython.display import display
 from category_encoders import TargetEncoder
 from category_encoders.count import CountEncoder
 from sklearn.preprocessing import MultiLabelBinarizer
+from pyrecdp.encoder import TargetEncoder as SparkTargetEncoder, CountEncoder as SparkCountEncoder
+from pyrecdp.data_processor import ModelMerge
 
 class OnehotEncodeOperation(BaseOperation):
     def __init__(self, op_base):
@@ -21,7 +23,7 @@ class OnehotEncodeOperation(BaseOperation):
     def onehot_encode(cls, item):
         feature, df_x, keys = item
         selected_columns = [f"{feature}__{key}" for key in keys]
-        one_hot_df = pd.get_dummies(df_x, prefix = f"{feature}_")
+        one_hot_df = pd.get_dummies(df_x, prefix = f"{feature}_", dtype=int)
         one_hot_df = one_hot_df.loc[:, one_hot_df.columns.isin(selected_columns)]
         return one_hot_df
 
@@ -67,7 +69,7 @@ class TargetEncodeOperation(BaseOperation):
         super().__init__(op_base)
         self.feature_in_out = self.op.config['feature_in_out']
         self.label = self.op.config['label']
-        self.support_spark_dataframe = False
+        self.support_spark_dataframe = True
         self.support_spark_rdd = False
 
     @classmethod
@@ -96,11 +98,27 @@ class TargetEncodeOperation(BaseOperation):
             return df
         return encode
 
+    def get_function_spark(self, rdp):
+        feature_in_out = copy.deepcopy(self.feature_in_out)
+        label = self.label
+        
+        def encode(df):
+            te_dfs = []
+            for f_in, f_out in feature_in_out.items():
+                encoder = SparkTargetEncoder(rdp, f_in, [label], [f_out], f"{f_in}_TE")
+                _, te_df = encoder.transform(df)
+                te_dfs.append({'col_name': f_in, 'dict': te_df})
+            op_merge_TE = ModelMerge(te_dfs)
+            rdp.reset_ops([op_merge_TE])
+            df = rdp.apply(df)
+            return df
+        return encode
+
 class CountEncodeOperation(BaseOperation):
     def __init__(self, op_base):
         super().__init__(op_base)
         self.feature_in = self.op.config
-        self.support_spark_dataframe = False
+        self.support_spark_dataframe = True
         self.support_spark_rdd = False
 
     @classmethod
@@ -126,5 +144,19 @@ class CountEncodeOperation(BaseOperation):
             results = ParallelIterator.execute(df_features, CountEncodeOperation.count_encode, len(df_features), "CountEncode")
             to_concat_df = pd.concat(results, axis=1)
             df = pd.concat([df, to_concat_df], axis=1)
+            return df
+        return encode
+
+    def get_function_spark(self, rdp):
+        feature_in = copy.deepcopy(self.feature_in)
+        def encode(df):
+            ce_dfs = []
+            for col in feature_in:
+                encoder = SparkCountEncoder(rdp, col, [col], [f"{col}_CE"], f"{col}_CE", False)
+                ce_df = encoder.transform(df)
+                ce_dfs.append({'col_name': col, 'dict': ce_df})
+            op_merge_CE = ModelMerge(ce_dfs)
+            rdp.reset_ops([op_merge_CE])
+            df = rdp.apply(df)
             return df
         return encode
