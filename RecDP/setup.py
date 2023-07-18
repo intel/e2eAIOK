@@ -50,7 +50,7 @@ setuptools.setup(
         "requests",
         "distro",
         "pyspark",
-        "lightgbm",
+        "lightgbm<4.0.0",
         "matplotlib",
         "category_encoders"
         ])

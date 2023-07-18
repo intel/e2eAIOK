@@ -9,7 +9,7 @@ try:
 except:
     print("Not detect system installed pyrecdp, using local one")
     sys.path.append(pathlib)
-from pyrecdp.autofe import RelationalBuilder
+from pyrecdp.autofe import RelationalBuilder, FeatureWrangler
 
 class TestRelationalBuilder(unittest.TestCase):
     def test_outbrain(self):
@@ -24,7 +24,8 @@ class TestRelationalBuilder(unittest.TestCase):
             'promoted_content': "promoted_content.csv"}
         dir_path = f"{pathlib}/tests/data/outbrain/"
         train_data = dict((f_name, pd.read_csv(f"{dir_path}/{f_path}")) for f_name, f_path in train_data.items())
-        pipeline = RelationalBuilder(dataset=train_data, label="clicked")
+        relation_pipeline = RelationalBuilder(dataset=train_data, label="clicked")
+        pipeline = FeatureWrangler(data_pipeline=relation_pipeline)
         #print(pipeline.export())
         ret_df = pipeline.fit_transform(engine_type = 'pandas')
         # test with shape
@@ -44,5 +45,6 @@ class TestRelationalBuilder(unittest.TestCase):
             'promoted_content': "promoted_content.csv"}
         dir_path = f"{pathlib}/tests/data/outbrain/"
         train_data = dict((f_name, f"{dir_path}/{f_path}") for f_name, f_path in train_data.items())
-        pipeline = RelationalBuilder(dataset=train_data, label="clicked")
+        relation_pipeline = RelationalBuilder(dataset=train_data, label="clicked")
+        pipeline = FeatureWrangler(data_pipeline=relation_pipeline)
         ret_df = pipeline.fit_transform(engine_type = 'spark')

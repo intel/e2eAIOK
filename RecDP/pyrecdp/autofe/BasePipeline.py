@@ -77,7 +77,6 @@ class BasePipeline:
         else:
             self.supplementary = None
         self.rdp = None
-        self.input_is_path = input_is_path
 
     def update_label(self):
         leaf_idx = self.pipeline.convert_to_node_chain()[-1]
@@ -302,11 +301,8 @@ class BasePipeline:
                 else:
                     ret = executable_pipeline[transformed_end].cache
                 if isinstance(ret, SparkDataFrame):
-                    if self.input_is_path:
-                        df = self.rdp.transform(ret)
-                    else:
-                        _convert = SparkDataFrameToDataFrameConverter().get_function(self.rdp)
-                        df = _convert(ret)
+                    _convert = SparkDataFrameToDataFrameConverter().get_function(self.rdp)
+                    df = _convert(ret)
                 elif isinstance(ret, SparkRDD):
                     _convert = RDDToDataFrameConverter().get_function(self.rdp)
                     df = _convert(ret)

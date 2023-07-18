@@ -13,29 +13,37 @@ from pathlib import Path
 pathlib = Path(__file__).parent.parent.resolve()
 
 def create_spark_context(spark_mode='local', spark_master=None):
+    paral = psutil.cpu_count(logical=False)
+    total_mem = int((psutil.virtual_memory().total / (1 << 20)) * 0.8)
     if spark_mode == 'yarn' or spark_mode == 'standalone':
         if spark_master is None:
             raise ValueError("Spark master is None, please set correct spark master!")
-        spark = SparkSession.builder.master(spark_master)\
-                    .config("spark.sql.parquet.int96RebaseModeInWrite","CORRECTED")\
-                    .config("spark.sql.execution.arrow.pyspark.enabled","true")\
-                    .getOrCreate()
+    if spark_master is None:
+        spark_master = f'local[{paral}]'
+    
+    print(f"Will assign {paral} cores and {total_mem} M memory for spark")
+    conf = SparkConf()
+    conf_pairs = [("spark.executorEnv.TRANSFORMERS_OFFLINE", "1"), 
+                ("spark.executorEnv.TF_CPP_MIN_LOG_LEVEL", "2"),
+                ("spark.executorEnv.PYTHONPATH", pathlib),
+                ("spark.driver.maxResultSize", "64g"),
+                ("spark.sql.execution.arrow.pyspark.enabled", "true"),
+                ("spark.sql.parquet.int96RebaseModeInWrite", "CORRECTED")]
+    if spark_mode == 'yarn' or spark_mode == 'standalone':
+        ss = SparkSession.builder.master(spark_master).getOrCreate()
+        ss_conf = ss.conf
+        conf_pairs.append(("spark.driver.memory", ss_conf.get("spark.driver.memory", f"{total_mem}M")))
+        conf_pairs.append(("spark.executor.memory", ss_conf.get("spark.executor.memory", f"{total_mem}M")))
+        conf_pairs.append(("spark.executor.memoryOverhead", ss_conf.get("spark.executor.memoryOverhead", f"{int(total_mem)*0.1}M")))
+        conf_pairs.append(("spark.executor.cores", ss_conf.get("spark.executor.cores", f"{paral}M")))
+        ss.sparkContext.stop()
     else:
-        hname = os.uname()[1]
-        paral = psutil.cpu_count(logical=False)
-        total_mem = int((psutil.virtual_memory().total / (1 << 20)) * 0.8)
-        print(f"Will assign {paral} cores and {total_mem} M memory for spark")
-        spark = SparkSession.builder.master(f'local[{paral}]')\
-                    .appName("pyrecdp_spark_local")\
-                    .config("spark.executorEnv.HF_DATASETS_OFFLINE", "1")\
-                    .config("spark.executorEnv.TRANSFORMERS_OFFLINE", "1")\
-                    .config("spark.executorEnv.TF_CPP_MIN_LOG_LEVEL", "2")\
-                    .config("spark.executorEnv.PYTHONPATH", pathlib)\
-                    .config("spark.driver.memory", f"{total_mem}M")\
-                    .config("spark.driver.maxResultSize","64g")\
-                    .config("spark.sql.execution.arrow.pyspark.enabled","true")\
-                    .config("spark.sql.parquet.int96RebaseModeInWrite","CORRECTED")\
-                    .getOrCreate()
+        conf_pairs.append(("spark.driver.memory", f"{total_mem}M"))
+    conf.setAll(conf_pairs)
+    spark = SparkSession.builder.master(spark_master)\
+                .appName("pyrecdp_spark")\
+                .config(conf=conf)\
+                .getOrCreate()
     spark.sparkContext.setLogLevel("ERROR")
     # try:
     #     spark = SparkSession.builder.master(f'spark://{hname}:7077')\

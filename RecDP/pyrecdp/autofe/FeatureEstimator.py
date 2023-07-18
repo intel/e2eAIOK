@@ -85,7 +85,13 @@ class FeatureEstimator(BasePipeline):
         else:
             start_op_idx = -1
         if engine_type == "spark":
-            self.rdp = SparkDataProcessor()
+            if "spark_master" in kwargs:
+                spark_master = kwargs["spark_master"]
+                spark_mode = 'standalone'
+            else:
+                spark_master = "local[*]"
+                spark_mode = 'local'
+            self.rdp = SparkDataProcessor(spark_mode=spark_mode, spark_master=spark_master)
         ret = self.execute(engine_type, start_op_idx, no_cache, data = data, transformed_end = self.transformed_end_idx)
         if engine_type == "spark":
             del self.rdp 

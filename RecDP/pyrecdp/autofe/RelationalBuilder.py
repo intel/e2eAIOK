@@ -1,8 +1,10 @@
 from pyrecdp.primitives.generators import *
+from pyrecdp.primitives.profilers import *
 from .BasePipeline import BasePipeline
 from pyrecdp.core import DataFrameSchema
 from pyrecdp.core.utils import sample_read
 from pyrecdp.primitives.operations import Operation
+from pyrecdp.core.dataframe import DataFrameAPI
 import logging
 
 logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', level=logging.ERROR, datefmt='%I:%M:%S')
@@ -14,6 +16,7 @@ class RelationalBuilder(BasePipeline):
 
         # If we provided multiple datasets in this workload
         self.generators.append([cls() for cls in relation_builder_list])
+        self.data_profilers = [cls() for cls in feature_infer_list]
         idx = 1
         self.children = [0]
         for table_name, table in self.supplementary.items():
@@ -29,10 +32,21 @@ class RelationalBuilder(BasePipeline):
         self.fit_analyze()
 
     def fit_analyze(self, *args, **kwargs):
-        child = self.children
+        children = []
         max_id = max(self.children)
+        for child in self.children:
+            op = self.pipeline[child]
+            if op.op == 'DataLoader':
+                table = op.config['table_name']
+            else:
+                table = op.config
+            X = DataFrameAPI().instiate(self.dataset[table])
+            sampled_data = X.may_sample()
+            for profiler in self.data_profilers:
+                self.pipeline, child, max_id = profiler.fit_prepare(self.pipeline, [child], max_id, sampled_data, self.y)
+            children.append(max_id)
         for i in range(len(self.generators)):
             for generator in self.generators[i]:
-                child = child if isinstance(child, list) else [child]
-                self.pipeline, child, max_id = generator.fit_prepare(self.pipeline, child, max_id)
-        return child, max_id
+                children = children if isinstance(children, list) else [children]
+                self.pipeline, children, max_id = generator.fit_prepare(self.pipeline, children, max_id)
+        return children, max_id

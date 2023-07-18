@@ -14,7 +14,17 @@ class AutoFE():
         self.label = label
         self.auto_pipeline = {'relational': None, 'profiler': None, 'wrangler': None, 'estimator': None}
         if isinstance(dataset, dict):
+            print("AutoFE started to build data relation")
             self.auto_pipeline['relational'] = RelationalBuilder(dataset=dataset, label=label)
+            pipeline = self.auto_pipeline['relational']
+            print("AutoFE started to create data pipeline")
+            self.auto_pipeline['wrangler'] = FeatureWrangler(data_pipeline=pipeline)
+            pipeline = self.auto_pipeline['wrangler']
+            config = {
+                'model_file': 'autofe_lightgbm.mdl',
+                'objective': infer_problem_type(pipeline.dataset[pipeline.main_table], label),
+                'model_name': 'lightgbm'}
+            self.auto_pipeline['estimator'] = FeatureEstimator(data_pipeline = pipeline, config = config)
         else:
             print("AutoFE started to profile data")
             self.auto_pipeline['profiler'] = FeatureProfiler(dataset=dataset, label=label)
@@ -30,14 +40,8 @@ class AutoFE():
     def fit_transform(self, engine_type = 'pandas', no_cache = False, *args, **kwargs):
         print("AutoFE started to execute data")
         ret_df = None
-        if self.auto_pipeline['relational']:
-            pipeline = self.auto_pipeline['relational']
-            ret_df = pipeline.fit_transform(engine_type, data = ret_df, **kwargs)
-            print("AutoFE started to profile data")
-
-        if self.auto_pipeline['estimator']:
-            pipeline = self.auto_pipeline['estimator']
-            ret_df = pipeline.fit_transform(engine_type, data = ret_df, **kwargs)
+        pipeline = self.auto_pipeline['estimator']
+        ret_df = pipeline.fit_transform(engine_type, data = ret_df, **kwargs)
         return ret_df
     
     def profile(self, engine_type = 'pandas'):
@@ -56,10 +60,7 @@ class AutoFE():
         return feat_importances.plot(kind='barh', figsize=(15,height))
 
     def plot(self):
-        if self.auto_pipeline['relational']:
-            return self.auto_pipeline['relational'].plot()
-        else:
-            return self.auto_pipeline['estimator'].plot()
+        return self.auto_pipeline['estimator'].plot()
         
     def get_transformed_data(self):
         if self.auto_pipeline['relational']:

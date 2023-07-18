@@ -73,7 +73,7 @@ class RDDToDataFrameConverter:
             ordered_pdfs = pdfs
             print(f"DataframeTransform took {(end_time - start_time):.3f} secs, processed {sum(nr_pdfs)} rows with num_partitions as {len(pdfs)}")
             start_time = time.time()
-            combined = pd.concat(ordered_pdfs, ignore_index=True)
+            combined = pd.concat(ordered_pdfs, ignore_index=True).infer_objects()
             end_time = time.time()
             print(f"DataframeTransform combine to one pandas dataframe took {(end_time - start_time):.3f} secs")
             return combined

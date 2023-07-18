@@ -11,9 +11,19 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', level=loggin
 logger = logging.getLogger(__name__)
 
 class FeatureWrangler(BasePipeline):
-    def __init__(self, dataset, label, *args, **kwargs):
-        super().__init__(dataset, label)
-        self.data_profiler = [cls() for cls in feature_infer_list]
+    def __init__(self, dataset=None, label=None, data_pipeline=None, *args, **kwargs):
+        if data_pipeline is None:
+            super().__init__(dataset, label)
+            self.data_profiler = [cls() for cls in feature_infer_list]
+        else:
+            self.generators = []
+            self.data_profiler = []
+            self.pipeline = data_pipeline.pipeline
+            self.dataset = data_pipeline.dataset
+            self.rdp = data_pipeline.rdp
+            self.transformed_cache = data_pipeline.transformed_cache if hasattr(data_pipeline, 'transformed_cache') else None
+            self.y = data_pipeline.y
+            self.main_table = data_pipeline.main_table
         # If we provided multiple datasets in this workload
         self.generators.append([cls() for cls in pre_feature_generator_list])
         self.generators.append([cls() for cls in transformation_generator_list])

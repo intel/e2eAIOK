@@ -13,7 +13,7 @@ class StringToNumber(TransformPrimitive):
         def string_to_number(array):
             import re
             import pandas as pd
-            array = array.apply(lambda x: "".join(re.findall(r'\d+.*\d*', x)))
+            array = array.apply(lambda x: "" if pd.isna(x) else "".join(re.findall(r'\d+.*\d*', x)))
             array = pd.to_numeric(array, errors='coerce')
             return array
 
