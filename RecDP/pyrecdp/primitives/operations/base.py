@@ -31,7 +31,7 @@ class Operation:
         from .data import DataFrameOperation, DataLoader
         from .merge import MergeOperation
         from .name import RenameOperation
-        from .category import CategorifyOperation
+        from .category import CategorifyOperation, GroupCategorifyOperation
         from .drop import DropOperation
         from .fillna import FillNaOperation
         from .featuretools_adaptor import FeaturetoolsOperation
@@ -48,6 +48,7 @@ class Operation:
             'merge': MergeOperation,
             'rename': RenameOperation,
             'categorify': CategorifyOperation,
+            'group_categorify': GroupCategorifyOperation,
             'drop': DropOperation,
             'fillna': FillNaOperation,
             'haversine': HaversineOperation,
@@ -58,7 +59,8 @@ class Operation:
             'list_onehot_encode': ListOnehotEncodeOperation,
             'target_encode': TargetEncodeOperation,
             'count_encode': CountEncodeOperation,
-            'custom_operator': CustomOperation
+            'custom_operator': CustomOperation,
+            'time_series_infer': DummyOperation,
         }
 
         if self.op in operations_:
@@ -152,3 +154,19 @@ class BaseOperation:
         def base_spark_feature_generator(rdd):
             return rdd.mapPartitions(transform)
         return base_spark_feature_generator
+
+class DummyOperation(BaseOperation):
+    def __init__(self, op_base):
+        super().__init__(op_base)
+        self.support_spark_dataframe = True
+        self.support_spark_rdd = True
+
+    def get_function_pd(self):
+        def dummy_op(df):
+            return df
+        return dummy_op
+
+    def get_function_spark(self, rdp):
+        def dummy_op(df):
+            return df
+        return dummy_op

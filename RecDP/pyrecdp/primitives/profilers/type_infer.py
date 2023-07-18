@@ -100,12 +100,26 @@ def try_list_string(s):
         pass
     
     return False
+ 
+def is_encoded(s):
+    line_id = s.first_valid_index()
+    if line_id < 0:
+        return False
+    sample_data = s.loc[line_id:(line_id+1000)]
+    from pyrecdp.primitives.generators.nlp import BertTokenizerDecode
+    proc_ = BertTokenizerDecode().get_function()
+    try:
+        proc_(sample_data)
+    except Exception as e:
+        #print(e)
+        return False
+    return True
          
 class TypeInferFeatureGenerator():
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
    
-    def fit_prepare(self, pipeline, children, max_idx, df, y = None):
+    def fit_prepare(self, pipeline, children, max_idx, df, y = None, ts = None):
         ret_pa_fields = []
         pa_schema = pipeline[children[0]].output
         for pa_field, feature_name in tqdm(zip(pa_schema, df.columns), total=len(df.columns)):
@@ -116,6 +130,10 @@ class TypeInferFeatureGenerator():
                 if pa_field.is_string:
                     config['is_categorical_label'] = True
             else:
+                if feature_name == ts:
+                    config['is_timeseries'] = True
+                if pa_field.is_text and is_encoded(df[feature_name]):
+                    config['is_encoded'] = True
                 if try_datetime(df[feature_name]):
                     config['is_datetime'] = True
                 if try_category(df[feature_name]):

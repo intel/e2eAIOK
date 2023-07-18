@@ -11,7 +11,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', level=loggin
 logger = logging.getLogger(__name__)
 
 class FeatureWrangler(BasePipeline):
-    def __init__(self, dataset=None, label=None, data_pipeline=None, *args, **kwargs):
+    def __init__(self, dataset=None, label=None, data_pipeline=None, time_series = None, *args, **kwargs):
         if data_pipeline is None:
             super().__init__(dataset, label)
             self.data_profiler = [cls() for cls in feature_infer_list]
@@ -33,6 +33,7 @@ class FeatureWrangler(BasePipeline):
         self.generators.append([cls() for cls in post_feature_generator_list])
         self.generators.append([cls(final = True) for cls in final_generator_list])
 
+        self.ts = time_series
         self.fit_analyze()
 
     def fit_analyze(self, *args, **kwargs): 
@@ -43,7 +44,7 @@ class FeatureWrangler(BasePipeline):
         sampled_data = X.may_sample()
         
         for generator in self.data_profiler:
-            self.pipeline, child, max_id = generator.fit_prepare(self.pipeline, [child], max_id, sampled_data, self.y)
+            self.pipeline, child, max_id = generator.fit_prepare(self.pipeline, [child], max_id, sampled_data, self.y, self.ts)
         print("Feature List generated, using analyzed feature tags to create data pipeline")
         ret = super().fit_analyze(*args, **kwargs)
         self.update_label()

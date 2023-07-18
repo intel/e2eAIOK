@@ -34,30 +34,32 @@ class CategorifyOperation(BaseOperation):
 
         return categorify
 
-class GroupedCategorifyOperation(BaseOperation):
+class GroupCategorifyOperation(BaseOperation):
     def __init__(self, op_base):
         super().__init__(op_base)
         self.feature_in_out = self.op.config
         self.support_spark_dataframe = False
         self.support_spark_rdd = False
 
+    @classmethod
+    def group_label_encode(cls, item):
+        grouped_features, df_x, dict_path, feature_out = item
+        df_x['index'] = df_x.index
+        k = 'index'
+        # print(grouped_features)
+        encoder = df_x.groupby(by = grouped_features, as_index = False)[k].count().drop(k, axis = 1)
+        encoder[feature_out] = encoder.index
+        #display(encoder)
+        ret = df_x.merge(encoder, on = grouped_features, how = 'left')[feature_out]
+        return ret
+    
     def get_function_pd(self):
         feature_in_out = copy.deepcopy(self.feature_in_out)
-        def group_categorify(df, feature_name, grouped_features, dict_path = None):
-            encoder = get_encoder_df(dict_path)
-            if isinstance(encoder, type(None)):
-                k = [i for i in df.columns if i not in grouped_features]
-                if len(k) == 0:
-                    return ret, None, 0
-                k = k[0]
-                encoder = df.groupby(by = grouped_features, as_index = False)[k].count().drop(k, axis = 1)
-                encoder[feature_name] = encoder.index
-                save_encoder_df(encoder, dict_path)
-            ret = df.merge(encoder, on = grouped_features, how = 'left')
-            return ret
-        def categorify(df):
-            for feature_out, feature in feature_in_out.items():
-                dict_path = None
-                df = group_categorify(df, feature_out, feature, dict_path)
+        def group_categorify(df):
+            df_features = [(group_parts, df[group_parts], dict_path, feature_out) for col, (group_parts, dict_path, feature_out) in feature_in_out.items()]
+            results = ParallelIterator.execute(df_features, GroupCategorifyOperation.group_label_encode, len(df_features), "GroupCategorify")
+            to_concat_df = pd.concat(results, axis=1)
+            to_concat_df.index = df.index
+            df = pd.concat([df, to_concat_df], axis=1)
             return df
-        return categorify
+        return group_categorify

@@ -1,6 +1,6 @@
 from woodwork.column_schema import ColumnSchema
 from pandas import StringDtype
-from pyrecdp.core.utils import is_text_series, is_tuple, is_encoded, is_integer_convertable
+from pyrecdp.core.utils import is_text_series, is_tuple, is_integer_convertable
 class TextDtype(StringDtype):
     pass
 
@@ -11,9 +11,7 @@ class SeriesSchema:
             self.name = s.name
             in_type = s.dtype
             self.config = {}
-            self.config['is_text'] = is_text_series(s)
-            if self.config['is_text']:
-                self.config['is_encoded'] = is_encoded(s)
+            self.config['is_text'] = is_text_series(s) 
             self.config['is_tuple'] = is_tuple(s)
             self.config['is_integer'] = is_integer_convertable(s)
         elif len(args) >= 2:
@@ -70,11 +68,16 @@ class SeriesSchema:
     def copy_config_from(self, config):
         for k, v in config.items():
             if v is not False:
-                self.config[k] = v
+                if isinstance(v, list):
+                    if k not in self.config:
+                        self.config[k] = []
+                    self.config[k].extend(v)
+                else:
+                    self.config[k] = v
         self.post_fix()
 
     def mydump(self):
-        return (self.name, list(k for k, v in self.config.items() if v is not False))
+        return (self.name, list(k if v == True else (k, v) for k, v in self.config.items() if v is not False))
 
     def __repr__(self):
         return f"{self.mydump()}"
@@ -154,7 +157,22 @@ class SeriesSchema:
     @property
     def is_text(self):
         return 'is_text' in self.config and self.config["is_text"]
-    
+
+    @property
+    def is_timeseries(self):
+        return 'is_timeseries' in self.config and self.config["is_timeseries"]
+
+    @property
+    def is_grouped_categorical(self):
+        return 'is_grouped_categorical' in self.config and self.config["is_grouped_categorical"]
+
+    @property
+    def group_id_list(self):
+        if 'group_id' in self.config:
+            return self.config["group_id"]
+        else:
+            return []
+
 
 class DataFrameSchema(list):
     def __init__(self, df):

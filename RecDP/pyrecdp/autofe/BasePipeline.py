@@ -82,7 +82,10 @@ class BasePipeline:
         leaf_idx = self.pipeline.convert_to_node_chain()[-1]
         pa_schema = self.pipeline[leaf_idx].output
         label_list = [pa_field.name for pa_field in pa_schema if pa_field.is_label]
-        self.y = label_list[0]
+        if len(label_list) > 0:
+            self.y = label_list[0]
+        else:
+            self.y = None
      
     def fit_analyze(self, *args, **kwargs):
         child = list(self.pipeline.keys())[-1]

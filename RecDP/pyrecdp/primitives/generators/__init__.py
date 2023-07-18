@@ -1,5 +1,6 @@
 from .binned import BinnedFeatureGenerator
 from .category import CategoryFeatureGenerator
+from .group_category import GroupCategoryFeatureGenerator
 from .datetime import DatetimeFeatureGenerator
 from .drop import DropUselessFeatureGenerator
 from .name import RenameFeatureGenerator
@@ -54,6 +55,7 @@ pre_enocode_feature_generator_list = [
 global_dict_index_generator_list = [
     LabelEncodeFeatureGenerator,
     BinnedFeatureGenerator,
+    GroupCategoryFeatureGenerator,
     CategoryFeatureGenerator,
     TargetEncodeFeatureGenerator,
     CountEncodeFeatureGenerator

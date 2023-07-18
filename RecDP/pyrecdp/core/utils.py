@@ -179,21 +179,7 @@ def is_integer_convertable(s):
     if np.array_equal(s, s.astype(int)):
         return True
     return False
-        
-def is_encoded(s):
-    line_id = s.first_valid_index()
-    if line_id < 0:
-        return False
-    sample_data = s.loc[line_id:(line_id+1000)]
-    from pyrecdp.primitives.generators.nlp import BertTokenizerDecode
-    proc_ = BertTokenizerDecode().get_function()
-    try:
-        proc_(sample_data)
-    except Exception as e:
-        #print(e)
-        return False
-    return True
- 
+
 def is_unique(s):
     if isinstance(s, pd.Series):
         return len(s.unique()) == 1

@@ -33,7 +33,7 @@ class DatetimeFeatureGenerator(FeaturetoolsBasedFeatureGenerator):
             Hour,
             #PartOfDay()
         ]
-        self.op_name = 'datetime_feature'            
+        self.op_name = 'datetime_feature'
 
     def fit_prepare(self, pipeline, children, max_idx):
         cur_idx = max_idx

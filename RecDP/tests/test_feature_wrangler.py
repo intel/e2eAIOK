@@ -41,6 +41,15 @@ class TestFeatureWranglerPandasBased(unittest.TestCase):
         pipeline = FeatureWrangler(dataset=train_data, label="Is Fraud?")
         ret_df = pipeline.fit_transform(engine_type = 'pandas')
         display(ret_df)
+
+    def test_ppdt(self):
+        train_data = pd.read_parquet(f"{pathlib}/tests/data/recsys2023_train.parquet")
+        #train_data = train_data[:10000]
+        pipeline = FeatureWrangler(dataset=train_data, label="is_installed", time_series = 'f_1')
+        # pipeline.export(f"{pathlib}/tests/ppdt_pipeline.json")
+        ret_df = pipeline.fit_transform(engine_type = 'pandas')
+        display(ret_df)
+        display(list(ret_df.columns))
         
 class TestFeatureWranglerSparkBased(unittest.TestCase):
 
