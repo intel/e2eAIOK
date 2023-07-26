@@ -1,4 +1,4 @@
-name: Unittest FeatureWrangler Pandas Engine
+name: Unittest FeatureProfiler Spark Engine
 
 on:
   pull_request:
@@ -11,7 +11,7 @@ on:
 
 jobs:
   unittest:
-    name: Unittest FeatureWrangler Pandas Engine
+    name: Unittest FeatureProfiler Spark Engine
     runs-on: self-hosted
     steps:
     - name: Checkout
@@ -23,4 +23,4 @@ jobs:
 
     - name: RUN Unittests
       run: |
-        cd RecDP && docker run --rm --name unittest-pyrecdp-feature-wrangler-pandas --shm-size=100g --privileged --network host --device=/dev/dri -v `pwd`:/home/vmagent/app/ -w /home/vmagent/app/ pyrecdp-test-env /bin/bash -c "sh tests/cicd/bashrun_unittest_feature_wrangler_spark.sh"
+        cd RecDP && docker run --rm --name unittest-pyrecdp-feature-wrangler-pandas --shm-size=100g --privileged --network host --device=/dev/dri -v `pwd`:/home/vmagent/app/ -w /home/vmagent/app/ pyrecdp-test-env /bin/bash -c "sh tests/cicd/bashrun_unittest_feature_profiler_spark.sh"

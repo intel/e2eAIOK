@@ -8,5 +8,5 @@ class CustomOperation(BaseOperation):
         self.support_spark_dataframe = False
         self.support_spark_rdd = True
     
-    def get_function_pd(self):
+    def get_function_pd(self, trans_type = 'fit_transform'):
         return self.custom_op

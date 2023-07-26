@@ -1,17 +1,16 @@
-name: Unittest AutoFE Pandas Engine
-
+name: Unittest AutoFE
 on:
   pull_request:
     branches:
     - RecDP_v2.0
     paths:
     - 'RecDP/pyrecdp/**'
-    - 'RecDP/tests/cicd/bashrun_unittest_autofe_pandas.sh'
+    - 'RecDP/tests/cicd/bashrun_unittest_autofe.sh'
     - 'RecDP/tests/test_autofe.py'
 
 jobs:
   unittest:
-    name: Unittest AutoFE Pandas Engine
+    name: Unittest AutoFE
     runs-on: self-hosted
     steps:
     - name: Checkout
@@ -23,4 +22,4 @@ jobs:
 
     - name: RUN Unittests
       run: |
-        cd RecDP && docker run --rm --name unittest-pyrecdp-autofe-pandas --shm-size=100g --privileged --network host --device=/dev/dri -v `pwd`:/home/vmagent/app/ -w /home/vmagent/app/ pyrecdp-test-env /bin/bash -c "sh tests/cicd/bashrun_unittest_autofe_pandas.sh"
+        cd RecDP && docker run --rm --name unittest-pyrecdp-autofe-pandas --shm-size=100g --privileged --network host --device=/dev/dri -v `pwd`:/home/vmagent/app/ -w /home/vmagent/app/ pyrecdp-test-env /bin/bash -c "sh tests/cicd/bashrun_unittest_autofe.sh"

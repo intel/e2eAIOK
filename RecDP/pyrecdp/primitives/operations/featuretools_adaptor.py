@@ -9,7 +9,7 @@ class FeaturetoolsOperation(BaseOperation):
         self.support_spark_dataframe = False
         self.support_spark_rdd = True
 
-    def get_function_pd(self):
+    def get_function_pd(self, trans_type = 'fit_transform'):
         feature_in_out_map = copy.deepcopy(self.feature_in_out_map)
         def generate_ft_feature(df):
             for in_feat_name, ops in feature_in_out_map.items():

@@ -7,7 +7,7 @@ class HaversineOperation(FeaturetoolsOperation):
     def __init__(self, op_base):
         super().__init__(op_base)
 
-    def get_function_pd(self):
+    def get_function_pd(self, trans_type = 'fit_transform'):
         feature_in_out_map = copy.deepcopy(self.feature_in_out_map)
         def generate_ft_feature(df):
             for inputs_str, op in feature_in_out_map.items():

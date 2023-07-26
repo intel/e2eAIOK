@@ -36,7 +36,7 @@ class FeatureEstimator(BasePipeline):
                 self.import_from_json(data_pipeline)
         elif isinstance(data_pipeline, BasePipeline):
             self.nested_pipeline_obj = data_pipeline
-            self.pipeline = data_pipeline.pipeline
+            self.pipeline = data_pipeline.pipeline.copy()
             self.dataset = data_pipeline.dataset
             self.rdp = data_pipeline.rdp
             self.transformed_cache = data_pipeline.transformed_cache if hasattr(data_pipeline, 'transformed_cache') else None

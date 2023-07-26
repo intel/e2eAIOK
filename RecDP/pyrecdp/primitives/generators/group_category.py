@@ -19,15 +19,21 @@ class GroupCategoryFeatureGenerator(super_class):
             if pa_field.is_grouped_categorical:                
                 for group_id in pa_field.group_id_list:
                     if group_id not in grouped_features:
-                        grouped_features[group_id] = []
-                    grouped_features[group_id].append(pa_field.name)
+                        grouped_features[group_id] = {"is_timebased": False, "list": []}
+                    grouped_features[group_id]["list"].append(pa_field.name)
+                    if pa_field.is_timeseries:
+                        grouped_features[group_id]["is_timebased"] = True
+
         # now, we build all groups
-        for group_id, group_parts in grouped_features.items():
+        for group_id, group_parts_dict in grouped_features.items():
+            group_parts = group_parts_dict["list"]
+            is_timebased = group_parts_dict["is_timebased"]
             out_schema = SeriesSchema(group_id, int)
             config = {}
             config['is_categorical'] = True
+            config['is_timebased_categorical'] = is_timebased
             out_schema.copy_config_from(config)
-            feature_in_out[group_id] = (group_parts, f"{folder}/{group_id}_categorify_dict", out_schema.name)
+            feature_in_out[group_id] = (group_parts, f"{folder}/{group_id}_categorify_dict.parquet", out_schema.name)
             is_useful = True
             ret_pa_schema.append(out_schema)
         if is_useful:

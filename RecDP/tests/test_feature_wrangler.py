@@ -49,7 +49,6 @@ class TestFeatureWranglerPandasBased(unittest.TestCase):
         # pipeline.export(f"{pathlib}/tests/ppdt_pipeline.json")
         ret_df = pipeline.fit_transform(engine_type = 'pandas')
         display(ret_df)
-        display(list(ret_df.columns))
         
 class TestFeatureWranglerSparkBased(unittest.TestCase):
 

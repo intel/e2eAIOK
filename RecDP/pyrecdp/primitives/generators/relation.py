@@ -31,14 +31,6 @@ class RelationalFeatureGenerator(super_class):
         pipeline.update(self.pipeline)
         return pipeline, self.pipeline_main_idx, self.pipeline_start_idx
     
-    def get_function_pd(self):
-        def merge_tables(df):                
-            return df
-        return merge_tables
-
-    def get_function_spark(self, rdp):        
-        raise NotImplementedError("RelationalFeatureGenerator spark implementation is WIP")
-    
     #======== Private utility funcs ==========#
     def dry_run_merge_tables(self, target_table_schema, related_tables):            
         def _dry_merge(child_idx, on, tgt_schema, src_schema):

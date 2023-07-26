@@ -10,7 +10,7 @@ class TypeInferOperation(BaseOperation):
         self.support_spark_dataframe = False
         self.support_spark_rdd = True
 
-    def get_function_pd(self):
+    def get_function_pd(self, trans_type = 'fit_transform'):
         astype_feature_map = copy.deepcopy(self.astype_feature_map)
         def type_infer(df):
             for feature in astype_feature_map:
@@ -22,5 +22,5 @@ class TypeInferOperation(BaseOperation):
             return df
         return type_infer
     
-    def get_function_spark(self, rdp):
+    def get_function_spark(self, rdp, trans_type = 'fit_transform'):
         raise NotImplementedError(f"TypeInferOperation spark dataframe is not supported yet.")

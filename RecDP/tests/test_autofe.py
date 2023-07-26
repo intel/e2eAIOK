@@ -15,17 +15,29 @@ from IPython.display import display
 
 class TestFE(unittest.TestCase):
 
-    def test_nyc_taxi(self):
+    def test_nyc_taxi_pandas(self):
+        train_data = pd.read_parquet(f"{pathlib}/tests/data/test_nyc_taxi_fare.parquet")
+        pipeline = AutoFE(dataset=train_data, label="fare_amount")
+        ret_df = pipeline.fit_transform(engine_type = 'pandas')
+        # test with shape
+        #pipeline.feature_importance()
+        
+    def test_nyc_taxi_spark(self):
         train_data = pd.read_parquet(f"{pathlib}/tests/data/test_nyc_taxi_fare.parquet")
         pipeline = AutoFE(dataset=train_data, label="fare_amount")
         ret_df = pipeline.fit_transform(engine_type = 'spark')
         # test with shape
         #pipeline.feature_importance()
         
-    def test_fraud_detect(self):
+    def test_fraud_detect_pandas(self):
         train_data = pd.read_parquet(f"{pathlib}/tests/data/test_frdtct.parquet")
         pipeline = AutoFE(dataset=train_data, label="Is Fraud?")
         ret_df = pipeline.fit_transform(engine_type = 'pandas')
+        
+    def test_fraud_detect_spark(self):
+        train_data = pd.read_parquet(f"{pathlib}/tests/data/test_frdtct.parquet")
+        pipeline = AutoFE(dataset=train_data, label="Is Fraud?")
+        ret_df = pipeline.fit_transform(engine_type = 'spark')
         # test with shape
         #pipeline.feature_importance()
         

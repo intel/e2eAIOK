@@ -9,13 +9,13 @@ class RenameOperation(BaseOperation):
         self.support_spark_rdd = True
         self.fast_without_dpp = True
         
-    def get_function_pd(self):
+    def get_function_pd(self, trans_type = 'fit_transform'):
         renamed = copy.deepcopy(self.renamed)
         def rename(df):
             return df.rename(columns = renamed)
         return rename
 
-    def get_function_spark(self, rdp):
+    def get_function_spark(self, rdp, trans_type = 'fit_transform'):
         def rename(df):
             for src, dst in self.renamed.items():
                 df = df.withColumnRenamed(src, dst)

@@ -13,7 +13,7 @@ class DropOperation(BaseOperation):
         self.support_spark_rdd = True
         self.fast_without_dpp = True
 
-    def get_function_pd(self):
+    def get_function_pd(self, trans_type = 'fit_transform'):
         feature_in = copy.deepcopy(self.feature_in)
 
         def drop_useless_feature(df):
@@ -23,7 +23,7 @@ class DropOperation(BaseOperation):
             return df.drop(columns = feature_in)
         return drop_useless_feature
     
-    def get_function_spark(self, rdp):
+    def get_function_spark(self, rdp, trans_type = 'fit_transform'):
         def drop_feature(df):
             return df.drop(*self.feature_in)
         return drop_feature

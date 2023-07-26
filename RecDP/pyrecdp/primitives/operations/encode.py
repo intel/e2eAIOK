@@ -6,11 +6,14 @@ import numpy as np
 from pyrecdp.core.utils import *
 from pyrecdp.core.parallel_iterator import ParallelIterator
 from IPython.display import display
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 from category_encoders import TargetEncoder
 from category_encoders.count import CountEncoder
 from sklearn.preprocessing import MultiLabelBinarizer
 from pyrecdp.encoder import TargetEncoder as SparkTargetEncoder, CountEncoder as SparkCountEncoder
 from pyrecdp.data_processor import ModelMerge
+
 
 class OnehotEncodeOperation(BaseOperation):
     def __init__(self, op_base):
@@ -27,7 +30,7 @@ class OnehotEncodeOperation(BaseOperation):
         one_hot_df = one_hot_df.loc[:, one_hot_df.columns.isin(selected_columns)]
         return one_hot_df
 
-    def get_function_pd(self):
+    def get_function_pd(self, trans_type = 'fit_transform'):
         config = copy.deepcopy(self.config)
         def encode(df):
             df_features = [(col, df[col], keys) for col, keys in config.items()]
@@ -55,7 +58,7 @@ class ListOnehotEncodeOperation(BaseOperation):
         one_hot_df = one_hot_df.loc[:, one_hot_df.columns.isin(selected_columns)]
         return one_hot_df
     
-    def get_function_pd(self):
+    def get_function_pd(self, trans_type = 'fit_transform'):
         config = copy.deepcopy(self.config)
         def encode(df):
             df_features = [(col, df[col], sep, keys) for col, (sep, keys) in config.items()]
@@ -69,12 +72,12 @@ class TargetEncodeOperation(BaseOperation):
         super().__init__(op_base)
         self.feature_in_out = self.op.config['feature_in_out']
         self.label = self.op.config['label']
-        self.support_spark_dataframe = True
+        self.support_spark_dataframe = False
         self.support_spark_rdd = False
 
     @classmethod
     def target_encode(cls, item):
-        (feature, df_x, df_y), feature_out = item
+        feature, df_x, df_y, dict_path, feature_out = item
         if is_unique(df_x):
             df_encoded = pd.DataFrame()
             df_encoded[feature_out] = [np.nan]*len(df_x)
@@ -82,23 +85,38 @@ class TargetEncodeOperation(BaseOperation):
         else:
             encoder = TargetEncoder(cols=[feature], min_samples_leaf=20, smoothing=10)
             df_encoded = encoder.fit_transform(df_x, df_y).rename(columns={feature: feature_out})
+            save_encoder(encoder, dict_path)
         return df_encoded
 
-    def get_function_pd(self):
+    @classmethod
+    def target_encode_transform(cls, item):
+        feature, df_x, df_y, dict_path, feature_out = item
+        encoder = get_encoder(dict_path)
+        df_encoded = encoder.transform(df_x).rename(columns={feature: feature_out})
+        return df_encoded
+
+    def get_function_pd(self, trans_type = 'fit_transform'):
         feature_in_out = copy.deepcopy(self.feature_in_out)
         label = self.label
 
-        def encode(df):
-            df_y = df[label]
-            df_features = [(col, df[col], df_y) for col in feature_in_out.keys()]
-            te_in_out = zip(df_features, feature_in_out.values())
-            results = ParallelIterator.execute(te_in_out, TargetEncodeOperation.target_encode, len(feature_in_out), "TargetEncode")
-            to_concat_df = pd.concat(results, axis=1)
-            df = pd.concat([df, to_concat_df], axis=1)
-            return df
+        if trans_type == 'fit_transform':
+            def encode(df):
+                df_y = df[label]
+                df_features = [(col, df[col], df_y, dict_path, feature_out) for col, (dict_path, feature_out) in feature_in_out.items()]
+                results = ParallelIterator.execute(df_features, TargetEncodeOperation.target_encode, len(feature_in_out), "TargetEncode")
+                to_concat_df = pd.concat(results, axis=1)
+                df = pd.concat([df, to_concat_df], axis=1)
+                return df
+        elif trans_type == 'transform':
+            def encode(df):
+                df_features = [(col, df[col], None, dict_path, feature_out) for col, (dict_path, feature_out) in feature_in_out.items()]
+                results = ParallelIterator.execute(df_features, TargetEncodeOperation.target_encode_transform, len(feature_in_out), "TargetEncode")
+                to_concat_df = pd.concat(results, axis=1)
+                df = pd.concat([df, to_concat_df], axis=1)
+                return df
         return encode
 
-    def get_function_spark(self, rdp):
+    def get_function_spark(self, rdp, trans_type = 'fit_transform'):
         feature_in_out = copy.deepcopy(self.feature_in_out)
         label = self.label
         
@@ -117,37 +135,63 @@ class TargetEncodeOperation(BaseOperation):
 class CountEncodeOperation(BaseOperation):
     def __init__(self, op_base):
         super().__init__(op_base)
-        self.feature_in = self.op.config
-        self.support_spark_dataframe = True
+        self.feature_in_out = self.op.config
+        self.support_spark_dataframe = False
         self.support_spark_rdd = False
 
     @classmethod
     def count_encode(cls, item):
         dict_path = None
-        feature, df_x = item
+        feature, df_x, dict_path, feature_out = item
         if is_unique(df_x):
             df_encoded = pd.DataFrame()
-            df_encoded[f"{feature}_CE"] = [np.nan]*len(df_x)
+            df_encoded[feature_out] = [np.nan]*len(df_x)
             df_encoded.index = df_x.index
         else:
-            encoder = CountEncoder(cols=[feature])
-            encoder = get_encoder_np(encoder, dict_path)
-            df_encoded = encoder.fit_transform(df_x).rename(columns={feature: f"{feature}_CE"})
-            save_encoder_np(encoder, dict_path)
+            encoder = CountEncoder(cols=[feature], handle_unknown='return_nan')
+            df_encoded = encoder.fit_transform(df_x).rename(columns={feature: feature_out})
+            save_encoder(encoder, dict_path)
         return df_encoded
 
-    def get_function_pd(self):
-        feature_in = copy.deepcopy(self.feature_in)
+    @classmethod
+    def count_encode_transform(cls, item):
+        from pyrecdp.core.utils import fillna_with_series
+        dict_path = None
+        feature, df_x, dict_path, feature_out = item
+        encoder = get_encoder(dict_path)
+        df_encoded = encoder.transform(df_x).rename(columns={feature: feature_out})
+        # handle unknown
 
-        def encode(df):
-            df_features = [(col, df[col]) for col in feature_in]
-            results = ParallelIterator.execute(df_features, CountEncodeOperation.count_encode, len(df_features), "CountEncode")
-            to_concat_df = pd.concat(results, axis=1)
-            df = pd.concat([df, to_concat_df], axis=1)
-            return df
+        new_encoder = CountEncoder(cols=[feature], handle_unknown='return_nan')
+        df_encoded_2 = new_encoder.fit_transform(df_x).rename(columns={feature: feature_out})
+
+        df_encoded[feature_out] = fillna_with_series(df_encoded[feature_out], df_encoded_2[feature_out])
+
+        # print debug
+        # df_encoded[feature] = df_x
+        # display(df_encoded[df_encoded[feature].isin([25855, 30061])])
+        return df_encoded
+
+    def get_function_pd(self, trans_type = 'fit_transform'):
+        feature_in_out = copy.deepcopy(self.feature_in_out)
+
+        if trans_type == 'fit_transform':
+            def encode(df):
+                df_features = [(col, df[col], dict_path, feature_out) for col, (dict_path, feature_out) in feature_in_out.items()]
+                results = ParallelIterator.execute(df_features, CountEncodeOperation.count_encode, len(df_features), "CountEncode")
+                to_concat_df = pd.concat(results, axis=1)
+                df = pd.concat([df, to_concat_df], axis=1)
+                return df
+        elif trans_type == 'transform':
+            def encode(df):
+                df_features = [(col, df[col], dict_path, feature_out) for col, (dict_path, feature_out) in feature_in_out.items()]
+                results = ParallelIterator.execute(df_features, CountEncodeOperation.count_encode_transform, len(df_features), "CountEncode")
+                to_concat_df = pd.concat(results, axis=1)
+                df = pd.concat([df, to_concat_df], axis=1)
+                return df
         return encode
 
-    def get_function_spark(self, rdp):
+    def get_function_spark(self, rdp, trans_type = 'fit_transform'):
         feature_in = copy.deepcopy(self.feature_in)
         def encode(df):
             ce_dfs = []

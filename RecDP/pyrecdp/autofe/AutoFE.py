@@ -2,7 +2,7 @@ import logging
 from pyrecdp.core.utils import Timer, infer_problem_type
 from pyrecdp.core.dataframe import DataFrameAPI
 
-from pyrecdp.autofe import FeatureWrangler, FeatureProfiler, RelationalBuilder, FeatureEstimator
+from pyrecdp.autofe import FeatureWrangler, FeatureProfiler, RelationalBuilder, FeatureEstimator, BasePipeline
 
 import os
 
@@ -10,7 +10,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', level=loggin
 logger = logging.getLogger(__name__)
 
 class AutoFE():
-    def __init__(self, dataset, label, *args, **kwargs):
+    def __init__(self, dataset, label, time_series = None, exclude_op = [], include_op = [], *args, **kwargs):
         self.label = label
         self.auto_pipeline = {'relational': None, 'profiler': None, 'wrangler': None, 'estimator': None}
         if isinstance(dataset, dict):
@@ -18,7 +18,7 @@ class AutoFE():
             self.auto_pipeline['relational'] = RelationalBuilder(dataset=dataset, label=label)
             pipeline = self.auto_pipeline['relational']
             print("AutoFE started to create data pipeline")
-            self.auto_pipeline['wrangler'] = FeatureWrangler(data_pipeline=pipeline)
+            self.auto_pipeline['wrangler'] = FeatureWrangler(data_pipeline=pipeline, exclude_op = exclude_op, include_op = include_op, time_series = time_series)
             pipeline = self.auto_pipeline['wrangler']
             config = {
                 'model_file': 'autofe_lightgbm.mdl',
@@ -29,7 +29,7 @@ class AutoFE():
             print("AutoFE started to profile data")
             self.auto_pipeline['profiler'] = FeatureProfiler(dataset=dataset, label=label)
             print("AutoFE started to create data pipeline")
-            self.auto_pipeline['wrangler'] = FeatureWrangler(dataset=dataset, label=label)
+            self.auto_pipeline['wrangler'] = FeatureWrangler(dataset=dataset, label=label, time_series = time_series, exclude_op = exclude_op, include_op = include_op)
             pipeline = self.auto_pipeline['wrangler']
             config = {
                 'model_file': 'autofe_lightgbm.mdl',
@@ -38,7 +38,7 @@ class AutoFE():
             self.auto_pipeline['estimator'] = FeatureEstimator(data_pipeline = pipeline, config = config)
 
     def fit_transform(self, engine_type = 'pandas', no_cache = False, *args, **kwargs):
-        print("AutoFE started to execute data")
+        print("AutoFE started to fit_transform data")
         ret_df = None
         pipeline = self.auto_pipeline['estimator']
         ret_df = pipeline.fit_transform(engine_type, data = ret_df, **kwargs)
@@ -85,3 +85,13 @@ class AutoFE():
             return self.auto_pipeline['relational'].delete_operation(idx)
         else:
             return self.auto_pipeline['estimator'].delete_operation(idx)
+
+    def export(self, file_path = None):
+        return self.auto_pipeline['wrangler'].export(file_path)
+
+    @classmethod
+    def clone_pipeline(cls, origin_pipeline, data):
+        pipeline_json = origin_pipeline.export()
+        new_pipeline = BasePipeline(data, origin_pipeline.label)
+        new_pipeline.import_from_json(pipeline_json)
+        return new_pipeline

@@ -167,6 +167,10 @@ class SeriesSchema:
         return 'is_grouped_categorical' in self.config and self.config["is_grouped_categorical"]
 
     @property
+    def is_timebased_categorical(self):
+        return 'is_timebased_categorical' in self.config and self.config["is_timebased_categorical"]
+
+    @property
     def group_id_list(self):
         if 'group_id' in self.config:
             return self.config["group_id"]

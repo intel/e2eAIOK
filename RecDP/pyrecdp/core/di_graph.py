@@ -91,5 +91,8 @@ class DiGraph(dict):
         import json
         to_dump = dict((node_id, op.dump()) for node_id, op in self.items())
         return json.dumps(to_dump, indent=4)
-        
+
+    def copy(self):
+        import copy
+        return copy.copy(self)
     

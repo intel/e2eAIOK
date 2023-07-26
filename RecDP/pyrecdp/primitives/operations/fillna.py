@@ -8,14 +8,14 @@ class FillNaOperation(BaseOperation):
         self.support_spark_dataframe = True
         self.support_spark_rdd = True
     
-    def get_function_pd(self):
+    def get_function_pd(self, trans_type = 'fit_transform'):
         _fillna_feature_map = copy.deepcopy(self._fillna_feature_map)
         def fill_na(df):
             df.fillna(_fillna_feature_map, inplace=True, downcast=False)
             return df
         return fill_na
 
-    def get_function_spark(self, rdp):
+    def get_function_spark(self, rdp, trans_type = 'fit_transform'):
         def fill_na(df):
             return df.na.fill(self._fillna_feature_map)
         return fill_na

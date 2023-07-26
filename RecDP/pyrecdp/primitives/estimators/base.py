@@ -14,7 +14,7 @@ class BaseEstimator(BaseOperation):
     def get_func_predict(self):
         raise NotImplementedError("BaseEstimator is an abstract class")
 
-    def get_function_pd(self):
+    def get_function_pd(self, trans_type = 'fit_transform'):
         return self.get_func_train()
         
     def get_evaluate_func(self, metric):

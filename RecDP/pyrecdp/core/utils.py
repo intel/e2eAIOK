@@ -4,6 +4,7 @@ import copy
 import os
 
 import timeit
+import pickle
 
 # `def pretty(d, indent=0):
 #     from pyrecdp.primitives.operations import Operation
@@ -39,42 +40,57 @@ def sequenced_union1d(a, b):
     [a_list.append(i) for i in b_list if i not in a_dict]
     return np.array(a_list)
 
-def get_encoder_np(encoder, dict_path):
-    if isinstance(dict_path, type(None)):
+def get_encoder(dict_path):
+    if dict_path.endswith(".parquet"):
+        return get_encoder_df(dict_path)
+    else:
+        if not os.path.exists(dict_path):
+            return FileNotFoundError(f"{dict_path} is not found")
+        with open(dict_path, 'rb') as f:
+            encoder = pickle.load(f)
         return encoder
-    dirname = os.path.dirname(dict_path)
-    if not os.path.exists(dict_path):
-        return encoder
-    encoder.classes_ = np.load(dict_path)    
-    return encoder
 
-def save_encoder_np(encoder, dict_path):
-    if isinstance(dict_path, type(None)):
-        return
-    dirname = os.path.dirname(dict_path)
-    if not os.path.exists(dirname):
-        os.mkdir(dirname)
-    np.save(dict_path, encoder.classes_)
+def save_encoder(encoder, dict_path):
+    if isinstance(encoder, pd.DataFrame):
+        return save_encoder_df(encoder, dict_path)
+    else:
+        dirname = os.path.dirname(dict_path)
+        if len(dirname) > 0 and not os.path.exists(dirname):
+            os.mkdir(dirname)
+        with open(dict_path, 'wb') as f:
+            pickle.dump(encoder, f)
 
 def get_encoder_df(dict_path):
-    if isinstance(dict_path, type(None)):
-        return None
-    dirname = os.path.dirname(dict_path)
     if not os.path.exists(dict_path):
-        return None
+        return FileNotFoundError(f"{dict_path} is not found")
     return pd.read_parquet(dict_path)
 
 def save_encoder_df(encoder, dict_path):
     if isinstance(dict_path, type(None)):
         return
     dirname = os.path.dirname(dict_path)
-    if not os.path.exists(dirname):
+    if len(dirname) > 0 and not os.path.exists(dirname):
         os.mkdir(dirname)
     encoder.to_parquet(dict_path)
     
 def deepcopy(dict_df):
     return copy.deepcopy(dict_df)
+
+def fillna_with_series(tgt_s, src_s):
+    nan_loc = tgt_s.isnull().to_list()
+    df_encoded_list = tgt_s.to_list()
+    df_encoded_2_list = src_s.to_list()
+
+    ret = []
+    for idx, is_nan in enumerate(nan_loc):
+        if not is_nan:
+            ret.append(df_encoded_list[idx])
+        else:
+            ret.append(df_encoded_2_list[idx])
     
+    ret = pd.Series(ret, index = tgt_s.index)
+    return ret
+
 def get_sample_indices_pd(indices, target_num_rows):
     if isinstance(indices, pd.DataFrame):
         indices = indices.notna()
@@ -106,7 +122,7 @@ def dump_fix(x):
     elif isinstance(x, type):
         x = (x.__module__, x.__name__)
     elif isinstance(x, tuple):
-        x = (dump_fix(x[0]), dump_fix(x[1]))
+        x = [dump_fix(i) for i in x]
     elif hasattr(x, 'mydump'):
         x = x.mydump()
     elif callable(x):
@@ -184,7 +200,7 @@ def is_unique(s):
     if isinstance(s, pd.Series):
         return len(s.unique()) == 1
     elif isinstance(s, pd.DataFrame) and len(s.columns) == 1:
-        return len(s[s.columns[0]].unque()) == 1
+        return len(s[s.columns[0]].unique()) == 1
     else:
         return False
 

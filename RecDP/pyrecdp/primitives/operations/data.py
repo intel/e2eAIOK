@@ -13,7 +13,7 @@ class DataFrameOperation(BaseOperation):
         if self.op.children is None or len(self.op.children) == 0:
             self.cache = dataset[self.op.config]
         
-    def get_function_pd(self):
+    def get_function_pd(self, trans_type = 'fit_transform'):
         cache = self.cache.copy() if self.cache is not None else None
         def get_dataframe(df):
             if df is not None:
@@ -28,7 +28,7 @@ class DataLoader(BaseOperation):
         self.support_spark_dataframe = True
         self.support_spark_rdd = False
         
-    def get_function_pd(self):
+    def get_function_pd(self, trans_type = 'fit_transform'):
         def get_dataframe():
             file_path = self.op.config['file_path']
             if file_path.endswith('.csv'):
@@ -39,7 +39,7 @@ class DataLoader(BaseOperation):
                 raise NotImplementedError("now sample read only support csv and parquet")
         return get_dataframe
     
-    def get_function_spark(self, rdp, method = None):
+    def get_function_spark(self, rdp, trans_type = 'fit_transform'):
         def get_dataframe():
             file_path = self.op.config['file_path']
             if file_path.endswith('.csv'):
@@ -50,12 +50,12 @@ class DataLoader(BaseOperation):
                 raise NotImplementedError("now sample read only support csv and parquet")
         return get_dataframe
     
-    def execute_pd(self, pipeline):
+    def execute_pd(self, pipeline, trans_type = 'fit_transform'):
         assert not self.op.children or len(self.op.children) == 0
-        _proc = self.get_function_pd()
+        _proc = self.get_function_pd(trans_type)
         self.cache = _proc()
     
-    def execute_spark(self, pipeline, rdp):
+    def execute_spark(self, pipeline, rdp, trans_type = 'fit_transform'):
         assert not self.op.children or len(self.op.children) == 0
-        _proc = self.get_function_spark(rdp)
+        _proc = self.get_function_spark(rdp, trans_type)
         self.cache = _proc()

@@ -94,15 +94,15 @@ class BaseOperation:
     def describe(self) -> str:
         return str(self.op.dump())
         
-    def execute_pd(self, pipeline):
-        _proc = self.get_function_pd()
+    def execute_pd(self, pipeline, trans_type = 'fit_transform'):
+        _proc = self.get_function_pd(trans_type)
         if not self.op.children or len(self.op.children) == 0:
             pass
         else:
             child_output = pipeline[self.op.children[0]].cache
             self.cache = _proc(child_output)
             
-    def execute_spark(self, pipeline, rdp):
+    def execute_spark(self, pipeline, rdp, trans_type = 'fit_transform'):
         _convert = None
         if not self.op.children or len(self.op.children) == 0:
             pass
@@ -110,33 +110,33 @@ class BaseOperation:
             child_output = pipeline[self.op.children[0]].cache
             if isinstance(child_output, SparkDataFrame):
                 if self.support_spark_dataframe:
-                    _proc = self.get_function_spark(rdp)
+                    _proc = self.get_function_spark(rdp, trans_type)
                 elif self.support_spark_rdd:
                     _convert = SparkDataFrameToRDDConverter().get_function(rdp)
-                    _proc = self.get_function_spark_rdd(rdp)
+                    _proc = self.get_function_spark_rdd(rdp, trans_type)
                 else:
                     _convert = SparkDataFrameToDataFrameConverter().get_function(rdp)
-                    _proc = self.get_function_pd()
+                    _proc = self.get_function_pd(trans_type)
             elif isinstance(child_output, SparkRDD):
                 if self.support_spark_rdd:
-                    _proc = self.get_function_spark_rdd(rdp)
+                    _proc = self.get_function_spark_rdd(rdp, trans_type)
                 elif self.support_spark_dataframe:
                     _convert = RDDToSparkDataFrameConverter().get_function(rdp)
-                    _proc = self.get_function_spark(rdp)
+                    _proc = self.get_function_spark(rdp, trans_type)
                 else:
                     _convert = RDDToDataFrameConverter().get_function(rdp)
-                    _proc = self.get_function_pd()
+                    _proc = self.get_function_pd(trans_type)
             elif isinstance(child_output, pd.DataFrame):
                 if self.fast_without_dpp:
-                    _proc = self.get_function_pd()
+                    _proc = self.get_function_pd(trans_type)
                 elif self.support_spark_rdd:
                     _convert = DataFrameToRDDConverter().get_function(rdp)
-                    _proc = self.get_function_spark_rdd(rdp)
+                    _proc = self.get_function_spark_rdd(rdp, trans_type)
                 elif self.support_spark_dataframe:
                     _convert = DataFrameToSparkDataFrameConverter().get_function(rdp)
-                    _proc = self.get_function_spark(rdp)
+                    _proc = self.get_function_spark(rdp, trans_type)
                 else:
-                    _proc = self.get_function_pd()
+                    _proc = self.get_function_pd(trans_type)
             else:
                 raise ValueError(f"child cache is not recognized {child_output}")
         
@@ -146,8 +146,8 @@ class BaseOperation:
             self.cache = _proc(child_output)
             #print(self.cache.take(1))
 
-    def get_function_spark_rdd(self, rdp):
-        actual_func = self.get_function_pd()
+    def get_function_spark_rdd(self, rdp, trans_type = 'fit_transform'):
+        actual_func = self.get_function_pd(trans_type)
         def transform(iter, *args):
             for x in iter:
                 yield actual_func(x, *args)
@@ -161,12 +161,12 @@ class DummyOperation(BaseOperation):
         self.support_spark_dataframe = True
         self.support_spark_rdd = True
 
-    def get_function_pd(self):
+    def get_function_pd(self, trans_type = 'fit_transform'):
         def dummy_op(df):
             return df
         return dummy_op
 
-    def get_function_spark(self, rdp):
+    def get_function_spark(self, rdp, trans_type = 'fit_transform'):
         def dummy_op(df):
             return df
         return dummy_op

@@ -11,15 +11,18 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', level=loggin
 logger = logging.getLogger(__name__)
 
 class FeatureWrangler(BasePipeline):
-    def __init__(self, dataset=None, label=None, data_pipeline=None, time_series = None, *args, **kwargs):
+    def __init__(self, dataset=None, label=None, data_pipeline=None, time_series = None, exclude_op = [], include_op = [], *args, **kwargs):
         if data_pipeline is None:
-            super().__init__(dataset, label)
+            super().__init__(dataset, label, exclude_op, include_op)
             self.data_profiler = [cls() for cls in feature_infer_list]
         else:
             self.generators = []
             self.data_profiler = []
-            self.pipeline = data_pipeline.pipeline
+            self.pipeline = data_pipeline.pipeline.copy()
             self.dataset = data_pipeline.dataset
+            self.ts = time_series
+            self.include_op = include_op
+            self.exclude_op = exclude_op
             self.rdp = data_pipeline.rdp
             self.transformed_cache = data_pipeline.transformed_cache if hasattr(data_pipeline, 'transformed_cache') else None
             self.y = data_pipeline.y
@@ -32,6 +35,14 @@ class FeatureWrangler(BasePipeline):
         self.generators.append([cls() for cls in global_dict_index_generator_list])
         self.generators.append([cls() for cls in post_feature_generator_list])
         self.generators.append([cls(final = True) for cls in final_generator_list])
+
+        # add a default exclude list for some not very useful but performance impact FE
+        default_exclude_op = ['TargetEncodeFeatureGenerator']
+        # default_exclude_op = []
+        for op_name in default_exclude_op:
+            if op_name not in self.include_op:
+                self.exclude_op.append(op_name)
+        print(f"We exclude some Feature Engineer Generator as listed, you can use 'include_op = [\"XXXFeatureGenerator\"]'  to re-add them, exclude_op list {self.exclude_op}")
 
         self.ts = time_series
         self.fit_analyze()

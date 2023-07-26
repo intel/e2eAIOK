@@ -88,11 +88,12 @@ class TargetEncodeFeatureGenerator(super_class):
         pa_schema = pipeline[children[0]].output
         feature_in_out = {}
         ret_pa_schema = copy.deepcopy(pa_schema)
+        folder = 'pipeline_default'
         for pa_field in pa_schema:
-            if pa_field.is_categorical:
+            if pa_field.is_categorical and not pa_field.is_timebased_categorical:
                 feature = pa_field.name
                 out_schema = SeriesSchema(f"{feature}__TE", float)
-                feature_in_out[feature] = out_schema.name
+                feature_in_out[feature] = (f"{folder}/{feature}_TE_dict.pkl", out_schema.name)
                 is_useful = True
                 ret_pa_schema.append(out_schema)
         if is_useful:
@@ -117,11 +118,12 @@ class CountEncodeFeatureGenerator(super_class):
         pa_schema = pipeline[children[0]].output
         feature_in_out = {}
         ret_pa_schema = copy.deepcopy(pa_schema)
+        folder = 'pipeline_default'
         for pa_field in pa_schema:
             if pa_field.is_categorical:
                 feature = pa_field.name
                 out_schema = SeriesSchema(f"{feature}__CE", int)
-                feature_in_out[feature] = out_schema.name
+                feature_in_out[feature] = (f"{folder}/{feature}_CE_dict.pkl", out_schema.name)
                 is_useful = True
                 ret_pa_schema.append(out_schema)
         if is_useful:

@@ -8,7 +8,7 @@ class MergeOperation(BaseOperation):
         super().__init__(op_base)
         self.config = self.op.config
         
-    def execute_pd(self, pipeline):
+    def execute_pd(self, pipeline, trans_type = 'fit_transform'):
         if self.cache is not None:
             return
         
@@ -22,7 +22,7 @@ class MergeOperation(BaseOperation):
             print(f"right child is None, details: {pipeline[self.op.children[1]].describe()}")
         self.cache = pd.merge(left_child, right_child, on = self.config['on'], how = self.config['how'])
 
-    def execute_spark(self, pipeline, rdp):
+    def execute_spark(self, pipeline, rdp, trans_type = 'fit_transform'):
         if self.cache is not None:
             return
         

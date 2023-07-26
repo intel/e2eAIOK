@@ -15,7 +15,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', level=loggin
 logger = logging.getLogger(__name__)
 
 class BasePipeline:
-    def __init__(self, dataset, label, *args, **kwargs):
+    def __init__(self, dataset, label, exclude_op = [], include_op = [], *args, **kwargs):
         # properties
         # self.main_table: main table names
         # self.dataset: a dictionary, main_table will be indicated with key 'main_table'
@@ -58,7 +58,8 @@ class BasePipeline:
         
         self.feature_columns = [i for i in original_data.columns if i != self.y]
         #feature_data = original_data[self.feature_columns]
-            
+        self.exclude_op = exclude_op
+        self.include_op = include_op
         self.generators = []
         self.pipeline = DiGraph()
         if not input_is_path:
@@ -93,6 +94,8 @@ class BasePipeline:
         to_run = []
         for i in range(len(self.generators)):
             for generator in self.generators[i]:
+                if generator.__class__.__name__ in self.exclude_op:
+                    continue
                 to_run.append(generator)
         
         pbar = tqdm(to_run, total=len(to_run))
@@ -111,11 +114,20 @@ class BasePipeline:
             with open(file_path, "w") as outfile:
                 outfile.write(json_object)
         else:
-            print(json_object)
+            return json_object
     
     def import_from_json(self, file_path):
-        with open(file_path, "r") as infile:
-            json_object = json.load(infile)
+        try:
+            json_object = json.loads(file_path)
+            flag = 'loaded'
+        except ValueError as e:
+            flag = 'try_load_as_file'
+        if flag == 'try_load_as_file':
+            with open(file_path, "r") as infile:
+                json_object = json.load(infile)
+                flag = 'loaded'
+        if flag != 'loaded':
+            raise ValueError("Unable to load as json string or json file")
         for idx, op_config in json_object.items():
             idx = int(idx)
             if idx in self.pipeline:
@@ -253,7 +265,7 @@ class BasePipeline:
     def to_chain(self):
         return self.pipeline.convert_to_node_chain()
         
-    def execute(self, engine_type = "pandas", start_op_idx = -1, no_cache = False, transformed_end = -1, data = None):
+    def execute(self, engine_type = "pandas", start_op_idx = -1, no_cache = False, transformed_end = -1, data = None, trans_type = 'fit_transform'):
         # prepare pipeline
         if not hasattr(self, 'executable_pipeline') or not hasattr(self, 'executable_sequence'):
             self.executable_pipeline, self.executable_sequence = self.create_executable_pipeline()
@@ -277,7 +289,7 @@ class BasePipeline:
                         input_df = deepcopy(input_df) if no_cache else input_df
                         op.set(input_df)
                     with Timer(f"execute {op}"):
-                        op.execute_pd(executable_pipeline)
+                        op.execute_pd(executable_pipeline, trans_type = trans_type)
             if transformed_end == -1:
                 df = executable_sequence[-1].cache
             else:
@@ -298,7 +310,7 @@ class BasePipeline:
                         input_df = deepcopy(input_df) if no_cache else input_df
                         op.set(input_df)
                     print(f"append {op}")
-                    op.execute_spark(executable_pipeline, self.rdp)
+                    op.execute_spark(executable_pipeline, self.rdp, trans_type = trans_type)
                 if transformed_end == -1:
                     ret = executable_sequence[-1].cache
                 else:
@@ -337,6 +349,26 @@ class BasePipeline:
         self.transformed_cache = ret
         return ret
     
+    def transform(self, engine_type = 'pandas', no_cache = False, data = None, *args, **kwargs):
+        if not no_cache and hasattr(self, 'transformed_cache') and self.transformed_cache is not None:
+            print("Detect pre-transformed cache, return cached data")
+            print("If re-transform is required, please use fit_transform(no_cache = True)")
+            return self.transformed_cache
+        if engine_type == "spark":
+            if "spark_master" in kwargs:
+                spark_master = kwargs["spark_master"]
+                spark_mode = 'standalone'
+            else:
+                spark_master = "local[*]"
+                spark_mode = 'local'
+            self.rdp = SparkDataProcessor(spark_mode=spark_mode, spark_master=spark_master)
+        ret = self.execute(engine_type = engine_type, no_cache = no_cache, data = data, trans_type = 'transform')
+        if engine_type == "spark":
+            del self.rdp
+            self.rdp = None
+        self.transformed_cache = ret
+        return ret
+
     def get_transformed_cache(self):
         if hasattr(self, 'transformed_cache') and self.transformed_cache is not None:
             return self.transformed_cache
