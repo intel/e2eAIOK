@@ -102,10 +102,8 @@ def try_list_string(s):
     return False
  
 def is_encoded(s):
-    line_id = s.first_valid_index()
-    if line_id < 0:
-        return False
-    sample_data = s.loc[line_id:(line_id+1000)]
+    if len(s) > 1000:
+        sample_data = s.sample(n=1000, random_state=0)
     from pyrecdp.primitives.generators.nlp import BertTokenizerDecode
     proc_ = BertTokenizerDecode().get_function()
     try:
