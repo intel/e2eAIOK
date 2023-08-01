@@ -2,13 +2,12 @@ name: Performance test AutoFE
 
 on:
   pull_request:
+    types: [labeled]
     branches:
     - RecDP_v2.0
-    paths:
-    - 'RecDP/pyrecdp/**'
 
 jobs:
-  unittest:
+  perf-test:
     name: Performance test AutoFE
     runs-on: self-hosted
     steps:
@@ -21,4 +20,4 @@ jobs:
 
     - name: RUN Unittests
       run: |
-        cd RecDP && docker run --rm --name unittest-pyrecdp-autofe-performance-test --shm-size=100g --privileged --network host --device=/dev/dri -v `pwd`:/home/vmagent/app/ -w /home/vmagent/app/ pyrecdp-test-env /bin/bash -c "sh tests/cicd/bashrun_performance_test_autofe.sh"
+        cd RecDP && docker run --rm --name pyrecdp-autofe-performance-test --shm-size=100g --privileged --network host --device=/dev/dri -v /mnt/DP_disk1/dataset:/home/vmagent/app/dataset -v `pwd`:/home/vmagent/app/ -w /home/vmagent/app/ pyrecdp-test-env /bin/bash -c "sh tests/cicd/bashrun_performance_test_autofe.sh"
