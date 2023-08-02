@@ -4,6 +4,7 @@ from pyrecdp.primitives.operations import Operation
 from pyrecdp.core.schema import TextDtype
 
 from featuretools.primitives.base import TransformPrimitive
+import copy
 
 class BertTokenizerDecode(TransformPrimitive):
     name = "decoded"
@@ -37,6 +38,7 @@ class DecodedTextFeatureGenerator(FeaturetoolsBasedFeatureGenerator):
     def fit_prepare(self, pipeline, children, max_idx):
         is_useful = False
         pa_schema = pipeline[children[0]].output
+        ret_pa_schema = copy.deepcopy(pa_schema)
         for pa_field in pa_schema:
             if pa_field.is_text and pa_field.is_encoded:
                 in_feat_name = pa_field.name
@@ -50,11 +52,11 @@ class DecodedTextFeatureGenerator(FeaturetoolsBasedFeatureGenerator):
                 out_feat_name = f"{in_feat_name}__{op.name}"
                 out_schema = SeriesSchema(out_feat_name, op.return_type, {'is_text': True})
                 self.feature_in_out_map[in_feat_name].append((out_schema.name, op_clz))
-                pa_schema.append(out_schema)
+                ret_pa_schema.append(out_schema)
         if is_useful:
             cur_idx = max_idx + 1
             config = self.feature_in_out_map
-            pipeline[cur_idx] = Operation(cur_idx, children, pa_schema, op = 'bert_decode', config = config)
+            pipeline[cur_idx] = Operation(cur_idx, children, ret_pa_schema, op = 'bert_decode', config = config)
             return pipeline, cur_idx, cur_idx
         else:
             return pipeline, children[0], max_idx

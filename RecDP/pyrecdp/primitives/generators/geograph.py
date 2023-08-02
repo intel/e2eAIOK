@@ -3,6 +3,7 @@ from .featuretools_adaptor import FeaturetoolsBasedFeatureGenerator
 from pyrecdp.core import SeriesSchema
 from pyrecdp.primitives.operations import Operation
 from featuretools.primitives import Haversine
+import copy
 
 class GeoFeatureGenerator(FeaturetoolsBasedFeatureGenerator):
     def __init__(self, **kwargs):
@@ -13,6 +14,7 @@ class GeoFeatureGenerator(FeaturetoolsBasedFeatureGenerator):
     def fit_prepare(self, pipeline, children, max_idx):
         is_useful = False
         pa_schema = pipeline[children[0]].output
+        ret_pa_schema = copy.deepcopy(pa_schema)
         for pa_field in pa_schema:
             if pa_field.is_coordinates:
                 self.feature_in.append(pa_field.name)
@@ -24,12 +26,12 @@ class GeoFeatureGenerator(FeaturetoolsBasedFeatureGenerator):
             out_feat_type = op.return_type
             out_schema = SeriesSchema(out_feat_name, out_feat_type)
             self.feature_in_out_map[str(self.feature_in)] = (out_schema.name, self.op_list[0])
-            pa_schema.append(out_schema)
+            ret_pa_schema.append(out_schema)
 
         if is_useful:
             cur_idx = max_idx + 1
             config = self.feature_in_out_map
-            pipeline[cur_idx] = Operation(cur_idx, children, pa_schema, op = 'haversine', config = config)
+            pipeline[cur_idx] = Operation(cur_idx, children, ret_pa_schema, op = 'haversine', config = config)
             return pipeline, cur_idx, cur_idx
         else:
             return pipeline, children[0], max_idx
@@ -69,19 +71,20 @@ class CoordinatesInferFeatureGenerator(super_class):
     def fit_prepare(self, pipeline, children, max_idx):
         is_useful = False
         pa_schema = pipeline[children[0]].output
+        ret_pa_schema = copy.deepcopy(pa_schema)
         for field in pa_schema:
             if self.is_coor_related_name_and_set(field.name):
                 is_useful = True
         for p in self.points:
             out_schema = SeriesSchema(p.get_feature_name(), p.get_feature_type()) 
-            pa_schema.append(out_schema)
+            ret_pa_schema.append(out_schema)
         if is_useful:
             cur_idx = max_idx
             child = children[0]
             for p in self.points:
                 cur_idx = cur_idx + 1
                 config = p.get_config()
-                pipeline[cur_idx] = Operation(cur_idx, [child], pa_schema, op = 'tuple', config = config)
+                pipeline[cur_idx] = Operation(cur_idx, [child], ret_pa_schema, op = 'tuple', config = config)
                 child = cur_idx
             return pipeline, cur_idx, cur_idx
         else:
