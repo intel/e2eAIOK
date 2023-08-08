@@ -11,6 +11,9 @@ except:
     sys.path.append(pathlib)
 from pyrecdp.autofe import AutoFE
 from IPython.display import display
+pd.set_option('display.max_rows', 500)
+pd.set_option('display.max_columns', 500)
+pd.set_option('display.width', 150)
 
 
 class TestFE(unittest.TestCase):
@@ -31,8 +34,26 @@ class TestFE(unittest.TestCase):
         
     def test_fraud_detect_pandas(self):
         train_data = pd.read_parquet(f"{pathlib}/tests/data/test_frdtct.parquet")
-        pipeline = AutoFE(dataset=train_data, label="Is Fraud?")
-        ret_df = pipeline.fit_transform(engine_type = 'pandas')
+
+        data = pd.read_parquet(f"{pathlib}/tests/data/test_frdtct.parquet")
+        train_data = data[data['Year'] < 2018].reset_index(drop=True)
+        valid_data = data[data['Year'] == 2018].reset_index(drop=True)
+        test_data = data[data['Year'] > 2018].reset_index(drop=True)
+        target_label = 'Is Fraud?'
+        
+        pipeline = AutoFE(dataset=train_data, label=target_label, time_series = ['Day', 'Year'])
+        transformed_train_df = pipeline.fit_transform()
+
+        valid_pipeline = AutoFE.clone_pipeline(pipeline, valid_data)
+        transformed_valid_df = valid_pipeline.transform()
+
+        test_pipeline = AutoFE.clone_pipeline(pipeline, test_data)
+        transformed_test_df = test_pipeline.transform()
+        
+        display(transformed_train_df)
+        display(transformed_valid_df)
+        display(transformed_test_df)
+        
         
     def test_fraud_detect_spark(self):
         train_data = pd.read_parquet(f"{pathlib}/tests/data/test_frdtct.parquet")

@@ -363,10 +363,10 @@ class BasePipeline:
                 spark_mode = 'local'
             self.rdp = SparkDataProcessor(spark_mode=spark_mode, spark_master=spark_master)
         ret = self.execute(engine_type = engine_type, no_cache = no_cache, data = data, trans_type = 'transform')
+        self.transformed_cache = ret
         if engine_type == "spark":
             del self.rdp
             self.rdp = None
-        self.transformed_cache = ret
         return ret
 
     def get_transformed_cache(self):

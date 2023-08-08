@@ -176,6 +176,13 @@ class SeriesSchema:
             return self.config["group_id"]
         else:
             return []
+    
+    @property
+    def datetime_ft_list(self):
+        if 'datetime_ft' in self.config:
+            return self.config["datetime_ft"]
+        else:
+            return []
 
 
 class DataFrameSchema(list):

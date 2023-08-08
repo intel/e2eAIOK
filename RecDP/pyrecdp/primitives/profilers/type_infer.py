@@ -1,4 +1,5 @@
 from pyrecdp.core import SeriesSchema
+from pyrecdp.core.utils import is_unique 
 from pyrecdp.primitives.operations import Operation
 import pandas as pd
 import numpy as np
@@ -43,6 +44,24 @@ def try_datetime(s):
             return True
     except:
         return False
+    
+def get_datetime_potential_features(s):
+    if len(s) > 5000:
+        # Sample to speed-up type inference
+        result = s.sample(n=5000, random_state=0)
+    result = pd.to_datetime(result, errors='coerce')
+    ret = []
+    if not is_unique(result.dt.day):
+        ret.append('day')
+    if not is_unique(result.dt.month):
+        ret.append('month')
+    if not is_unique(result.dt.year):
+        ret.append('year')
+    if not is_unique(result.dt.weekday):
+        ret.append('weekday')
+    if not is_unique(result.dt.hour):
+        ret.append('hour')    
+    return ret
 
 def try_re_numeric(s):
     if s.isnull().all():
@@ -128,12 +147,15 @@ class TypeInferFeatureGenerator():
                 if pa_field.is_string:
                     config['is_categorical_label'] = True
             else:
-                if feature_name == ts:
+                if isinstance(ts, str) and feature_name == ts:
+                    config['is_timeseries'] = True
+                if isinstance(ts, list) and feature_name in ts:
                     config['is_timeseries'] = True
                 if pa_field.is_text and is_encoded(df[feature_name]):
                     config['is_encoded'] = True
                 if try_datetime(df[feature_name]):
                     config['is_datetime'] = True
+                    config['datetime_ft'] = get_datetime_potential_features(df[feature_name])
                 if try_category(df[feature_name]):
                     config['is_categorical'] = True
                 if try_numeric(df[feature_name]):

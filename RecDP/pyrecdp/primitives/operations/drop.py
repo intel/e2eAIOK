@@ -17,10 +17,11 @@ class DropOperation(BaseOperation):
         feature_in = copy.deepcopy(self.feature_in)
 
         def drop_useless_feature(df):
-            for i in df.columns:
-                if i not in feature_in and is_unique(df[i]):
-                    feature_in.append(i)
             return df.drop(columns = feature_in)
+            # for i in df.columns:
+            #     if i not in feature_in and is_unique(df[i]):
+            #         feature_in.append(i)
+            # return df.drop(columns = feature_in)
         return drop_useless_feature
     
     def get_function_spark(self, rdp, trans_type = 'fit_transform'):
