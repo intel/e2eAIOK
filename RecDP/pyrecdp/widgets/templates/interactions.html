@@ -1,0 +1,10 @@
+<div class="interac-container">
+    {% set data = context.components.interactions[1] %}
+    {% if data.error %}
+    {% with error_message = data.error %}
+    {% include 'error.html' %}
+    {% endwith %}
+    {% else %}
+    {{ data.html }}
+    {% endif %}
+</div>

@@ -3,14 +3,23 @@ from pathlib import Path
 try:
     import pyspark
 except:
-    raise NotImplementedError("pyrecdp required pyspark pre-installed. Please do pip install pyspark==3.3.1")
+    libpath = str(Path(__file__).parent.resolve())
+    spark_home_dir = f"{libpath}/spark-3.2.1-bin-hadoop3.2"
+    py4j_path = f"{spark_home_dir}/python/lib/py4j-0.10.9.3-src.zip"
+    os.environ["SPARK_HOME"]=spark_home_dir
+    # Add the PySpark classes to the Python path:
+    os.environ["PYTHONPATH"]=os.environ["SPARK_HOME"]+"/python/:"+os.environ["PYTHONPATH"]+":"+py4j_path
 
-if 'JAVA_HOME' not in os.environ:
-    os.environ["JAVA_HOME"]="/usr/lib/jvm/java-8-openjdk-amd64/"
-else:
-    print(f"JAVE_HOME is {os.environ['JAVA_HOME']}")
+if not os.environ.get('JAVA_HOME', None): 
+    os.environ['JAVA_HOME'] = "/usr/lib/jvm/java-8-openjdk-amd64/"
+    print(f"JAVA_HOME is not set, use default value of /usr/lib/jvm/java-8-openjdk-amd64/")
 os.environ["PYSPARK_PYTHON"]=sys.executable
 os.environ["PYSPARK_DRIVER_PYTHON"]=sys.executable
 os.environ["PYSPARK_WORKER_PYTHON"]=sys.executable
 
-__all__ = ["data_processor", "encoder", "init_spark", "utils"]
+import pyrecdp.primitives.spark_data_processor.utils as utils
+sys.modules['pyrecdp.utils'] = utils
+import pyrecdp.primitives.spark_data_processor.encoder as encoder
+sys.modules['pyrecdp.encoder'] = encoder
+import pyrecdp.primitives.spark_data_processor.data_processor as data_processor
+sys.modules['pyrecdp.data_processor'] = data_processor

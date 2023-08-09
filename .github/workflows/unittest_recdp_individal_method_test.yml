@@ -1,0 +1,25 @@
+name: Unittest RecDP individual methods test
+on:
+  pull_request:
+    branches:
+    - RecDP_v2.0
+    paths:
+    - 'RecDP/pyrecdp/**'
+    - 'RecDP/tests/cicd/bashrun_unittest_individual_operation_pandas.sh'
+    - 'RecDP/tests/test_individual_method.py'
+
+jobs:
+  unittest:
+    name: Unittest RecDP individual methods test
+    runs-on: self-hosted
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Build Docker
+      run: |
+        cd RecDP && cd Dockerfile && docker build -t pyrecdp-test-env . -f DockerfileUbuntu --build-arg https_proxy=${https_proxy} && cd .. && yes | docker container prune && yes | docker image prune
+
+    - name: RUN Unittests
+      run: |
+        cd RecDP && docker run --rm --name unittest-pyrecdp-autofe-spark --shm-size=100g --privileged --network host --device=/dev/dri -v `pwd`:/home/vmagent/app/ -w /home/vmagent/app/ pyrecdp-test-env /bin/bash -c "sh tests/cicd/bashrun_unittest_individual_operation_pandas.sh"

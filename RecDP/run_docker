@@ -1,3 +1,0 @@
-#docker run --network host -v ${your_local_codes_data_dir}:/home/vmagent/app/recdp -w /home/vmagent/app/ -it xuechendi/recdp_spark3.1 /bin/bash
-docker run -it --privileged --network host -v /mnt/nvme2/chendi/BlueWhale/recdp:/home/vmagent/app/recdp -v /mnt/nvme2/chendi/intel-bigdata/OAP/native-sql-engine/:/home/vmagent/app/native-sql-engine -v /mnt/nvme2/chendi/BlueWhale/gazelle_lib:/home/vmagent/app/gazelle_lib -w /home/vmagent/app/ xuechendi/recdp_spark3.1:gazelle_devel /bin/bash
-#docker run -it --privileged --network host -v /mnt/nvme2/chendi/BlueWhale/recdp:/home/vmagent/app/recdp -w /home/vmagent/app/ xuechendi/recdp_spark3.1 /bin/bash

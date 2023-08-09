@@ -1,0 +1,28 @@
+@startuml
+
+Base\nFeatureGenerator <|-- FeaturetoolsBased\nFeatureGenerator
+class Base\nFeatureGenerator {
+    fit_prepare(schema: List[SeriesSchema])
+    get_function_pd()
+    get_function_spark()
+    dump_codes()
+}
+class FeaturetoolsBased\nFeatureGenerator {
+    feature_in
+    feature_in_out_map
+}
+FeaturetoolsBased\nFeatureGenerator <|-- Datetime\nFeatureGenerator
+FeaturetoolsBased\nFeatureGenerator <|-- Geo\nFeatureGenerator
+FeaturetoolsBased\nFeatureGenerator <|-- DecodedText\nFeatureGenerator
+FeaturetoolsBased\nFeatureGenerator <|-- Text\nFeatureGenerator
+
+Base\nFeatureGenerator <|-- TypeInfer\nFeatureGenerator
+Base\nFeatureGenerator <|-- Impute\nFeatureGenerator
+Base\nFeatureGenerator <|-- Encoder\nFeatureGenerator
+Base\nFeatureGenerator <|-- CategorifyEncoder\nFeatureGenerator
+Base\nFeatureGenerator <|-- Standardize\nFeatureGenerator
+
+DecodedText\nFeatureGenerator --* BertTokenizerDecode
+ft.TransformPrimitive <|-- BertTokenizerDecode
+
+@enduml

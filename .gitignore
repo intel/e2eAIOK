@@ -2,5 +2,7 @@
 **/*.txt
 **/*.pyc
 **/*.egg-info
+**/*.csv
+**/core.*
 **/__pycache__
 **/.ipynb_checkpoints
