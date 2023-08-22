@@ -38,5 +38,5 @@ jobs:
     - name: Upload
       uses: pypa/gh-action-pypi-publish@master
       with:
-        password: ${{ secrets.PYPI_API_TOKEN }}
+        password: ${{ secrets.PYPI_API_TOKEN_PYRECDP }}
         packages_dir: RecDP/dist
