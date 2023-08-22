@@ -1,15 +1,9 @@
-import pandas as pd
 import numpy as np
-import datetime as dt
-import time 
-import re 
 import seaborn as sns
 from scipy.cluster import hierarchy
 import numpy as np
 import matplotlib.pyplot as plt
 from collections import defaultdict
-import pandas_profiling
-import sweetviz
 import missingno as msno
 
 def remove_spaces_in_colnames(df):

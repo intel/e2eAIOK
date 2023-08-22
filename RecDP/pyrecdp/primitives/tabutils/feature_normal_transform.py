@@ -79,45 +79,63 @@ def normal_transformation(df, col_name, plot = False):
 
     res = dict()
 
-    log_target = log_transform(df[col_name])
-    sqrt_target = sqrt_transform(df[col_name])
-    # print(f"Log transform kstest pvalue {kstest(log_target.dropna(), 'norm').pvalue}")
-    # print(kstest(log_target.dropna(), 'norm'))
-    if plot:
-        print(f'{col_name} logarithmic plot')
-    res['log_transform'] = diagnostic_plots(log_target.dropna(), col_name, plot)
-    print("Absolute log of slope = ", res['log_transform'], "\n\n")
+    try:
+        log_target = log_transform(df[col_name])
+        if plot:
+            print(f'{col_name} logarithmic plot')
+        res['log_transform'] = diagnostic_plots(log_target.dropna(), col_name, plot)
+        if plot:
+            print("Absolute log of slope = ", res['log_transform'], "\n\n")
+    except:
+        pass
 
-    exp_target = exp_transform(df[col_name])
-    # print(f"Exp transform kstest pvalue {kstest(exp_target.dropna(), 'norm').pvalue}")
-    # print(kstest(exp_target.dropna(), 'norm'))
-    if plot:
-        print(f'{col_name} Exponential plot')
-    res['exp_transform'] = diagnostic_plots(exp_target.dropna().mask(exp_target == np.inf, 1e12, inplace = False), col_name, plot)
-    print("Absolute log of slope = ", res['exp_transform'], "\n\n")
+    try:
+        exp_target = exp_transform(df[col_name])
+        # print(f"Exp transform kstest pvalue {kstest(exp_target.dropna(), 'norm').pvalue}")
+        # print(kstest(exp_target.dropna(), 'norm'))
+        if plot:
+            print(f'{col_name} Exponential plot')
+        res['exp_transform'] = diagnostic_plots(exp_target.dropna().mask(exp_target == np.inf, 1e12, inplace = False), col_name, plot)
+        if plot:
+            print("Absolute log of slope = ", res['exp_transform'], "\n\n")
+    except:
+        pass
 
     # print(f"Sqrt transform kstest pvalue {kstest(sqrt_target.dropna(), 'norm').pvalue}")
     # print(kstest(sqrt_target.dropna(), 'norm'))
-    if plot:
-        print(f'{col_name} Square Root plot')
-    res['sqrt_transform'] = diagnostic_plots(sqrt_target.dropna(), col_name, plot)
-    print("Absolute log of slope = ", res['sqrt_transform'], "\n\n")
+    try:
+        sqrt_target = sqrt_transform(df[col_name])
+        if plot:
+            print(f'{col_name} Square Root plot')
+        res['sqrt_transform'] = diagnostic_plots(sqrt_target.dropna(), col_name, plot)
+        if plot:
+            print("Absolute log of slope = ", res['sqrt_transform'], "\n\n")
+    except:
+        pass
 
-    reciprocal_target = reciprocal_transform(df[col_name])
-    # print(f"Reciprocal transform kstest pvalue {kstest(reciprocal_target.dropna(), 'norm').pvalue}")
-    # print(kstest(reciprocal_target.dropna(), 'norm'))
-    if plot:
-        print(f'{col_name} Reciprocal plot')
-    res['reciprocal_transform'] = diagnostic_plots(reciprocal_target.dropna(), col_name, plot)
-    # bcx_target, lam = boxcox(df[col_name])
-    print("Absolute log of slope = ", res['reciprocal_transform'], "\n\n")
+    try:
+        reciprocal_target = reciprocal_transform(df[col_name])
+        # print(f"Reciprocal transform kstest pvalue {kstest(reciprocal_target.dropna(), 'norm').pvalue}")
+        # print(kstest(reciprocal_target.dropna(), 'norm'))
+        if plot:
+            print(f'{col_name} Reciprocal plot')
+        res['reciprocal_transform'] = diagnostic_plots(reciprocal_target.dropna(), col_name, plot)
+        # bcx_target, lam = boxcox(df[col_name])
+        if plot:
+            print("Absolute log of slope = ", res['reciprocal_transform'], "\n\n")
+    except:
+        pass
 
-    yf_target = yeojohnson_transform(df[col_name])
-    # print(f"Yeo Johnson transform kstest pvalue {kstest(yf_target, 'norm').pvalue}")
-    if plot:
-        print(f'{col_name} Yeo Johnson plot')
-    res['yeojohnson_transform'] = diagnostic_plots(yf_target.dropna(), col_name, plot)
-    print("Absolute log of slope = ", res['yeojohnson_transform'], "\n\n")
+    try:
+        yf_target = yeojohnson_transform(df[col_name])
+        # print(f"Yeo Johnson transform kstest pvalue {kstest(yf_target, 'norm').pvalue}")
+        if plot:
+            print(f'{col_name} Yeo Johnson plot')
+        res['yeojohnson_transform'] = diagnostic_plots(yf_target.dropna(), col_name, plot)
+        if plot:
+            print("Absolute log of slope = ", res['yeojohnson_transform'], "\n\n")
+    except:
+        pass
     # quantile_trans = QuantileTransformer(output_distribution='normal')
     # data_transformed = quantile_trans.fit_transform(df[col_name].to_numpy().reshape(-1, 1))
     # # print(f"Quantile transform kstest pvalue {kstest(data_transformed.dropna(), 'norm').pvalue}")
@@ -125,7 +143,7 @@ def normal_transformation(df, col_name, plot = False):
     # res['quantile_transform'] = diagnostic_plots(pd.Series(data_transformed[:, 0]).dropna(), col_name)
 
     ret_key = min(res, key = res.get)
-    print(f"The best transform is: {ret_key}, with absolute log of slope {res[ret_key]}\n\n\n\n\n")
+    print(f"The best transform is: {ret_key}, with absolute log of slope {res[ret_key]}")
     return ret_key
 
 def find_best_normal_transform(df, included_cols = None, excluded_cols = None, plot = False, save_dict = False):

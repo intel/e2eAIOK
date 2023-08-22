@@ -37,6 +37,8 @@ def try_datetime(s):
         if len(s) > 500:
             # Sample to speed-up type inference
             result = s.sample(n=500, random_state=0)
+        else:
+            result = s
         result = pd.to_datetime(result, errors='coerce')
         if result.isnull().mean() > 0.8:  # If over 80% of the rows are NaN
             return False
@@ -49,6 +51,8 @@ def get_datetime_potential_features(s):
     if len(s) > 5000:
         # Sample to speed-up type inference
         result = s.sample(n=5000, random_state=0)
+    else:
+        result = s
     result = pd.to_datetime(result, errors='coerce')
     ret = []
     if not is_unique(result.dt.day):
@@ -70,6 +74,8 @@ def try_re_numeric(s):
         if len(s) > 500:
             # Sample to speed-up type inference
             result = s.sample(n=500, random_state=0)
+        else:
+            result = s
         import re
         result = result.apply(lambda x: "".join(re.findall(r'\d+.*\d*', x)))
         result = pd.to_numeric(result, errors='coerce')
@@ -88,6 +94,8 @@ def try_numeric(s):
         if len(s) > 500:
             # Sample to speed-up type inference
             result = s.sample(n=500, random_state=0)
+        else:
+            result = s
         result = pd.to_numeric(result, errors='coerce')
         if result.isnull().mean() <= 0.8:  # If over 80% of the rows are NaN
             return True
@@ -123,6 +131,8 @@ def try_list_string(s):
 def is_encoded(s):
     if len(s) > 1000:
         sample_data = s.sample(n=1000, random_state=0)
+    else:
+        sample_data = s
     from pyrecdp.primitives.generators.nlp import BertTokenizerDecode
     proc_ = BertTokenizerDecode().get_function()
     try:
