@@ -57,7 +57,11 @@ class AutoFE():
         feat_importances = pd.Series([i[1] for i in fe_imp_dict], [i[0] for i in fe_imp_dict])
         feat_importances = feat_importances[feat_importances > 0].sort_values()
         height = int(len(feat_importances) * 0.5)
-        return feat_importances.plot(kind='barh', figsize=(15,height))
+        try:
+            ret = feat_importances.plot(kind='barh', figsize=(15,height))
+        except:
+            ret = feat_importances
+        return ret
 
     def plot(self):
         return self.auto_pipeline['estimator'].plot()

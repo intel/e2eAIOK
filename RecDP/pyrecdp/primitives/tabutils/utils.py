@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 import numba
-from scipy.cluster import hierarchy
 numba.set_num_threads(16)
 
 def masking(df, columns, exclude_columns=[]):
