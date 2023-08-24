@@ -143,6 +143,8 @@ def class_name_fix(s):
     return ret
 
 def infer_problem_type(df, label):
+    if label is None:
+        return None
     if isinstance(df, str):
         if df.endswith('.csv'):
             y = pd.read_csv(df)[label]

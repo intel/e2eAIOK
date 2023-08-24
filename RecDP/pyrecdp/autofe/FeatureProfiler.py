@@ -67,8 +67,9 @@ class FeatureProfiler(BasePipeline):
         X = DataFrameAPI().instiate(self.dataset[self.main_table])
         sampled_data = X.may_sample()
 
-        self.pipeline[child].output.append(SeriesSchema(sampled_data[self.y]))
-        
+        if not self.y is None:
+            self.pipeline[child].output.append(SeriesSchema(sampled_data[self.y]))
+
         # firstly, call data profiler to analyze data
         for generator in self.data_profiler:
             self.pipeline, child, max_id = generator.fit_prepare(self.pipeline, [child], max_id, sampled_data, self.y)
@@ -77,7 +78,11 @@ class FeatureProfiler(BasePipeline):
     
     def visualize_analyze(self, engine_type = 'pandas', display = True):
         feature_data = self.fit_transform(engine_type)
-        self.data_stats = StatisticsFeatureGenerator().update_feature_statistics(feature_data, self.dataset[self.main_table][self.y])
+        if not self.y is None:
+            y_sample = self.dataset[self.main_table][self.y]
+        else:
+            y_sample = None
+        self.data_stats = StatisticsFeatureGenerator().update_feature_statistics(feature_data, y_sample)
         if not self.data_stats:
             raise NotImplementedError("We didn't detect data statistics for thiis data")            
         return FeatureVisulizer(self.data_stats)

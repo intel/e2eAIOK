@@ -112,8 +112,9 @@ class StatisticsFeatureGenerator():
         
         data_stats = {}
         data_stats["overview"] = (overview_info, overview_detail)
-        interactions_detail = self.get_interactive_plot(X, y)
-        data_stats['interactions']=(dict(), interactions_detail)
+        if not y is None:
+            interactions_detail = self.get_interactive_plot(X, y)
+        data_stats['interactions']=(dict(), "")
         
         return data_stats
     
