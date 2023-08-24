@@ -47,6 +47,8 @@ class BasePipeline:
         else:
             self.y = None
         if not main_table:
+             main_table = 'main_table'
+        if not main_table:
             raise ValueError(f"label {label} is not found in dataset")
         self.main_table = main_table
         

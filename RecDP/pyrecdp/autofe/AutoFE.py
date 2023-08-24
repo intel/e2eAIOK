@@ -54,6 +54,8 @@ class AutoFE():
         if isinstance(self.auto_pipeline['estimator'], type(None)):
             return "feature estimator support for multiple table is WIP"
         fe_imp_dict = self.auto_pipeline['estimator'].get_feature_importance()
+        if not isinstance(fe_imp_dict, dict):
+            return "This dataset doesn't have feature importance estimator support"
         feat_importances = pd.Series([i[1] for i in fe_imp_dict], [i[0] for i in fe_imp_dict])
         feat_importances = feat_importances[feat_importances > 0].sort_values()
         height = int(len(feat_importances) * 0.5)

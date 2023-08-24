@@ -3,7 +3,7 @@ name: Unittest FeatureProfiler Pandas Engine
 on:
   pull_request:
     branches:
-    - RecDP_v2.0
+    - main
     paths:
     - 'RecDP/pyrecdp/**'
     - 'RecDP/tests/cicd/bashrun_unittest_feature_profiler_pandas.sh'

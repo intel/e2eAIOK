@@ -25,13 +25,6 @@ Data Preparation is an essential step to build AI pipelines
 * Pipeline Runner:
     * spark engine: convert pipeline to spark codes to run
     * pandas engine: convert pipeline to pandas codes to run
-    * sql engine: convert pipeline to sql
-* DataLoader:
-    * parquet, csv, json, database
-* FeatureWriter - ML/DL connector:
-    * Data Lineage
-    * Feature Store
-    * numpy, csv, parquet, dgl / pyG graph
 ![RecDP v2.0 Overview](resources/recdp_intro.png)
 
 ## This solution is intended for
@@ -40,8 +33,8 @@ citizen data scientists, enterprise users, independent software vendor and parti
 # Getting Start
 ## setup with pip
 ```
-git clone --single-branch --branch RecDP_v2.0 https://github.com/intel-innersource/frameworks.bigdata.AIDK.git
-cd frameworks.bigdata.AIDK/RecDP
+git clone https://github.com/intel/e2eAIOK.git
+cd e2eAIOK/RecDP
 # install dependencies
 apt-get update -y &&  DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-pip python-is-python3 graphviz
 DEBIAN_FRONTEND=noninteractive apt-get install -y openjdk-8-jre
@@ -54,7 +47,7 @@ sh start-jupyter.sh
 ```
 
 ## run
-![nyc taxi demo](https://github.com/intel-innersource/frameworks.bigdata.AIDK/assets/4355494/03d8c2fe-de47-41f9-9fef-8513bc4aaf42)
+![demo](https://github.com/intel/e2eAIOK/tree/main/RecDP/examples/notebooks)
 
 ## modify pipeline (add user defined function or remove operation)
 ``` python

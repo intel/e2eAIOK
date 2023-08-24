@@ -44,13 +44,15 @@ class FeatureEstimator(BasePipeline):
             self.y = label
         else:
             raise NotImplementedError(f"Unsupport input datapipeline is {data_pipeline}")
-        if label is None and method != 'predict':
-            raise ValueError("Unable to find label for this pipeline, please provide it through API")
-        
+
+
         max_idx = self.pipeline.get_max_idx()
         leaf_idx = self.pipeline.convert_to_node_chain()[-1]
         self.transformed_end_idx = -1
         
+        if label is None and method != 'predict':
+            return
+
         if self.pipeline[leaf_idx].op not in ["lightgbm"]:
             model_name = config['model_name']
             objective = config['objective']
