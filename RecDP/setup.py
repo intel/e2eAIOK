@@ -12,7 +12,7 @@ setuptools.setup(
     name="pyrecdp",
     version=VERSION,
     author="INTEL AIA",
-    author_email="https://github.com/intel/e2eAIOK/",
+    author_email="bdf.aiok@intel.com",
     description=
     "A data processing bundle for spark based recommender system operations",
     long_description=long_description,
