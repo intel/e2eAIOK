@@ -56,5 +56,15 @@ setuptools.setup(
         "category_encoders",
         "seaborn",
         "numba",
-        "missingno" 
+        "missingno",
+        "datasketch==1.5.9",
+        "ftfy==6.1.1",
+        "jsonlines==3.1.0",
+        "networkit==10.1",
+        "nltk==3.8.1",
+        "numpy==1.24.3",
+        "regex==2023.6.3",
+        "scipy==1.10.1",
+        "datasets>=2.7.0",
+        "typer>=0.6.1",
         ])
