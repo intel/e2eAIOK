@@ -2,6 +2,9 @@ import os
 from multiprocessing import Pool, cpu_count
 from math import ceil
 from tqdm import tqdm
+import ftfy
+import string
+import re
 
 def get_data_files(data_dir):
     files = sorted(os.listdir(data_dir))
@@ -30,3 +33,13 @@ def launch_mp(n_proc, args, callable):
             pbar.update()
             if test:
                 continue
+         
+def normalize_str(s):
+    s = ftfy.fix_text(s, normalization="NFC")
+    return s
+
+def clean_str(s):
+    s = normalize_str(s)
+    s = s.lower().translate(str.maketrans("", "", string.punctuation))
+    s = re.sub(r"\s+", " ", s.strip())
+    return s
