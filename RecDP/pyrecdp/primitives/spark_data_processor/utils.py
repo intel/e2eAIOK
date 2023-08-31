@@ -15,9 +15,9 @@ pathlib = Path(__file__).parent.parent.resolve()
 def create_spark_context(spark_mode='local', spark_master=None, local_dir=None):
     paral = psutil.cpu_count(logical=False)
     total_mem = int((psutil.virtual_memory().total / (1 << 20)) * 0.8)
-    num_cores = 4
+    num_cores = 8
     num_instances = int(paral / num_cores)
-    executor_mem = int(total_mem / num_cores)
+    executor_mem = int(total_mem / num_instances)
     if spark_mode == 'yarn' or spark_mode == 'standalone':
         if spark_master is None:
             raise ValueError("Spark master is None, please set correct spark master!")
@@ -58,6 +58,8 @@ def create_spark_context(spark_mode='local', spark_master=None, local_dir=None):
         spark_inst.stop()
     def close_spark_ray(spark_inst):
         raydp.stop_spark()
+        if ray.is_initialized():
+            ray.shutdown()
 
     if spark_mode != 'ray':
         conf.setAll(conf_pairs)
@@ -72,11 +74,12 @@ def create_spark_context(spark_mode='local', spark_master=None, local_dir=None):
             conf_dict = {}
             for k, v in conf_pairs:
                 conf_dict[k] = v
+            executor_mem_ray = int(executor_mem * 0.9)
             spark = raydp.init_spark(
                     app_name="pyrecdp_spark",
                     num_executors=num_instances,
                     executor_cores=num_cores,
-                    executor_memory=f"{executor_mem}M",
+                    executor_memory=f"{executor_mem_ray}M",
                     configs=conf_dict)
             print("spark on ray initialized")
             close_caller = close_spark_ray
