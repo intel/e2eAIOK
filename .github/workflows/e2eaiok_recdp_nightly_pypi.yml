@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   e2eaiok-recdp-nightly-python-pypi:
-    runs-on: self-hosted
+    runs-on: sr608
     steps:
     - uses: actions/checkout@main
 
