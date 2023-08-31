@@ -1,7 +1,7 @@
 import argparse
 import os
 import sys
-import ftfy
+
 import re
 import numpy as np
 import pickle
@@ -13,7 +13,8 @@ import pyspark.sql.functions as F
 from pyspark.sql.window import Window 
 import shutil
 from nltk import ngrams
-import string
+from .utils import normalize_str, clean_str
+
 
 cur_path = os.path.dirname(__file__)
 
@@ -24,18 +25,12 @@ if not os.path.exists(os.path.join(cur_path, "third_party")):
     print(f"'third_party' is not found! please use 'cp -r third_party' {cur_path}")
     exit
 
-from third_party import generate_connected_components, generate_duplicates_dict
+from .third_party import generate_connected_components, generate_duplicates_dict
 from datasketch import MinHash
-
-def normalize_str(s):
-    s = ftfy.fix_text(s, normalization="NFC")
-    s = s.lower().translate(str.maketrans("", "", string.punctuation))
-    s = re.sub(r"\s+", " ", s.strip())
-    return s
 
 def generate_hash_values(content, idx, num_perm, ngram_size, hashranges, permutations):
     # 0. apply normalization to content
-    content = normalize_str(content)
+    content = clean_str(content)
     tokens = {" ".join(t) for t in ngrams(NON_ALPHA.split(content), ngram_size)}
     
     #1. using bigcode impl to calculate minHash
@@ -114,7 +109,7 @@ def read_json(data_files, spark):
     return ret_df
 
 def filter_data(data):
-    return len(normalize_str(data)) >= THRESHOLD
+    return len(clean_str(data)) >= THRESHOLD
 
 def near_dedup(data_files, dup_dir, ngram_size, num_perm, bands, ranges):
     rdp = SparkDataProcessor()
