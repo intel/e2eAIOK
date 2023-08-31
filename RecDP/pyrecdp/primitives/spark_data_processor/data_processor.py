@@ -991,7 +991,8 @@ class DataProcessor:
         self.ops = []
         self.stop_spark_in_del = False
         if not spark:
-            spark = create_spark_context(spark_mode, spark_master)
+            local_dir = None if current_path=="" else current_path
+            spark, self.close_caller = create_spark_context(spark_mode, spark_master, local_dir=local_dir)
             self.stop_spark_in_del = True
         self.spark = spark
         self.uuid = uuid.uuid1()
@@ -1028,7 +1029,7 @@ class DataProcessor:
 
     def __del__(self):
         if self.stop_spark_in_del:
-            self.spark.stop()
+            self.close_caller(self.spark)
         for tmp_file in self.tmp_materialzed_list:
             shutil.rmtree(tmp_file, ignore_errors=True)
 
