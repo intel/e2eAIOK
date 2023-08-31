@@ -987,12 +987,12 @@ class CollapseByHist(Operation):
 
 
 class DataProcessor:
-    def __init__(self, spark = None, path_prefix="file://", current_path="", shuffle_disk_capacity="unlimited", dicts_path="dicts", spark_mode='local', spark_master=None, enable_gazelle=False):
+    def __init__(self, spark = None, path_prefix="file://", current_path="", shuffle_disk_capacity="unlimited", dicts_path="dicts", spark_mode='local', spark_master=None, num_instances=None, enable_gazelle=False):
         self.ops = []
         self.stop_spark_in_del = False
         if not spark:
             local_dir = None if current_path=="" else current_path
-            spark, self.close_caller = create_spark_context(spark_mode, spark_master, local_dir=local_dir)
+            spark, self.close_caller = create_spark_context(spark_mode, spark_master, local_dir=local_dir, num_instances=num_instances)
             self.stop_spark_in_del = True
         self.spark = spark
         self.uuid = uuid.uuid1()
