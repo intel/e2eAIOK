@@ -10,10 +10,10 @@ if [ $? != 0 ]; then
     failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_near_dedup\n"
 fi
 
-echo "test_llmutils.Test_LLMUtils.test_shink_jsonl"
-python -m unittest tests.test_llmutils.Test_LLMUtils.test_shink_jsonl
+echo "test_llmutils.Test_LLMUtils.test_shrink_jsonl"
+python -m unittest tests.test_llmutils.Test_LLMUtils.test_shrink_jsonl
 if [ $? != 0 ]; then
-    failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_shink_jsonl\n"
+    failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_shrink_jsonl\n"
 fi
 
 echo "test_llmutils.Test_LLMUtils.test_text_to_jsonl"
