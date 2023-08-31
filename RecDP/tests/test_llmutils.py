@@ -10,7 +10,7 @@ try:
 except:
     print("Not detect system installed pyrecdp, using local one")
     sys.path.append(pathlib)
-from pyrecdp.primitives.llmutils import near_dedup, shink_document_MP, text_to_jsonl_MP
+from pyrecdp.primitives.llmutils import near_dedup, shrink_document_MP, text_to_jsonl_MP
 
 cur_dir = str(Path(__file__).parent.resolve())
 
@@ -29,12 +29,12 @@ class Test_LLMUtils(unittest.TestCase):
         ranges = 13
         near_dedup(data_files, dup_dir, ngram_size, num_perm, bands, ranges)
         
-    def test_shink_jsonl(self):
+    def test_shrink_jsonl(self):
         data_dir = self.data_dir
         dup_dir = self.dup_dir
         dup_dict = os.path.join(dup_dir, "duplicates.pickle")
         out_dir = os.path.join(dup_dir, "output")
-        shink_document_MP(data_dir, dup_dict, out_dir)
+        shrink_document_MP(data_dir, dup_dict, out_dir)
 
     def test_text_to_jsonl(self):
         data_dir = "tests/data/llm_data/pmc"
