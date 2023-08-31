@@ -12,9 +12,12 @@ import psutil
 from pathlib import Path
 pathlib = Path(__file__).parent.parent.resolve()
 
-def create_spark_context(spark_mode='local', spark_master=None):
+def create_spark_context(spark_mode='local', spark_master=None, local_dir=None):
     paral = psutil.cpu_count(logical=False)
     total_mem = int((psutil.virtual_memory().total / (1 << 20)) * 0.8)
+    num_cores = 4
+    num_instances = paral / num_cores
+    executor_mem = total_mem / num_cores
     if spark_mode == 'yarn' or spark_mode == 'standalone':
         if spark_master is None:
             raise ValueError("Spark master is None, please set correct spark master!")
@@ -28,31 +31,68 @@ def create_spark_context(spark_mode='local', spark_master=None):
                 ("spark.executorEnv.PYTHONPATH", pathlib),
                 ("spark.driver.maxResultSize", "64g"),
                 ("spark.sql.execution.arrow.pyspark.enabled", "true"),
-                ("spark.sql.parquet.int96RebaseModeInWrite", "CORRECTED")]
+                ("spark.sql.parquet.int96RebaseModeInWrite", "CORRECTED"),
+                ("spark.driver.memory", f"{total_mem}M")]
+    if local_dir is not None:
+        conf_pairs.append(("spark.local.dir", local_dir))
     if spark_mode == 'yarn' or spark_mode == 'standalone':
         ss = SparkSession.builder.master(spark_master).getOrCreate()
         ss_conf = ss.conf
-        conf_pairs.append(("spark.driver.memory", ss_conf.get("spark.driver.memory", f"{total_mem}M")))
-        conf_pairs.append(("spark.executor.memory", ss_conf.get("spark.executor.memory", f"{total_mem}M")))
-        conf_pairs.append(("spark.executor.memoryOverhead", ss_conf.get("spark.executor.memoryOverhead", f"{int(total_mem)*0.1}M")))
-        conf_pairs.append(("spark.executor.cores", ss_conf.get("spark.executor.cores", f"{paral}M")))
+        conf_pairs.append(("spark.executor.memory", ss_conf.get("spark.executor.memory", f"{executor_mem}M")))
+        conf_pairs.append(("spark.executor.memoryOverhead", ss_conf.get("spark.executor.memoryOverhead", f"{int(total_mem)*0.1}M")))        
+        conf_pairs.append(("spark.executor.instances", ss_conf.get("spark.executor.instances", f"{num_instances}M")))
+        conf_pairs.append(("spark.executor.cores", ss_conf.get("spark.executor.cores", f"{num_cores}M")))
         ss.sparkContext.stop()
+    elif spark_mode == 'ray':
+        try:
+            import ray
+            import raydp
+        except Exception as e:
+            print("import failed, fallback to local mode. Err msg is ", e)
+            conf_pairs.append(("spark.driver.memory", f"{total_mem}M"))
+            spark_mode = 'local'
     else:
         conf_pairs.append(("spark.driver.memory", f"{total_mem}M"))
-    conf.setAll(conf_pairs)
-    spark = SparkSession.builder.master(spark_master)\
-                .appName("pyrecdp_spark")\
-                .config(conf=conf)\
-                .getOrCreate()
+    
+    def close_spark(spark_inst):
+        spark_inst.stop()
+    def close_spark_ray(spark_inst):
+        raydp.stop_spark()
+
+    if spark_mode != 'ray':
+        conf.setAll(conf_pairs)
+        spark = SparkSession.builder.master(spark_master)\
+                    .appName("pyrecdp_spark")\
+                    .config(conf=conf)\
+                    .getOrCreate()
+        close_caller = close_spark
+    else:
+        try:
+            ray.init(address="auto")
+            
+            conf_dict = {}
+            for k, v in conf_pairs:
+                conf_dict[k] = v
+            spark = raydp.init_spark(
+                    app_name="pyrecdp_spark",
+                    num_executors=num_instances,
+                    executor_cores=num_cores,
+                    executor_memory=executor_mem,
+                    configs=conf_dict)
+            print("spark on ray initialized")
+            close_caller = close_spark_ray
+        except Exception as e:
+            print("Failed to init spark on Ray, fallback to local mode. Err msg is ", e)
+            if ray.is_initialized():
+                ray.shutdown()
+            conf.setAll(conf_pairs)
+            spark = SparkSession.builder.master(spark_master)\
+                        .appName("pyrecdp_spark")\
+                        .config(conf=conf)\
+                        .getOrCreate()
+            close_caller = close_spark
     spark.sparkContext.setLogLevel("ERROR")
-    # try:
-    #     spark = SparkSession.builder.master(f'spark://{hname}:7077')\
-    #             .appName("pyrecdp_spark_standalone").getOrCreate()
-    #     SparkContext.addPyFile() //this need to be zip, implement later
-    # except:
-    #     spark = SparkSession.builder.master(f'local[*]')\
-    #             .appName("pyrecdp_spark_local").getOrCreate()
-    return spark
+    return spark, close_caller
     
 def convert_to_spark_dict(orig_dict, schema=['dict_col', 'dict_col_id']):
     ret = []
