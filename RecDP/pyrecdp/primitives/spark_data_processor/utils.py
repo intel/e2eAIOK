@@ -12,11 +12,12 @@ import psutil
 from pathlib import Path
 pathlib = Path(__file__).parent.parent.resolve()
 
-def create_spark_context(spark_mode='local', spark_master=None, local_dir=None):
+def create_spark_context(spark_mode='local', spark_master=None, local_dir=None, num_instances = None):
     paral = psutil.cpu_count(logical=False)
     total_mem = int((psutil.virtual_memory().total / (1 << 20)) * 0.8)
     num_cores = 8
-    num_instances = int(paral / num_cores)
+    if num_instances is None:
+        num_instances = int(paral / num_cores)
     executor_mem = int(total_mem / num_instances)
     if spark_mode == 'yarn' or spark_mode == 'standalone':
         if spark_master is None:
@@ -36,13 +37,10 @@ def create_spark_context(spark_mode='local', spark_master=None, local_dir=None):
     if local_dir is not None:
         conf_pairs.append(("spark.local.dir", local_dir))
     if spark_mode == 'yarn' or spark_mode == 'standalone':
-        ss = SparkSession.builder.master(spark_master).getOrCreate()
-        ss_conf = ss.conf
-        conf_pairs.append(("spark.executor.memory", ss_conf.get("spark.executor.memory", f"{executor_mem}M")))
-        conf_pairs.append(("spark.executor.memoryOverhead", ss_conf.get("spark.executor.memoryOverhead", f"{int(total_mem)*0.1}M")))        
-        conf_pairs.append(("spark.executor.instances", ss_conf.get("spark.executor.instances", f"{num_instances}M")))
-        conf_pairs.append(("spark.executor.cores", ss_conf.get("spark.executor.cores", f"{num_cores}M")))
-        ss.sparkContext.stop()
+        conf_pairs.append(("spark.executor.memory", f"{executor_mem}M"))
+        conf_pairs.append(("spark.executor.memoryOverhead", f"{int(executor_mem*0.1)}M"))
+        conf_pairs.append(("spark.executor.instances", f"{num_instances}"))
+        conf_pairs.append(("spark.executor.cores", f"{num_cores}"))
     elif spark_mode == 'ray':
         try:
             import ray
