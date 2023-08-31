@@ -16,8 +16,8 @@ def create_spark_context(spark_mode='local', spark_master=None, local_dir=None):
     paral = psutil.cpu_count(logical=False)
     total_mem = int((psutil.virtual_memory().total / (1 << 20)) * 0.8)
     num_cores = 4
-    num_instances = paral / num_cores
-    executor_mem = total_mem / num_cores
+    num_instances = int(paral / num_cores)
+    executor_mem = int(total_mem / num_cores)
     if spark_mode == 'yarn' or spark_mode == 'standalone':
         if spark_master is None:
             raise ValueError("Spark master is None, please set correct spark master!")
@@ -28,7 +28,7 @@ def create_spark_context(spark_mode='local', spark_master=None, local_dir=None):
     conf = SparkConf()
     conf_pairs = [("spark.executorEnv.TRANSFORMERS_OFFLINE", "1"), 
                 ("spark.executorEnv.TF_CPP_MIN_LOG_LEVEL", "2"),
-                ("spark.executorEnv.PYTHONPATH", pathlib),
+                ("spark.executorEnv.PYTHONPATH", str(pathlib)),
                 ("spark.driver.maxResultSize", "64g"),
                 ("spark.sql.execution.arrow.pyspark.enabled", "true"),
                 ("spark.sql.parquet.int96RebaseModeInWrite", "CORRECTED"),
@@ -69,7 +69,6 @@ def create_spark_context(spark_mode='local', spark_master=None, local_dir=None):
     else:
         try:
             ray.init(address="auto")
-            
             conf_dict = {}
             for k, v in conf_pairs:
                 conf_dict[k] = v
@@ -77,7 +76,7 @@ def create_spark_context(spark_mode='local', spark_master=None, local_dir=None):
                     app_name="pyrecdp_spark",
                     num_executors=num_instances,
                     executor_cores=num_cores,
-                    executor_memory=executor_mem,
+                    executor_memory=f"{executor_mem}M",
                     configs=conf_dict)
             print("spark on ray initialized")
             close_caller = close_spark_ray
