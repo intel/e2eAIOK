@@ -9,9 +9,9 @@ permissions:
 
 jobs:
   e2eaiok-recdp-nightly-python-pypi:
-    runs-on: sr608
+    runs-on: self-hosted
     steps:
-    - uses: actions/checkout@main
+    - uses: actions/checkout@v2
 
     - name: Set up Python
       uses: actions/setup-python@v2
