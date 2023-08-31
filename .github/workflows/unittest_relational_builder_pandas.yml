@@ -5,7 +5,12 @@ on:
     branches:
     - main
     paths:
-    - 'RecDP/pyrecdp/**'
+    - 'RecDP/pyrecdp/autofe/**'
+    - 'RecDP/pyrecdp/core/**'
+    - 'RecDP/pyrecdp/primitives/estimators/**'
+    - 'RecDP/pyrecdp/primitives/generators/**'
+    - 'RecDP/pyrecdp/primitives/operations/**'
+    - 'RecDP/pyrecdp/primitives/profilers/**'
     - 'RecDP/tests/cicd/bashrun_unittest_relational_builder_pandas.sh'
     - 'RecDP/tests/test_relational_builder.py'
 
