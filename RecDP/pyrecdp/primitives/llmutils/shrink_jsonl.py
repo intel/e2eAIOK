@@ -11,7 +11,7 @@ def shrink_document(x_list):
             with open(out_file_name, 'w') as f:
                 for idx, line in enumerate(rdr):
                     if idx not in dedup_list:
-                        f.write(line + "\n")
+                        f.write(line)
     return True
 
 def shrink_document_MP(data_dir, dup_dict, out_dir):
