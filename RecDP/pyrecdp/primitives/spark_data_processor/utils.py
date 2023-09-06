@@ -23,9 +23,9 @@ def create_spark_context(spark_mode='local', spark_master=None, local_dir=None, 
         if spark_master is None:
             raise ValueError("Spark master is None, please set correct spark master!")
     if spark_master is None:
-        spark_master = f'local[{paral}]'
+        spark_master = f'local[{num_instances}]'
     
-    print(f"Will assign {paral} cores and {total_mem} M memory for spark")
+    print(f"Will assign {num_instances} cores and {total_mem} M memory for spark")
     conf = SparkConf()
     conf_pairs = [("spark.executorEnv.TRANSFORMERS_OFFLINE", "1"), 
                 ("spark.executorEnv.TF_CPP_MIN_LOG_LEVEL", "2"),
