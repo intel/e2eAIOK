@@ -18,14 +18,15 @@ def create_spark_context(spark_mode='local', spark_master=None, local_dir=None, 
     num_cores = 8
     if num_instances is None:
         num_instances = int(paral / num_cores)
+        num_instances = 1 if num_instances < 1 else num_instances
     executor_mem = int(total_mem / num_instances)
     if spark_mode == 'yarn' or spark_mode == 'standalone':
         if spark_master is None:
             raise ValueError("Spark master is None, please set correct spark master!")
     if spark_master is None:
-        spark_master = f'local[{num_instances}]'
+        spark_master = f'local[{paral}]'
     
-    print(f"Will assign {num_instances} cores and {total_mem} M memory for spark")
+    print(f"Will assign {paral} cores and {total_mem} M memory for spark")
     conf = SparkConf()
     conf_pairs = [("spark.executorEnv.TRANSFORMERS_OFFLINE", "1"), 
                 ("spark.executorEnv.TF_CPP_MIN_LOG_LEVEL", "2"),
