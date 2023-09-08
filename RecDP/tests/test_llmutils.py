@@ -3,6 +3,7 @@ import sys
 import pandas as pd
 from pathlib import Path
 import os
+
 pathlib = str(Path(__file__).parent.parent.resolve())
 print(pathlib)
 try:
@@ -10,9 +11,10 @@ try:
 except:
     print("Not detect system installed pyrecdp, using local one")
     sys.path.append(pathlib)
-from pyrecdp.primitives.llmutils import near_dedup, shrink_document_MP, text_to_jsonl_MP
+from pyrecdp.primitives.llmutils import near_dedup, shrink_document_MP, text_to_jsonl_MP, pii_remove
 
 cur_dir = str(Path(__file__).parent.resolve())
+
 
 class Test_LLMUtils(unittest.TestCase):
     def setUp(self):
@@ -28,7 +30,7 @@ class Test_LLMUtils(unittest.TestCase):
         bands = 9
         ranges = 13
         near_dedup(data_files, dup_dir, ngram_size, num_perm, bands, ranges)
-        
+
     def test_shrink_jsonl(self):
         data_dir = self.data_dir
         dup_dir = self.dup_dir
@@ -40,3 +42,21 @@ class Test_LLMUtils(unittest.TestCase):
         data_dir = "tests/data/llm_data/pmc"
         out_dir = "pmc_jsonl"
         text_to_jsonl_MP(data_dir, out_dir, 2)
+
+    def test_ppi_remove(self):
+        from dataclasses import dataclass
+
+        @dataclass
+        class PiiDetectRedactOption:
+            path: str = "json"
+            data_files: str = "tests/data/llm_data/arxiv_sample_100.jsonl"
+            split: str = "train"
+            text_column: str = "text"
+            batch_size: int = 100
+            num_proc: int = 8
+            seed: int = 10
+            save_path: str = "./pii_remove"
+            save_format: str = "json"
+
+        args = PiiDetectRedactOption()
+        pii_remove(args)
