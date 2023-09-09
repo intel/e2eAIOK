@@ -1,11 +1,145 @@
 import argparse
-import os
-from pyrecdp.core.utils import Timer
-import json
-from .utils import get_nchunks_and_nproc, launch_mp
+from pathlib import Path
+import jsonlines, time, inspect, logging, warnings
+import fasttext
 
-### Not done, place holder
-class Classifier(jsonql.Transformer):
+from typing import (
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+)
+
+from pyrecdp.core.utils import Timer
+from pyrecdp.primitives.llmutils.utils import *
+
+
+class Transformer:
+    parallelisable: bool = True
+    expect_json: bool = False
+    warn_when_pickling: bool = False
+    ready: bool = False
+
+    def __init_subclass__(cls, expect_json: bool = None):
+        """Detects if the subclass expects json as input."""
+        spec = inspect.getfullargspec(cls.do)
+        if expect_json is None:
+            expect_json = spec.annotations.get(spec.args[1], None) == dict
+
+        cls.expect_json = expect_json
+
+    def __new__(cls, *args, **kwargs):
+        """Creates the transformer and save the arguments passed to the constructor."""
+        t = super().__new__(cls)
+        Transformer.__init__(t, args, kwargs)
+        return t
+
+    def __init__(self, state_args: tuple = None, state_kwargs: dict = None):
+        """
+        Init the transformer counters.
+
+        If state_args/state_kwargs are set they will override whatever was
+        originally passed to the subclass constructor.
+        """
+        if state_args is not None:
+            self.__args = state_args
+        if state_kwargs is not None:
+            self.__kwargs = state_kwargs
+
+        self.start_time = time.time()
+        self.__last_log = self.start_time
+        self.processed = 0
+        # Log every 5 min unless specified other wise.
+        self._log_freq = int(os.environ.get("JSONQL_LOG_FREQ", 5 * 60))
+        self.__cls = type(self)
+        self._logger = logging.getLogger(self.__cls.__name__)
+
+    def __call__(self, x):
+        assert self.ready, f"{self} is not ready."
+        if x is None:
+            return
+        y = self.do(x)
+        self.processed += 1
+        if time.time() - self.__last_log > self._log_freq:
+            self.log_summary()
+        return y
+
+    def do(self, x):
+        raise NotImplementedError(f"'do' not implemented in {type(self)}")
+
+    def summary(self) -> List[str]:
+        return [self.speed_summary()]
+
+    def speed_summary(self) -> str:
+        delay = time.time() - self.start_time
+        h = delay / 3600
+        s = self.processed / delay
+        return f"Processed {self.processed:_} documents in {h:.2}h ({s:5.1f} doc/s)."
+
+    def log(self, message):
+        self._logger.info(message)
+
+    def log_summary(self) -> None:
+        if not self.ready:
+            self.log("Not ready.")
+            return
+        summ = self.summary() or []
+        for line in summ:
+            self.log(line)
+        self.__last_log = time.time()
+
+    def map(self, source: Iterable) -> Iterator:
+        if self.ready:
+            for x in source:
+                yield self(x)
+            # since we have been prepared by caller,
+            # caller is also responsible for calling `close`.
+            return
+        else:
+            with self:
+                for x in source:
+                    yield self(x)
+
+    def __getstate__(self) -> Tuple[tuple, dict, bool]:
+        return (self.__args, self.__kwargs, self.expect_json)
+
+    def __setstate__(self, state: Tuple[tuple, dict, bool]):
+        if self.warn_when_pickling:
+            warnings.warn(f"Unpickling transformer: {type(self)}. This can be slow.")
+        (args, kwargs, expect_json) = state
+        # When unpickling `__new__` isn't called so we have to doit ourselves.
+        Transformer.__init__(self, state_args=args, state_kwargs=kwargs)
+        type(self).__init__(self, *args, **kwargs)
+        assert self.expect_json == expect_json
+        # __setstate__ is called by multiprocessing right before calling
+        # the object so we need to initialize everything.
+        self.__enter__()
+
+    def _prepare(self) -> None:
+        pass
+
+    def __enter__(self) -> "Transformer":
+        # In multiprocessing __enter__ is always called twice, so we are idempotent.
+        # Because we call __enter__ when deserializing this transformer and
+        # also when the parent transformer is deserialized.
+        self.start_time = time.time()
+        if self.ready:
+            return self
+        self._prepare()
+        self.ready = True
+        return self
+
+    def __exit__(self, *args) -> None:
+        self.close()
+        self.log_summary()
+
+    def close(self) -> None:
+        pass
+
+
+class Classifier(Transformer):
     def __init__(
         self,
         model: Path,
@@ -89,29 +223,81 @@ class Classifier(jsonql.Transformer):
 
     def __repr__(self):
         return f"Classifier({self.model})"
-    
-# define actual work
-def language_identify(x_list, filter_condition):
+
+
+def predict(model, text: str, k: int = 1):
+    labels, scores = model.predict(text, k=k)
+    labels = [l.replace("__label__", "") for l in labels]
+    return labels, scores
+
+
+def language_identify2(x_list, filter_condition):
+    print(x_list)
     for x in x_list:
         in_file_name, out_file_name = x
-        with open(in_file_name, 'r') as rdr:
-            with open(out_file_name, 'w') as f:
+        with jsonlines.open(in_file_name, 'r') as rdr:
+            with jsonlines.open(out_file_name, 'w') as f:
                 for idx, line in enumerate(rdr):
-                    if filter_condition(idx):
-                        f.write(line + "\n")
+                    if filter_condition(line):
+                        f.write(line)
     return True
 
-# define how to do parallel here
-def language_identify_MP(data_dir, filter_condition, out_dir):
+
+def multi_run_language_identify(args):
+   return language_identify(*args)
+
+
+def language_identify(x_list, filter_condition):
+
+    for x in x_list:
+        in_file_name, out_file_name = x
+        with jsonlines.open(in_file_name, 'r') as rdr:
+            with jsonlines.open(out_file_name, 'w') as f:
+                for idx, line in enumerate(rdr):
+                    if filter_condition(line):
+                        f.write(line)
+    return True
+
+
+def language_identify_MP(data_dir, language_identify_filter, out_dir):
     os.makedirs(out_dir, exist_ok=True)
 
     files = sorted(os.listdir(data_dir))
     files = list(filter(lambda file_: '.jsonl' in file_, files))
-    
+
     args = [(os.path.join(data_dir, i), os.path.join(out_dir, i)) for i in files]
 
     n_chunks, n_proc = get_nchunks_and_nproc(len(files))
     print(f"resetting to {n_proc} for number of processes")
-    
-    args = [(args[i : i + n_chunks], filter_condition) for i in range(0, len(args), n_chunks)]
-    launch_mp(n_proc, args, language_identify)
+
+    args = [(args[i: i + n_chunks], language_identify_filter) for i in range(0, len(args), n_chunks)]
+
+    launch_mp(n_proc, args, multi_run_language_identify)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-d", dest="data_dir", type=str)
+    parser.add_argument("--fasttext_model", dest="fasttext_model", type=str)
+    parser.add_argument("--language", dest="language", type=str, default="")
+    args = parser.parse_args()
+    target_language = args.language
+    data_dir = args.data_dir
+    fasttext_model = args.fasttext_model
+
+    data_files = get_data_files(data_dir)
+    lang_identify_dir = os.path.join(data_dir, "language_identify")
+
+    model = Path(fasttext_model)
+    if not model.exists():
+        exit(1)
+    classifier = Classifier(model, "text", "lang")
+
+    def language_identify_filter(content):
+        classifier.__enter__()
+        identifed_language = classifier(content)[classifier.out_field]
+
+        return True if identifed_language == target_language or target_language == "" else False
+
+    with Timer(f"Generate language_identify data for {data_dir}"):
+        language_identify_MP(data_dir, language_identify_filter, lang_identify_dir)
