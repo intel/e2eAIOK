@@ -243,13 +243,13 @@ def language_identify(x_list, filter_condition):
         in_file_name, out_file_name = x
         with open(in_file_name, 'r') as rdr:
             with jsonlines.open(out_file_name, 'w') as f:
-                for line in rdr:
+                for idx, line in enumerate(rdr):
                     try:
                         json_line = json.loads(line)
                         if filter_condition(json_line):
                             f.write(json_line)
                     except json.decoder.JSONDecodeError:
-                        print("Faild to load json data, Skip this line.")
+                        logging.error(f"Faild to convert the line with idx {idx} of {in_file_name}, Skip this line.")
 
 
 def language_identify_MP(data_dir, language_identify_filter, out_dir):
