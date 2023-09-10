@@ -67,4 +67,5 @@ setuptools.setup(
         "scipy==1.10.1",
         "datasets>=2.7.0",
         "typer>=0.6.1",
+        "fasttext==0.9.2",
         ])
