@@ -1,8 +1,12 @@
 import argparse
-from pathlib import Path
-import jsonlines, time, inspect, logging, warnings
 import fasttext
-
+import inspect
+import jsonlines
+import json
+import logging
+import time
+import warnings
+from pathlib import Path
 from typing import (
     Dict,
     Iterable,
@@ -14,7 +18,6 @@ from typing import (
 
 from pyrecdp.core.utils import Timer
 from pyrecdp.primitives.llmutils.utils import *
-
 
 class Transformer:
     parallelisable: bool = True
@@ -231,32 +234,22 @@ def predict(model, text: str, k: int = 1):
     return labels, scores
 
 
-def language_identify2(x_list, filter_condition):
-    print(x_list)
-    for x in x_list:
-        in_file_name, out_file_name = x
-        with jsonlines.open(in_file_name, 'r') as rdr:
-            with jsonlines.open(out_file_name, 'w') as f:
-                for idx, line in enumerate(rdr):
-                    if filter_condition(line):
-                        f.write(line)
-    return True
-
-
 def multi_run_language_identify(args):
    return language_identify(*args)
 
 
 def language_identify(x_list, filter_condition):
-
     for x in x_list:
         in_file_name, out_file_name = x
-        with jsonlines.open(in_file_name, 'r') as rdr:
+        with open(in_file_name, 'r') as rdr:
             with jsonlines.open(out_file_name, 'w') as f:
-                for idx, line in enumerate(rdr):
-                    if filter_condition(line):
-                        f.write(line)
-    return True
+                for line in rdr:
+                    try:
+                        json_line = json.loads(line)
+                        if filter_condition(json_line):
+                            f.write(json_line)
+                    except json.decoder.JSONDecodeError:
+                        print("Faild to load json data, Skip this line.")
 
 
 def language_identify_MP(data_dir, language_identify_filter, out_dir):
@@ -280,24 +273,31 @@ if __name__ == "__main__":
     parser.add_argument("-d", dest="data_dir", type=str)
     parser.add_argument("--fasttext_model", dest="fasttext_model", type=str)
     parser.add_argument("--language", dest="language", type=str, default="")
-    args = parser.parse_args()
-    target_language = args.language
-    data_dir = args.data_dir
-    fasttext_model = args.fasttext_model
+    parser.add_argument("--language_identify_output", dest="language_identify_output", type=str, default="")
+    parser.add_argument("--language_identify_field", dest="language_identify_field", type=str, default="text")
+    parser.add_argument("--language_identify_output_field", dest="language_identify_output_field", type=str, default="lang")
 
+    args = parser.parse_args()
+    data_dir = args.data_dir
     data_files = get_data_files(data_dir)
-    lang_identify_dir = os.path.join(data_dir, "language_identify")
+
+    fasttext_model = args.fasttext_model
+    target_language = args.language
+    language_identify_output = os.path.join(data_dir, "language_identify") \
+        if args.language_identify_output == "" else args.language_identify_output
+    language_identify_field = args.language_identify_field
+    language_identify_output_field = args.language_identify_output_field
 
     model = Path(fasttext_model)
     if not model.exists():
         exit(1)
-    classifier = Classifier(model, "text", "lang")
+    classifier = Classifier(model, language_identify_field, language_identify_output_field)
 
     def language_identify_filter(content):
         classifier.__enter__()
-        identifed_language = classifier(content)[classifier.out_field]
+        identify_language = classifier(content)[classifier.out_field]
 
-        return True if identifed_language == target_language or target_language == "" else False
+        return True if identify_language == target_language or target_language == "" else False
 
     with Timer(f"Generate language_identify data for {data_dir}"):
-        language_identify_MP(data_dir, language_identify_filter, lang_identify_dir)
+        language_identify_MP(data_dir, language_identify_filter, language_identify_output)
