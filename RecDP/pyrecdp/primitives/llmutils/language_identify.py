@@ -270,8 +270,8 @@ def language_identify_MP(data_dir, language_identify_filter, out_dir):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-d", dest="data_dir", type=str)
-    parser.add_argument("--fasttext_model", dest="fasttext_model", type=str)
+    parser.add_argument("--data_dir", dest="data_dir", type=str)
+    parser.add_argument("--fasttext_model_dir", dest="fasttext_model_dir", type=str)
     parser.add_argument("--language", dest="language", type=str, default="")
     parser.add_argument("--language_identify_output", dest="language_identify_output", type=str, default="")
     parser.add_argument("--language_identify_field", dest="language_identify_field", type=str, default="text")
@@ -281,14 +281,14 @@ if __name__ == "__main__":
     data_dir = args.data_dir
     data_files = get_data_files(data_dir)
 
-    fasttext_model = args.fasttext_model
+    fasttext_model_dir = args.fasttext_model_dir
     target_language = args.language
     language_identify_output = os.path.join(data_dir, "language_identify") \
         if args.language_identify_output == "" else args.language_identify_output
     language_identify_field = args.language_identify_field
     language_identify_output_field = args.language_identify_output_field
 
-    model = Path(fasttext_model)
+    model = Path(fasttext_model_dir)
     if not model.exists():
         exit(1)
     classifier = Classifier(model, language_identify_field, language_identify_output_field)
