@@ -28,6 +28,18 @@ if [ $? != 0 ]; then
     failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_filter_jsonl\n"
 fi
 
+echo "test_llmutils.Test_LLMUtils.test_ppi_remove"
+python -m unittest tests.test_llmutils.Test_LLMUtils.test_ppi_remove
+if [ $? != 0 ]; then
+    failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_ppi_remove\n"
+fi
+
+echo "test_llmutils.Test_LLMUtils.test_language_identify"
+python -m unittest tests.test_llmutils.Test_LLMUtils.test_language_identify
+if [ $? != 0 ]; then
+    failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_language_identify\n"
+fi
+
 if [ -z ${failed_tests} ]; then
     echo "All tests are passed"
 else
