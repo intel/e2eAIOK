@@ -3,6 +3,8 @@ import sys
 import pandas as pd
 from pathlib import Path
 import os
+import wget
+import urllib.error
 pathlib = str(Path(__file__).parent.parent.resolve())
 print(pathlib)
 try:
@@ -11,6 +13,7 @@ except:
     print("Not detect system installed pyrecdp, using local one")
     sys.path.append(pathlib)
 from pyrecdp.primitives.llmutils import near_dedup, shrink_document_MP, text_to_jsonl_MP
+from pyrecdp.primitives.llmutils.language_identify import Classifier, language_identify
 
 cur_dir = str(Path(__file__).parent.resolve())
 
@@ -19,6 +22,8 @@ class Test_LLMUtils(unittest.TestCase):
         self.data_files = ["tests/data/llm_data/NIH_sample.jsonl"]
         self.data_dir = "tests/data/llm_data/"
         self.dup_dir = "./near_dedup/"
+        self.fasttext_model = "./fasttext_model/lid.bin"
+        self.fasttext_mode_url = "https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin"
 
     def test_near_dedup(self):
         data_files = self.data_files
@@ -40,3 +45,34 @@ class Test_LLMUtils(unittest.TestCase):
         data_dir = "tests/data/llm_data/pmc"
         out_dir = "pmc_jsonl"
         text_to_jsonl_MP(data_dir, out_dir, 2)
+
+    def test_language_identify(self):
+        data_dir = os.path.abspath("data/llm_data")
+        language_identify_output =  os.path.join(data_dir, "language_identify")
+        fasttext_model_dir = os.path.abspath(self.fasttext_model)
+        if not os.path.exists(fasttext_model_dir):
+            os.makedirs(os.path.dirname(fasttext_model_dir), exist_ok=True)
+            try:
+                wget.download(self.fasttext_mode_url , out=fasttext_model_dir)
+            except urllib.error.HTTPError:
+                print("Faild to download DL languafe model. Please check your network.")
+                exit(1)
+
+        model = Path(fasttext_model_dir)
+        classifier = Classifier(model, 'text', 'lang')
+        def language_identify_filter(content):
+            classifier.__enter__()
+            classifier(content)
+            return True
+
+
+        os.makedirs(language_identify_output, exist_ok=True)
+
+        files = sorted(os.listdir(data_dir))
+        files = list(filter(lambda file_: '.jsonl' in file_, files))
+
+        args = [[(os.path.join(data_dir, i), os.path.join(language_identify_output, i))] for i in files]
+
+        for arg in args:
+            language_identify(arg, language_identify_filter)
+

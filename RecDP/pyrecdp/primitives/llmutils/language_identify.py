@@ -296,7 +296,6 @@ if __name__ == "__main__":
     def language_identify_filter(content):
         classifier.__enter__()
         identify_language = classifier(content)[classifier.out_field]
-
         return True if identify_language == target_language or target_language == "" else False
 
     with Timer(f"Generate language_identify data for {data_dir}"):
