@@ -18,6 +18,7 @@ def create_spark_context(spark_mode='local', spark_master=None, local_dir=None, 
     num_cores = 8
     if num_instances is None:
         num_instances = int(paral / num_cores)
+        num_instances = 1 if num_instances < 1 else num_instances
     executor_mem = int(total_mem / num_instances)
     if spark_mode == 'yarn' or spark_mode == 'standalone':
         if spark_master is None:

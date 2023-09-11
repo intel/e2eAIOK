@@ -68,4 +68,6 @@ setuptools.setup(
         "datasets>=2.7.0",
         "typer>=0.6.1",
         "phonenumbers",
+        "fasttext==0.9.2",
+        "wget==3.2",
         ])
