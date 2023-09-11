@@ -12,8 +12,8 @@ try:
 except:
     print("Not detect system installed pyrecdp, using local one")
     sys.path.append(pathlib)
-from pyrecdp.primitives.llmutils import near_dedup, shrink_document_MP, text_to_jsonl_MP
-from pyrecdp.primitives.llmutils.language_identify import Classifier, language_identify
+from pyrecdp.primitives.llmutils import near_dedup, shrink_document_MP, text_to_jsonl_MP, language_identify, Classifier
+
 
 cur_dir = str(Path(__file__).parent.resolve())
 
@@ -47,8 +47,8 @@ class Test_LLMUtils(unittest.TestCase):
         text_to_jsonl_MP(data_dir, out_dir, 2)
 
     def test_language_identify(self):
-        data_dir = os.path.abspath("data/llm_data")
-        language_identify_output =  os.path.join(data_dir, "language_identify")
+        data_files = self.data_files
+        data_dir = self.data_dir
         fasttext_model_dir = os.path.abspath(self.fasttext_model)
         if not os.path.exists(fasttext_model_dir):
             os.makedirs(os.path.dirname(fasttext_model_dir), exist_ok=True)
@@ -57,22 +57,7 @@ class Test_LLMUtils(unittest.TestCase):
             except urllib.error.HTTPError:
                 print("Faild to download DL languafe model. Please check your network.")
                 exit(1)
-
         model = Path(fasttext_model_dir)
         classifier = Classifier(model, 'text', 'lang')
-        def language_identify_filter(content):
-            classifier.__enter__()
-            classifier(content)
-            return True
-
-
-        os.makedirs(language_identify_output, exist_ok=True)
-
-        files = sorted(os.listdir(data_dir))
-        files = list(filter(lambda file_: '.jsonl' in file_, files))
-
-        args = [[(os.path.join(data_dir, i), os.path.join(language_identify_output, i))] for i in files]
-
-        for arg in args:
-            language_identify(arg, language_identify_filter)
-
+        language_identify_output_dir = os.path.join(data_dir, "language_identify")
+        language_identify(data_files, classifier, language_identify_output_dir, enable_ray=False)

@@ -1,12 +1,11 @@
 import argparse
 import fasttext
 import inspect
-import jsonlines
-import json
 import logging
 import time
 import warnings
 from pathlib import Path
+
 from typing import (
     Dict,
     Iterable,
@@ -16,8 +15,14 @@ from typing import (
     Tuple,
 )
 
+import pyspark.sql.functions as F
+from pyspark.sql.types import StringType
+from pyspark.sql.functions import udf
+
 from pyrecdp.core.utils import Timer
+from pyrecdp.primitives.spark_data_processor.data_processor import DataProcessor as SparkDataProcessor
 from pyrecdp.primitives.llmutils.utils import *
+
 
 class Transformer:
     parallelisable: bool = True
@@ -234,69 +239,85 @@ def predict(model, text: str, k: int = 1):
     return labels, scores
 
 
-def multi_run_language_identify(args):
-   return language_identify(*args)
+def generate_lang_label(content, classifier):
+    # 0. apply normalization to content
+    content = {classifier.field: content}
+    content =classifier(content)
+    return content[classifier.out_field] if content else ""
 
 
-def language_identify(x_list, filter_condition):
-    for x in x_list:
-        in_file_name, out_file_name = x
-        with open(in_file_name, 'r') as rdr:
-            with jsonlines.open(out_file_name, 'w') as f:
-                for idx, line in enumerate(rdr):
-                    try:
-                        json_line = json.loads(line)
-                        if filter_condition(json_line):
-                            f.write(json_line)
-                    except json.decoder.JSONDecodeError:
-                        logging.error(f"Faild to convert the line with idx {idx} of {in_file_name}, Skip this line.")
+def read_json(data_files, spark, classifier):
+    df_dict= {}
+    convertUDF = udf(lambda z: generate_lang_label(z, classifier), StringType())
+
+    for filename in data_files:
+        df = spark.read.json(filename)
+        df = df.withColumn('lang', convertUDF(F.col('text'))).select("*")
+        df_dict[filename] = df
+
+    return df_dict
 
 
-def language_identify_MP(data_dir, language_identify_filter, out_dir):
-    os.makedirs(out_dir, exist_ok=True)
+def save_parquet_data(df_dict, language_identify_output_dir):
 
-    files = sorted(os.listdir(data_dir))
-    files = list(filter(lambda file_: '.jsonl' in file_, files))
+    for filename, df in df_dict.items():
+        save_path = os.path.join(language_identify_output_dir,
+                                 os.path.basename(filename.split(".")[0]))
 
-    args = [(os.path.join(data_dir, i), os.path.join(out_dir, i)) for i in files]
+        df.write.mode("overwrite").parquet(save_path)
 
-    n_chunks, n_proc = get_nchunks_and_nproc(len(files))
-    print(f"resetting to {n_proc} for number of processes")
+    return df_dict
 
-    args = [(args[i: i + n_chunks], language_identify_filter) for i in range(0, len(args), n_chunks)]
 
-    launch_mp(n_proc, args, multi_run_language_identify)
+def language_identify(data_files, classifier, language_identify_output_dir, enable_ray):
+    if enable_ray:
+        rdp = SparkDataProcessor(spark_mode='ray')
+    else:
+        rdp = SparkDataProcessor()
+    spark = rdp.spark
+    try:
+        with Timer("Load and process data"):
+            df_dict = read_json(data_files, spark, classifier)
+
+            total_length = 0
+            for df in df_dict.values():
+                total_length += df.count()
+
+        with Timer("Save data"):
+            save_parquet_data(df_dict, language_identify_output_dir)
+
+        print(f"Completed!!")
+        print(f"    total identify the language for {total_length} documents")
+        print(f"    All the processed data are saving under the folder: {language_identify_output_dir}")
+
+    except Exception as e:
+        spark.stop()
+        print("Failed", e)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_dir", dest="data_dir", type=str)
     parser.add_argument("--fasttext_model_dir", dest="fasttext_model_dir", type=str)
-    parser.add_argument("--language", dest="language", type=str, default="")
-    parser.add_argument("--language_identify_output", dest="language_identify_output", type=str, default="")
+    parser.add_argument("--language_identify_output_dir", dest="language_identify_output_dir", type=str, default="")
     parser.add_argument("--language_identify_field", dest="language_identify_field", type=str, default="text")
     parser.add_argument("--language_identify_output_field", dest="language_identify_output_field", type=str, default="lang")
-
+    parser.add_argument("--enable_ray", dest="enable_ray", action='store_true', default=False)
     args = parser.parse_args()
     data_dir = args.data_dir
-    data_files = get_data_files(data_dir)
-
     fasttext_model_dir = args.fasttext_model_dir
-    target_language = args.language
-    language_identify_output = os.path.join(data_dir, "language_identify") \
-        if args.language_identify_output == "" else args.language_identify_output
+    language_identify_output_dir = os.path.join(data_dir, "language_identify") \
+        if args.language_identify_output_dir == "" else args.language_identify_output_dir
     language_identify_field = args.language_identify_field
-    language_identify_output_field = args.language_identify_output_field
+    language_identify_output_field  = args.language_identify_output_field
+    enable_ray = args.enable_ray
+
+    data_files = get_data_files(data_dir)
 
     model = Path(fasttext_model_dir)
     if not model.exists():
         exit(1)
     classifier = Classifier(model, language_identify_field, language_identify_output_field)
 
-    def language_identify_filter(content):
-        classifier.__enter__()
-        identify_language = classifier(content)[classifier.out_field]
-        return True if identify_language == target_language or target_language == "" else False
-
     with Timer(f"Generate language_identify data for {data_dir}"):
-        language_identify_MP(data_dir, language_identify_filter, language_identify_output)
+        language_identify(data_files, classifier, language_identify_output_dir, enable_ray)
