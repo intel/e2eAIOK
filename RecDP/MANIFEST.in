@@ -1,5 +1,0 @@
-include pyrecdp/ScalaProcessUtils/target/*.jar
-include pyrecdp/ScalaProcessUtils/spark-env.sh
-include pyrecdp/ScalaProcessUtils/spark-defaults.conf
-include pyrecdp/widgets/templates/*.html
-include version
