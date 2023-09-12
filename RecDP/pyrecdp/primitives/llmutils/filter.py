@@ -8,17 +8,24 @@ from pyrecdp.primitives.spark_data_processor.data_processor import DataProcessor
 import pyspark.sql.functions as F
 from urllib.parse import urlparse
 from pyspark.sql.types import StructType, StructField, StringType
+import urllib.error
 
 BLACKLIST_URL = "https://dsi.ut-capitole.fr/blacklists/download/blacklists.tar.gz"
 BLACKLIST_STORE_PATH = "/tmp"
-BLACKLIST_CATEGORIES = ["adult", "phishing", "dating", "gambling", "filehosting", "ddos", "agressif", "chat", "mixed_adult",
+BLACKLIST_CATEGORIES = ["adult", "phishing", "dating", "gambling", "filehosting", "ddos", "agressif", "chat",
+                        "mixed_adult",
                         "arjel"]
 
 
 def prepare_blacklist():
     blacklist_tar_path = "/tmp/blacklists.tar.gz"
-    download_cmd = f"wget -nc {BLACKLIST_URL} -O {blacklist_tar_path}"
-    os.system(download_cmd)
+    if not os.path.exists(blacklist_tar_path):
+        try:
+            import wget
+            wget.download(BLACKLIST_URL, out=blacklist_tar_path)
+        except urllib.error.HTTPError:
+            print("Failed to download blacklists. Please check your network.")
+            exit(1)
     unzip_cmd = f"tar -zxf {blacklist_tar_path} -C {BLACKLIST_STORE_PATH}"
     os.system(unzip_cmd)
 
@@ -84,8 +91,8 @@ def filter_by_blocklist(data_dir, out_dir):
             filtered_df = filtered_df.union(left_anti_df.select(F.col("text"), F.col("meta")))
             remain_data_num = filtered_df.count()
         os.makedirs(out_dir, exist_ok=True)
-        outfile_path = os.path.join(out_dir, "filtered.parquet")
-        filtered_df.write.mode("overwrite").parquet(outfile_path)
+        outfile_path = os.path.join(out_dir, "filtered")
+        filtered_df.write.mode("overwrite").json(outfile_path)
 
         print(f"Completed!!")
         print(f"    Load total {total_data_num} documents")

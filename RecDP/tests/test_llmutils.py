@@ -13,9 +13,8 @@ except:
     print("Not detect system installed pyrecdp, using local one")
     sys.path.append(pathlib)
 
-from pyrecdp.primitives.llmutils import near_dedup, shrink_document_MP, text_to_jsonl_MP, pii_remove
-from pyrecdp.primitives.llmutils import near_dedup, shrink_document_MP, text_to_jsonl_MP, filter_by_blocklist
-from pyrecdp.primitives.llmutils import near_dedup, shrink_document_MP, text_to_jsonl_MP, language_identify, Classifier
+from pyrecdp.primitives.llmutils import near_dedup, shrink_document_MP, text_to_jsonl_MP, pii_remove, \
+    filter_by_blocklist, language_identify, Classifier
 
 cur_dir = str(Path(__file__).parent.resolve())
 
@@ -79,9 +78,9 @@ class Test_LLMUtils(unittest.TestCase):
         if not os.path.exists(fasttext_model_dir):
             os.makedirs(os.path.dirname(fasttext_model_dir), exist_ok=True)
             try:
-                wget.download(self.fasttext_mode_url , out=fasttext_model_dir)
+                wget.download(self.fasttext_mode_url, out=fasttext_model_dir)
             except urllib.error.HTTPError:
-                print("Faild to download DL languafe model. Please check your network.")
+                print("Failed to download DL language model. Please check your network.")
                 exit(1)
         model = Path(fasttext_model_dir)
         classifier = Classifier(model, 'text', 'lang')
