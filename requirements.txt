@@ -1,0 +1,11 @@
+datasets
+torch==1.13.0
+git+https://github.com/huggingface/transformers.git
+sentencepiece
+peft
+evaluate
+nltk
+rouge_score
+einops
+sigopt
+torchsummary
