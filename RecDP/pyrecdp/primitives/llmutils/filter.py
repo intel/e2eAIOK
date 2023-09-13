@@ -80,7 +80,7 @@ def filter_by_blocklist(data_dir, out_dir):
             source_df = read_json(data_dir, spark)
             total_data_num = source_df.count()
 
-        with Timer("Filter data according to blocked domains"):
+        with Timer("Filter out data according to blocked domains"):
             with_url_df = source_df.filter(~F.isnull("url"))
             filtered_df = source_df.filter(F.isnull("url")).select(F.col("text"), F.col("meta"))
 

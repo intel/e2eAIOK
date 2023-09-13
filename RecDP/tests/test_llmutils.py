@@ -14,7 +14,7 @@ except:
     sys.path.append(pathlib)
 
 from pyrecdp.primitives.llmutils import near_dedup, shrink_document_MP, text_to_jsonl_MP, pii_remove, \
-    filter_by_blocklist, language_identify, Classifier
+    filter_by_blocklist, language_identify, Classifier, profanity_filter
 
 cur_dir = str(Path(__file__).parent.resolve())
 
@@ -70,6 +70,11 @@ class Test_LLMUtils(unittest.TestCase):
         data_dir = "tests/data/llm_data"
         out_dir = "tests/data/filter_out"
         filter_by_blocklist(data_dir, out_dir)
+
+    def test_profanity_filter(self):
+        data_dir = "tests/data/llm_data"
+        out_dir = "tests/data/filter_out"
+        profanity_filter(data_dir, out_dir)
 
     def test_language_identify(self):
         data_files = self.data_files
