@@ -38,7 +38,8 @@ class Test_LLMUtils(unittest.TestCase):
         
     def test_near_dedup_spark(self):
         from pyrecdp.core import SparkDataProcessor
-        from pyrecdp.primitives.llmutils.utils import read_json
+        from pyspark.sql.types import StructType,StructField, StringType
+        import pyspark.sql.functions as F
         data_files = self.data_files
         dup_dir = self.dup_dir
         ngram_size = 13
@@ -47,8 +48,16 @@ class Test_LLMUtils(unittest.TestCase):
         ranges = 13
         rdp = SparkDataProcessor()
         spark=rdp.spark
-        spark_df = read_json(data_files, spark)
+        schema = StructType([ 
+            StructField("text",StringType(),True), 
+            StructField("meta",StringType(),True)
+        ])
+        spark_df = spark.read.text(data_files)
+        spark_df = spark_df.withColumn('jsonData', F.from_json(F.col('value'), schema)).select("jsonData.*")
+        print("input is ")
+        spark_df.show()
         ret_df = near_dedup_spk(spark_df, ngram_size, num_perm, bands, ranges)
+        print("output is")
         ret_df.show()
         
 

@@ -41,7 +41,7 @@ def read_json(data_files, spark, rowid = False):
             df_rid = df_rid.withColumn("filename_docid", F.concat_ws("@", "filename", "__id__"))
             df = df_rid.select('value', 'filename_docid')
         
-        df = df.withColumn('jsonData', F.from_json(F.col('value'), schema)).select("jsonData.*", "filename_docid")  
+        df = df.withColumn('jsonData', F.from_json(F.col('value'), schema)).select("jsonData.*", "filename_docid")
         df = df.select("filename_docid", "text", "meta")
 
         if first:
@@ -52,8 +52,10 @@ def read_json(data_files, spark, rowid = False):
     return ret_df
 
 def global_unique_id(df, col_name):
-    ret_df = df.withColumn("__id__", F.monotonically_increasing_id())
-    ret_df = ret_df.withColumn(col_name, F.concat_ws("@", F.lit("global_id"), "__id__"))
+    ret_df = df
+    if col_name in df.schema.names:
+        ret_df = ret_df.drop(col_name)
+    ret_df = ret_df.select(F.concat_ws("@", F.lit("global_id"), F.monotonically_increasing_id()).alias(col_name), "*")
     return ret_df
 
 def get_data_files(data_dir):
