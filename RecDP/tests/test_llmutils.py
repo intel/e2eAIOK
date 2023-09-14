@@ -13,7 +13,7 @@ except:
     print("Not detect system installed pyrecdp, using local one")
     sys.path.append(pathlib)
 
-from pyrecdp.primitives.llmutils import near_dedup, shrink_document_MP, text_to_jsonl_MP, pii_remove, \
+from pyrecdp.primitives.llmutils import near_dedup, near_dedup_spk, shrink_document_MP, text_to_jsonl_MP, pii_remove, \
     filter_by_blocklist, language_identify, Classifier
 
 cur_dir = str(Path(__file__).parent.resolve())
@@ -35,6 +35,22 @@ class Test_LLMUtils(unittest.TestCase):
         bands = 9
         ranges = 13
         near_dedup(data_files, dup_dir, ngram_size, num_perm, bands, ranges)
+        
+    def test_near_dedup_spark(self):
+        from pyrecdp.core import SparkDataProcessor
+        from pyrecdp.primitives.llmutils.utils import read_json
+        data_files = self.data_files
+        dup_dir = self.dup_dir
+        ngram_size = 13
+        num_perm = 256
+        bands = 9
+        ranges = 13
+        rdp = SparkDataProcessor()
+        spark=rdp.spark
+        spark_df = read_json(data_files, spark)
+        ret_df = near_dedup_spk(spark_df, ngram_size, num_perm, bands, ranges)
+        ret_df.show()
+        
 
     def test_shrink_jsonl(self):
         data_dir = self.data_dir

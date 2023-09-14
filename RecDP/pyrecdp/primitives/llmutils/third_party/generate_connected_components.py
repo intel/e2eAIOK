@@ -39,7 +39,27 @@ def find_connected_components(G):
     cc.run()
     return cc.getComponents(), cc.numberOfComponents()
 
+def generate_connected_components_py(rows):    
+    set_of_duplicate_pairs = set()
+    for line in rows:
+        pair = tuple(line.strip().split(" :: "))
+        if pair[0] != pair[1]:
+            set_of_duplicate_pairs.add(pair)
 
+
+    # generate a graph using id's as nodes and a pair of ids as an edge
+    nk.setNumberOfThreads(60)
+    G, mapper = construct_graph(set_of_duplicate_pairs)
+    components, n_components = find_connected_components(G)
+
+    reversed_mapper = {value: key for key, value in mapper.items()}
+    
+    reversed_components = []
+    for component in components:
+        reversed_components.append([reversed_mapper[i] for i in component])
+    
+    return reversed_components
+    
 def generate_connected_components_mp(args):
     files = glob(f"{args.input_dir}/*")
     start = time.time()
