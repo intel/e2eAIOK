@@ -18,7 +18,6 @@ from collections import defaultdict
 
 import tqdm
 
-
 def generate_duplicates(args):
     print("Processing duplicates!!!")
     # load pickled components and other artifacts

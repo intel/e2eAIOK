@@ -8,12 +8,12 @@ import pickle
 from pyrecdp.core.utils import Timer
 from pyrecdp.core import SparkDataProcessor
 from pyrecdp.core.utils import Timer
-from pyrecdp.primitives.spark_data_processor.utils import list_dir
 import pyspark.sql.functions as F
-from pyspark.sql.window import Window 
+from pyspark.sql import Row
+
 import shutil
 from nltk import ngrams
-from .utils import normalize_str, clean_str
+from .utils import normalize_str, clean_str, read_json, global_unique_id, convert_listoflist_to_spk
 
 
 cur_path = os.path.dirname(__file__)
@@ -77,46 +77,45 @@ def minHashLSH_prepare(df, num_perm, ngram_size, B, R):
         .distinct()
     )
     return pipeline
-    
-def read_json(data_files, spark):
-    from pyspark.sql.functions import input_file_name
-    from pyspark.sql.types import StructType,StructField, StringType
-    schema = StructType([ 
-        StructField("text",StringType(),True), 
-        StructField("meta",StringType(),True)
-      ])
-
-    first = True
-    for filename in data_files:
-        print(filename)
-        df = spark.read.text(filename)
-        
-        df = df.withColumn("__id__", F.monotonically_increasing_id())
-        df_rid = df.select('__id__').withColumn("rid", F.row_number().over(Window.orderBy(F.col("__id__"))))
-        df_rid = df_rid.withColumn("filename", F.lit(os.path.basename(filename)))
-        df_rid = df_rid.withColumn("filename_docid", F.concat_ws("@", "filename", "rid"))
-          
-        df = df.join(df_rid.select("__id__", "filename_docid"), "__id__", "left")
-        
-        df = df.withColumn('jsonData', F.from_json(F.col('value'), schema)).select("jsonData.*", "filename_docid")  
-        df = df.select("filename_docid", "text", "meta")
-
-        if first:
-            first = False
-            ret_df = df
-        else:
-            ret_df = ret_df.union(df)
-    return ret_df
 
 def filter_data(data):
     return len(clean_str(data)) >= THRESHOLD
 
+def near_dedup_spk(spark_df, ngram_size, num_perm, bands, ranges):
+    df = spark_df
+    input_count = df.count()
+    spark = df.sparkSession
+    df_with_id = global_unique_id(df, 'filename_docid')
+    pipeline = minHashLSH_prepare(df_with_id, num_perm, ngram_size, bands, ranges)
+    with Timer("generate minHashLsh"):
+        results = pipeline.collect()
+        
+    with Timer("generate_connected_components => duplicates"):
+        components = generate_connected_components.generate_connected_components_py(results)
+        duplicates = [c for c_list in components for c in c_list[1:]]
+        R = Row('filename_docid')
+        duplicates_sdf = spark.createDataFrame([R(dup) for dup in duplicates]).cache()
+        total_dup = duplicates_sdf.count()
+        
+    with Timer("deduplicate input data"):
+        ret = df_with_id.join(duplicates_sdf, 'filename_docid', 'anti').cache()
+        ret_count = ret.count()
+        
+    dup_sum = input_count - ret_count
+    print(f"Completed!!")
+    print(f"    total processed {input_count} documents")
+    print(f"    total detected {total_dup} duplicated documents, exact deduplicated counts is {dup_sum}")
+    print(f"    duplicate ratio is {dup_sum/input_count}")
+        
+    return ret
+
+
 def near_dedup(data_files, dup_dir, ngram_size, num_perm, bands, ranges):
     rdp = SparkDataProcessor()
-    spark=rdp.spark  
+    spark=rdp.spark
     try:
         with Timer("Load data with RowID"):
-            df = read_json(data_files, spark).cache()
+            df = read_json(data_files, spark, rowid = True).cache()
             total_length = df.count()
             
         pipeline = minHashLSH_prepare(df, num_perm, ngram_size, bands, ranges)
@@ -145,8 +144,8 @@ def near_dedup(data_files, dup_dir, ngram_size, num_perm, bands, ranges):
             dup_dict_args.out_file = dup_docs
             generate_duplicates_dict.generate_duplicates(dup_dict_args)
 
-        with open(os.path.join(dup_dir, "duplicates.pickle"), 'rb'):
-            dup_dict = pickle.load()
+        with open(os.path.join(dup_dir, "duplicates.pickle"), 'rb') as f:
+            dup_dict = pickle.load(f)
             dup_sum = 0
             for _, v in dup_dict.items():
                 dup_sum += len(list(v))
