@@ -66,6 +66,6 @@ def download_file(remote_path, target_path):
         os.makedirs(os.path.dirname(target_path), exist_ok=True)
         try:
             wget.download(remote_path, out=target_path)
-        except urllib.error.HTTPError:
-            print("Failed to the file. Please check the url and network.")
-            exit(1)
+        except urllib.error.HTTPError as e:
+            print("Failed to download the file. Please check the url and network.")
+            raise e
