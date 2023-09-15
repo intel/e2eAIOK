@@ -99,7 +99,7 @@ def detect_ip(content):
     matches = []
 
     # regex matching
-    matches_tmp = ipaddress.finditer(content)
+    matches_tmp = ip_pattern.finditer(content)
     for match in matches_tmp:
         if match.groups():
             if len(match.groups()) > 1 and match.groups()[1]:

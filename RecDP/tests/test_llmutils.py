@@ -49,4 +49,4 @@ class Test_LLMUtils(unittest.TestCase):
         spark = SparkSession.builder.master("local[4]").appName("PII Remove").getOrCreate()
         input_dataset = spark.read.load(path="tests/data/llm_data/arxiv_sample_100.jsonl", format="json")
         output_dataset = pii_remove(input_dataset)
-        output_dataset.write.save("./pii_remove", "json")
+        output_dataset.write.save(path="./pii_remove", format="json", mode="overwrite")

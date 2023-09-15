@@ -2,10 +2,10 @@ import argparse
 import logging
 
 from pyspark.sql import SparkSession
-from pyspark.sql.dataframe import DataFrame
+from pyspark.sql.dataframe import DataFrame, Row
 
-from .pii.pii_detection import scan_pii_text
-from .pii.pii_redaction import redact_pii_text, random_replacements
+from pyrecdp.primitives.llmutils.pii.pii_detection import scan_pii_text
+from pyrecdp.primitives.llmutils.pii.pii_redaction import redact_pii_text, random_replacements
 
 
 def getArgs():
@@ -56,16 +56,15 @@ def getArgs():
 
 def pii_remove_batch(batch):
     replacements = random_replacements()
-    rows = []
     for row in batch:
+        row_dict = dict(**row.asDict())
         secrets = scan_pii_text(row.text)
-        row.text = redact_pii_text(row.text, secrets, replacements)
-        rows += row
-    return rows
+        row_dict["text"] = redact_pii_text(row.text, secrets, replacements)
+        yield Row(**row_dict)
 
 
 def pii_remove(dataset: DataFrame):
-    return dataset.rdd.mapPartitions(pii_remove_batch).toDF(dataset.schema)
+    return dataset.rdd.mapPartitions(pii_remove_batch).toDF()
 
 
 if __name__ == "__main__":
@@ -89,6 +88,6 @@ if __name__ == "__main__":
 
     input_dataset = spark.read.load(path=args.input_path, format=args.input_format)
     output_dataset = pii_remove(input_dataset)
-    output_dataset.write.save(args.output_path, args.output_format)
+    output_dataset.write.save(path=args.output_path, format=args.output_format,mode="overwrite")
 
     logger.info(f" ===== Dataset saved successfully =====")
