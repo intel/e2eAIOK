@@ -5,4 +5,4 @@ from .text_to_jsonl import text_to_jsonl_MP
 
 from .pii_remove import pii_remove
 from .filter import filter_by_blocklist
-from .language_identify import language_identify, Classifier
+from .language_identify import language_identify, language_identify_spark, Classifier

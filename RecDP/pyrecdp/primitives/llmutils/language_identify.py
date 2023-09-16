@@ -247,50 +247,69 @@ def generate_lang_label(content, classifier):
     return content[classifier.out_field] if content else ""
 
 
-def read_json(data_dir, data_files, spark, classifier):
-    df_dict= {}
+def read_json(data_dir, data_file, spark):
+    df = spark.read.json(os.path.join(data_dir, data_file)).cache()
+    return df
+
+
+def language_identify_df(df, classifier):
     convertUDF = udf(lambda z: generate_lang_label(z, classifier), StringType())
-
-    for filename in data_files:
-        df = spark.read.json(os.path.join(data_dir, filename))
-        df = df.withColumn('lang', convertUDF(F.col('text'))).select("*")
-        df_dict[filename] = df
-
-    return df_dict
+    processed_df = df.withColumn('lang', convertUDF(F.col('text'))).select("*").cache()
+    return processed_df
 
 
-def save_parquet_data(df_dict, language_identify_output_dir):
-
-    for filename, df in df_dict.items():
-        save_path = os.path.join(language_identify_output_dir,
-                                 os.path.basename(filename.split(".")[0]))
-
-        df.write.mode("overwrite").parquet(save_path)
-
-    return df_dict
+def save_parquet_data(df, save_path):
+    df.write.mode("overwrite").parquet(save_path)
 
 
-def language_identify(data_dir, data_files, classifier, language_identify_output_dir, enable_ray):
-    if enable_ray:
-        rdp = SparkDataProcessor(spark_mode='ray')
-    else:
-        rdp = SparkDataProcessor()
+def language_identify(data_dir, data_files, classifier, language_identify_output_dir):
+    rdp = SparkDataProcessor()
     spark = rdp.spark
     try:
-        with Timer("Load and process data"):
-            df_dict = read_json(data_dir, data_files, spark, classifier)
+        with Timer("Load data"):
+            df_dict = {}
+            for data_file in data_files:
+                df = read_json(data_dir, data_file, spark)
+                df_dict[data_file] = df
 
-            total_length = 0
-            for df in df_dict.values():
-                total_length += df.count()
+        with Timer("Process data"):
+            for data_file, df in df_dict.items():
+                processed_df = language_identify_df(df, classifier)
+                df_dict[data_file] = processed_df
 
         with Timer("Save data"):
-            save_parquet_data(df_dict, language_identify_output_dir)
+            for data_file, df in df_dict.items():
+                save_path = os.path.join(language_identify_output_dir, data_file)
+                save_parquet_data(df, save_path)
+
+        total_length = 0
+        for df in df_dict.values():
+            total_length += df.count()
 
         print(f"Completed!!")
         print(f"    total identify the language for {total_length} documents")
         print(f"    All the processed data are saving under the folder: {language_identify_output_dir}")
 
+    except Exception as e:
+        spark.stop()
+        print("Failed", e)
+
+
+def language_identify_spark(spark_df, classifier, language_identify_output_dir):
+    spark = spark_df.sparkSession
+    try:
+        with Timer("process data"):
+            processed_df = language_identify_df(spark_df, classifier)
+
+        with Timer("Save data"):
+            save_parquet_data(processed_df, language_identify_output_dir)
+
+        total_length = processed_df.count()
+
+        print(f"Completed!!")
+        print(f"    total identify the language for {total_length} documents")
+        print(f"    All the processed data are saving under the folder: {language_identify_output_dir}")
+        return processed_df
     except Exception as e:
         spark.stop()
         print("Failed", e)
@@ -303,7 +322,6 @@ if __name__ == "__main__":
     parser.add_argument("--language_identify_output_dir", dest="language_identify_output_dir", type=str, default="")
     parser.add_argument("--language_identify_field", dest="language_identify_field", type=str, default="text")
     parser.add_argument("--language_identify_output_field", dest="language_identify_output_field", type=str, default="lang")
-    parser.add_argument("--enable_ray", dest="enable_ray", action='store_true', default=False)
     args = parser.parse_args()
     data_dir = args.data_dir
     fasttext_model_dir = args.fasttext_model_dir
@@ -311,7 +329,6 @@ if __name__ == "__main__":
         if args.language_identify_output_dir == "" else args.language_identify_output_dir
     language_identify_field = args.language_identify_field
     language_identify_output_field  = args.language_identify_output_field
-    enable_ray = args.enable_ray
 
     data_files = get_target_file_list(data_dir, "jsonl")
 
@@ -322,4 +339,4 @@ if __name__ == "__main__":
     classifier = Classifier(model, language_identify_field, language_identify_output_field)
 
     with Timer(f"Generate language_identify data for {data_dir}"):
-        language_identify(data_dir, data_files, classifier, language_identify_output_dir, enable_ray)
+        language_identify(data_dir, data_files, classifier, language_identify_output_dir)
