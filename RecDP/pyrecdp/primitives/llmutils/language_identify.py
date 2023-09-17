@@ -247,8 +247,8 @@ def generate_lang_label(content, classifier):
     return content[classifier.out_field] if content else ""
 
 
-def read_json(data_dir, data_file, spark):
-    df = spark.read.json(os.path.join(data_dir, data_file)).cache()
+def read_json(data_dir, data_file, spark, file_system_prefix=""):
+    df = spark.read.json(f"{file_system_prefix}{os.path.join(data_dir, data_file)}").cache()
     return df
 
 
@@ -262,14 +262,14 @@ def save_parquet_data(df, save_path):
     df.write.mode("overwrite").parquet(save_path)
 
 
-def language_identify(data_dir, data_files, classifier, language_identify_output_dir):
+def language_identify(data_dir, data_files, classifier, language_identify_output_dir, file_system_prefix=""):
     rdp = SparkDataProcessor()
     spark = rdp.spark
     try:
         with Timer("Load data"):
             df_dict = {}
             for data_file in data_files:
-                df = read_json(data_dir, data_file, spark)
+                df = read_json(data_dir, data_file, spark, file_system_prefix)
                 df_dict[data_file] = df
 
         with Timer("Process data"):
@@ -279,7 +279,7 @@ def language_identify(data_dir, data_files, classifier, language_identify_output
 
         with Timer("Save data"):
             for data_file, df in df_dict.items():
-                save_path = os.path.join(language_identify_output_dir, data_file)
+                save_path = f"{file_system_prefix}{os.path.join(language_identify_output_dir, data_file)}"
                 save_parquet_data(df, save_path)
 
         total_length = 0
@@ -295,14 +295,14 @@ def language_identify(data_dir, data_files, classifier, language_identify_output
         print("Failed", e)
 
 
-def language_identify_spark(spark_df, classifier, language_identify_output_dir):
+def language_identify_spark(spark_df, classifier, language_identify_output_dir, file_system_prefix=""):
     spark = spark_df.sparkSession
     try:
         with Timer("process data"):
             processed_df = language_identify_df(spark_df, classifier)
 
         with Timer("Save data"):
-            save_parquet_data(processed_df, language_identify_output_dir)
+            save_parquet_data(processed_df, f"{file_system_prefix}{language_identify_output_dir}")
 
         total_length = processed_df.count()
 
@@ -322,6 +322,7 @@ if __name__ == "__main__":
     parser.add_argument("--language_identify_output_dir", dest="language_identify_output_dir", type=str, default="")
     parser.add_argument("--language_identify_field", dest="language_identify_field", type=str, default="text")
     parser.add_argument("--language_identify_output_field", dest="language_identify_output_field", type=str, default="lang")
+    parser.add_argument("--file_system_prefix", dest="file_system_prefix", type=str, default="")
     args = parser.parse_args()
     data_dir = args.data_dir
     fasttext_model_dir = args.fasttext_model_dir
@@ -329,9 +330,9 @@ if __name__ == "__main__":
         if args.language_identify_output_dir == "" else args.language_identify_output_dir
     language_identify_field = args.language_identify_field
     language_identify_output_field  = args.language_identify_output_field
+    file_system_prefix = args.file_system_prefix
 
-    data_files = get_target_file_list(data_dir, "jsonl")
-
+    data_files = get_target_file_list(data_dir, "jsonl", file_system_prefix)
     model = Path(fasttext_model_dir)
     if not model.exists():
         download_file(fasttext_model_url, fasttext_model_dir)
@@ -339,4 +340,4 @@ if __name__ == "__main__":
     classifier = Classifier(model, language_identify_field, language_identify_output_field)
 
     with Timer(f"Generate language_identify data for {data_dir}"):
-        language_identify(data_dir, data_files, classifier, language_identify_output_dir)
+        language_identify(data_dir, data_files, classifier, language_identify_output_dir, file_system_prefix)

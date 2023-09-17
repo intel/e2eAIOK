@@ -98,14 +98,14 @@ class Test_LLMUtils(unittest.TestCase):
 
     def test_language_identify(self):
         data_dir = os.path.join(cur_dir, "data/llm_data")
-        data_files = get_target_file_list(data_dir, "jsonl")
+        data_files = get_target_file_list(data_dir, "jsonl", "file://")
         fasttext_model_dir = os.path.abspath(self.fasttext_model)
         if not os.path.exists(fasttext_model_dir):
             download_file(fasttext_model_url, fasttext_model_dir)
         model = Path(fasttext_model_dir)
         classifier = Classifier(model, 'text', 'lang')
         language_identify_output_dir = os.path.join(data_dir, "language_identify")
-        language_identify(data_dir, data_files, classifier, language_identify_output_dir)
+        language_identify(data_dir, data_files, classifier, language_identify_output_dir, "file://")
 
     def test_language_identify_spark(self):
         from pyrecdp.core import SparkDataProcessor

@@ -70,9 +70,16 @@ def get_data_files(data_dir):
     files = [os.path.join(data_dir, i) for i in files]
     return files
 
-def get_target_file_list(data_dir, file_type):
-    os.system('pwd')
-    cmd = ["find", data_dir, "-name", f"*.{file_type}"]
+
+def get_target_file_list(data_dir, file_type, file_system_prefix=""):
+    if file_system_prefix == "file://":
+        cmd = ["find", data_dir, "-name", f"*.{file_type}"]
+    elif file_system_prefix == "" or file_system_prefix.startswith("hdfs"):
+        cmd = ["hdfs", "dfs",  "-find", data_dir, "-name", f"*.{file_type}"]
+    else:
+        print("Only support local or hdfs file system.")
+        exit(1)
+
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     stdout, stderr = proc.communicate()
     exitcode = proc.returncode
@@ -83,6 +90,7 @@ def get_target_file_list(data_dir, file_type):
         ret = [i.replace(data_dir, "") for i in ret]
         ret = [i[1:] if i[0] == '/' else i for i in ret]
         return ret
+
 
 def get_nchunks_and_nproc(n_tasks, n_part = -1):
     n_proc = cpu_count()
