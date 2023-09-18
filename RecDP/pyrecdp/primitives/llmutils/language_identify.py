@@ -254,7 +254,7 @@ def read_json(data_dir, data_file, spark, file_system_prefix=""):
 
 def language_identify_df(df, classifier):
     convertUDF = udf(lambda z: generate_lang_label(z, classifier), StringType())
-    processed_df = df.withColumn('lang', convertUDF(F.col('text'))).select("*").cache()
+    processed_df = df.withColumn('lang', convertUDF(F.col('text'))).select("*")
     return processed_df
 
 
@@ -274,7 +274,7 @@ def language_identify(data_dir, data_files, classifier, language_identify_output
 
         with Timer("Process data"):
             for data_file, df in df_dict.items():
-                processed_df = language_identify_df(df, classifier)
+                processed_df = language_identify_df(df, classifier).cache()
                 df_dict[data_file] = processed_df
 
         with Timer("Save data"):
@@ -299,7 +299,7 @@ def language_identify_spark(spark_df, classifier, language_identify_output_dir, 
     spark = spark_df.sparkSession
     try:
         with Timer("process data"):
-            processed_df = language_identify_df(spark_df, classifier)
+            processed_df = language_identify_df(spark_df, classifier).cache()
 
         with Timer("Save data"):
             save_parquet_data(processed_df, f"{file_system_prefix}{language_identify_output_dir}")
