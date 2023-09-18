@@ -1,3 +1,4 @@
+import os
 import time
 import json
 import sigopt
@@ -119,8 +120,7 @@ class SigoptSearchEngine(BaseSearchEngine):
                 self.best_struct[name][i] = self.search_space[f"{name}_{i}"][0]+best_assignments[f"{name}_{i}"]*int((self.search_space[f"{name}_{i}"][-1]-self.search_space[f"{name}_{i}"][0])/(len(self.search_space[f"{name}_{i}"])-1))
         self.best_struct = json.dumps(self.best_struct)
    
-        with open("best_model_structure.txt", 'w') as f:
-            f.write(str(self.best_struct))
+        return str(self.best_struct)
 
     '''
     Unified API to get best searched structure

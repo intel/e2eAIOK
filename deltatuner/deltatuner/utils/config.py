@@ -7,5 +7,5 @@ class DeltaTunerType(str, enum.Enum):
 
 TRANSFORMERS_MODELS_TO_SSF_TARGET_MODULES_MAPPING = {
     "llama": ["q_proj", "v_proj"],
-    "mpt": ["Wqkv"]
+    "mpt": ["Wqkv","out_proj","up_proj","down_proj"]
 }

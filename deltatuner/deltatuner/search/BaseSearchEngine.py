@@ -10,13 +10,15 @@ from ..scores import do_compute_nas_score
 
  
 class BaseSearchEngine(ABC):
-    def __init__(self, params=None, super_net=None, search_space=None,peft_type=None):
+    def __init__(self, params=None, super_net=None, search_space=None, peft_type=None):
         super().__init__()
         self.super_net = super_net
         self.search_space = search_space
         self.params = params
         self.peft_type=peft_type
-        self.tokenizer =  self.params.tokenizer if self.params.tokenizer else AutoTokenizer.from_pretrained(self.params.model_id)
+        if self.params.tokenizer is None:
+            raise RuntimeError("Please specify the right tokenizer in the deltatuner algo!")
+        self.tokenizer =  self.params.tokenizer
         logging.basicConfig(level=logging.INFO,
                 format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         self.logger = logging.getLogger('DENAS')
@@ -41,9 +43,9 @@ class BaseSearchEngine(ABC):
     def cand_islegal_latency(self, cand):
         if hasattr(self.params, "budget_latency_max") or hasattr(self.params, "budget_latency_min"):
             latency = self.get_latency(cand)
-            if hasattr(self.params, "budget_latency_max") and self.params.budget_latency_max < latency:
+            if hasattr(self.params, "budget_latency_max") and self.params.budget_latency_max is not None and self.params.budget_latency_max < latency:
                 return False
-            if hasattr(self.params, "budget_latency_min") and self.params.budget_latency_min > latency:
+            if hasattr(self.params, "budget_latency_min") and self.params.budget_latency_min is not None and self.params.budget_latency_min > latency:
                 return False
         return True
 

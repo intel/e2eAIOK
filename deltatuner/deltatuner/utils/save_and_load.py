@@ -32,7 +32,7 @@ def get_deltatuner_model_state_dict(model, state_dict=None, adapter_name="defaul
     
     if config.peft_type == DeltaTunerType.SSF:
         bias = config.bias
-        if bias == "none":
+        if bias is None or bias == "none":
             to_return = {k: state_dict[k] for k in state_dict if "ssf_" in k}
         elif bias == "all":
             to_return = {k: state_dict[k] for k in state_dict if "ssf_" in k or "bias" in k}

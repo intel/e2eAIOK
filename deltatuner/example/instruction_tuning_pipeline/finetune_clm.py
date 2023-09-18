@@ -36,8 +36,7 @@ from peft import (
     PeftModel
 )
 from peft.tuners.adaption_prompt import AdaptionPromptConfig
-from deltatuner import deltatuner, denas_config, SSFConfig, DeltaTunerModel
-from deltatuner.search.utils import network_latency
+from deltatuner import deltatuner, SSFConfig, DeltaTunerModel, DeltaTunerArguments
 from transformers import (
     AutoConfig,
     AutoModelForCausalLM,
@@ -237,10 +236,6 @@ class FinetuneArguments:
         default_factory=lambda: None,
         metadata={"help": "Target modules for the LoRA method."},
     )
-    ssf_target_modules: List[str] = field(
-        default_factory=lambda: None,
-        metadata={"help": "Target modules for the SSF method."},
-    )
     adapter_layers: int = field(
         default=30,
         metadata={"help": "adapter layer number in the LLaMA-adapter."},
@@ -275,13 +270,9 @@ class FinetuneArguments:
     delta: Optional[str] = field(
         default=None,
         metadata={
-            "help": """if True/specific string, then use deltatuner, if False/None/Empty String, then not use deltatuner,
-            For specific string, use corresponding algorightm in deltatuner""",
+            "help": ("whether to use the deltatuner optimization"),
+            "choices": ["auto", "lora", "ssf"]
         },
-    )
-    denas: str = field(
-        default=None,
-        metadata={"help": "the best deltatuner model structure file to the model"}
     )
     profile: bool = field(
         default=False,
@@ -340,18 +331,18 @@ def main():
     # We now keep distinct sets of args, for a cleaner separation of concerns.
     if not is_optimum_habana_available():
         parser = HfArgumentParser(
-            (ModelArguments, DataArguments, TrainingArguments, FinetuneArguments)
+            (ModelArguments, DataArguments, TrainingArguments, FinetuneArguments, DeltaTunerArguments)
         )
     else:
         from optimum.habana import GaudiTrainingArguments
 
         parser = HfArgumentParser(
-            (ModelArguments, DataArguments, GaudiTrainingArguments, FinetuneArguments)
+            (ModelArguments, DataArguments, GaudiTrainingArguments, FinetuneArguments, DeltaTunerArguments)
         )
     if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
         # If we pass only one argument to the script and it's the path to a json file,
         # let's parse it to get our arguments.
-        model_args, data_args, training_args, finetune_args = parser.parse_json_file(
+        model_args, data_args, training_args, finetune_args, deltatuner_args = parser.parse_json_file(
             json_file=os.path.abspath(sys.argv[1])
         )
     else:
@@ -360,6 +351,7 @@ def main():
             data_args,
             training_args,
             finetune_args,
+            deltatuner_args
         ) = parser.parse_args_into_dataclasses()
 
     print(f'finetune_args is \n {finetune_args}')
@@ -709,26 +701,17 @@ def main():
         model.print_trainable_parameters()
 
     if finetune_args.delta:
-        if finetune_args.delta == "ssf":
-            peft_config = SSFConfig(
-                target_modules=finetune_args.ssf_target_modules,
+        if finetune_args.resume_peft != "":
+            if finetune_args.delta == "ssf":
+                peft_config = SSFConfig(target_modules=deltatuner_args.ssf_target_modules,
                 bias="none",
                 task_type="CAUSAL_LM",
-            )
-        denas_conf = None
-        if finetune_args.denas:
-            denas_conf = denas_config.DeNASConfig()
-            denas_conf.model_id = model_args.model_name_or_path
-            denas_conf.best_model_structure = finetune_args.denas
-            denas_conf.max_param_limits = sum(param.numel() for param in model.parameters() if param.requires_grad) / 10.**6
-            denas_conf.budget_latency_max = network_latency(model, tokenizer, batch_size=denas_conf.batch_size)
-            denas_conf.tokenizer = tokenizer
-            if finetune_args.resume_peft != "":
-                model = DeltaTunerModel.from_pretrained(model, finetune_args.resume_peft, config=peft_config, denas_config=denas_conf)
-            else:
-                model = deltatuner.optimize(model=model, peft_config=peft_config, denas_config=denas_conf)
-            logger.info("***deltatuner optimized model parameter***")
-            model.print_trainable_parameters()
+                )
+            model = DeltaTunerModel.from_pretrained(model, finetune_args.resume_peft, config=peft_config, denas_config=deltatuner_args)
+        else:
+            model = deltatuner.optimize(model, tokenizer, algo=finetune_args.delta, deltatuning_args=deltatuner_args)
+        logger.info("***deltatuner optimized model parameter***")
+        model.print_trainable_parameters()
          
     if finetune_args.debugs:
         if training_args.do_train:

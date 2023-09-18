@@ -255,7 +255,7 @@ class DeltaSSFModel(torch.nn.Module):
             # _freeze_adapter(self.model, self.adapter_name)
              for n, p in self.model.named_parameters():
                 p.requires_grad = False
-        # return self.model
+        return self
 
     def merge_adapter(self):
         """
@@ -340,7 +340,7 @@ def mark_only_ssf_as_trainable(model: nn.Module, bias: str = "none") -> None:
     for n, p in model.named_parameters():
         if "ssf_" not in n:
             p.requires_grad = False
-    if bias == "none":
+    if bias is None or bias == "none":
         return
     elif bias == "all":
         for n, p in model.named_parameters():

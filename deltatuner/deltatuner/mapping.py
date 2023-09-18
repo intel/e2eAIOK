@@ -11,7 +11,6 @@ MODEL_TYPE_TO_DELTATUNER_MODEL_MAPPING = {
     "CAUSAL_LM": DelatunerModelForCausalLM
 }
 
-
 def get_delta_config(config_dict: Dict[str, Any]):
     """
     Returns a Delta Tuner config object from a dictionary.

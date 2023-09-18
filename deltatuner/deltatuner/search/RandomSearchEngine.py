@@ -1,3 +1,4 @@
+import os
 import heapq
 
 from .BaseSearchEngine import BaseSearchEngine
@@ -32,8 +33,7 @@ class RandomSearchEngine(BaseSearchEngine):
             self.logger.info('epoch = {} structure = {} nas_score = {} params = {}'.format(epoch, cand, self.vis_dict[cand]['score'], self.vis_dict[cand]['params']))
             heapq.heappush(self.candidates, (nas_score, cand))
             self.update_population_pool()
-        with open("best_model_structure.txt", 'w') as f:
-            f.write(str(heapq.nlargest(1, self.candidates)[0][1]))
+        return str(heapq.nlargest(1, self.candidates)[0][1])
 
     '''
     Unified API to get best searched structure

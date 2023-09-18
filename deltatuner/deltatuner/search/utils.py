@@ -45,22 +45,13 @@ def parse_config(conf_file):
     return settings
 
 def network_latency(model, tokenizer, batch_size=1, max_seq_length=32, infer_cnt=3.):
-    batch, tok = input_constructor(batch_size, max_seq_length, tokenizer)
+    batch, _ = input_constructor(batch_size, max_seq_length, tokenizer)
     aver_time = 0.
     model.eval()
-    generation_config = GenerationConfig(
-        temperature=0.1,
-        top_p=0.75,
-        top_k=40,
-        num_beams=1,
-        max_new_tokens=max_seq_length,
-        do_sample=True,
-        pad_token_id = tok.eos_token_id
-    )
     for i in range(int(infer_cnt)):
         start = time.time()
         with torch.no_grad():
-            _ = model.generate(**batch, generation_config=generation_config)
+            _ = model(**batch)
         end = time.time()
         sep = 1000 * (end - start)
         if i == 0:
@@ -70,18 +61,18 @@ def network_latency(model, tokenizer, batch_size=1, max_seq_length=32, infer_cnt
     return aver_time
 
 def input_constructor(batch_size, resolution, tokenizer):
-    tokenizer.pad_token = tokenizer.eos_token
-    prompt = ["Once upon a time,",
-              "It was in the 11th century,",
-              "In his lifetime and immediately",
-              "However, as Hung notes,",
-              "In 2000 Boulter had a guest",
-              "a noted politician and poet",
-              "He had an elder brother,",
-              "which he was attracted after",
+    #tokenizer.pad_token = tokenizer.eos_token
+    prompt = ["Once upon a time",
+              "It was in the",
+              "In his lifetime and",
+              "the close links that",
+              "In 2000 Boulter had",
+              "a noted politician and",
+              "He had an elder",
+              "which he was attracted",
     ]
     prompt = prompt[:batch_size]
-    inputs = tokenizer(prompt, return_tensors="pt", padding=True)
+    inputs = tokenizer(prompt, return_tensors="pt", truncation=True)
     return inputs, tokenizer
 
 def network_is_legal(cand, vis_dict, params, supernet):

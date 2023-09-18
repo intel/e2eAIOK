@@ -3,6 +3,7 @@ import torch
 import json
 import inspect
 import random
+import logging
 import numpy as np
 from typing import Any, Optional, Union
 from peft.utils import (
@@ -12,8 +13,8 @@ from peft.utils import (
     WEIGHTS_NAME,
     SAFETENSORS_WEIGHTS_NAME
 )
-from deltatuner.utils import DeltaTunerType
-from transformers import PreTrainedModel
+
+from transformers import PreTrainedModel, AutoTokenizer
 from peft import PeftModel, PeftConfig, LoraConfig, AdaLoraConfig
 from peft.utils import PeftType, PromptLearningConfig, WEIGHTS_NAME, SAFETENSORS_WEIGHTS_NAME, hub_file_exists, set_peft_model_state_dict
 from accelerate import dispatch_model, infer_auto_device_map
@@ -22,10 +23,12 @@ from accelerate.hooks import AlignDevicesHook, remove_hook_from_submodules, add_
 from huggingface_hub import hf_hub_download
 from huggingface_hub.utils import EntryNotFoundError
 from safetensors.torch import load_file as safe_load_file
+from safetensors.torch import save_file as safe_save_file
 
-from .denas_config import DeNASConfig
+from .deltatuner_args import DeltaTunerArguments
 from .tuner import DeltaLoraModel, DeltaLoraSearchSpace, DeltaSSFModel, DeltaSSFSearchSpace
 from .search import SearchEngineFactory, Timer
+from .search.utils import network_latency
 from .utils import DeltaTunerType, get_deltatuner_model_state_dict, set_deltatuner_model_state_dict
 from typing import Any, Dict, List, Optional, Union
 
@@ -39,21 +42,30 @@ DELTATUNNER_TO_SEARCH_SPACE = {
      DeltaTunerType.SSF: DeltaSSFSearchSpace
 }
 
+MODEL_TYPE_TO_LAYER_NAME = {
+    "mpt": "n_layers"
+}
+
 def setup_seed(seed):
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
 
 class DeltaTunerModel(PeftModel, torch.nn.Module):
-    def __init__(self, model, peft_config: PeftConfig, adapter_name: str = "default", denas_config: DeNASConfig = None):
+    def __init__(self, model, tokenizer: AutoTokenizer, peft_config: PeftConfig, adapter_name: str = "default", denas_config: DeltaTunerArguments = None):
         torch.nn.Module.__init__(self)
         self.base_model = model
+        self.tokenizer = tokenizer
         self.config = getattr(self.base_model, "config", {"model_type": "custom"})
         self.modules_to_save = None
+        self.best_model_param = None
         self.peft_config = {}
         self.active_adapter = adapter_name
         self.peft_type = peft_config.peft_type
-        self.peft_config[adapter_name] = peft_config 
+        self.peft_config[adapter_name] = peft_config
+        logging.basicConfig(level=logging.INFO,
+                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        self.logger = logging.getLogger('deltatuner')
         if not isinstance(model, PeftModel):
             self.base_model = DELTATUNNER_TO_MODEL_MAPPING[peft_config.peft_type](
                 self.base_model, self.peft_config, adapter_name
@@ -70,33 +82,36 @@ class DeltaTunerModel(PeftModel, torch.nn.Module):
                 self.base_model.config.pretraining_tp = 1
 
         self.denas_config = denas_config
-        if self.denas_config is not None:
-            if "mpt" in self.config.model_type:
-                denas_config.layer_name = "n_layers"
-            search_space, search_space_name = DELTATUNNER_TO_SEARCH_SPACE[peft_config.peft_type].generate_search_space(model, denas_config)
-            supernet_config =  DELTATUNNER_TO_SEARCH_SPACE[peft_config.peft_type].generate_supernet(model, denas_config, search_space)
+        if self.denas_config.denas:
+            self._init_denas_params_()
+            search_space, search_space_name = DELTATUNNER_TO_SEARCH_SPACE[peft_config.peft_type].generate_search_space(model, self.denas_config)
+            supernet_config =  DELTATUNNER_TO_SEARCH_SPACE[peft_config.peft_type].generate_supernet(model, self.denas_config, search_space)
             if peft_config.peft_type in (DeltaTunerType.SSF):
                 super_net = self.base_model
             else:
                 super_net = DELTATUNNER_TO_MODEL_MAPPING[peft_config.peft_type](model, self.peft_config, adapter_name, supernet_config)
-            if denas_config.best_model_structure and os.path.exists(denas_config.best_model_structure):
-                with open(denas_config.best_model_structure, "r+") as best_model_param_file:
+            if self.denas_config.best_model_structure and os.path.exists(self.denas_config.best_model_structure):
+                with open(self.denas_config.best_model_structure, "r+") as best_model_param_file:
                     self.best_model_param = json.loads(best_model_param_file.readline().strip())
             else:
-                self.denas_config.search_space_name = denas_config.search_space_name = search_space_name
-                self.best_model_param = json.loads(self.search(denas_config, super_net, search_space))
-            if peft_config.peft_type in (DeltaTunerType.SSF):
-                super_net.set_sample_config(self.best_model_param)
-            else:
-                self.base_model = super_net.set_sample_config(self.best_model_param)
+                self.denas_config.search_space_name = search_space_name
+                self.best_model_param = json.loads(self.search(self.denas_config, super_net, search_space))
+            self.base_model = super_net.set_sample_config(self.best_model_param)
+
+    def _init_denas_params_(self):
+        if self.config.model_type in MODEL_TYPE_TO_LAYER_NAME:
+            self.denas_config.layer_name = MODEL_TYPE_TO_LAYER_NAME[self.config.model_type]
+        self.denas_config.model_id = self.base_model.config._name_or_path
+        self.denas_config.tokenizer = self.tokenizer
+        self.denas_config.max_param_limits = sum(param.numel() for param in self.base_model.parameters() if param.requires_grad) / 10.**6 if self.denas_config.max_param_limits is None else self.denas_config.max_param_limits
+        self.denas_config.budget_latency_max = network_latency(self.base_model, self.tokenizer, batch_size=self.denas_config.batch_size) if self.denas_config.budget_latency_max is not None else self.denas_config.budget_latency_max
 
     def search(self, denas_config, super_net, search_space):
         setup_seed(denas_config.random_seed)
         with Timer("DE-NAS search best model"):
             searcher = SearchEngineFactory.create_search_engine(params=denas_config, super_net=super_net, search_space=search_space, peft_type=self.peft_type)
-            searcher.search()
-        best_structure = searcher.get_best_structures()
-        print(f"DE-NAS completed, best structure is {best_structure}")
+            best_structure=searcher.search()
+        self.logger.info(f"DE-NAS completed, best structure is {best_structure}")
         return best_structure
 
     def save_pretrained(
@@ -185,6 +200,10 @@ class DeltaTunerModel(PeftModel, torch.nn.Module):
 
             peft_config.save_pretrained(output_dir, auto_mapping_dict=auto_mapping_dict)
             peft_config.inference_mode = inference_mode
+
+        if self.best_model_param is not None:
+            with open(os.path.join(save_directory, "best_model_structure.txt"), "w+") as fout:
+                fout.write(json.dumps(self.best_model_param))
 
     @classmethod
     def from_pretrained(
@@ -357,8 +376,8 @@ class DeltaTunerModel(PeftModel, torch.nn.Module):
         return load_result
 
 class DelatunerModelForCausalLM(DeltaTunerModel):
-    def __init__(self, model: PeftModel, peft_config: PeftConfig, adapter_name: str = "default", denas_config: DeNASConfig = None):
-        super().__init__(model, peft_config, adapter_name, denas_config)
+    def __init__(self, model: PeftModel, tokenizer: AutoTokenizer, peft_config: PeftConfig, adapter_name: str = "default", denas_config: DeltaTunerArguments = None):
+        super().__init__(model, tokenizer, peft_config, adapter_name, denas_config)
         self.base_model_prepare_inputs_for_generation = self.base_model.prepare_inputs_for_generation
     
     def forward(
