@@ -43,3 +43,7 @@ def clean_str(s):
     s = s.lower().translate(str.maketrans("", "", string.punctuation))
     s = re.sub(r"\s+", " ", s.strip())
     return s
+
+
+def get_llmutils_home():
+    return os.path.abspath(os.path.dirname(__file__))
