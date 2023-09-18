@@ -95,7 +95,7 @@ if __name__ == "__main__":
 
     from pyrecdp.primitives.spark_data_processor.utils import create_spark_context
 
-    spark, _ = create_spark_context(spark_mode=args.spark_mode,
+    spark, spark_close_caller = create_spark_context(spark_mode=args.spark_mode,
                                     spark_master=args.spark_master,
                                     num_instances=args.num_instances)
 
@@ -103,4 +103,5 @@ if __name__ == "__main__":
     output_dataset = pii_remove(input_dataset, args.text_column)
     output_dataset.write.save(path=args.output_path, format=args.output_format, mode="overwrite")
 
+    spark_close_caller(spark)
     logger.info(f" ===== Dataset saved successfully =====")
