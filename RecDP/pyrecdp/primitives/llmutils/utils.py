@@ -1,4 +1,4 @@
-import os
+import os, sys
 from multiprocessing import Pool, cpu_count
 from math import ceil
 import subprocess
@@ -15,6 +15,8 @@ from pyspark.sql.types import StructType,StructField, StringType, IntegerType, A
 import pyspark.sql.functions as F
 from pyspark.sql.window import Window
 from pyspark.sql import Row
+import subprocess
+import time
 
 def convert_listoflist_to_spk(components, spark):
     # convert components to spark df
@@ -123,8 +125,6 @@ def clean_str(s):
     s = s.lower().translate(str.maketrans("", "", string.punctuation))
     s = re.sub(r"\s+", " ", s.strip())
     return s
-
-
   
 def get_llmutils_home():
     return os.path.abspath(os.path.dirname(__file__))
@@ -137,3 +137,35 @@ def download_file(remote_path, target_path):
         except urllib.error.HTTPError as e:
             print("Failed to download the file. Please check the url and network.")
             raise e
+    
+class MultiProcessManager:
+    def wait_and_check(self, pool):
+        for proc_id, (process, cmd) in pool.items():
+            std_out, std_err = process.communicate()
+            rc = process.wait()
+            if rc != 0:
+                file_name = f"generate_hash_index-proc-{proc_id}.error.log"
+                print(f"Task failed, please check {file_name} for detail information")
+                with open(file_name, "a") as f:
+                    f.write(f"=== {time.ctime()} {' '.join(cmd)} failed. ===\n")
+                    f.write(std_err.decode(sys.getfilesystemencoding()))
+                    f.write("\n")
+                
+                
+    def launch_cmdline_mp(self, args, mp, script_name):
+        pool = {}
+        inflight = 0
+        for proc_id, arg in tqdm(enumerate(args), total=len(args), desc=script_name):
+            proc_id, x_list = arg
+            cmd = ["python", script_name]
+            cmd += x_list
+            inflight += 1
+
+            pool[proc_id] = (subprocess.Popen(cmd , stdout=subprocess.PIPE, stderr=subprocess.PIPE), cmd)
+            
+            if inflight >= mp:
+                self.wait_and_check(pool)
+                inflight = 0
+                pool = {}
+            
+        self.wait_and_check(pool)

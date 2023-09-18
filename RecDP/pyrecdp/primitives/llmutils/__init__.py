@@ -1,5 +1,7 @@
-__all__ = ["utils", "near_dedup", "shrink_jsonl", "text_to_jsonl", "classify", "decontaminate", "filter", "language_identify", "pii_remove", "profanity_filter"]
+__all__ = ["utils", "near_dedup", "shrink_jsonl", "text_to_jsonl", "classify", "decontaminate", "filter", "language_identify", "pii_remove", "profanity_filter", "global_hash"]
+
 from .near_dedup import near_dedup, near_dedup_spk
+from .global_hash import global_hash
 from .shrink_jsonl import shrink_document_MP
 from .text_to_jsonl import text_to_jsonl_MP
 from .pii_remove import pii_remove

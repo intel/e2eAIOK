@@ -14,9 +14,10 @@ except:
 
 
 from pyrecdp.primitives.llmutils import near_dedup, near_dedup_spk, shrink_document_MP, text_to_jsonl_MP, pii_remove, \
-    filter_by_blocklist, language_identify, language_identify_spark, Classifier, profanity_filter, filter_by_bad_words, filter_by_length
+    filter_by_blocklist, language_identify, language_identify_spark, Classifier, profanity_filter, filter_by_bad_words, filter_by_length, global_hash
 
 from pyrecdp.primitives.llmutils.utils import get_target_file_list
+
 
 cur_dir = str(Path(__file__).parent.resolve())
 
@@ -60,6 +61,26 @@ class Test_LLMUtils(unittest.TestCase):
         ret_df = near_dedup_spk(spark_df, ngram_size, num_perm, bands, ranges)
         print("output is")
         ret_df.show()
+        
+    def test_global_hash_jsonl(self):
+        source = 'PILE'
+        data_files = ["NIH_sample.jsonl"]
+        in_type = 'jsonl'
+        n_parallel = 4
+        out_dir = "tests/data/llm_data/global_hash_out/"
+        is_norm = True
+        data_dir = self.data_dir
+        global_hash(source, data_files, data_dir, in_type, n_parallel, out_dir, is_norm)
+        
+    def test_global_hash_parquet(self):
+        source = 'PILE'
+        data_files = ["NIH_sample.parquet"]
+        in_type = 'parquet'
+        n_parallel = 4
+        out_dir = "tests/data/llm_data/global_hash_out/"
+        is_norm = True
+        data_dir = self.data_dir
+        global_hash(source, data_files, data_dir, in_type, n_parallel, out_dir, is_norm)
 
     def test_shrink_jsonl(self):
         data_dir = self.data_dir
