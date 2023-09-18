@@ -1,16 +1,88 @@
 import os
 from multiprocessing import Pool, cpu_count
 from math import ceil
+import subprocess
 from tqdm import tqdm
 import ftfy
 import string
 import re
+import wget
+import urllib.error
+
+
+from pyspark.sql.functions import input_file_name
+from pyspark.sql.types import StructType,StructField, StringType, IntegerType, ArrayType
+import pyspark.sql.functions as F
+from pyspark.sql.window import Window
+from pyspark.sql import Row
+
+def convert_listoflist_to_spk(components, spark):
+    # convert components to spark df
+    R = Row('component')
+    components_sdf = spark.createDataFrame([R(c) for c in components])
+    return components_sdf
+
+def read_json(data_files, spark, rowid = False):
+    schema = StructType([ 
+        StructField("text",StringType(),True), 
+        StructField("meta",StringType(),True)
+      ])
+
+    first = True
+    for filename in data_files:
+        print(filename)
+        df = spark.read.text(filename)
+        basename = os.path.basename(filename)
+        
+        if rowid:
+            df = df.withColumn("__id__", F.monotonically_increasing_id())
+            df_rid = df.select('__id__').withColumn("rid", F.row_number().over(Window.orderBy(F.col("__id__"))))
+            df_rid = df_rid.withColumn("filename", F.lit(basename))
+            df_rid = df_rid.withColumn("filename_docid", F.concat_ws("@", "filename", "rid"))
+            df = df.join(df_rid.select("__id__", "filename_docid"), "__id__", "left")
+        else:
+            df_rid = df.withColumn("__id__", F.monotonically_increasing_id())
+            df_rid = df_rid.withColumn("filename", F.lit(basename))
+            df_rid = df_rid.withColumn("filename_docid", F.concat_ws("@", "filename", "__id__"))
+            df = df_rid.select('value', 'filename_docid')
+        
+        df = df.withColumn('jsonData', F.from_json(F.col('value'), schema)).select("jsonData.*", "filename_docid")
+        df = df.select("filename_docid", "text", "meta")
+
+        if first:
+            first = False
+            ret_df = df
+        else:
+            ret_df = ret_df.union(df)
+    return ret_df
+
+def global_unique_id(df, col_name):
+    ret_df = df
+    if col_name in df.schema.names:
+        ret_df = ret_df.drop(col_name)
+    ret_df = ret_df.select(F.concat_ws("@", F.lit("global_id"), F.monotonically_increasing_id()).alias(col_name), "*")
+    return ret_df
+
 
 def get_data_files(data_dir):
     files = sorted(os.listdir(data_dir))
     files = list(filter(lambda file_: '.jsonl' in file_, files))
     files = [os.path.join(data_dir, i) for i in files]
     return files
+
+def get_target_file_list(data_dir, file_type):
+    os.system('pwd')
+    cmd = ["find", data_dir, "-name", f"*.{file_type}"]
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    stdout, stderr = proc.communicate()
+    exitcode = proc.returncode
+    if exitcode != 0:
+        return []
+    else:
+        ret = stdout.decode("utf-8").split('\n')[:-1]
+        ret = [i.replace(data_dir, "") for i in ret]
+        ret = [i[1:] if i[0] == '/' else i for i in ret]
+        return ret
 
 def get_nchunks_and_nproc(n_tasks, n_part = -1):
     n_proc = cpu_count()
@@ -45,5 +117,15 @@ def clean_str(s):
     return s
 
 
+  
 def get_llmutils_home():
     return os.path.abspath(os.path.dirname(__file__))
+
+ 
+def download_file(remote_path, target_path):
+        os.makedirs(os.path.dirname(target_path), exist_ok=True)
+        try:
+            wget.download(remote_path, out=target_path)
+        except urllib.error.HTTPError as e:
+            print("Failed to download the file. Please check the url and network.")
+            raise e
