@@ -15,15 +15,13 @@ from typing import (
     Tuple,
 )
 
-import pyspark.sql.functions as F
-from pyspark.sql.types import StringType
+from huggingface_hub import hf_hub_download
 from pyspark.sql.functions import udf
 
 from pyrecdp.core.utils import Timer
 from pyrecdp.primitives.spark_data_processor.data_processor import DataProcessor as SparkDataProcessor
 from pyrecdp.primitives.llmutils.utils import *
 
-fasttext_model_url = "https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin"
 
 class Transformer:
     parallelisable: bool = True
@@ -262,7 +260,16 @@ def save_parquet_data(df, save_path):
     df.write.mode("overwrite").parquet(save_path)
 
 
-def language_identify(data_dir, data_files, classifier, language_identify_output_dir, file_system_prefix=""):
+def construct_classifier(language_identify_field, language_identify_output_field):
+    model_path = hf_hub_download(repo_id="facebook/fasttext-language-identification", filename="model.bin")
+    model = Path(model_path)
+    return Classifier(model, language_identify_field, language_identify_output_field)
+
+
+def language_identify(data_dir, data_files, language_identify_field,
+                      language_identify_output_field, language_identify_output_dir, file_system_prefix=""):
+
+    classifier = construct_classifier(language_identify_field, language_identify_output_field)
     rdp = SparkDataProcessor()
     spark = rdp.spark
     try:
@@ -279,7 +286,7 @@ def language_identify(data_dir, data_files, classifier, language_identify_output
 
         with Timer("Save data"):
             for data_file, df in df_dict.items():
-                save_path = f"{file_system_prefix}{os.path.join(language_identify_output_dir, data_file)}"
+                save_path = f"{file_system_prefix}{os.path.join(language_identify_output_dir, data_file.split('.')[0])}"
                 save_parquet_data(df, save_path)
 
         total_length = 0
@@ -295,7 +302,10 @@ def language_identify(data_dir, data_files, classifier, language_identify_output
         print("Failed", e)
 
 
-def language_identify_spark(spark_df, classifier, language_identify_output_dir, file_system_prefix=""):
+def language_identify_spark(spark_df, language_identify_field, language_identify_output_field,
+                            language_identify_output_dir, file_system_prefix=""):
+
+    classifier = construct_classifier(language_identify_field, language_identify_output_field)
     spark = spark_df.sparkSession
     try:
         with Timer("process data"):
@@ -317,14 +327,12 @@ def language_identify_spark(spark_df, classifier, language_identify_output_dir, 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_dir", dest="data_dir", type=str)
-    parser.add_argument("--fasttext_model_dir", dest="fasttext_model_dir", type=str, default="/tmp/lid.bin")
     parser.add_argument("--language_identify_output_dir", dest="language_identify_output_dir", type=str, default="")
     parser.add_argument("--language_identify_field", dest="language_identify_field", type=str, default="text")
     parser.add_argument("--language_identify_output_field", dest="language_identify_output_field", type=str, default="lang")
     parser.add_argument("--file_system_prefix", dest="file_system_prefix", type=str, default="")
     args = parser.parse_args()
     data_dir = args.data_dir
-    fasttext_model_dir = args.fasttext_model_dir
     language_identify_output_dir = os.path.join(data_dir, "language_identify") \
         if args.language_identify_output_dir == "" else args.language_identify_output_dir
     language_identify_field = args.language_identify_field
@@ -332,11 +340,7 @@ if __name__ == "__main__":
     file_system_prefix = args.file_system_prefix
 
     data_files = get_target_file_list(data_dir, "jsonl", file_system_prefix)
-    model = Path(fasttext_model_dir)
-    if not model.exists():
-        download_file(fasttext_model_url, fasttext_model_dir)
-
-    classifier = Classifier(model, language_identify_field, language_identify_output_field)
 
     with Timer(f"Generate language_identify data for {data_dir}"):
-        language_identify(data_dir, data_files, classifier, language_identify_output_dir, file_system_prefix)
+        language_identify(data_dir, data_files, language_identify_field,
+                          language_identify_output_field, language_identify_output_dir, file_system_prefix)

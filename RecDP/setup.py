@@ -70,4 +70,5 @@ setuptools.setup(
         "phonenumbers",
         "fasttext==0.9.2",
         "wget==3.2",
+        "huggingface-hub==0.16.4",
         ])
