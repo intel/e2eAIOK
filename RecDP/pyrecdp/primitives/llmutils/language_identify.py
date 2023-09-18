@@ -305,7 +305,6 @@ def language_identify_spark(spark_df, classifier, language_identify_output_dir, 
             save_parquet_data(processed_df, f"{file_system_prefix}{language_identify_output_dir}")
 
         total_length = processed_df.count()
-
         print(f"Completed!!")
         print(f"    total identify the language for {total_length} documents")
         print(f"    All the processed data are saving under the folder: {language_identify_output_dir}")
