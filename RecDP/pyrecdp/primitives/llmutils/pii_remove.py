@@ -93,15 +93,11 @@ if __name__ == "__main__":
     args = getArgs()
     logger.info(f"** The job is running with the following arguments: **\n{args}\n **** ")
 
-    from pyrecdp.primitives.spark_data_processor.utils import create_spark_context
+    from pyrecdp.core import SparkDataProcessor
 
-    spark, spark_close_caller = create_spark_context(spark_mode=args.spark_mode,
-                                    spark_master=args.spark_master,
-                                    num_instances=args.num_instances)
-
+    spark = SparkDataProcessor().spark
     input_dataset = spark.read.load(path=args.input_path, format=args.input_format)
     output_dataset = pii_remove(input_dataset, args.text_column)
     output_dataset.write.save(path=args.output_path, format=args.output_format, mode="overwrite")
 
-    spark_close_caller(spark)
     logger.info(f" ===== Dataset saved successfully =====")
