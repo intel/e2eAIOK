@@ -95,7 +95,8 @@ if __name__ == "__main__":
 
     from pyrecdp.core import SparkDataProcessor
 
-    spark = SparkDataProcessor().spark
+    sparkDP = SparkDataProcessor()
+    spark = sparkDP.spark
     input_dataset = spark.read.load(path=args.input_path, format=args.input_format)
     output_dataset = pii_remove(input_dataset, args.text_column)
     output_dataset.write.save(path=args.output_path, format=args.output_format, mode="overwrite")
