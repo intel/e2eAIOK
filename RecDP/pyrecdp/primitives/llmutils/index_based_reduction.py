@@ -12,7 +12,7 @@ def index_based_reduction_spk(src_df, dup_df, enable_hash):
         dest_df = src_df.join(dup_df, "doc_id", "anti")
     return dest_df
 
-def index_based_reduction(in_dir, dup, out_dir, enable_hash, spark = None):
+def index_based_reduction(in_dir, dup, out_dir, enable_hash = True, spark = None):
     if spark == None:
         rdp = SparkDataProcessor()
         spark=rdp.spark
@@ -38,13 +38,12 @@ def index_based_reduction(in_dir, dup, out_dir, enable_hash, spark = None):
     
     before_total = src_df.count()
     dest_df = index_based_reduction_spk(src_df, dup_df, enable_hash)
-    out_file = os.path.join(out_dir, "global_dedup_output")
-    dest_df.write.mode('overwrite').parquet(f"{out_file}")
-    dest_df = spark.read.parquet(f"{out_file}")
+    dest_df.write.mode('overwrite').parquet(f"{out_dir}")
+    dest_df = spark.read.parquet(f"{out_dir}")
     dest_total = dest_df.count()
     print(f"Before dedup num_docs is {before_total}")
     print(f"after dedup num_docs is {dest_total}")
-    print(f"file saved to {out_file}")
+    print(f"file saved to {out_dir}")
 
 
 if __name__ == "__main__":

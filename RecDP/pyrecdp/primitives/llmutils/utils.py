@@ -23,6 +23,38 @@ def convert_listoflist_to_spk(components, spark):
     components_sdf = spark.createDataFrame([R(c) for c in components])
     return components_sdf
 
+def read_parquet(data_files, spark, rowid = False):
+    first = True
+    dirname_list = [os.path.dirname(f) for f in data_files]
+    common = os.path.commonprefix(dirname_list)
+    for filename in data_files:
+        df = spark.read.parquet(filename)
+        basename = os.path.basename(filename)
+        prefix = os.path.dirname(filename)
+        basename = os.path.join(prefix.replace(common, ''), basename)
+        
+        if rowid:
+            df = df.withColumn("__id__", F.monotonically_increasing_id())
+            df_rid = df.select('__id__').withColumn("rid", F.row_number().over(Window.orderBy(F.col("__id__"))))
+            df_rid = df_rid.withColumn("filename", F.lit(basename))
+            df_rid = df_rid.withColumn("filename_docid", F.concat_ws("@", "filename", "rid"))
+            df = df.join(df_rid.select("__id__", "filename_docid"), "__id__", "left")
+        else:
+            df_rid = df.withColumn("__id__", F.monotonically_increasing_id())
+            df_rid = df_rid.withColumn("filename", F.lit(basename))
+            df_rid = df_rid.withColumn("filename_docid", F.concat_ws("@", "filename", "__id__"))
+            df = df_rid.select('value', 'filename_docid')
+        
+        df = df.select("filename_docid", "text", "meta")
+
+        if first:
+            first = False
+            ret_df = df
+        else:
+            ret_df = ret_df.union(df)
+    return ret_df
+
+
 def read_json(data_files, spark, rowid = False):
     schema = StructType([ 
         StructField("text",StringType(),True), 
@@ -30,10 +62,13 @@ def read_json(data_files, spark, rowid = False):
       ])
 
     first = True
+    dirname_list = [os.path.dirname(f) for f in data_files]
+    common = os.path.commonprefix(dirname_list)
     for filename in data_files:
-        print(filename)
         df = spark.read.text(filename)
         basename = os.path.basename(filename)
+        prefix = os.path.dirname(filename)
+        basename = os.path.join(prefix.replace(common, ''), basename).replace("/", "_")
         
         if rowid:
             df = df.withColumn("__id__", F.monotonically_increasing_id())
@@ -59,8 +94,11 @@ def read_json(data_files, spark, rowid = False):
 
 def global_unique_id(df, col_name):
     ret_df = df
+    if 'filename_docid' in df.schema.names:
+        ret_df = ret_df.withColumn(col_name, F.regexp_replace(F.col("filename_docid"), "/", "_"))
+        return ret_df
     if col_name in df.schema.names:
-        ret_df = ret_df.drop(col_name)
+        return ret_df
     ret_df = ret_df.select(F.concat_ws("@", F.lit("global_id"), F.monotonically_increasing_id()).alias(col_name), "*")
     return ret_df
 

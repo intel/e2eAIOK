@@ -125,7 +125,8 @@ def global_hash_spk(spark_df, source, is_norm):
     return ret_df
     
     
-def global_hash(source, files, data_dir, in_type, n_parallel, out_dir, is_norm):
+def global_hash(source, data_dir, in_type, n_parallel, out_dir, is_norm):
+    files = get_target_file_list(data_dir, in_type)
     if n_parallel != -1:
         n_proc = n_parallel
     else:

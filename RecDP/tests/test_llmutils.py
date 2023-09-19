@@ -3,6 +3,7 @@ import sys
 import pandas as pd
 from pathlib import Path
 import os
+from IPython.display import display
 
 pathlib = str(Path(__file__).parent.parent.resolve())
 print(pathlib)
@@ -11,21 +12,15 @@ try:
 except:
     print("Not detect system installed pyrecdp, using local one")
     sys.path.append(pathlib)
-
-
 from pyrecdp.primitives.llmutils import near_dedup, near_dedup_spk, shrink_document_MP, text_to_jsonl_MP, pii_remove, \
     filter_by_blocklist, language_identify, language_identify_spark, Classifier, profanity_filter, filter_by_bad_words, filter_by_length, global_hash, global_dedup, global_dedup_spk
 
 from pyrecdp.primitives.llmutils.utils import get_target_file_list
-
-
 cur_dir = str(Path(__file__).parent.resolve())
-
 
 class Test_LLMUtils(unittest.TestCase):
     def setUp(self):
         self.data_files = ["tests/data/llm_data/NIH_sample.jsonl"]
-        self.data_dir = "tests/data/llm_data/"
         self.dup_dir = "./near_dedup/"
         self.fasttext_model = "/home/vmagent/models/lid.bin"  # Only used for github CICD test.
 
@@ -64,33 +59,66 @@ class Test_LLMUtils(unittest.TestCase):
         
     def test_global_hash_jsonl(self):
         source = 'PILE'
-        data_files = ["NIH_sample.jsonl"]
         in_type = 'jsonl'
         n_parallel = 4
         out_dir = "tests/data/llm_data/global_hash_out/"
         is_norm = True
-        data_dir = self.data_dir
-        global_hash(source, data_files, data_dir, in_type, n_parallel, out_dir, is_norm)
+        data_dir = "tests/data/llm_data/PILE"
+        global_hash(source, data_dir, in_type, n_parallel, out_dir, is_norm)
+        pdf = pd.read_parquet(out_dir)
+        display(pdf)
         
     def test_global_hash_parquet(self):
         source = 'PILE'
-        data_files = ["NIH_sample.parquet"]
         in_type = 'parquet'
         n_parallel = 4
         out_dir = "tests/data/llm_data/global_hash_out/"
         is_norm = True
-        data_dir = self.data_dir
-        global_hash(source, data_files, data_dir, in_type, n_parallel, out_dir, is_norm)
+        data_dir = "tests/data/llm_data/PILE"
+        global_hash(source, data_dir, in_type, n_parallel, out_dir, is_norm)
+        pdf = pd.read_parquet(out_dir)
+        display(pdf)
+        
+    def test_get_hash_indexing(self):
+        from pyrecdp.primitives.llmutils.global_dedup import get_hash_indexing
+        out_dir = "tests/data/llm_data/global_hash_index"
+        data_dir = "tests/data/llm_data/global_hash_out/"
+        get_hash_indexing(data_dir, out_dir)
+        pdf = pd.read_parquet(out_dir)
+        display(pdf)
+        
+    def test_combine_hash_indexing(self):
+        from pyrecdp.primitives.llmutils.global_dedup import combine_hash_indexing
+        out_dir = "tests/data/llm_data/combined_hash_index/"
+        data_dir_dir = ["tests/data/llm_data/global_hash_index/"]
+        combine_hash_indexing(data_dir_dir, out_dir)
+        pdf = pd.read_parquet(out_dir)
+        display(pdf)
+        
+    def test_get_duplication_list(self):
+        from pyrecdp.primitives.llmutils.global_dedup import get_duplication_list
+        data_dir = "tests/data/llm_data/global_hash_index"
+        out_dir = "tests/data/llm_data/duplications_index"
+        get_duplication_list(data_dir, out_dir)
+        pdf = pd.read_parquet(out_dir)
+        display(pdf)
+        
+    def test_index_based_reduction(self):
+        from pyrecdp.primitives.llmutils import index_based_reduction
+        in_dir = "tests/data/llm_data/global_hash_out"
+        dup_dir = "tests/data/llm_data/duplications_index"
+        out_dir = "tests/data/llm_data/global_dedup/deduplicated"
+        index_based_reduction(in_dir, dup_dir, out_dir)
+        pdf = pd.read_parquet(out_dir)
+        display(pdf)
 
     def test_global_dedup(self):
-        with_hash = False
-        data_files = ["NIH_sample.jsonl"]
         in_type = 'jsonl'
-        n_parallel = 4
         out_dir = "tests/data/llm_data/global_dedup/"
-        is_norm = True
-        data_dir = self.data_dir
-        global_dedup(with_hash, data_files, data_dir, out_dir, in_type, n_parallel, is_norm)
+        data_dir = "tests/data/llm_data/PILE"
+        global_dedup(data_dir, out_dir, "PILE", in_type)
+        pdf = pd.read_parquet(out_dir + 'deduplicated')
+        display(pdf)
         
     def test_global_dedup_spark(self):
         from pyrecdp.core import SparkDataProcessor
@@ -159,6 +187,7 @@ class Test_LLMUtils(unittest.TestCase):
         data_dir = os.path.join(cur_dir, "data/llm_data")
         data_files = get_target_file_list(data_dir, "jsonl", "file://")
         fasttext_model_dir = self.fasttext_model
+
         language_identify_output_dir = os.path.join(data_dir, "language_identify")
         language_identify(data_dir, data_files, fasttext_model_dir, 'text', 'lang', language_identify_output_dir, "file://")
 
