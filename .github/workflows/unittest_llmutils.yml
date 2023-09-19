@@ -22,4 +22,4 @@ jobs:
 
     - name: RUN Unittests
       run: |
-        cd RecDP && docker run --rm --name unittest-pyrecdp-autofe-pandas --shm-size=100g --privileged --network host --device=/dev/dri -v `pwd`:/home/vmagent/app/ -w /home/vmagent/app/ pyrecdp-test-env /bin/bash -c "sh tests/cicd/bashrun_unittest_llmutils.sh"
+        cd RecDP && docker run --rm --name unittest-pyrecdp-autofe-pandas --shm-size=100g --privileged --network host --device=/dev/dri -v `pwd`:/home/vmagent/app/ -v `pwd`/../models:/home/vmagent/models/ -w /home/vmagent/app/ pyrecdp-test-env /bin/bash -c "sh tests/cicd/bashrun_unittest_llmutils.sh"

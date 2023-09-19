@@ -260,16 +260,19 @@ def save_parquet_data(df, save_path):
     df.write.mode("overwrite").parquet(save_path)
 
 
-def construct_classifier(language_identify_field, language_identify_output_field):
-    model_path = hf_hub_download(repo_id="facebook/fasttext-language-identification", filename="model.bin")
+def construct_classifier(fasttext_model_dir, language_identify_field, language_identify_output_field):
+    if os.path.isfile(fasttext_model_dir):
+        model_path = fasttext_model_dir
+    else:
+        model_path = hf_hub_download(repo_id="facebook/fasttext-language-identification", filename="model.bin")
     model = Path(model_path)
     return Classifier(model, language_identify_field, language_identify_output_field)
 
 
-def language_identify(data_dir, data_files, language_identify_field,
+def language_identify(data_dir, data_files, fasttext_model_dir, language_identify_field,
                       language_identify_output_field, language_identify_output_dir, file_system_prefix=""):
 
-    classifier = construct_classifier(language_identify_field, language_identify_output_field)
+    classifier = construct_classifier(fasttext_model_dir, language_identify_field, language_identify_output_field)
     rdp = SparkDataProcessor()
     spark = rdp.spark
     try:
@@ -302,10 +305,10 @@ def language_identify(data_dir, data_files, language_identify_field,
         print("Failed", e)
 
 
-def language_identify_spark(spark_df, language_identify_field, language_identify_output_field,
+def language_identify_spark(spark_df, fasttext_model_dir, language_identify_field, language_identify_output_field,
                             language_identify_output_dir, file_system_prefix=""):
 
-    classifier = construct_classifier(language_identify_field, language_identify_output_field)
+    classifier = construct_classifier(fasttext_model_dir, language_identify_field, language_identify_output_field)
     spark = spark_df.sparkSession
     try:
         with Timer("process data"):
@@ -327,12 +330,14 @@ def language_identify_spark(spark_df, language_identify_field, language_identify
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_dir", dest="data_dir", type=str)
+    parser.add_argument("--fasttext_model_dir", dest="fasttext_model_dir", type=str, default="")
     parser.add_argument("--language_identify_output_dir", dest="language_identify_output_dir", type=str, default="")
     parser.add_argument("--language_identify_field", dest="language_identify_field", type=str, default="text")
     parser.add_argument("--language_identify_output_field", dest="language_identify_output_field", type=str, default="lang")
     parser.add_argument("--file_system_prefix", dest="file_system_prefix", type=str, default="")
     args = parser.parse_args()
     data_dir = args.data_dir
+    fasttext_model_dir = args.fasttext_model_dir
     language_identify_output_dir = os.path.join(data_dir, "language_identify") \
         if args.language_identify_output_dir == "" else args.language_identify_output_dir
     language_identify_field = args.language_identify_field
@@ -342,5 +347,5 @@ if __name__ == "__main__":
     data_files = get_target_file_list(data_dir, "jsonl", file_system_prefix)
 
     with Timer(f"Generate language_identify data for {data_dir}"):
-        language_identify(data_dir, data_files, language_identify_field,
+        language_identify(data_dir, data_files, fasttext_model_dir, language_identify_field,
                           language_identify_output_field, language_identify_output_dir, file_system_prefix)
