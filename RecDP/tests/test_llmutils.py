@@ -13,14 +13,14 @@ except:
     print("Not detect system installed pyrecdp, using local one")
     sys.path.append(pathlib)
 from pyrecdp.primitives.llmutils import near_dedup, near_dedup_spk, shrink_document_MP, text_to_jsonl_MP, pii_remove, \
-    filter_by_blocklist, language_identify, language_identify_spark, Classifier, profanity_filter, filter_by_bad_words, filter_by_length, global_hash, global_dedup, global_dedup_spk
+    filter_by_blocklist, language_identify, language_identify_spark, Classifier, profanity_filter, filter_by_bad_words, filter_by_length, global_hash_mp, global_dedup, global_dedup_spk
 
 from pyrecdp.primitives.llmutils.utils import get_target_file_list
 cur_dir = str(Path(__file__).parent.resolve())
 
 class Test_LLMUtils(unittest.TestCase):
     def setUp(self):
-        self.data_files = ["tests/data/llm_data/NIH_sample.jsonl"]
+        self.data_files = ["tests/data/llm_data/PILE/NIH_sample.jsonl"]
         self.dup_dir = "./near_dedup/"
         self.fasttext_model = "/home/vmagent/models/lid.bin"  # Only used for github CICD test.
 
@@ -64,7 +64,7 @@ class Test_LLMUtils(unittest.TestCase):
         out_dir = "tests/data/llm_data/global_hash_out/"
         is_norm = True
         data_dir = "tests/data/llm_data/PILE"
-        global_hash(source, data_dir, in_type, n_parallel, out_dir, is_norm)
+        global_hash_mp(source, data_dir, in_type, n_parallel, out_dir, is_norm)
         pdf = pd.read_parquet(out_dir)
         display(pdf)
         
@@ -75,7 +75,7 @@ class Test_LLMUtils(unittest.TestCase):
         out_dir = "tests/data/llm_data/global_hash_out/"
         is_norm = True
         data_dir = "tests/data/llm_data/PILE"
-        global_hash(source, data_dir, in_type, n_parallel, out_dir, is_norm)
+        global_hash_mp(source, data_dir, in_type, n_parallel, out_dir, is_norm)
         pdf = pd.read_parquet(out_dir)
         display(pdf)
         

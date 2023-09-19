@@ -2,11 +2,12 @@ import argparse
 import os, sys
 from pyrecdp.core.utils import Timer
 import json
-from pyrecdp.primitives.llmutils.utils import clean_str, MultiProcessManager, get_target_file_list, get_nchunks_and_nproc, global_unique_id
+from pyrecdp.primitives.llmutils.utils import clean_str, MultiProcessManager, get_target_file_list, get_nchunks_and_nproc, global_unique_id, sub_task_per_folder, read_json, read_parquet
 import hashlib
 import pandas as pd
 import pyspark.sql.functions as F
 from pyspark.sql import types as T
+from pyrecdp.core import SparkDataProcessor
 
 def sha256str(s):
     h = hashlib.sha256()
@@ -86,8 +87,7 @@ def process_jsonl_to_parquet(in_file_name, out_file_name, base_file_name, source
     pdf['hash'] = pd.Series(hash_value_list)
     pdf['bytesize'] = pd.Series(size_list)
     pdf.to_parquet(out_file_name)
-                
-                # define actual work
+
 
 def generate_hash_index(proc_id, in_type, x_list, source, is_norm):
     for x in x_list:
@@ -123,9 +123,33 @@ def global_hash_spk(spark_df, source, is_norm):
         ret_df = ret_df.withColumn('hash', sha256str_udf(F.col(key)))
     ret_df = ret_df.withColumn("bytesize", bytesize_udf(F.col(key)))
     return ret_df
+
+def global_hash(source, data_dir, in_type, out_dir, is_norm):
+    sub_task_dir = {}
+    data_files = get_target_file_list(data_dir, in_type)
+    sub_task_dict = sub_task_per_folder(data_files)
     
     
-def global_hash(source, data_dir, in_type, n_parallel, out_dir, is_norm):
+    rdp = SparkDataProcessor()
+    spark=rdp.spark
+    post_global_hash_count = 0
+    for sub_task, data_files in sub_task_dict.items():
+        with Timer(f"processing {sub_task}"):
+            data_files = [os.path.join(data_dir, f) for f in data_files]
+            if in_type == 'parquet':
+                sub_task_dir[sub_task] = read_parquet(data_files, spark)
+            elif in_type == 'jsonl':
+                sub_task_dir[sub_task] = read_json(data_files, spark)
+            sub_task_dir[sub_task] = global_hash_spk(sub_task_dir[sub_task], source, is_norm).cache()
+            post_global_hash_count += sub_task_dir[sub_task].count()
+            
+            out_file = os.path.join(out_dir, sub_task)
+            sub_task_dir[sub_task].write.mode("overwrite").parquet(f"{out_file}")
+    print(f"data is written to {out_dir}")
+    print(f"  document count is {post_global_hash_count}")
+
+
+def global_hash_mp(source, data_dir, in_type, n_parallel, out_dir, is_norm):
     files = get_target_file_list(data_dir, in_type)
     if n_parallel != -1:
         n_proc = n_parallel
@@ -173,7 +197,7 @@ if __name__ == "__main__":
             sys.exit(0)
             
         with Timer(f"generate hash to {data_dir}"):
-            global_hash(source, files, data_dir, in_type, n_parallel, out_dir, is_norm)
+            global_hash_mp(source, files, data_dir, in_type, n_parallel, out_dir, is_norm)
         
     else:
         # sub process
@@ -189,4 +213,4 @@ if __name__ == "__main__":
         file_args = [(os.path.join(in_dir, f_name), os.path.join(out_dir, f"{f_name}.id_hash.{out_type}"), f_name) for f_name in in_file_list]
 
         with Timer(f"generate hash index with proc-id {proc_id}"):
-            generate_hash_index(proc_id, in_type, file_args, source, is_norm)  
+            generate_hash_index(proc_id, in_type, file_args, source, is_norm)

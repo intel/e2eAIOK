@@ -28,6 +28,54 @@ if [ $? != 0 ]; then
     failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_text_to_jsonl\n"
 fi
 
+echo "test_llmutils.Test_LLMUtils.test_global_hash_jsonl"
+python -m unittest tests.test_llmutils.Test_LLMUtils.test_global_hash_jsonl
+if [ $? != 0 ]; then
+    failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_global_hash_jsonl\n"
+fi
+
+echo "test_llmutils.Test_LLMUtils.test_global_hash_parquet"
+python -m unittest tests.test_llmutils.Test_LLMUtils.test_global_hash_parquet
+if [ $? != 0 ]; then
+    failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_global_hash_parquet\n"
+fi
+
+echo "test_llmutils.Test_LLMUtils.test_get_hash_indexing"
+python -m unittest tests.test_llmutils.Test_LLMUtils.test_get_hash_indexing
+if [ $? != 0 ]; then
+    failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_get_hash_indexing\n"
+fi
+
+echo "test_llmutils.Test_LLMUtils.test_combine_hash_indexing"
+python -m unittest tests.test_llmutils.Test_LLMUtils.test_combine_hash_indexing
+if [ $? != 0 ]; then
+    failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_combine_hash_indexing\n"
+fi
+
+echo "test_llmutils.Test_LLMUtils.test_get_duplication_list"
+python -m unittest tests.test_llmutils.Test_LLMUtils.test_get_duplication_list
+if [ $? != 0 ]; then
+    failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_get_duplication_list\n"
+fi
+
+echo "test_llmutils.Test_LLMUtils.test_index_based_reduction"
+python -m unittest tests.test_llmutils.Test_LLMUtils.test_index_based_reduction
+if [ $? != 0 ]; then
+    failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_index_based_reduction\n"
+fi
+
+echo "test_llmutils.Test_LLMUtils.test_global_dedup"
+python -m unittest tests.test_llmutils.Test_LLMUtils.test_global_dedup
+if [ $? != 0 ]; then
+    failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_global_dedup\n"
+fi
+
+echo "test_llmutils.Test_LLMUtils.test_global_dedup_spark"
+python -m unittest tests.test_llmutils.Test_LLMUtils.test_global_dedup_spark
+if [ $? != 0 ]; then
+    failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_global_dedup_spark\n"
+fi
+
 echo "test_llmutils.Test_LLMUtils.test_filter_jsonl"
 python -m unittest tests.test_llmutils.Test_LLMUtils.test_filter_jsonl
 if [ $? != 0 ]; then

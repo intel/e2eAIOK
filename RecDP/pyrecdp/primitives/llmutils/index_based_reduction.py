@@ -25,7 +25,7 @@ def index_based_reduction(in_dir, dup, out_dir, enable_hash = True, spark = None
         small_files = [f for f in list_files if f not in large_files]
         first = True
         if len(small_files):
-            src_df = spark.read.parquet(small_files).drop(F.col('meta'))
+            src_df = spark.read.parquet(small_files)
             first = False
         src_df_large = read_parquet_pandas_to_spark(large_files, spark)
         if first:

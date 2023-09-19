@@ -7,7 +7,7 @@ import pandas as pd
 import string
 import re
 import urllib.error
-
+import ftfy
 
 from pyspark.sql.functions import input_file_name
 from pyspark.sql.types import StructType,StructField, StringType, IntegerType, ArrayType
@@ -43,7 +43,7 @@ def read_parquet(data_files, spark, rowid = False):
             df_rid = df.withColumn("__id__", F.monotonically_increasing_id())
             df_rid = df_rid.withColumn("filename", F.lit(basename))
             df_rid = df_rid.withColumn("filename_docid", F.concat_ws("@", "filename", "__id__"))
-            df = df_rid.select('value', 'filename_docid')
+            df = df_rid.drop('__id__', 'filename')
         
         df = df.select("filename_docid", "text", "meta")
 
@@ -109,16 +109,17 @@ def get_data_files(data_dir):
     files = [os.path.join(data_dir, i) for i in files]
     return files
 
+def sub_task_per_folder(file_list):
+    sub_task = {}
+    for f in file_list:
+        dir_name = os.path.dirname(f)
+        if dir_name not in sub_task:
+            sub_task[dir_name] = []
+        sub_task[dir_name].append(f)
+    return sub_task
 
-def get_target_file_list(data_dir, file_type, file_system_prefix=""):
-    if file_system_prefix == "file://":
-        cmd = ["find", data_dir, "-name", f"*.{file_type}"]
-    elif file_system_prefix == "" or file_system_prefix.startswith("hdfs"):
-        cmd = ["hdfs", "dfs",  "-find", data_dir, "-name", f"*.{file_type}"]
-    else:
-        print("Only support local or hdfs file system.")
-        exit(1)
-
+def get_target_file_list_from_local(data_dir, file_type):
+    cmd = ["find", data_dir, "-name", f"*.{file_type}"]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     stdout, stderr = proc.communicate()
     exitcode = proc.returncode
@@ -129,7 +130,36 @@ def get_target_file_list(data_dir, file_type, file_system_prefix=""):
         ret = [i.replace(data_dir, "") for i in ret]
         ret = [i[1:] if i[0] == '/' else i for i in ret]
         return ret
-
+    
+def get_target_file_list_from_hdfs(data_dir, file_type):
+    cmd = ["hdfs", "dfs",  "-find", data_dir, "-name", f"*.{file_type}"]
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    stdout, stderr = proc.communicate()
+    exitcode = proc.returncode
+    if exitcode != 0:
+        return []
+    else:
+        ret = stdout.decode("utf-8").split('\n')[:-1]
+        ret = [i.replace(data_dir, "") for i in ret]
+        ret = [i[1:] if i[0] == '/' else i for i in ret]
+        return ret
+    
+def get_target_file_list(data_dir, file_type, file_system_prefix = ""):
+    if file_system_prefix == "file://":
+        return get_target_file_list_from_local(data_dir, file_type)
+    if file_system_prefix == "hdfs://":
+        return get_target_file_list_from_hdfs(data_dir, file_type)
+    file_list = []
+    try:
+        file_list = get_target_file_list_from_local(data_dir, file_type)
+    except:
+        file_list = []
+    if len(file_list) == 0:
+        try:
+            file_list = get_target_file_list_from_hdfs(data_dir, file_type)
+        except:
+            file_list = []
+    return file_list    
 
 def get_nchunks_and_nproc(n_tasks, n_part = -1):
     n_proc = cpu_count()
@@ -178,7 +208,7 @@ def download_file(remote_path, target_path):
 def read_parquet_pandas_to_spark(f_name_list, spark):
     first = True
     for f_name in f_name_list:
-        pdf = pd.read_parquet(f_name).drop('meta', axis=1)
+        pdf = pd.read_parquet(f_name)
         df = spark.createDataFrame(pdf)
         if first:
             first = False
