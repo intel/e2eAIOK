@@ -123,8 +123,7 @@ def near_dedup(data_files, dup_dir, ngram_size, num_perm, bands, ranges):
             if os.path.exists(dup_dir):
                 shutil.rmtree(dup_dir, ignore_errors=True)
             results = pipeline.saveAsTextFile(dup_dir)
-            
-        
+ 
         with Timer(f"generate_connected_components all"):
             dup_connected_args = argparse.Namespace()
             dup_connected_args.input_dir = dup_dir
