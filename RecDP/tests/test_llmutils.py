@@ -142,7 +142,7 @@ class Test_LLMUtils(unittest.TestCase):
             ret.show()
             
     def test_shrink_jsonl(self):
-        data_dir = self.data_dir
+        data_dir = "tests/data/llm_data/PILE"
         dup_dir = self.dup_dir
         dup_dict = os.path.join(dup_dir, "duplicates.pickle")
         out_dir = os.path.join(dup_dir, "output")
