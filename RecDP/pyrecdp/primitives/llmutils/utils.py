@@ -3,10 +3,9 @@ from multiprocessing import Pool, cpu_count
 from math import ceil
 import subprocess
 from tqdm import tqdm
-import ftfy
+import pandas as pd
 import string
 import re
-import wget
 import urllib.error
 
 
@@ -137,7 +136,19 @@ def download_file(remote_path, target_path):
         except urllib.error.HTTPError as e:
             print("Failed to download the file. Please check the url and network.")
             raise e
-    
+
+def read_parquet_pandas_to_spark(f_name_list, spark):
+    first = True
+    for f_name in f_name_list:
+        pdf = pd.read_parquet(f_name).drop('meta', axis=1)
+        df = spark.createDataFrame(pdf)
+        if first:
+            first = False
+            src_df = df
+        else:
+            src_df = src_df.union(df)
+    return src_df
+                
 class MultiProcessManager:
     def wait_and_check(self, pool):
         for proc_id, (process, cmd) in pool.items():

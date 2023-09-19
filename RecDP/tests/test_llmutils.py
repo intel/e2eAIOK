@@ -14,7 +14,7 @@ except:
 
 
 from pyrecdp.primitives.llmutils import near_dedup, near_dedup_spk, shrink_document_MP, text_to_jsonl_MP, pii_remove, \
-    filter_by_blocklist, language_identify, language_identify_spark, Classifier, profanity_filter, filter_by_bad_words, filter_by_length, global_hash
+    filter_by_blocklist, language_identify, language_identify_spark, Classifier, profanity_filter, filter_by_bad_words, filter_by_length, global_hash, global_dedup
 
 from pyrecdp.primitives.llmutils.utils import get_target_file_list
 
@@ -82,6 +82,16 @@ class Test_LLMUtils(unittest.TestCase):
         data_dir = self.data_dir
         global_hash(source, data_files, data_dir, in_type, n_parallel, out_dir, is_norm)
 
+    def test_global_dedup(self):
+        with_hash = False
+        data_files = ["NIH_sample.jsonl"]
+        in_type = 'jsonl'
+        n_parallel = 4
+        out_dir = "tests/data/llm_data/global_dedup/"
+        is_norm = True
+        data_dir = self.data_dir
+        global_dedup(with_hash, data_files, data_dir, out_dir, in_type, n_parallel, is_norm)
+        
     def test_shrink_jsonl(self):
         data_dir = self.data_dir
         dup_dir = self.dup_dir
