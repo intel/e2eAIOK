@@ -12,8 +12,9 @@ except:
     print("Not detect system installed pyrecdp, using local one")
     sys.path.append(pathlib)
 
+
 from pyrecdp.primitives.llmutils import near_dedup, near_dedup_spk, shrink_document_MP, text_to_jsonl_MP, pii_remove, \
-    filter_by_blocklist, language_identify, language_identify_spark
+    filter_by_blocklist, language_identify, language_identify_spark, Classifier, profanity_filter, filter_by_bad_words, filter_by_length
 
 from pyrecdp.primitives.llmutils.utils import get_target_file_list
 
@@ -85,6 +86,22 @@ class Test_LLMUtils(unittest.TestCase):
         data_dir = "tests/data/llm_data"
         out_dir = "tests/data/filter_out"
         filter_by_blocklist(data_dir, out_dir)
+
+    def test_profanity_filter(self):
+        data_dir = "tests/data/llm_data"
+        out_dir = "tests/data/filter_out"
+        profanity_filter(data_dir, out_dir)
+
+    def test_bad_words_filter(self):
+        data_dir = "tests/data/llm_data"
+        out_dir = "tests/data/filter_out"
+        filter_by_bad_words(data_dir, out_dir)
+
+    def test_length_filter(self):
+        data_dir = "tests/data/llm_data"
+        out_dir = "tests/data/filter_out"
+        filter_by_length(data_dir, out_dir)
+
 
     def test_language_identify(self):
         data_dir = os.path.join(cur_dir, "data/llm_data")

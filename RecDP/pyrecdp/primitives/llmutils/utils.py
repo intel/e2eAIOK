@@ -124,6 +124,12 @@ def clean_str(s):
     s = re.sub(r"\s+", " ", s.strip())
     return s
 
+
+  
+def get_llmutils_home():
+    return os.path.abspath(os.path.dirname(__file__))
+
+ 
 def download_file(remote_path, target_path):
         os.makedirs(os.path.dirname(target_path), exist_ok=True)
         try:

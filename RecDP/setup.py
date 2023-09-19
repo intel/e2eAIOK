@@ -70,5 +70,6 @@ setuptools.setup(
         "phonenumbers",
         "fasttext==0.9.2",
         "wget==3.2",
+        "alt-profanity-check==1.3.0",
         "huggingface-hub==0.16.4",
         ])

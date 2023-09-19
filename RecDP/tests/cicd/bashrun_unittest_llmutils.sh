@@ -34,6 +34,24 @@ if [ $? != 0 ]; then
     failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_filter_jsonl\n"
 fi
 
+echo "test_llmutils.Test_LLMUtils.test_bad_words_filter"
+python -m unittest tests.test_llmutils.Test_LLMUtils.test_bad_words_filter
+if [ $? != 0 ]; then
+    failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_bad_words_filter\n"
+fi
+
+echo "test_llmutils.Test_LLMUtils.test_length_filter"
+python -m unittest tests.test_llmutils.Test_LLMUtils.test_length_filter
+if [ $? != 0 ]; then
+    failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_length_filter\n"
+fi
+
+echo "test_llmutils.Test_LLMUtils.test_profanity_filter"
+python -m unittest tests.test_llmutils.Test_LLMUtils.test_profanity_filter
+if [ $? != 0 ]; then
+    failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_profanity_filter\n"
+fi
+
 echo "test_llmutils.Test_LLMUtils.test_ppi_remove"
 python -m unittest tests.test_llmutils.Test_LLMUtils.test_ppi_remove
 if [ $? != 0 ]; then

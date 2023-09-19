@@ -3,11 +3,12 @@ import os
 from pyspark.sql import DataFrame
 
 from pyrecdp.core.utils import Timer
+from pyrecdp.primitives.llmutils.utils import get_llmutils_home
 from pyrecdp.primitives.spark_data_processor.data_processor import DataProcessor as SparkDataProcessor
 
 import pyspark.sql.functions as F
 from urllib.parse import urlparse
-from pyspark.sql.types import StructType, StructField, StringType
+from pyspark.sql.types import StructType, StructField, StringType, BooleanType
 import urllib.error
 
 BLACKLIST_URL = "https://dsi.ut-capitole.fr/blacklists/download/blacklists.tar.gz"
@@ -80,7 +81,7 @@ def filter_by_blocklist(data_dir, out_dir):
             source_df = read_json(data_dir, spark)
             total_data_num = source_df.count()
 
-        with Timer("Filter data according to blocked domains"):
+        with Timer("Filter out data according to blocked domains"):
             with_url_df = source_df.filter(~F.isnull("url"))
             filtered_df = source_df.filter(F.isnull("url")).select(F.col("text"), F.col("meta"))
 
@@ -103,3 +104,67 @@ def filter_by_blocklist(data_dir, out_dir):
         spark.stop()
         print("Failed", e)
 
+
+def filter_by_bad_words(data_dir, out_dir, language="en"):
+    rdp = SparkDataProcessor()
+    spark = rdp.spark
+    try:
+        with Timer("Load bad words list and create pattern"):
+            llmutils_path = get_llmutils_home()
+            bad_words_lists_path = os.path.join(llmutils_path, "bad_words_lists", language)
+            with open(bad_words_lists_path, "r") as f:
+                lines = f.readlines()
+            bad_words_list = [s.replace('\n', '') for s in lines]
+            total_bad_words_num = len(bad_words_list)
+            bad_words_pattern = "|".join(bad_words_list)
+
+        with Timer("Load data from josnl file"):
+            source_df = read_json(data_dir, spark)
+            total_data_num = source_df.count()
+
+        with Timer("Filter out data according to bad words"):
+            filtered_df = source_df.filter(source_df.text.rlike(bad_words_pattern))
+            remain_data_num = filtered_df.count()
+        os.makedirs(out_dir, exist_ok=True)
+        outfile_path = os.path.join(out_dir, "bad_words_filtered")
+        filtered_df.write.mode("overwrite").json(outfile_path)
+
+        print(f"Completed!!")
+        print(f"    Load total {total_data_num} documents")
+        print(f"    Load total {total_bad_words_num} blocked domains")
+        print(f"    Removed {total_data_num - remain_data_num} documents according to blacklist")
+
+    except Exception as e:
+        spark.stop()
+        print("Failed", e)
+
+
+def filter_by_length(data_dir, out_dir, minimum_length=100, maximum_length=10000):
+    rdp = SparkDataProcessor()
+    spark = rdp.spark
+    try:
+
+        with Timer("Load data from josnl file"):
+            source_df = read_json(data_dir, spark)
+            total_data_num = source_df.count()
+
+        with Timer("Filter out data according to length limit"):
+            @F.udf(returnType=BooleanType())
+            def check_length(text):
+                if len(text) < minimum_length or len(text) > maximum_length:
+                    return False
+                else:
+                    return True
+            filtered_df = source_df.filter(check_length(source_df.text))
+            remain_data_num = filtered_df.count()
+        os.makedirs(out_dir, exist_ok=True)
+        outfile_path = os.path.join(out_dir, "length_filtered")
+        filtered_df.write.mode("overwrite").json(outfile_path)
+
+        print(f"Completed!!")
+        print(f"    Load total {total_data_num} documents")
+        print(f"    Removed {total_data_num - remain_data_num} documents according to length limit")
+
+    except Exception as e:
+        spark.stop()
+        print("Failed", e)
