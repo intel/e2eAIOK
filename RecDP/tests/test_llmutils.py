@@ -14,7 +14,7 @@ except:
 
 
 from pyrecdp.primitives.llmutils import near_dedup, near_dedup_spk, shrink_document_MP, text_to_jsonl_MP, pii_remove, \
-    filter_by_blocklist, language_identify, language_identify_spark, Classifier, profanity_filter, filter_by_bad_words, filter_by_length, global_hash, global_dedup
+    filter_by_blocklist, language_identify, language_identify_spark, Classifier, profanity_filter, filter_by_bad_words, filter_by_length, global_hash, global_dedup, global_dedup_spk
 
 from pyrecdp.primitives.llmutils.utils import get_target_file_list
 
@@ -92,6 +92,27 @@ class Test_LLMUtils(unittest.TestCase):
         data_dir = self.data_dir
         global_dedup(with_hash, data_files, data_dir, out_dir, in_type, n_parallel, is_norm)
         
+    def test_global_dedup_spark(self):
+        from pyrecdp.core import SparkDataProcessor
+        from pyspark.sql.types import StructType,StructField, StringType
+        import pyspark.sql.functions as F
+        data_files = self.data_files
+        is_norm = True
+        rdp = SparkDataProcessor()
+        spark=rdp.spark
+        schema = StructType([ 
+            StructField("text",StringType(),True), 
+            StructField("meta",StringType(),True)
+        ])
+        for data_file in data_files:
+            spark_df = spark.read.text(data_file)
+            spark_df = spark_df.withColumn('jsonData', F.from_json(F.col('value'), schema)).select("jsonData.*")
+            source = os.path.basename(data_file).replace("/", "_")
+            print("input is ")
+            spark_df.show()
+            ret = global_dedup_spk(spark_df, source, is_norm)
+            ret.show()
+            
     def test_shrink_jsonl(self):
         data_dir = self.data_dir
         dup_dir = self.dup_dir

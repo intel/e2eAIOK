@@ -2,9 +2,11 @@ import argparse
 import os, sys
 from pyrecdp.core.utils import Timer
 import json
-from pyrecdp.primitives.llmutils.utils import clean_str, MultiProcessManager, get_target_file_list, get_nchunks_and_nproc
+from pyrecdp.primitives.llmutils.utils import clean_str, MultiProcessManager, get_target_file_list, get_nchunks_and_nproc, global_unique_id
 import hashlib
 import pandas as pd
+import pyspark.sql.functions as F
+from pyspark.sql import types as T
 
 def sha256str(s):
     h = hashlib.sha256()
@@ -106,6 +108,23 @@ def generate_hash_index(proc_id, in_type, x_list, source, is_norm):
                 f.write(f"Failed to process {base_file_name}, error is {e}")
     return True
 
+def global_hash_spk(spark_df, source, is_norm):
+    clean_str_udf = F.udf(clean_str, T.StringType())
+    sha256str_udf = F.udf(sha256str, T.StringType())
+    bytesize_udf = F.udf(lambda x: len(x.encode('utf-8')), T.IntegerType())
+    columns = spark_df.columns
+    ret_df = spark_df
+    ret_df = ret_df.withColumn("source", F.lit(source))
+    ret_df = global_unique_id(ret_df, 'doc_id')
+    key = 'text' if 'text' in columns else 'content'
+    if is_norm:
+        ret_df = ret_df.withColumn('hash', sha256str_udf(clean_str_udf(F.col(key))))
+    else:
+        ret_df = ret_df.withColumn('hash', sha256str_udf(F.col(key)))
+    ret_df = ret_df.withColumn("bytesize", bytesize_udf(F.col(key)))
+    return ret_df
+    
+    
 def global_hash(source, files, data_dir, in_type, n_parallel, out_dir, is_norm):
     if n_parallel != -1:
         n_proc = n_parallel
