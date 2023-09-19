@@ -1,11 +1,11 @@
 import phonenumbers
 
 
-def detect_phones(content):
+def detect_phones(text):
     """Detects phone in a string using phonenumbers libray only detection the international phone number"""
     matches = []
 
-    for match in phonenumbers.PhoneNumberMatcher(content, "IN"):
+    for match in phonenumbers.PhoneNumberMatcher(text, "IN"):
         matches.append(
             {
                 "tag": "PHONE_NUMBER",
