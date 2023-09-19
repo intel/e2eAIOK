@@ -15,15 +15,13 @@ from typing import (
     Tuple,
 )
 
-import pyspark.sql.functions as F
-from pyspark.sql.types import StringType
+from huggingface_hub import hf_hub_download
 from pyspark.sql.functions import udf
 
 from pyrecdp.core.utils import Timer
 from pyrecdp.primitives.spark_data_processor.data_processor import DataProcessor as SparkDataProcessor
 from pyrecdp.primitives.llmutils.utils import *
 
-fasttext_model_url = "https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin"
 
 class Transformer:
     parallelisable: bool = True
@@ -247,45 +245,56 @@ def generate_lang_label(content, classifier):
     return content[classifier.out_field] if content else ""
 
 
-def read_json(data_dir, data_files, spark, classifier):
-    df_dict= {}
+def read_json(data_dir, data_file, spark, file_system_prefix=""):
+    df = spark.read.json(f"{file_system_prefix}{os.path.join(data_dir, data_file)}").cache()
+    return df
+
+
+def language_identify_df(df, classifier):
     convertUDF = udf(lambda z: generate_lang_label(z, classifier), StringType())
-
-    for filename in data_files:
-        df = spark.read.json(os.path.join(data_dir, filename))
-        df = df.withColumn('lang', convertUDF(F.col('text'))).select("*")
-        df_dict[filename] = df
-
-    return df_dict
+    processed_df = df.withColumn('lang', convertUDF(F.col('text'))).select("*")
+    return processed_df
 
 
-def save_parquet_data(df_dict, language_identify_output_dir):
-
-    for filename, df in df_dict.items():
-        save_path = os.path.join(language_identify_output_dir,
-                                 os.path.basename(filename.split(".")[0]))
-
-        df.write.mode("overwrite").parquet(save_path)
-
-    return df_dict
+def save_parquet_data(df, save_path):
+    df.write.mode("overwrite").parquet(save_path)
 
 
-def language_identify(data_dir, data_files, classifier, language_identify_output_dir, enable_ray):
-    if enable_ray:
-        rdp = SparkDataProcessor(spark_mode='ray')
+def construct_classifier(fasttext_model_dir, language_identify_field, language_identify_output_field):
+    if os.path.isfile(fasttext_model_dir):
+        model_path = fasttext_model_dir
     else:
-        rdp = SparkDataProcessor()
+        model_path = hf_hub_download(repo_id="facebook/fasttext-language-identification", filename="model.bin")
+    model = Path(model_path)
+    return Classifier(model, language_identify_field, language_identify_output_field)
+
+
+def language_identify(data_dir, data_files, fasttext_model_dir, language_identify_field,
+                      language_identify_output_field, language_identify_output_dir, file_system_prefix=""):
+
+    classifier = construct_classifier(fasttext_model_dir, language_identify_field, language_identify_output_field)
+    rdp = SparkDataProcessor()
     spark = rdp.spark
     try:
-        with Timer("Load and process data"):
-            df_dict = read_json(data_dir, data_files, spark, classifier)
+        with Timer("Load data"):
+            df_dict = {}
+            for data_file in data_files:
+                df = read_json(data_dir, data_file, spark, file_system_prefix)
+                df_dict[data_file] = df
 
-            total_length = 0
-            for df in df_dict.values():
-                total_length += df.count()
+        with Timer("Process data"):
+            for data_file, df in df_dict.items():
+                processed_df = language_identify_df(df, classifier).cache()
+                df_dict[data_file] = processed_df
 
         with Timer("Save data"):
-            save_parquet_data(df_dict, language_identify_output_dir)
+            for data_file, df in df_dict.items():
+                save_path = f"{file_system_prefix}{os.path.join(language_identify_output_dir, data_file.split('.')[0])}"
+                save_parquet_data(df, save_path)
+
+        total_length = 0
+        for df in df_dict.values():
+            total_length += df.count()
 
         print(f"Completed!!")
         print(f"    total identify the language for {total_length} documents")
@@ -296,14 +305,36 @@ def language_identify(data_dir, data_files, classifier, language_identify_output
         print("Failed", e)
 
 
+def language_identify_spark(spark_df, fasttext_model_dir, language_identify_field, language_identify_output_field,
+                            language_identify_output_dir, file_system_prefix=""):
+
+    classifier = construct_classifier(fasttext_model_dir, language_identify_field, language_identify_output_field)
+    spark = spark_df.sparkSession
+    try:
+        with Timer("process data"):
+            processed_df = language_identify_df(spark_df, classifier).cache()
+
+        with Timer("Save data"):
+            save_parquet_data(processed_df, f"{file_system_prefix}{language_identify_output_dir}")
+
+        total_length = processed_df.count()
+        print(f"Completed!!")
+        print(f"    total identify the language for {total_length} documents")
+        print(f"    All the processed data are saving under the folder: {language_identify_output_dir}")
+        return processed_df
+    except Exception as e:
+        spark.stop()
+        print("Failed", e)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_dir", dest="data_dir", type=str)
-    parser.add_argument("--fasttext_model_dir", dest="fasttext_model_dir", type=str, default="/tmp/lid.bin")
+    parser.add_argument("--fasttext_model_dir", dest="fasttext_model_dir", type=str, default="")
     parser.add_argument("--language_identify_output_dir", dest="language_identify_output_dir", type=str, default="")
     parser.add_argument("--language_identify_field", dest="language_identify_field", type=str, default="text")
     parser.add_argument("--language_identify_output_field", dest="language_identify_output_field", type=str, default="lang")
-    parser.add_argument("--enable_ray", dest="enable_ray", action='store_true', default=False)
+    parser.add_argument("--file_system_prefix", dest="file_system_prefix", type=str, default="")
     args = parser.parse_args()
     data_dir = args.data_dir
     fasttext_model_dir = args.fasttext_model_dir
@@ -311,15 +342,10 @@ if __name__ == "__main__":
         if args.language_identify_output_dir == "" else args.language_identify_output_dir
     language_identify_field = args.language_identify_field
     language_identify_output_field  = args.language_identify_output_field
-    enable_ray = args.enable_ray
+    file_system_prefix = args.file_system_prefix
 
-    data_files = get_target_file_list(data_dir, "jsonl")
-
-    model = Path(fasttext_model_dir)
-    if not model.exists():
-        download_file(fasttext_model_url, fasttext_model_dir)
-
-    classifier = Classifier(model, language_identify_field, language_identify_output_field)
+    data_files = get_target_file_list(data_dir, "jsonl", file_system_prefix)
 
     with Timer(f"Generate language_identify data for {data_dir}"):
-        language_identify(data_dir, data_files, classifier, language_identify_output_dir, enable_ray)
+        language_identify(data_dir, data_files, fasttext_model_dir, language_identify_field,
+                          language_identify_output_field, language_identify_output_dir, file_system_prefix)

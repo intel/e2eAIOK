@@ -3,6 +3,7 @@ import sys
 import pandas as pd
 from pathlib import Path
 import os
+
 pathlib = str(Path(__file__).parent.parent.resolve())
 print(pathlib)
 try:
@@ -13,10 +14,9 @@ except:
 
 
 from pyrecdp.primitives.llmutils import near_dedup, near_dedup_spk, shrink_document_MP, text_to_jsonl_MP, pii_remove, \
-    filter_by_blocklist, language_identify, Classifier, profanity_filter, filter_by_bad_words, filter_by_length
+    filter_by_blocklist, language_identify, language_identify_spark, Classifier, profanity_filter, filter_by_bad_words, filter_by_length
 
-from pyrecdp.primitives.llmutils.utils import get_target_file_list, download_file
-from pyrecdp.primitives.llmutils.language_identify import fasttext_model_url
+from pyrecdp.primitives.llmutils.utils import get_target_file_list
 
 cur_dir = str(Path(__file__).parent.resolve())
 
@@ -26,7 +26,7 @@ class Test_LLMUtils(unittest.TestCase):
         self.data_files = ["tests/data/llm_data/NIH_sample.jsonl"]
         self.data_dir = "tests/data/llm_data/"
         self.dup_dir = "./near_dedup/"
-        self.fasttext_model = "./fasttext_model/lid.bin"
+        self.fasttext_model = "/home/vmagent/models/lid.bin"  # Only used for github CICD test.
 
     def test_near_dedup(self):
         data_files = self.data_files
@@ -36,10 +36,10 @@ class Test_LLMUtils(unittest.TestCase):
         bands = 9
         ranges = 13
         near_dedup(data_files, dup_dir, ngram_size, num_perm, bands, ranges)
-        
+
     def test_near_dedup_spark(self):
         from pyrecdp.core import SparkDataProcessor
-        from pyspark.sql.types import StructType,StructField, StringType
+        from pyspark.sql.types import StructType, StructField, StringType
         import pyspark.sql.functions as F
         data_files = self.data_files
         dup_dir = self.dup_dir
@@ -48,10 +48,10 @@ class Test_LLMUtils(unittest.TestCase):
         bands = 9
         ranges = 13
         rdp = SparkDataProcessor()
-        spark=rdp.spark
-        schema = StructType([ 
-            StructField("text",StringType(),True), 
-            StructField("meta",StringType(),True)
+        spark = rdp.spark
+        schema = StructType([
+            StructField("text", StringType(), True),
+            StructField("meta", StringType(), True)
         ])
         spark_df = spark.read.text(data_files)
         spark_df = spark_df.withColumn('jsonData', F.from_json(F.col('value'), schema)).select("jsonData.*")
@@ -60,7 +60,6 @@ class Test_LLMUtils(unittest.TestCase):
         ret_df = near_dedup_spk(spark_df, ngram_size, num_perm, bands, ranges)
         print("output is")
         ret_df.show()
-        
 
     def test_shrink_jsonl(self):
         data_dir = self.data_dir
@@ -75,22 +74,13 @@ class Test_LLMUtils(unittest.TestCase):
         text_to_jsonl_MP(data_dir, out_dir, 2)
 
     def test_ppi_remove(self):
-        from dataclasses import dataclass
+        from pyrecdp.core import SparkDataProcessor
 
-        @dataclass
-        class PiiDetectRedactOption:
-            path: str = "json"
-            data_files: str = "tests/data/llm_data/arxiv_sample_100.jsonl"
-            split: str = "train"
-            text_column: str = "text"
-            batch_size: int = 100
-            num_proc: int = 8
-            seed: int = 10
-            save_path: str = "./pii_remove"
-            save_format: str = "json"
-
-        args = PiiDetectRedactOption()
-        pii_remove(args)
+        sparkDP = SparkDataProcessor()
+        spark=sparkDP.spark
+        input_dataset = spark.read.load(path="tests/data/llm_data/arxiv_sample_100.jsonl", format="json")
+        output_dataset = pii_remove(input_dataset)
+        output_dataset.write.save(path="./tmp", format="json", mode="overwrite")
 
     def test_filter_jsonl(self):
         data_dir = "tests/data/llm_data"
@@ -115,11 +105,22 @@ class Test_LLMUtils(unittest.TestCase):
 
     def test_language_identify(self):
         data_dir = os.path.join(cur_dir, "data/llm_data")
-        data_files = get_target_file_list(data_dir, "jsonl")
-        fasttext_model_dir = os.path.abspath(self.fasttext_model)
-        if not os.path.exists(fasttext_model_dir):
-            download_file(fasttext_model_url, fasttext_model_dir)
-        model = Path(fasttext_model_dir)
-        classifier = Classifier(model, 'text', 'lang')
+        data_files = get_target_file_list(data_dir, "jsonl", "file://")
+        fasttext_model_dir = self.fasttext_model
         language_identify_output_dir = os.path.join(data_dir, "language_identify")
-        language_identify(data_dir, data_files, classifier, language_identify_output_dir, enable_ray=False)
+        language_identify(data_dir, data_files, fasttext_model_dir, 'text', 'lang', language_identify_output_dir, "file://")
+
+    def test_language_identify_spark(self):
+        from pyrecdp.core import SparkDataProcessor
+        fasttext_model_dir = self.fasttext_model
+        data_dir = os.path.join(cur_dir, "data/llm_data")
+        data_file = self.data_files[0]
+        save_path = os.path.join(data_dir, "language_identify/lid_df")
+        rdp = SparkDataProcessor()
+        spark=rdp.spark
+        spark_df = spark.read.json(data_file)
+        print("input is ")
+        spark_df.show()
+        lid_df = language_identify_spark(spark_df, fasttext_model_dir, 'text', 'lang', save_path)
+        print("output is")
+        lid_df.show()

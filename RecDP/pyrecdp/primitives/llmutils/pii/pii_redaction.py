@@ -3,7 +3,6 @@ import random
 import string
 import ipaddress
 
-
 # List of random private IP addresses to use as replacements
 REPLACEMENTS_IP = {
     "IPv4": ["172.16.31.10", "172.16.58.3", "172.16.17.32", "192.168.127.12", "192.168.3.11"],
@@ -91,19 +90,15 @@ def is_private_ip(ip):
     return ip.is_private
 
 
-def redact_pii_text(text, secrets, replacements, add_references=False):
+def redact_pii_text(text, secrets, replacements):
     """Redact PII in a text
     Args:
         text (str): text to redact
         secrets (json): json string with the secrets to redact
         replacements (dict): dictionary of replacements for each PII type
-        add_references (bool): whether to add references to the redacted text (delimiters to PII)
-        for visualization
     Returns:
         text (str): new text with redacted secrets
     """
-    secrets = load_json(secrets)
-    modified = False
     if secrets:
         secrets = sorted(secrets, key=lambda x: x["start"])
         # store the secrets that were replaced here with their replacements
@@ -119,7 +114,7 @@ def redact_pii_text(text, secrets, replacements, add_references=False):
                 if is_private_ip(secret["value"]) or (secret["value"] in POPULAR_DNS_SERVERS):
                     continue
             modified = True
-            subtext = text[step : secret["start"]]
+            subtext = text[step: secret["start"]]
             subpart = subtext if subtext else " "
             subparts.append(subpart)
             # if secret is already in replaced_secrets, use the same replacement
@@ -133,38 +128,12 @@ def redact_pii_text(text, secrets, replacements, add_references=False):
                 replaced_secrets[secret["value"]] = replacement
             subparts.append(replacement)
             replaced_secrets[secret["value"]] = replacement
-            if add_references:
-                references.append(subpart)
-                references.append(f"PI:{secret['tag']}:{replacement}END_PI")
-            last_text = text[secret["end"] :]
+
+            last_text = text[secret["end"]:]
             step = secret["end"]
         # if subparts are not empty join them (it can be empty when all secrets were skipped)
         new_text = "".join(subparts) + last_text if subparts else last_text
-        if add_references:
-            references = "".join(references) + last_text if references else ""
+
     else:
         new_text = text
-        references = ""
-    result = (new_text, references, modified) if add_references else (new_text, modified)
-    return result
-
-
-def redact_pii_batch(examples, replacements):
-    """Anonymize PII in a batch of examples from a dataset"""
-    new_contents = []
-    modified = []
-    for text, secrets, has_secrets in zip(
-        examples["content"],
-        examples["secrets"],
-        examples["has_secrets"],
-    ):
-        if has_secrets:
-            new_text, modif = redact_pii_text(text, secrets, replacements)
-            new_contents.append(new_text)
-            modified.append(modif)
-        else:
-            new_contents.append(text)
-            modified.append(False)
-    result = {"new_content": new_contents, "modified": modified}
-
-    return result
+    return new_text
