@@ -153,14 +153,17 @@ class Test_LLMUtils(unittest.TestCase):
         out_dir = "pmc_jsonl"
         text_to_jsonl_MP(data_dir, out_dir, 2)
 
-    def test_ppi_remove(self):
+    def test_pii_remove(self):
         from pyrecdp.core import SparkDataProcessor
 
         sparkDP = SparkDataProcessor()
-        spark=sparkDP.spark
-        input_dataset = spark.read.load(path="tests/data/llm_data/arxiv_sample_100.jsonl", format="json")
+        spark = sparkDP.spark
+        input_dataset = spark.read.load(path="tests/data/llm_data/pii_test.jsonl", format="json")
+        print("input is ")
+        input_dataset.show(n=20, truncate=False)
         output_dataset = pii_remove(input_dataset)
-        output_dataset.write.save(path="./tmp", format="json", mode="overwrite")
+        print("output is")
+        output_dataset.show(n=20, truncate=False)
 
     def test_filter_jsonl(self):
         data_dir = "tests/data/llm_data"
