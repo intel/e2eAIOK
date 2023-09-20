@@ -104,7 +104,6 @@ def redact_pii_text(text, secrets, replacements):
         # store the secrets that were replaced here with their replacements
         replaced_secrets = {}
         subparts = []
-        references = []
         step = 0
         last_text = text
         for secret in secrets:
@@ -113,7 +112,7 @@ def redact_pii_text(text, secrets, replacements):
                 # if secret value in popular DNS servers, skip it
                 if is_private_ip(secret["value"]) or (secret["value"] in POPULAR_DNS_SERVERS):
                     continue
-            modified = True
+
             subtext = text[step: secret["start"]]
             subpart = subtext if subtext else " "
             subparts.append(subpart)
@@ -125,15 +124,18 @@ def redact_pii_text(text, secrets, replacements):
                     replacement = replace_ip(secret["value"], replacements)
                 else:
                     replacement = random.choice(replacements[secret["tag"]])
-                replaced_secrets[secret["value"]] = replacement
+
             subparts.append(replacement)
             replaced_secrets[secret["value"]] = replacement
 
             last_text = text[secret["end"]:]
             step = secret["end"]
         # if subparts are not empty join them (it can be empty when all secrets were skipped)
-        new_text = "".join(subparts) + last_text if subparts else last_text
+        if len(subparts) == 0:
+            return text, False
+        else:
+            new_text = "".join(subparts) + last_text if subparts else last_text
+            return new_text, True
 
     else:
-        new_text = text
-    return new_text
+        return text, False

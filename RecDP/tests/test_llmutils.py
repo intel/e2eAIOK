@@ -158,12 +158,10 @@ class Test_LLMUtils(unittest.TestCase):
 
         sparkDP = SparkDataProcessor()
         spark = sparkDP.spark
-        input_dataset = spark.read.load(path="tests/data/llm_data/pii_test.jsonl", format="json")
-        print("input is ")
-        input_dataset.show(n=20, truncate=False)
-        output_dataset = pii_remove(input_dataset)
-        print("output is")
-        output_dataset.show(n=20, truncate=False)
+        input_dataset = spark.read.load(path="tests/data/llm_data/arxiv_sample_100.jsonl", format="json")
+        output_dataset = pii_remove(input_dataset,text_column="text",keep_secret_column=True)
+        output_dataset.write.save("tmp/pii", mode="overwrite", format="json")
+        output_dataset.show(truncate=True)
 
     def test_filter_jsonl(self):
         data_dir = "tests/data/llm_data"
