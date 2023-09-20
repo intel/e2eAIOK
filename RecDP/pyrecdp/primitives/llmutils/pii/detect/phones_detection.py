@@ -1,8 +1,15 @@
 import phonenumbers
 
 
-def detect_phones(text):
-    """Detects phone in a string using phonenumbers libray only detection the international phone number"""
+def detect_phones(text, context=None):
+    """Detects phone number in a string using phonenumbers libray
+    Args:
+      context: pii detect context
+      content (str): A string containing the text to be analyzed.
+    Returns:
+        A list of dicts containing the tag type, the matched string, and the start and
+        end indices of the match.
+    """
     matches = []
 
     for match in phonenumbers.PhoneNumberMatcher(text, "IN"):

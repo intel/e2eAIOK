@@ -4,6 +4,8 @@ import logging
 from pyspark.sql.dataframe import DataFrame
 from pyspark.sql.dataframe import Row as SparkRow
 
+from transformers import pipeline
+
 from pyrecdp.primitives.llmutils.pii.pii_detection import scan_pii_text
 from pyrecdp.primitives.llmutils.pii.pii_redaction import redact_pii_text, random_replacements
 
@@ -71,6 +73,11 @@ def getArgs():
     return parser.parse_args()
 
 
+def createContext():
+    pipelines = {"name_password": pipeline("token-classification", model="bigcode/starpii",
+                                           grouped_entities=True)}
+    return {"pipelines": pipelines}
+
 def pii_remove_text(text,replacements):
     secrets = scan_pii_text(text)
     text,modified = redact_pii_text(text, secrets, replacements)
@@ -80,9 +87,12 @@ def pii_remove_text(text,replacements):
 def pii_remove(dataset: DataFrame, text_column="text", keep_secret_column=False):
     def pii_remove_partition(batch):
         replacements = random_replacements()
+        context = createContext()
         for row in batch:
             text, secrets, modified = pii_remove_text(row[text_column],replacements)
             row_dict = dict(**row.asDict())
+            secrets = scan_pii_text(row[text_column], context)
+            row_dict[text_column] = redact_pii_text(row.text, secrets, replacements)
             row_dict[text_column] = text
             if keep_secret_column:
                 row_dict["__SECRETS__"] = secrets

@@ -87,9 +87,10 @@ def not_ip_address(matched_str):
         return True
 
 
-def detect_ip(content):
+def detect_ip(content, context=None):
     """Detects ip addresses in a string using regex matching
     Args:
+      context: pii detect context
       content (str): A string containing the text to be analyzed.
     Returns:
         A list of dicts containing the tag type, the matched string, and the start and
