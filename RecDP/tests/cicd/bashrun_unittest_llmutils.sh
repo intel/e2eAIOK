@@ -106,10 +106,10 @@ if [ $? != 0 ]; then
     failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_text_fixer\n"
 fi
 
-echo "test_llmutils.Test_LLMUtils.test_ppi_remove"
-python -m unittest tests.test_llmutils.Test_LLMUtils.test_ppi_remove
+echo "test_llmutils.Test_LLMUtils.test_pii_remove"
+python -m unittest tests.test_llmutils.Test_LLMUtils.test_pii_remove
 if [ $? != 0 ]; then
-    failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_ppi_remove\n"
+    failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_pii_remove\n"
 fi
 
 echo "test_llmutils.Test_LLMUtils.test_language_identify"
