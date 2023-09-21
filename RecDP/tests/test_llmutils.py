@@ -5,6 +5,8 @@ from pathlib import Path
 import os
 from IPython.display import display
 
+from pyrecdp.primitives.llmutils.text_fixer import text_fixer
+
 pathlib = str(Path(__file__).parent.parent.resolve())
 print(pathlib)
 try:
@@ -13,10 +15,13 @@ except:
     print("Not detect system installed pyrecdp, using local one")
     sys.path.append(pathlib)
 from pyrecdp.primitives.llmutils import near_dedup, near_dedup_spk, shrink_document_MP, text_to_jsonl_MP, pii_remove, \
-    filter_by_blocklist, language_identify, language_identify_spark, Classifier, profanity_filter, filter_by_bad_words, filter_by_length, global_hash_mp, global_dedup, global_dedup_spk
+    filter_by_blocklist, language_identify, language_identify_spark, Classifier, profanity_filter, filter_by_bad_words, \
+    filter_by_length, global_hash_mp, global_dedup, global_dedup_spk
 
 from pyrecdp.primitives.llmutils.utils import get_target_file_list
+
 cur_dir = str(Path(__file__).parent.resolve())
+
 
 class Test_LLMUtils(unittest.TestCase):
     def setUp(self):
@@ -56,7 +61,7 @@ class Test_LLMUtils(unittest.TestCase):
         ret_df = near_dedup_spk(spark_df, ngram_size, num_perm, bands, ranges)
         print("output is")
         ret_df.show()
-        
+
     def test_global_hash_jsonl(self):
         source = 'PILE'
         in_type = 'jsonl'
@@ -67,7 +72,7 @@ class Test_LLMUtils(unittest.TestCase):
         global_hash_mp(source, data_dir, in_type, n_parallel, out_dir, is_norm)
         pdf = pd.read_parquet(out_dir)
         display(pdf)
-        
+
     def test_global_hash_parquet(self):
         source = 'PILE'
         in_type = 'parquet'
@@ -78,7 +83,7 @@ class Test_LLMUtils(unittest.TestCase):
         global_hash_mp(source, data_dir, in_type, n_parallel, out_dir, is_norm)
         pdf = pd.read_parquet(out_dir)
         display(pdf)
-        
+
     def test_get_hash_indexing(self):
         from pyrecdp.primitives.llmutils.global_dedup import get_hash_indexing
         out_dir = "tests/data/llm_data/global_hash_index"
@@ -86,7 +91,7 @@ class Test_LLMUtils(unittest.TestCase):
         get_hash_indexing(data_dir, out_dir)
         pdf = pd.read_parquet(out_dir)
         display(pdf)
-        
+
     def test_combine_hash_indexing(self):
         from pyrecdp.primitives.llmutils.global_dedup import combine_hash_indexing
         out_dir = "tests/data/llm_data/combined_hash_index/"
@@ -94,7 +99,7 @@ class Test_LLMUtils(unittest.TestCase):
         combine_hash_indexing(data_dir_dir, out_dir)
         pdf = pd.read_parquet(out_dir)
         display(pdf)
-        
+
     def test_get_duplication_list(self):
         from pyrecdp.primitives.llmutils.global_dedup import get_duplication_list
         data_dir = "tests/data/llm_data/global_hash_index"
@@ -102,7 +107,7 @@ class Test_LLMUtils(unittest.TestCase):
         get_duplication_list(data_dir, out_dir)
         pdf = pd.read_parquet(out_dir)
         display(pdf)
-        
+
     def test_index_based_reduction(self):
         from pyrecdp.primitives.llmutils import index_based_reduction
         in_dir = "tests/data/llm_data/global_hash_out"
@@ -119,18 +124,18 @@ class Test_LLMUtils(unittest.TestCase):
         global_dedup(data_dir, out_dir, "PILE", in_type)
         pdf = pd.read_parquet(out_dir + 'deduplicated')
         display(pdf)
-        
+
     def test_global_dedup_spark(self):
         from pyrecdp.core import SparkDataProcessor
-        from pyspark.sql.types import StructType,StructField, StringType
+        from pyspark.sql.types import StructType, StructField, StringType
         import pyspark.sql.functions as F
         data_files = self.data_files
         is_norm = True
         rdp = SparkDataProcessor()
-        spark=rdp.spark
-        schema = StructType([ 
-            StructField("text",StringType(),True), 
-            StructField("meta",StringType(),True)
+        spark = rdp.spark
+        schema = StructType([
+            StructField("text", StringType(), True),
+            StructField("meta", StringType(), True)
         ])
         for data_file in data_files:
             spark_df = spark.read.text(data_file)
@@ -140,7 +145,7 @@ class Test_LLMUtils(unittest.TestCase):
             spark_df.show()
             ret = global_dedup_spk(spark_df, source, is_norm)
             ret.show()
-            
+
     def test_shrink_jsonl(self):
         data_dir = "tests/data/llm_data/PILE"
         dup_dir = self.dup_dir
@@ -157,7 +162,7 @@ class Test_LLMUtils(unittest.TestCase):
         from pyrecdp.core import SparkDataProcessor
 
         sparkDP = SparkDataProcessor()
-        spark=sparkDP.spark
+        spark = sparkDP.spark
         input_dataset = spark.read.load(path="tests/data/llm_data/arxiv_sample_100.jsonl", format="json")
         output_dataset = pii_remove(input_dataset)
         output_dataset.write.save(path="./tmp", format="json", mode="overwrite")
@@ -182,6 +187,12 @@ class Test_LLMUtils(unittest.TestCase):
         out_dir = "tests/data/filter_out"
         filter_by_length(data_dir, out_dir)
 
+    def test_text_fixer(self):
+        data_dir = "tests/data/yao_data"
+        out_dir = "tests/data/filter_out"
+        in_type = "jsonl"
+        text_types = ["html", 'latex', "codes"]
+        text_fixer(data_dir, in_type, out_dir,text_types)
 
     def test_language_identify(self):
         data_dir = os.path.join(cur_dir, "data/llm_data")
@@ -189,7 +200,8 @@ class Test_LLMUtils(unittest.TestCase):
         fasttext_model_dir = self.fasttext_model
 
         language_identify_output_dir = os.path.join(data_dir, "language_identify")
-        language_identify(data_dir, data_files, fasttext_model_dir, 'text', 'lang', language_identify_output_dir, "file://")
+        language_identify(data_dir, data_files, fasttext_model_dir, 'text', 'lang', language_identify_output_dir,
+                          "file://")
 
     def test_language_identify_spark(self):
         from pyrecdp.core import SparkDataProcessor
@@ -198,7 +210,7 @@ class Test_LLMUtils(unittest.TestCase):
         data_file = self.data_files[0]
         save_path = os.path.join(data_dir, "language_identify/lid_df")
         rdp = SparkDataProcessor()
-        spark=rdp.spark
+        spark = rdp.spark
         spark_df = spark.read.json(data_file)
         print("input is ")
         spark_df.show()
