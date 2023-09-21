@@ -1,33 +1,42 @@
 import argparse
 import os
 from pyrecdp.core.utils import Timer
-import json
-from .utils import get_nchunks_and_nproc, launch_mp
 
-## Place Holder, not done yet
-# define actual work
-def classify(x_list, classify_condition):
-    raise NotImplementedError("This function is not completed yet, just place holder")
-    for x in x_list:
-        in_file_name, out_file_name = x
-        with open(in_file_name, 'r') as rdr:
-            with open(out_file_name, 'w') as f:
-                for idx, line in enumerate(rdr):
-                    if classify_condition(idx):
-                        f.write(line + "\n")
-    return True
+from pyrecdp.primitives.llmutils.language_identify import construct_classifier, read_json, language_identify_df
+from pyrecdp.primitives.spark_data_processor.data_processor import DataProcessor as SparkDataProcessor
 
-# define how to do parallel here
-def classify_MP(data_dir, classify_condition, out_dir):
-    os.makedirs(out_dir, exist_ok=True)
 
-    files = sorted(os.listdir(data_dir))
-    files = list(filter(lambda file_: '.jsonl' in file_, files))
-    
-    args = [(os.path.join(data_dir, i), os.path.join(out_dir, i)) for i in files]
+def language_classify(data_dir, data_files, fasttext_model_dir, language_identify_field,
+                      language_identify_output_field, language_identify_output_dir, file_system_prefix=""):
 
-    n_chunks, n_proc = get_nchunks_and_nproc(len(files))
-    print(f"resetting to {n_proc} for number of processes")
-    
-    args = [(args[i : i + n_chunks], classify_condition) for i in range(0, len(args), n_chunks)]
-    launch_mp(n_proc, args, classify)
+    classifier = construct_classifier(fasttext_model_dir, language_identify_field, language_identify_output_field)
+    rdp = SparkDataProcessor()
+    spark = rdp.spark
+    try:
+        with Timer("Load data"):
+            df_dict = {}
+            for data_file in data_files:
+                df = read_json(data_dir, data_file, spark, file_system_prefix)
+                df_dict[data_file] = df
+
+        with Timer("Process data"):
+            for data_file, df in df_dict.items():
+                processed_df = language_identify_df(df, classifier).cache()
+                df_dict[data_file] = processed_df
+
+        with Timer("Spilt and save data"):
+            for data_file, df in df_dict.items():
+                save_path = f"{file_system_prefix}{os.path.join(language_identify_output_dir, data_file.split('.')[0])}"
+                df.write.mode("overwrite").partitionBy(language_identify_output_field).parquet(save_path)
+
+        total_length = 0
+        for df in df_dict.values():
+            total_length += df.count()
+
+        print(f"Completed!!")
+        print(f"    total classify the files by language for {total_length} documents")
+        print(f"    All the processed data are saving under the folder: {language_identify_output_dir}")
+
+    except Exception as e:
+        spark.stop()
+        print("Failed", e)
