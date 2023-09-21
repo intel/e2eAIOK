@@ -183,7 +183,6 @@ class Test_LLMUtils(unittest.TestCase):
         out_dir = "tests/data/filter_out"
         filter_by_length(data_dir, out_dir)
 
-
     def test_language_identify(self):
         data_dir = os.path.join(cur_dir, "data/llm_data")
         data_files = get_target_file_list(data_dir, "jsonl", "file://")
@@ -206,3 +205,19 @@ class Test_LLMUtils(unittest.TestCase):
         lid_df = language_identify_spark(spark_df, fasttext_model_dir, 'text', 'lang', save_path)
         print("output is")
         lid_df.show()
+
+    def test_convert_from_text(self):
+        from pyrecdp.primitives.llmutils import convert
+        data_dir = "tests/data/llm_data/pmc"
+        out_dir = "tests/data/llm_data/pmc_parquet"
+        convert(data_dir, 'text', 1, out_dir)
+        pdf = pd.read_parquet(out_dir + "/part_0.parquet")
+        display(pdf)
+
+    def test_convert_from_jsonl(self):
+        from pyrecdp.primitives.llmutils import convert
+        data_dir = "tests/data/llm_data/PILE/"
+        out_dir = "tests/data/llm_data/pmc_parquet"
+        convert(data_dir, 'jsonl', 1, out_dir)
+        pdf = pd.read_parquet(out_dir + '/NIH_sample.jsonl.parquet')
+        display(pdf)
