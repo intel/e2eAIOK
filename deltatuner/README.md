@@ -55,7 +55,9 @@ Please refer to [example page](https://github.com/intel-innersource/frameworks.b
 | GPT-2        |  |  |
 | GPT-J        |  |  |
 | Bloom        |  |  |
+| OPT          |  |  |
 | GPT-Neo      |  |  |
 | Falcon       |  |  |
+| Flan-T5      |  |  |
 | LLaMA        | ✅  | ✅  |
 | MPT          | ✅  | ✅  |
