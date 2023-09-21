@@ -218,12 +218,12 @@ def read_parquet_pandas_to_spark(f_name_list, spark):
     return src_df
                 
 class MultiProcessManager:
-    def wait_and_check(self, pool):
+    def wait_and_check(self, pool, base_script_name):
         for proc_id, (process, cmd) in pool.items():
             std_out, std_err = process.communicate()
             rc = process.wait()
             if rc != 0:
-                file_name = f"generate_hash_index-proc-{proc_id}.error.log"
+                file_name = f"{base_script_name}-proc-{proc_id}.error.log"
                 print(f"Task failed, please check {file_name} for detail information")
                 with open(file_name, "a") as f:
                     f.write(f"=== {time.ctime()} {' '.join(cmd)} failed. ===\n")
@@ -234,7 +234,8 @@ class MultiProcessManager:
     def launch_cmdline_mp(self, args, mp, script_name):
         pool = {}
         inflight = 0
-        for proc_id, arg in tqdm(enumerate(args), total=len(args), desc=script_name):
+        base_script_name = os.path.basename(script_name)
+        for proc_id, arg in tqdm(enumerate(args), total=len(args), desc=base_script_name):
             proc_id, x_list = arg
             cmd = ["python", script_name]
             cmd += x_list
@@ -243,8 +244,8 @@ class MultiProcessManager:
             pool[proc_id] = (subprocess.Popen(cmd , stdout=subprocess.PIPE, stderr=subprocess.PIPE), cmd)
             
             if inflight >= mp:
-                self.wait_and_check(pool)
+                self.wait_and_check(pool, base_script_name)
                 inflight = 0
                 pool = {}
             
-        self.wait_and_check(pool)
+        self.wait_and_check(pool, base_script_name)
