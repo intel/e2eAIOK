@@ -217,7 +217,37 @@ class Test_LLMUtils(unittest.TestCase):
     def test_convert_from_jsonl(self):
         from pyrecdp.primitives.llmutils import convert
         data_dir = "tests/data/llm_data/PILE/"
-        out_dir = "tests/data/llm_data/pmc_parquet"
+        out_dir = "tests/data/llm_data/PILE_parquet_converted"
         convert(data_dir, 'jsonl', 1, out_dir)
-        pdf = pd.read_parquet(out_dir + '/NIH_sample.jsonl.parquet')
+        list_file = os.listdir(out_dir)
+        print(f"out dir contains {list_file}")
+        pdf = pd.read_parquet(out_dir)
         display(pdf)
+        
+    def test_text_normalization(self):
+        from pyrecdp.primitives.llmutils import text_normalization
+        data_dir = "tests/data/llm_data/PILE/"
+        out_dir = "tests/data/llm_data/PILE_text_norm"
+        text_normalization(data_dir, 'jsonl', out_dir)
+        list_file = os.listdir(out_dir)
+        print(f"out dir contains {list_file}")
+        pdf = pd.read_parquet(out_dir)
+        display(pdf)
+        
+    def test_text_normalization_spark(self):
+        from pyrecdp.primitives.llmutils import text_normalization_spk
+        from pyrecdp.core import SparkDataProcessor
+        from pyspark.sql.types import StructType,StructField, StringType
+        import pyspark.sql.functions as F
+        data_file = "tests/data/llm_data/PILE/NIH_sample.jsonl"
+        rdp = SparkDataProcessor()
+        spark=rdp.spark
+        schema = StructType([ 
+            StructField("text",StringType(),True), 
+            StructField("meta",StringType(),True)
+        ])
+        spark_df = spark.read.text(data_file)
+        spark_df = spark_df.withColumn('jsonData', F.from_json(F.col('value'), schema)).select("jsonData.*")
+        
+        ret = text_normalization_spk(spark_df)
+        ret.show()
