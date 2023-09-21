@@ -7,27 +7,27 @@ RecDP LLM is a set of python components that enables quick and easy establish of
 
 ## General - Foundation & FineTune
 
-| Type                                           | Description                                               | supports                                             | Verified dataset & size               |
-| ---------------------------------------------- | --------------------------------------------------------- | ---------------------------------------------------- | ------------------------------------- |
-| [ Convert ]( #Convert )                        | Convert individual document, jsonl, csv to parquet        | text, jsonl, csv                                     | RedPajama - 2 TB                      |
-| [ Filter ]( #Filter )                          | Filter out document based on condition                    | profanity_check, black-list, url_based, length_based | RedPajama - 2 TB                      |
-| [ Language Identify ]( #Language_identify )    | Inentify major language type of document                  | en, zh, fr, de, .. total 25 langs                    | RedPajama - 2 TB                      |
-| [ Classify ]( #Classify )                      | Classify data into sub buckets                            | meta fields, language                                | RefinedWeb - 1.7 TB                   |
-| [ Fuzzy Deduplicator ]( #Fuzzy_deduplication ) | Detect and reduce duplication based on document context   | minHashLSH, minHashLSH-shortdoc                      | PILE - 200 GB                         |
-| [ Decontamination ](#Decontamination )         | Detect and reduce duplication based on exact same content | sha256-hash                                          | RefinedWeb - 1.7 TB, RedPajama - 2 TB |
-| [ PII Removal ]( #PII-Removal )                | Detect and replace personal infomation in document        | email, phone, ip, username, password                 | RefinedWeb - 1.7 TB                   |
-| [ Text Normalization ]( #Text_normalization )  | Fix and clean texts                                       | ftfy, punctuation_normalization                      | RedPajama - 2 TB , RedPajama - 2 TB   |
-| [ Text Fixer ]( #Text_Fixer )                  | Clean repeated format in html, latex, codes               | html, latex, codes                                   | RefinedWeb - 1.7 TB                   |
-| [ Document splitter  ]( #Document_Splitter )   | Split Document into multiple sub documents                | chapter_based, length_based                          | RefinedWeb - 1.7 TB                   |
+| Type                                                                                                                                                 | Description                                               | supports                                             | Verified dataset & size               |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ---------------------------------------------------- | ------------------------------------- |
+| [ Convert ](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/convert.ipynb)                        | Convert individual document, jsonl, csv to parquet        | text, jsonl, csv                                     | RedPajama - 2 TB                      |
+| [ Filter ](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/filter.ipynb)                          | Filter out document based on condition                    | profanity_check, black-list, url_based, length_based | RedPajama - 2 TB                      |
+| [ Language Identify ](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/language_identify.ipynb)    | Inentify major language type of document                  | en, zh, fr, de, .. total 25 langs                    | RedPajama - 2 TB                      |
+| [ Classify ](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/classify.ipynb)                      | Classify data into sub buckets                            | meta fields, language                                | RefinedWeb - 1.7 TB                   |
+| [ Fuzzy Deduplicator ](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/fuzzy_deduplication.ipynb) | Detect and reduce duplication based on document context   | minHashLSH, minHashLSH-shortdoc                      | PILE - 200 GB                         |
+| [ Decontamination ](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/decontamination.ipynb)        | Detect and reduce duplication based on exact same content | sha256-hash                                          | RefinedWeb - 1.7 TB, RedPajama - 2 TB |
+| [ PII Removal ](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/pii_removal.ipynb)                | Detect and replace personal infomation in document        | email, phone, ip, username, password                 | RefinedWeb - 1.7 TB                   |
+| [ Text Normalization ](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/text_normalization.ipynb)  | Fix and clean texts                                       | ftfy, punctuation_normalization                      | RedPajama - 2 TB , RedPajama - 2 TB   |
+| [ Text Fixer ](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/text_fixer.ipynb)                  | Clean repeated format in html, latex, codes               | html, latex, codes                                   | RefinedWeb - 1.7 TB                   |
+| [ Document splitter  ](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/document_split.ipynb)      | Split Document into multiple sub documents                | chapter_based, length_based                          | RefinedWeb - 1.7 TB                   |
 
 ## LLM data quality enhancement
 
-| Type                                                        | Description                                                                        | supports                                             |
-| ----------------------------------------------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| [ Prompt Enhancement ]( #Prompt_Enhancement )               | creates high-complexity instructions from existing instruct-tuned LLM models       | PromptSource, self-instruct, evol-instruct(wizardLM) |
-| [ Text Quality Assessment ]( #Text_Quality_Assesement )     | Assess text auality with a logistic regression classifier                          | GPT-3 quality scorer,                                |
-| [ Data Diversity Control ]( #Data_Diversity_Control )       | Control data's diversity and coverage                                              | rouge-l similarity                                   |
-| [ Toxicity and Bias Control ]( #Toxicity_and_Bias_Control ) | Calculates toxicity scores for text objects and filters according to the threshold | TBD                                                  |
+| Type                                                                                                                                                          | Description                                                                        | supports                                             |
+| :------------------------------------------------------------------------------------------------------------------------------------------------------------ | :--------------------------------------------------------------------------------- | :--------------------------------------------------- |
+| [ Prompt Enhancement ](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/prompt_enhancement.ipynb)           | creates high-complexity instructions from existing instruct-tuned LLM models       | PromptSource, self-instruct, evol-instruct(wizardLM) |
+| [ Text Quality Assessment ](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/text_quality_assessment.ipynb) | Assess text quality with a logistic regression classifier                          | GPT-3 quality scorer,                                |
+| [ Data Diversity Control ](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/data_diversity_control.ipynb)   | Control data's diversity and coverage                                              | rouge-l similarity                                   |
+| [ Toxicity and Bias Control ](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/toxicity_bias_control.ipynb) | Calculates toxicity scores for text objects and filters according to the threshold | TBD                                                  |
 
 
 # Getting Start
@@ -48,44 +48,55 @@ pip install pyrecdp --pre
 
 ## General
 
-### Filter [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](#)
+### Convert [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/convert.ipynb)
+Convert types of format into parquet. We usually see jsonl, jsonl.zst, individual text files, wet, csv, etc are being used to store raw data in LLM domain. This component is used to convert types of raw files to parquet format with an align schema as below
 
-Put some text to show expected input and output and how it validated 
+| text                | meta                              | supports                                             |
+| ------------------- | --------------------------------- | ---------------------------------------------------- |
+| This is a cool tool | {'source': 'dummy', 'lang': 'en'} | PromptSource, self-instruct, evol-instruct(wizardLM) |
+| llm is fun          | {'source': 'dummy', 'lang': 'en'} | GPT-3 quality scorer,                                |
+| ...                 | {'source': 'dummy', 'lang': 'en'} | rouge-l similarity                                   |
 
-### Language Identify [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](#)
 
-Put some text to show expected input and output and how it validated 
+### Filter [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/filter.ipynb)
+Filter out document based on provided rules. 
 
-### Classify [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](#)
+### Language Identify [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/language_identify.ipynb)
+Inentify major language type of document.
 
-Put some text to show expected input and output and how it validated 
+### Classify [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/classify.ipynb)
+Classify data into sub buckets. Classify rule can be based on language, data source category, etc.
+ 
 
-### Near Dedup (Fuzzy Deduplication) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](#)
+### Near Dedup (Fuzzy Deduplication) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/fuzzy_deduplication.ipynb)
+Detect and reduce duplication based on document context. We use DataSketch minHash as the base algorithm to calculate (hash, band_id) pair for each documents, then we use spark for minHashLSH and use networkx to get all connected components, and convert connected components to a duplication list. Eventually we remove duplications based on the duplication list.
 
-Put some text to show expected input and output and how it validated 
 
-### Decontamination (Global Deduplication) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](#)
+### Decontamination (Global Deduplication) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/decontamination.ipynb)
+Detect and reduce duplication based on exact same content. We use sha256 to generate normalized hash value for each document. Then we use spark to generate duplication list. Eventually we use another spark function to remove duplicated documents.
 
-Put some text to show expected input and output and how it validated 
+### PII removal [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/pii_removal.ipynb)
+Detect and replace personal infomation in document.
 
-### PII removal [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](#)
+### Text Normalization [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/text_normalization.ipynb)
+Fix and clean texts using ftfy and remove unnecessary punctuation to only keep the text meaning. 
 
-Put some text to show expected input and output and how it validated 
+### Text Fixer [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/text_fixer.ipynb)
+Clean repeated format in html, latex, codes. 
+
+### Document Split [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/document_split.ipynb)
+Split Document into multiple sub documents.
 
 ## For Fine Tune
 
-### Prompt Enhancement [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](#)
+### Prompt Enhancement [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/prompt_enhancement.ipynb)
+Creates high-complexity instructions from existing instruct-tuned LLM models.
 
-Put some text to show expected input and output and how it validated 
+### Text Quality Assesement [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/text_quality_assessment.ipynb)
+Assess text quality with a logistic regression classifier. 
 
-### Data Augmentation [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](#)
+### Data Diversity Control [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/data_diversity_control.ipynb)
+Control data's diversity and coverage.
 
-Put some text to show expected input and output and how it validated 
-
-### Text Quality Assesement [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](#)
-
-Put some text to show expected input and output and how it validated 
-
-### Toxicity and Bias Control [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](#)
-
-Put some text to show expected input and output and how it validated
+### Toxicity and Bias Control [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/toxicity_bias_control.ipynb)
+Calculates toxicity scores for text objects and filters according to the threshold.
