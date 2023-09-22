@@ -100,6 +100,12 @@ if [ $? != 0 ]; then
     failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_profanity_filter\n"
 fi
 
+echo "test_llmutils.Test_LLMUtils.test_text_fixer"
+python -m unittest tests.test_llmutils.Test_LLMUtils.test_text_fixer
+if [ $? != 0 ]; then
+    failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_text_fixer\n"
+fi
+
 echo "test_llmutils.Test_LLMUtils.test_pii_remove"
 python -m unittest tests.test_llmutils.Test_LLMUtils.test_pii_remove
 if [ $? != 0 ]; then
@@ -128,6 +134,17 @@ echo "test_llmutils.Test_LLMUtils.test_quality_classifier_spark"
 python -m unittest tests.test_llmutils.Test_LLMUtils.test_quality_classifier_spark
 if [ $? != 0 ]; then
     failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_quality_classifier_spark\n"
+
+echo "test_llmutils.Test_LLMUtils.test_classify"
+python -m unittest tests.test_llmutils.Test_LLMUtils.test_classify
+if [ $? != 0 ]; then
+    failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_classify\n"
+fi
+
+echo "test_llmutils.Test_LLMUtils.test_classify_spark"
+python -m unittest tests.test_llmutils.Test_LLMUtils.test_classify_spark
+if [ $? != 0 ]; then
+    failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_classify_spark\n"
 fi
 
 if [ -z ${failed_tests} ]; then
