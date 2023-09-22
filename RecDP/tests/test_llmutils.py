@@ -194,8 +194,8 @@ class Test_LLMUtils(unittest.TestCase):
         in_type = "jsonl"
         text_types = ["html", 'latex', "codes"]
         text_fixer(data_dir, in_type, out_dir,text_types)
-        
-        
+
+
     def test_language_identify(self):
         data_dir = os.path.join(cur_dir, "data/llm_data/PILE")
         fasttext_model_dir = self.fasttext_model
@@ -302,6 +302,7 @@ class Test_LLMUtils(unittest.TestCase):
         spark_df = spark.read.json(data_file)
         quality_classifier_df = quality_classifier_spark(spark_df)
         quality_classifier_df.show()
+
 
     def test_sentence_split(self):
         from pyrecdp.core import SparkDataProcessor
