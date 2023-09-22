@@ -1,0 +1,53 @@
+name: Unit Test Util
+
+on:
+  pull_request:
+    branches:
+    - main
+    paths:
+    - '.github/workflows/**'
+    - 'Dockerfile-ubuntu/**'
+    - 'e2eAIOK/utils/**'
+    - 'tests/unittest/utils/**'
+    - 'setup.py'
+
+jobs:
+  unit_tests:
+    name: Unit Test Util
+    runs-on: self-hosted
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.7'
+      
+    - name: Install Dependencies
+      run: |
+        python --version
+        pip install -U pip
+        pip install -U pytest
+        pip install codecov
+        pip install build wheel twine
+        pip install -r e2eAIOK/DeNas/requirements.txt
+        pip install -r e2eAIOK/ModelAdapter/requirements.txt
+        
+    - name: Install package
+      run: |
+        python setup.py sdist && pip install dist/e2eAIOK-*.*.*.tar.gz
+
+    - name: Run test
+      run: |
+        pytest tests/unittest/utils 
+
+    - name: After test summary
+      run: |
+        codecov
+
+    - name: Submodule package check
+      run: |
+        python setup.py bdist_wheel --sda && twine check dist/e2eAIOK_sda-*.*.*-py3-none-any.whl && rm -rf build && rm -rf dist 
