@@ -72,5 +72,8 @@ setuptools.setup(
         "wget==3.2",
         "alt-profanity-check==1.3.0",
         "huggingface-hub==0.16.4",
+        "loguru==0.7.2",
+        "tabulate==0.9.0",
+        "sentencepiece==0.1.99",
         "selectolax"
         ])

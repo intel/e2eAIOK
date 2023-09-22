@@ -17,4 +17,5 @@ from .language_identify import language_identify, language_identify_spark, Class
 from .classify import classify, classify_spark
 from .convert import convert
 from .text_normalization import text_normalization, text_normalization_spk
+from .quality_classifier import quality_classifier, quality_classifier_spark
 from .text_fixer import text_fixer
