@@ -8,7 +8,6 @@ import gc
 
 import torch
 
-from .basic_utils import network_weight_gaussian_init, get_ntk_n, compute_synflow_per_weight
 from ..utils import DeltaTunerType
 from ..search.utils import network_latency, input_constructor
 
