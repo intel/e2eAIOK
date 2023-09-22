@@ -257,10 +257,7 @@ def text_fixer(data_dir, in_type, out_dir, text_types, enable_ray=False):
             total_data_num = spark_df.count()
 
         with Timer("Processing data"):
-            fixed_df = spark_df
-            for text_type in text_types:
-                operator = get_fixer_by_type(text_type)
-                fixed_df = fixed_df.withColumn('text', operator(F.col('text')))
+            fixed_df = text_fixer_spark(spark_df, text_types)
 
         with Timer("Save data"):
             outfile_path = os.path.join(out_dir, "text_fixed")
@@ -271,5 +268,13 @@ def text_fixer(data_dir, in_type, out_dir, text_types, enable_ray=False):
     except Exception as e:
         spark.stop()
         print("Failed", e)
+
+
+def text_fixer_spark(df, text_types):
+    fixed_df = df
+    for text_type in text_types:
+        operator = get_fixer_by_type(text_type)
+        fixed_df = fixed_df.withColumn('text', operator(F.col('text')))
+    return fixed_df
 
 
