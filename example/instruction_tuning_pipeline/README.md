@@ -40,7 +40,7 @@ pip install -r requirements.txt
 
 - Install the `deltatuner` python package
 ```shell
-pip install e2eaiok-deltatuner
+pip install deltatuner
 ```
 
 ### 2. Prepare the Model

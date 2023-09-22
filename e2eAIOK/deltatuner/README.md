@@ -30,9 +30,7 @@ Deltatuner is an extension for [Peft](https://github.com/huggingface/peft) to im
 ### Installation
 - install the python package
 ```shell
-git clone https://github.com/intel/e2eAIOK.git
-cd e2eAIOK/e2eAIOK/deltatuner
-pip install -e .
+pip install deltatuner
 ```
 
 ### Fast Fine-tuning on Base models
