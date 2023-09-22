@@ -24,26 +24,6 @@ class Timer:
         Timer.level -= 1
         print(f'{"  " * Timer.level}{self.name} took {timeit.default_timer() - self.start} sec')
 
-def timeout_input(printout, default, timeout = None, interactive = True):
-    if not interactive:
-        return default
-    import sys, select
-    print(printout)
-    i, o, e = select.select([sys.stdin], [], [], timeout)
-    if (i):
-        msg = sys.stdin.readline().strip()
-        return default if len(msg) == 0 else msg
-    else:
-        return default
-
-def parse_config(conf_file):
-    settings = {}
-    if not os.path.exists(conf_file):
-        return settings
-    with open(conf_file) as f:
-        settings.update(yaml.safe_load(f))
-    return settings
-
 def network_latency(model, tokenizer, batch_size=1, max_seq_length=32, infer_cnt=3.):
     batch, _ = input_constructor(batch_size, max_seq_length, tokenizer)
     aver_time = 0.

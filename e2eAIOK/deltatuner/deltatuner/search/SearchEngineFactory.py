@@ -1,11 +1,7 @@
-from .RandomSearchEngine import RandomSearchEngine
 from .EvolutionarySearchEngine import EvolutionarySearchEngine
-from .SigoptSearchEngine import SigoptSearchEngine
 
 SEARCHER_TYPES = {
-        "RandomSearchEngine": RandomSearchEngine,
-        "EvolutionarySearchEngine": EvolutionarySearchEngine,
-        "SigoptSearchEngine": SigoptSearchEngine
+        "EvolutionarySearchEngine": EvolutionarySearchEngine
 }
 
 class SearchEngineFactory(object):
