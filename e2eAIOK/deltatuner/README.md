@@ -43,12 +43,12 @@ deltatuner_model = deltatuner.optimize(model=lora_model, tokenizer=tokenizer, de
 
 ## More examples on Fine-tuning other LLMs
 
-Please refer to [example page](https://github.com/intel-innersource/frameworks.bigdata.AIDK/tree/deltatuner/example) for more use cases on fine-tuning other LLMs with the help of DeltaTuner.
+Please refer to [example page](https://github.com/intel/e2eAIOK/tree/main/example) for more use cases on fine-tuning other LLMs with the help of DeltaTuner.
 
 # Model supported matrix
 
 ## Causal Language Modeling
-### Causal Language Modeling
+
 | Model        | LoRA | SSF  |
 |--------------| ---- | ---- |
 | GPT-2        |  |  |
