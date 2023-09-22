@@ -1,4 +1,6 @@
-__all__ = ["utils", "near_dedup", "shrink_jsonl", "text_to_jsonl", "classify", "decontaminate", "filter", "language_identify", "pii_remove", "profanity_filter", "global_hash", "index_based_reduction", "global_dedup", "convert", "text_normalization"]
+__all__ = ["utils", "near_dedup", "shrink_jsonl", "text_to_jsonl", "classify", "decontaminate", "filter", "text_fixer",
+           "language_identify", "pii_remove", "profanity_filter", "global_hash", "index_based_reduction", 
+           "global_dedup", "convert", "text_normalization"]
 
 from .near_dedup import near_dedup, near_dedup_spk
 from .global_hash import global_hash_mp, global_hash_spk, global_hash
@@ -15,3 +17,4 @@ from .language_identify import language_identify, language_identify_spark, Class
 from .classify import classify, classify_spark
 from .convert import convert
 from .text_normalization import text_normalization, text_normalization_spk
+from .text_fixer import text_fixer

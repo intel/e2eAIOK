@@ -100,6 +100,12 @@ if [ $? != 0 ]; then
     failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_profanity_filter\n"
 fi
 
+echo "test_llmutils.Test_LLMUtils.test_text_fixer"
+python -m unittest tests.test_llmutils.Test_LLMUtils.test_text_fixer
+if [ $? != 0 ]; then
+    failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_text_fixer\n"
+fi
+
 echo "test_llmutils.Test_LLMUtils.test_pii_remove"
 python -m unittest tests.test_llmutils.Test_LLMUtils.test_pii_remove
 if [ $? != 0 ]; then
