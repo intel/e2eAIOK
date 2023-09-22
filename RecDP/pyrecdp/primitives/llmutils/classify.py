@@ -1,33 +1,48 @@
 import argparse
 import os
 from pyrecdp.core.utils import Timer
-import json
-from .utils import get_nchunks_and_nproc, launch_mp
+from pyrecdp.primitives.llmutils.utils import get_target_file_list, read_data
+from pyrecdp.primitives.spark_data_processor.data_processor import DataProcessor as SparkDataProcessor
 
-## Place Holder, not done yet
-# define actual work
-def classify(x_list, classify_condition):
-    raise NotImplementedError("This function is not completed yet, just place holder")
-    for x in x_list:
-        in_file_name, out_file_name = x
-        with open(in_file_name, 'r') as rdr:
-            with open(out_file_name, 'w') as f:
-                for idx, line in enumerate(rdr):
-                    if classify_condition(idx):
-                        f.write(line + "\n")
-    return True
+def classify(data_dir, data_file_type, output_dir, classify_column, file_system_prefix=""):
+    data_files = get_target_file_list(data_dir, data_file_type, file_system_prefix)
+    rdp = SparkDataProcessor()
+    spark = rdp.spark
+    try:
+        with Timer("Load data"):
+            df_dict = read_data(data_dir, data_files, data_file_type, spark, file_system_prefix)
 
-# define how to do parallel here
-def classify_MP(data_dir, classify_condition, out_dir):
-    os.makedirs(out_dir, exist_ok=True)
+        with Timer("Spilt and save data"):
+            for parent_dir, df in df_dict.items():
+                save_path = f"{file_system_prefix}{os.path.join(output_dir, parent_dir)}"
+                df.write.mode("overwrite").partitionBy(classify_column).parquet(save_path)
 
-    files = sorted(os.listdir(data_dir))
-    files = list(filter(lambda file_: '.jsonl' in file_, files))
-    
-    args = [(os.path.join(data_dir, i), os.path.join(out_dir, i)) for i in files]
+        total_length = 0
+        for df in df_dict.values():
+            total_length += df.count()
 
-    n_chunks, n_proc = get_nchunks_and_nproc(len(files))
-    print(f"resetting to {n_proc} for number of processes")
-    
-    args = [(args[i : i + n_chunks], classify_condition) for i in range(0, len(args), n_chunks)]
-    launch_mp(n_proc, args, classify)
+        print(f"Completed!!")
+        print(f"    total classify the files by language for {total_length} documents")
+        print(f"    All the processed data are saving under the folder: {output_dir}")
+
+    except Exception as e:
+        spark.stop()
+        print("Failed", e)
+
+
+def classify_spark(spark_df, classify_column, save_path, file_system_prefix=""):
+    spark = spark_df.sparkSession
+    try:
+        with Timer("Spilt data"):
+            save_path = f"{file_system_prefix}{save_path}"
+            spark_df.write.mode("overwrite").partitionBy(classify_column).parquet(save_path)
+
+        total_length = spark_df.count()
+
+        print(f"Completed!!")
+        print(f"    total classify the spark dataframe by {classify_column} for {total_length} documents")
+        print(f"    All the classified data are saving under the folder: {save_path}")
+        return spark_df
+    except Exception as e:
+        spark.stop()
+        print("Failed", e)

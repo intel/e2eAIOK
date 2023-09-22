@@ -247,5 +247,33 @@ class MultiProcessManager:
                 self.wait_and_check(pool, base_script_name)
                 inflight = 0
                 pool = {}
-            
         self.wait_and_check(pool, base_script_name)
+
+
+def read_data(data_dir, data_files, data_file_type, spark, file_system_prefix=""):
+    if data_file_type in ["json", "jsonl"]:
+        read_function = spark.read.json
+    elif data_file_type == "parquet":
+        read_function = spark.read.parquet
+    else:
+        read_function = spark.read.text
+
+    file_dict = {}
+    for file in data_files:
+        if file_dict.get(os.path.dirname(file)) is None:
+            file_dict[os.path.dirname(file)] = [file]
+        else:
+            file_dict[os.path.dirname(file)].append(file)
+    df_dict = {}
+    for parent_dir, files in file_dict.items():
+        first = True
+        for file in files:
+            df = read_function(f"{file_system_prefix}{os.path.join(data_dir, file)}")
+            if first:
+                first = False
+                ret_df = df
+            else:
+                ret_df = ret_df.union(df)
+        df_dict[parent_dir] = ret_df
+
+    return df_dict
