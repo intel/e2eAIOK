@@ -118,6 +118,18 @@ if [ $? != 0 ]; then
     failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_language_identify_spark\n"
 fi
 
+echo "test_llmutils.Test_LLMUtils.test_quality_classifier"
+python -m unittest tests.test_llmutils.Test_LLMUtils.test_quality_classifier
+if [ $? != 0 ]; then
+    failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_quality_classifier\n"
+fi
+
+echo "test_llmutils.Test_LLMUtils.test_quality_classifier_spark"
+python -m unittest tests.test_llmutils.Test_LLMUtils.test_quality_classifier_spark
+if [ $? != 0 ]; then
+    failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_quality_classifier_spark\n"
+fi
+
 if [ -z ${failed_tests} ]; then
     echo "All tests are passed"
 else

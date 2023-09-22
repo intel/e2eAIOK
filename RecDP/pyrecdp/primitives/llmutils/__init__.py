@@ -12,4 +12,4 @@ from .language_identify import language_identify, language_identify_spark, Class
 from .profanity_filter import profanity_filter
 from .convert import convert
 from .text_normalization import text_normalization, text_normalization_spk
-from .quality_classifier import quality_classifier
+from .quality_classifier import quality_classifier, quality_classifier_spark

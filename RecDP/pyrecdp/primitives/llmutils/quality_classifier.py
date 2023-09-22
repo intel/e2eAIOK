@@ -315,6 +315,48 @@ def export_result(ds, res_path, file_system_prefix=''):
         ds.write.mode('overwrite').save(res_path)
 
 
+def quality_classifier_spark(df_spark,
+                       model='gpt3',
+                       tokenizer=None,
+                       keep_method='gpt3',
+                       text_key='text'):
+    """
+    Use specific quality classifier to predict document scores on your dataset
+    :param df_spark: spark dataframe
+    :param model: quality classifier name to apply. It's "gpt3" in default. You
+        can use one of ["gpt3", "chinese", "code"] we provided, or you can set
+        it to the path to your own model trained using the train.py tool
+    :param tokenizer: what tokenizer to use to tokenize texts. It's None in
+        default, which means using the standard Tokenizer of PySpark. You can
+        use one of ["zh.sp.model", "code.sp.model"] we provided, or you can set
+        it to the path to your own sentencepiece model
+    :param keep_method: the method to label should_keep field for each sample.
+        It's "gpt3" in default. Should be one of ["gpt3", "label"]
+    :param text_key: the field key name to hold texts to be classified. It's
+        "text" in default
+    :return:
+    """
+    # set default tokenizers for default models
+    if model == 'chinese':
+        tokenizer = 'zh.sp.model'
+        keep_method = 'label'
+    if model == 'code':
+        tokenizer = 'code.sp.model'
+        keep_method = 'label'
+    if model == 'gpt3':
+        tokenizer = None
+        keep_method = 'gpt3'
+
+    # load the quality classifier model
+    model = prepare_model(model_name=model)
+    # rename predicted column
+    if text_key != 'text':
+        df_spark = df_spark.withColumnRenamed(text_key, 'text')
+    # start to predict
+    pred = predict(model, df_spark, tokenizer=tokenizer, keep_method=keep_method).cache()
+    return pred
+
+
 def quality_classifier(dataset_path,
                        result_path,
                        model='gpt3',
