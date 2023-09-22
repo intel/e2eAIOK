@@ -1,6 +1,7 @@
 # Deltatuner Fine-tuning Example
 
 This example demonstrates how to finetune the pretrained large language model (LLM) with the instruction-following dataset by using the Deltatuner and some foundamental models. Giving Fine-tuned model the textual instruction, it will respond with the textual response. This example have been validated on the 4th Gen Intel® Xeon® Processors, Sapphire Rapids.
+We borrow most of the example code from [Intel® Extension for Transformers](https://github.com/intel/intel-extension-for-transformers/tree/main/workflows/chatbot/fine_tuning).
 
 ## Prerequisite​
 
