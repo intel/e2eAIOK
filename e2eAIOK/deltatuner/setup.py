@@ -4,21 +4,21 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 REQUIRED_PACKAGES = [
-    'torch>=1.13.0', 'transformers', 
+    'torch>=1.13.0', 'transformers', 'datasets', 'sentenpiece', 'peft==0.4.0', 'evaluate', 'nltk', 'rouge_score', 'einops', 'sigopt', 'torchsummary'
 ]
 
 setuptools.setup(
     name="deltatuner",
     version="0.1",
-    author="Intel",
-    author_email="xx@intel.com",
-    description="Intel extension for peft with PyTorch",
+    author="Intel AIA",
+    author_email="bdf.aiok@intel.com",
+    description="Intel extension for peft with PyTorch and DENAS",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/xx/xx",
-    download_url='https://github.com/xx/xx/tags',
+    url="https://github.com/intel/e2eAIOK/",
+    download_url='https://github.com/intel/e2eAIOK/',
     packages=setuptools.find_packages(
-        exclude=["example", ]),
+        exclude=["example", "doc", "docker", ]),
     python_requires=">=3.7",  # '>=3.4',  # !=3.4.*
     install_requires=REQUIRED_PACKAGES,
     extras_require={

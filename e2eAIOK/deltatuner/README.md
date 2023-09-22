@@ -9,19 +9,18 @@ Below is an example showing how to optimize the finetuning process of [Intel Neu
 # Installation
 - install the python package
 ```shell
-git clone https://github.com/intel-innersource/frameworks.bigdata.AIDK.git deltatuner
-cd deltatuner
-git checkout deltatuner
+git clone https://github.com/intel/e2eAIOK.git
+cd e2eAIOK/e2eAIOK/deltatuner
 pip install -e .
 ```
 
 
 # Fine-tuning Use Cases
 
-We use delatuner to optimize the [LoRA approach](https://arxiv.org/pdf/2106.09685.pdf) to finetune the LLM efficiently. 
+We use the DE-NAS in delatuner to optimize a LLM with [LoRA](https://arxiv.org/pdf/2106.09685.pdf) layers to a LLM with compact delta layers, so as to efficiently improve the LLM fine-tuning process in peak memory reduction and time speedup. 
 
 ## Fine-tuning on MPT-7B
-For [MPT](https://huggingface.co/mosaicml/mpt-7b), adding the following command to use the delatuner optimizations in the [LLM fine-tuning script](./example/instruction_tuning_pipeline/finetune_clm.py) for finetuning on the Alpaca dataset. 
+Below is an example of optimizing [MPT](https://huggingface.co/mosaicml/mpt-7b) model by adding the following few-lines to use the delatuner optimizations. 
 
 ```python
 from delta import deltatuner, deltatuner_args
