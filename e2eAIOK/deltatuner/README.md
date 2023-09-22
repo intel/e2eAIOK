@@ -4,7 +4,6 @@ Deltatuner is an extension for [Peft](https://github.com/huggingface/peft) to im
 ## Introduction
 <p align="center">
   <img width="90%" src="./doc/deltatuner.png">
-  Architecure of Deltatuner
 </p>
 
 ### Key Components

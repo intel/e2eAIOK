@@ -2,7 +2,7 @@
 set -x
 mkdir -p log models
 
-# fine-tune mpt-7b with denas-lora
+# fine-tune mpt-7b with lora
 python example/instruction_tuning_pipeline/finetune_clm.py \
     --model_name_or_path "/home/vmagent/app/dataset/mpt-7b" \
     --train_file "/home/vmagent/app/dataset/stanford_alpaca/alpaca_data.json" \
@@ -26,7 +26,7 @@ python example/instruction_tuning_pipeline/finetune_clm.py \
     --no_cuda \
     --bf16 True 2>&1 | tee log/mpt-lora-run-1epoch.log
 
-# fine-tune llama2-7b with denas-lora
+# fine-tune llama2-7b with lora
 python example/instruction_tuning_pipeline/finetune_clm.py \
     --model_name_or_path "/home/vmagent/app/dataset/Llama-2-7b-hf" \
     --train_file "/home/vmagent/app/dataset/stanford_alpaca/alpaca_data.json" \
