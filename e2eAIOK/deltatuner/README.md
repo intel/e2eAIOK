@@ -9,9 +9,8 @@ Below is an example showing how to optimize the finetuning process of [Intel Neu
 # Installation
 - install the python package
 ```shell
-git clone https://github.com/intel-innersource/frameworks.bigdata.AIDK.git deltatuner
-cd deltatuner
-git checkout deltatuner
+git clone https://github.com/intel/e2eAIOK.git
+cd e2eAIOK/e2eAIOK/deltatuner
 pip install -e .
 ```
 
