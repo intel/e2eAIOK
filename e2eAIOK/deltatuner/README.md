@@ -21,8 +21,8 @@ Deltatuner is an extension for [Peft](https://github.com/huggingface/peft) to im
 - Auto-tuning: automatically select best algorithms and delta structure for finetuning model
 
 ### Values
-- Save resources: Reduce trainable parameter / Reduce fine-tuning time / Reduce memory consumption
-- Get improved/comparable accuracy
+- Saving computation power: reduce the computation power and time required to fine-tune a model by reducing parameter size as well as memory footprint.
+- Improve accuracy: ensure same or now latency regression.
 
 ## Get Started
 
@@ -33,7 +33,7 @@ pip install deltatuner
 ```
 
 ### Fast Fine-tuning on Base models
-Below is an example of optimizing [MPT](https://huggingface.co/mosaicml/mpt-7b) model by adding the following few-lines to use the delatuner optimizations. It use the DE-NAS in delatuner to optimize a LLM with LoRA layers to a LLM with compact delta layers, so as to efficiently improve the LLM fine-tuning process in peak memory reduction and time speedup. 
+Below is an example of optimizing [MPT](https://huggingface.co/mosaicml/mpt-7b) model by adding the following few-lines to use the delatuner optimizations. It use the DE-NAS in delatuner to optimize a LLM with LoRA layers to a LLM with compact LoRA layers, so as to efficiently improve the LLM fine-tuning process in peak memory reduction and time speedup. 
 
 ```python
 from delta import deltatuner, deltatuner_args
