@@ -188,13 +188,15 @@ class Test_LLMUtils(unittest.TestCase):
         out_dir = "tests/data/filter_out"
         filter_by_length(data_dir, out_dir)
 
+
     def test_text_fixer(self):
         data_dir = "tests/data/yao_data"
         out_dir = "tests/data/filter_out"
         in_type = "jsonl"
         text_types = ["html", 'latex', "codes"]
         text_fixer(data_dir, in_type, out_dir,text_types)
-
+        
+        
     def test_language_identify(self):
         data_dir = os.path.join(cur_dir, "data/llm_data")
         data_files = get_target_file_list(data_dir, "jsonl", "file://")
@@ -218,3 +220,49 @@ class Test_LLMUtils(unittest.TestCase):
         lid_df = language_identify_spark(spark_df, fasttext_model_dir, 'text', 'lang', save_path)
         print("output is")
         lid_df.show()
+
+    def test_convert_from_text(self):
+        from pyrecdp.primitives.llmutils import convert
+        data_dir = "tests/data/llm_data/pmc"
+        out_dir = "tests/data/llm_data/pmc_parquet"
+        convert(data_dir, 'text', 1, out_dir)
+        pdf = pd.read_parquet(out_dir + "/part_0.parquet")
+        display(pdf)
+
+    def test_convert_from_jsonl(self):
+        from pyrecdp.primitives.llmutils import convert
+        data_dir = "tests/data/llm_data/PILE/"
+        out_dir = "tests/data/llm_data/PILE_parquet_converted"
+        convert(data_dir, 'jsonl', 1, out_dir)
+        list_file = os.listdir(out_dir)
+        print(f"out dir contains {list_file}")
+        pdf = pd.read_parquet(out_dir)
+        display(pdf)
+        
+    def test_text_normalization(self):
+        from pyrecdp.primitives.llmutils import text_normalization
+        data_dir = "tests/data/llm_data/PILE/"
+        out_dir = "tests/data/llm_data/PILE_text_norm"
+        text_normalization(data_dir, 'jsonl', out_dir)
+        list_file = os.listdir(out_dir)
+        print(f"out dir contains {list_file}")
+        pdf = pd.read_parquet(out_dir)
+        display(pdf)
+        
+    def test_text_normalization_spark(self):
+        from pyrecdp.primitives.llmutils import text_normalization_spk
+        from pyrecdp.core import SparkDataProcessor
+        from pyspark.sql.types import StructType,StructField, StringType
+        import pyspark.sql.functions as F
+        data_file = "tests/data/llm_data/PILE/NIH_sample.jsonl"
+        rdp = SparkDataProcessor()
+        spark=rdp.spark
+        schema = StructType([ 
+            StructField("text",StringType(),True), 
+            StructField("meta",StringType(),True)
+        ])
+        spark_df = spark.read.text(data_file)
+        spark_df = spark_df.withColumn('jsonData', F.from_json(F.col('value'), schema)).select("jsonData.*")
+        
+        ret = text_normalization_spk(spark_df)
+        ret.show()
