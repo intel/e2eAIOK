@@ -22,7 +22,7 @@ Deltatuner is an extension for [Peft](https://github.com/huggingface/peft) to im
 
 ### Values
 - Saving computation power: reduce the computation power and time required to fine-tune a model by reducing parameter size as well as memory footprint.
-- Improve accuracy: ensure same or now latency regression.
+- Improve accuracy: ensure same or no accuracy regression.
 
 ## Get Started
 
