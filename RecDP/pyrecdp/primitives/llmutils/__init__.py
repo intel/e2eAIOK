@@ -12,3 +12,4 @@ from .language_identify import language_identify, Classifier
 from .profanity_filter import profanity_filter
 from .filter import filter_by_blocklist
 from .language_identify import language_identify, language_identify_spark, Classifier
+from .classify import classify, classify_spark

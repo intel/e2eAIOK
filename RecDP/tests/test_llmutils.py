@@ -13,9 +13,9 @@ except:
     print("Not detect system installed pyrecdp, using local one")
     sys.path.append(pathlib)
 from pyrecdp.primitives.llmutils import near_dedup, near_dedup_spk, shrink_document_MP, text_to_jsonl_MP, pii_remove, \
-    filter_by_blocklist, language_identify, language_identify_spark, Classifier, profanity_filter, filter_by_bad_words, filter_by_length, global_hash_mp, global_dedup, global_dedup_spk
+    filter_by_blocklist, language_identify, language_identify_spark, profanity_filter, filter_by_bad_words, filter_by_length, global_hash_mp, global_dedup, global_dedup_spk, \
+    classify, classify_spark
 
-from pyrecdp.primitives.llmutils.utils import get_target_file_list
 cur_dir = str(Path(__file__).parent.resolve())
 
 class Test_LLMUtils(unittest.TestCase):
@@ -185,12 +185,10 @@ class Test_LLMUtils(unittest.TestCase):
 
 
     def test_language_identify(self):
-        data_dir = os.path.join(cur_dir, "data/llm_data")
-        data_files = get_target_file_list(data_dir, "jsonl", "file://")
+        data_dir = os.path.join(cur_dir, "data/llm_data/PILE")
         fasttext_model_dir = self.fasttext_model
-
         language_identify_output_dir = os.path.join(data_dir, "language_identify")
-        language_identify(data_dir, data_files, fasttext_model_dir, 'text', 'lang', language_identify_output_dir, "file://")
+        language_identify(data_dir, "jsonl", fasttext_model_dir, 'text', 'lang', language_identify_output_dir, "file://")
 
     def test_language_identify_spark(self):
         from pyrecdp.core import SparkDataProcessor
@@ -203,6 +201,29 @@ class Test_LLMUtils(unittest.TestCase):
         spark_df = spark.read.json(data_file)
         print("input is ")
         spark_df.show()
-        lid_df = language_identify_spark(spark_df, fasttext_model_dir, 'text', 'lang', save_path)
+        lid_df = language_identify_spark(spark_df, fasttext_model_dir, 'text', 'lang', save_path, "file://")
         print("output is")
         lid_df.show()
+
+    def test_classify(self):
+        data_dir = os.path.join(cur_dir, "data/llm_data/PILE")
+        fasttext_model_dir = self.fasttext_model
+        lid_save_path = os.path.join(cur_dir, "data/output/lid")
+        classify_save_path = os.path.join(cur_dir, "data/output/classify")
+        language_identify(data_dir, "jsonl", fasttext_model_dir, 'text', 'lang', lid_save_path, "file://")
+        classify(lid_save_path, "parquet", classify_save_path, "lang", "file://")
+
+    def test_classify_spark(self):
+        from pyrecdp.core import SparkDataProcessor
+        fasttext_model_dir = self.fasttext_model
+        data_file = os.path.join(cur_dir, "data/llm_data/arxiv_sample_100.jsonl")
+        classify_save_path = os.path.join(cur_dir, "data/output/classify_spark")
+        lid_save_path = os.path.join(cur_dir, "data/output/lid_spark")
+        rdp = SparkDataProcessor()
+        spark=rdp.spark
+        spark_df = spark.read.json(data_file)
+        lid_df = language_identify_spark(spark_df, fasttext_model_dir, 'text', 'lang', lid_save_path, "file://")
+
+        print("input is ")
+        spark_df.show()
+        classify_spark(lid_df, "lang", classify_save_path, "file://")
