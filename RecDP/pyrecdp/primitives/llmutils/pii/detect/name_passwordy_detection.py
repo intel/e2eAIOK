@@ -1,7 +1,7 @@
-from transformers import pipeline, Pipeline
+from pyrecdp.models.model_utils import get_pipeline
 
 
-def detect_name_password(content: str, context) -> []:
+def detect_name_password(content: str) -> []:
     """Detects name and password in a string using bigcode/starpii model
     Args:
       context: pii detect context
@@ -10,12 +10,8 @@ def detect_name_password(content: str, context) -> []:
         A list of dicts containing the tag type, the matched string, and the start and
         end indices of the match.
     """
-    try:
-        pipe = context["pipelines"]["name_password"]
-    except KeyError:
-        pipe = pipeline("token-classification", model="bigcode/starpii",
+    pipe = get_pipeline(model_key='bigcode/starpii', task_key='token-classification',
                         grouped_entities=True)
-
     matches = []
     for entity in pipe(content):
         entity_group = entity["entity_group"]

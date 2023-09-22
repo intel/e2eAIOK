@@ -47,10 +47,9 @@ email_pattern = regex.compile(r'''
 ''', flags=regex.MULTILINE | regex.VERBOSE)
 
 
-def detect_email(content, context=None):
+def detect_email(content):
     """Detects email addresses in a string using regex matching
     Args:
-      context: pii detect context
       content (str): A string containing the text to be analyzed.
     Returns:
         A list of dicts containing the tag type, the matched string, and the start and
