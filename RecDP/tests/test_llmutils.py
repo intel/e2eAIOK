@@ -251,3 +251,9 @@ class Test_LLMUtils(unittest.TestCase):
         
         ret = text_normalization_spk(spark_df)
         ret.show()
+
+    def test_qualify_classify(self):
+        from pyrecdp.primitives.llmutils import quality_classifier
+        file_path = os.path.join(cur_dir, "data/llm_data/arxiv_sample_100.jsonl")
+        save_path = os.path.join(cur_dir, "data/output/qualify_classify")
+        quality_classifier(file_path, save_path, overall_stats=True, file_system_prefix="file://")
