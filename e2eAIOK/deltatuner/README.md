@@ -1,12 +1,33 @@
-Deltatuner
-============
+# Deltatuner
 Deltatuner is an extension for [Peft](https://github.com/huggingface/peft) to improve LLM fine-tuning speed through multiple optimizations, including: leverage the compact model constructor [DE-NAS](https://github.com/intel/e2eAIOK/tree/main/e2eAIOK/DeNas) to construct/modify the compact delta layers in a hardware-aware and train-free approach, and adding more new deltatuning algorithms.
 
-![Architecure](./doc/deltatuner.png)
+## Introduction
+<p align="center">
+  <img width="90%" src="./doc/deltatuner.png">
+  Architecure of Deltatuner
+</p>
 
-Below is an example showing how to optimize the finetuning process of [Intel NeuralChat](https://github.com/intel/intel-extension-for-transformers/tree/main/workflows/chatbot/fine_tuning).
+### Key Components
+- Supported parameter efficient finetuning algorithms
+  - [LoRA](https://arxiv.org/pdf/2106.09685.pdf) algorithm
+  - Scaling and Shifting([SSF](https://arxiv.org/abs/2210.08823)) algorithm: Scale and Shift the deep features in a pre-trained model with much less parameters to catch up with the performance of full finetuning
+  - WIP on adding more algos (AdaLora etc.)
+- De-Nas: Automatically construct compact and optimal delta layers with train-free and hardware-aware mode (more details [here](https://community.intel.com/t5/Blogs/Tech-Innovation/Artificial-Intelligence-AI/Multi-Model-Hardware-Aware-Train-Free-Neural-Architecture-Search/post/1479863))
+  - step1: Generate search space for delta layers
+  - step2: Search algorithm populates delta layers for LM
+  - step3: Train-free score evaluates LM with adaptive delta layers
 
-# Installation
+### Features
+- Easy-to-use: provide package install, just need to inject few codes into the original code 
+- Auto-tuning: automatically select best algorithms and delta structure for finetuning model
+
+### Values
+- Save resources: Reduce trainable parameter / Reduce fine-tuning time / Reduce memory consumption
+- Get improved/comparable accuracy
+
+## Get Started
+
+### Installation
 - install the python package
 ```shell
 git clone https://github.com/intel/e2eAIOK.git
@@ -14,19 +35,14 @@ cd e2eAIOK/e2eAIOK/deltatuner
 pip install -e .
 ```
 
-
-# Fine-tuning Use Cases
-
-We use the DE-NAS in delatuner to optimize a LLM with [LoRA](https://arxiv.org/pdf/2106.09685.pdf) layers to a LLM with compact delta layers, so as to efficiently improve the LLM fine-tuning process in peak memory reduction and time speedup. 
-
-## Fine-tuning on MPT-7B
-Below is an example of optimizing [MPT](https://huggingface.co/mosaicml/mpt-7b) model by adding the following few-lines to use the delatuner optimizations. 
+### Fast Fine-tuning on Base models
+Below is an example of optimizing [MPT](https://huggingface.co/mosaicml/mpt-7b) model by adding the following few-lines to use the delatuner optimizations. It use the DE-NAS in delatuner to optimize a LLM with LoRA layers to a LLM with compact delta layers, so as to efficiently improve the LLM fine-tuning process in peak memory reduction and time speedup. 
 
 ```python
 from delta import deltatuner, deltatuner_args
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import LoraConfig, get_peft_model
-from delta import deltatuner, deltatuner_args
+from deltatuner import deltatuner, deltatuner_args
 
 # import model from huggingface
 model_id =  "mosaicml/mpt-7b"
@@ -41,13 +57,32 @@ deltatuner_model = deltatuner.optimize(model=lora_model, tokenizer=tokenizer, de
 ...
 ```
 
-## More examples on Fine-tuning other LLMs
+### API reference
+In above examples, `deltatuner.optimize` is a python function to using deltatuner supported optimization algorithms to optimize the model.
+```python
+def optimize(model, tokenizer, algo: str="auto", deltatuning_args: DeltaTunerArguments=None) -> DeltaTunerModel:
+    '''
+    Parameters:
+        model  - a PreTrainedModel or LoraModel. Specifies what model should be optimized
+        tokenizer - a tokenizer for preprocess text
+        algo (str, optional) – the algorithm. Specifies what type of adapter algorithm (default: “auto”)
+            "auto" – If the input model is mpt, the algorithm is ssf; elif the algorithm is lora
+            "lora" – use the lora algotihm
+            "ssf" – use the ssf algotithm
+        deltatuning_args (optional) – the deltatuner configuration. Specifically, deltatuning_args.denas is to use the denas in the optimization (default: True)
+    Return 
+        DeltaTunerModel - a wrapper of model, which composed of the original properties/function together with adavance properties/function provided by deltatuner
+    '''
+```
+
+
+### Detailed examples
 
 Please refer to [example page](https://github.com/intel/e2eAIOK/tree/main/example) for more use cases on fine-tuning other LLMs with the help of DeltaTuner.
 
-# Model supported matrix
+## Model supported matrix
 
-## Causal Language Modeling
+### Causal Language Modeling
 
 | Model        | LoRA | SSF  |
 |--------------| ---- | ---- |
