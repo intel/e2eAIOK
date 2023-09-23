@@ -1,4 +1,4 @@
-""" This code is adapted from BigScience PII detection 
+""" This code is adapted from BigScience PII detection
 https://github.com/bigscience-workshop/data-preparation/blob/main/preprocessing/training/02_pii/bigscience_pii_detect_redact.py
 
 MST BigScience PII Code
@@ -67,7 +67,7 @@ def ip_has_digit(matched_str):
 def filter_versions(matched_str, context):
     """Filter addresses in this format x.x.x.x  and the words dns/server
     don't appear in the neighboring context, usually they are just versions"""
-    # count occurrence of dots 
+    # count occurrence of dots
     dot_count = matched_str.count('.')
     exclude = (dot_count == 3 and len(matched_str) == 7)
     if exclude:
