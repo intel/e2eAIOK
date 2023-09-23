@@ -17,7 +17,7 @@ except:
 from pyrecdp.primitives.llmutils import near_dedup, near_dedup_spk, shrink_document_MP, text_to_jsonl_MP, pii_remove, \
     filter_by_blocklist, language_identify, language_identify_spark, profanity_filter, filter_by_bad_words, \
     filter_by_length, global_hash_mp, global_dedup, global_dedup_spk, \
-    classify, classify_spark
+    classify, classify_spark,sentence_split
 from pyrecdp.primitives.llmutils.utils import get_target_file_list
 
 cur_dir = str(Path(__file__).parent.resolve())
@@ -160,15 +160,9 @@ class Test_LLMUtils(unittest.TestCase):
     def test_pii_remove(self):
         from pyrecdp.core import SparkDataProcessor
 
-        # from pyrecdp.pipeline.ops.pii_remove import PiiRemove
-        #
-        # pii_remove = PiiRemove(text_key="text")
-        #
-        # row = pii_remove.processRow({"text": "My name is chaojun"})
-        # print(row)
         sparkDP = SparkDataProcessor()
         spark = sparkDP.spark
-        input_dataset = spark.read.load(path="tests/data/llm_data/pii_test.jsonl", format="json")
+        input_dataset = spark.read.load(path="tests/data/llm_data/arxiv_sample_100.jsonl", format="json")
         output_dataset = pii_remove(input_dataset)
         output_dataset.write.save("tmp/pii", mode="overwrite", format="json")
         output_dataset.show(truncate=False)

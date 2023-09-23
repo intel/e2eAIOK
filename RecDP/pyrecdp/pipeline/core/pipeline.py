@@ -1,6 +1,6 @@
 from loguru import logger
-from pyrecdp.pipeline.config import init_configs
-from pyrecdp.pipeline.ops import Operator
+from .config import init_configs
+from ..ops import Operator
 import ray
 import ray.data as rd
 
