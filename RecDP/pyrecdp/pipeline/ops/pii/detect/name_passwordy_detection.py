@@ -1,4 +1,4 @@
-from pyrecdp.models.model_utils import get_pipeline
+from pyrecdp.pipeline.utils.model_utils import get_pipeline
 
 
 def detect_name_password(content: str) -> []:

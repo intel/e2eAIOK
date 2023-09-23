@@ -3,22 +3,32 @@ import os
 import wget
 from loguru import logger
 
-from .cache_utils import REC_DP_MODELS_CACHE
+from .cache_utils import RECDP_MODELS_CACHE
 
 # Default directory to store models
-MODEL_PATH = REC_DP_MODELS_CACHE
+MODEL_PATH = RECDP_MODELS_CACHE
 
 # Default backup cached models links for downloading
 BACKUP_MODEL_LINKS = {
+    # language identification model from fasttext
+    'lid.176.bin':
+    'https://dl.fbaipublicfiles.com/fasttext/supervised-models/',
+
+    # tokenizer and language model for English from sentencepiece and KenLM
+    '%s.sp.model':
+    'https://huggingface.co/edugp/kenlm/resolve/main/wikipedia/',
+    '%s.arpa.bin':
+    'https://huggingface.co/edugp/kenlm/resolve/main/wikipedia/',
+
     # sentence split model from nltk punkt
     'punkt.%s.pickle':
-        'https://dail-wlcb.oss-cn-wulanchabu.aliyuncs.com/'
-        'data_juicer/models/'
+    'https://dail-wlcb.oss-cn-wulanchabu.aliyuncs.com/'
+    'data_juicer/models/'
 }
 
 # Default cached Mmodels links for downloading
 MODEL_LINKS = 'https://dail-wlcb.oss-cn-wulanchabu.aliyuncs.com/' \
-              'data_juicer/models/'
+               'data_juicer/models/'
 
 MODEL_ZOO = {}
 
@@ -51,12 +61,12 @@ def check_model(model_name, args=(), force=False):
 
         try:
             model_link = os.path.join(MODEL_LINKS, true_model_name)
-            wget.download(model_link, mdp)
+            wget.download(model_link, mdp, bar=None)
         except:  # noqa: E722
             try:
                 backup_model_link = os.path.join(
                     BACKUP_MODEL_LINKS[model_name], true_model_name)
-                wget.download(backup_model_link, mdp)
+                wget.download(backup_model_link, mdp, bar=None)
             except:  # noqa: E722
                 logger.error(
                     f'Downloading model [{true_model_name}] error. '
@@ -81,6 +91,40 @@ def prepare_fasttext_model(model_name):
         ft_model = fasttext.load_model(check_model(model_name, force=True))
     return ft_model
 
+
+def prepare_sentencepiece_model(model_name, lang):
+    """
+    Prepare and load a sentencepiece model.
+
+    :param model_name: input model name in formatting syntax
+    :param lang: language to render model name
+    :return: model instance.
+    """
+    import sentencepiece
+    logger.info('Loading sentencepiece model...')
+    sentencepiece_model = sentencepiece.SentencePieceProcessor()
+    try:
+        sentencepiece_model.load(check_model(model_name, lang))
+    except:  # noqa: E722
+        sentencepiece_model.load(check_model(model_name, lang, force=True))
+    return sentencepiece_model
+
+
+def prepare_kenlm_model(model_name, lang):
+    """
+    Prepare and load a kenlm model.
+
+    :param model_name: input model name in formatting syntax.
+    :param lang: language to render model name
+    :return: model instance.
+    """
+    import kenlm
+    logger.info('Loading kenlm language model...')
+    try:
+        kenlm_model = kenlm.Model(check_model(model_name, lang))
+    except:  # noqa: E722
+        kenlm_model = kenlm.Model(check_model(model_name, lang, force=True))
+    return kenlm_model
 
 def prepare_nltk_model(model_name, lang):
     """
@@ -111,6 +155,7 @@ def prepare_nltk_model(model_name, lang):
     return nltk_model
 
 
+
 def prepare_huggingface_tokenizer(tokenizer_name):
     """
     Prepare and load a tokenizer from HuggingFace.
@@ -120,11 +165,46 @@ def prepare_huggingface_tokenizer(tokenizer_name):
     """
     from transformers import AutoTokenizer
     logger.info('Loading tokenizer from HuggingFace...')
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_name,
+                                              trust_remote_code=True)
     return tokenizer
 
+def prepare_diversity_model(model_name, lang):
+    """
+    Prepare diversity model for specific language.
 
-def prepare_model(lang='en', model_type='huggingface', model_key=None):
+    :param model_name: the model name to be loaded.
+    :param lang: language of diversity model. Should be one of ["zh",
+        "en"]
+    :return: corresponding diversity model
+    """
+    import spacy
+    assert lang in ['zh', 'en'], 'Diversity only support zh and en'
+    model_name = model_name % lang
+    logger.info(f'Loading spacy model [{model_name}]...')
+    compressed_model = '%s.zip' % model_name
+
+    # decompress the compressed model if it's not decompressed
+    def decompress_model(compressed_model_path):
+        decompressed_model_path = compressed_model_path.replace('.zip', '')
+        if os.path.exists(decompressed_model_path) \
+                and os.path.isdir(decompressed_model_path):
+            return decompressed_model_path
+        import zipfile
+        with zipfile.ZipFile(compressed_model_path) as zf:
+            zf.extractall(MODEL_PATH)
+        return decompressed_model_path
+
+    try:
+        diversity_model = spacy.load(
+            decompress_model(check_model(compressed_model)))
+    except:  # noqa: E722
+        diversity_model = spacy.load(
+            decompress_model(check_model(compressed_model, force=True)))
+    return diversity_model
+
+
+def prepare_model(lang='en', model_type='sentencepiece', model_key=None):
     """
     Prepare and load a model or a tokenizer from MODEL_ZOO.
 
@@ -136,8 +216,12 @@ def prepare_model(lang='en', model_type='huggingface', model_key=None):
     """
 
     type_to_name = {
+        'fasttext': ('lid.176.bin', prepare_fasttext_model),
+        'sentencepiece': ('%s.sp.model', prepare_sentencepiece_model),
+        'kenlm': ('%s.arpa.bin', prepare_kenlm_model),
         'nltk': ('punkt.%s.pickle', prepare_nltk_model),
         'huggingface': ('%s', prepare_huggingface_tokenizer),
+        'spacy': ('%s_core_web_md-3.5.0', prepare_diversity_model),
     }
     assert model_type in type_to_name.keys(
     ), 'model_type must be one of the following: {}'.format(
@@ -159,6 +243,7 @@ def prepare_model(lang='en', model_type='huggingface', model_key=None):
 def get_model(model_key, lang='en', model_type='sentencepiece'):
     """
     Get a model or a tokenizer from MODEL_ZOO.
+
     :param model_key: name of the model or tokenzier
     """
     if model_key not in MODEL_ZOO:
@@ -167,6 +252,11 @@ def get_model(model_key, lang='en', model_type='sentencepiece'):
 
 
 def get_pipeline(model_key, task_key=None, **kwargs):
+    """
+    Get a pipeline from MODEL_ZOO.
+
+    :param model_key: name of the model or tokenzier
+    """
     pipeline_key = '{}.{}'.format(model_key, task_key) if task_key else model_key
     if pipeline_key not in MODEL_ZOO:
         from transformers import pipeline

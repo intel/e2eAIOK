@@ -160,12 +160,18 @@ class Test_LLMUtils(unittest.TestCase):
     def test_pii_remove(self):
         from pyrecdp.core import SparkDataProcessor
 
+        # from pyrecdp.pipeline.ops.pii_remove import PiiRemove
+        #
+        # pii_remove = PiiRemove(text_key="text")
+        #
+        # row = pii_remove.processRow({"text": "My name is chaojun"})
+        # print(row)
         sparkDP = SparkDataProcessor()
         spark = sparkDP.spark
-        input_dataset = spark.read.load(path="tests/data/llm_data/arxiv_sample_100.jsonl", format="json")
-        output_dataset = pii_remove(input_dataset,text_column="text",keep_secret_column=True)
+        input_dataset = spark.read.load(path="tests/data/llm_data/pii_test.jsonl", format="json")
+        output_dataset = pii_remove(input_dataset)
         output_dataset.write.save("tmp/pii", mode="overwrite", format="json")
-        output_dataset.show(truncate=True)
+        output_dataset.show(truncate=False)
 
     def test_filter_jsonl(self):
         data_dir = "tests/data/llm_data"

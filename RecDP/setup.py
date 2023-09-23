@@ -77,4 +77,6 @@ setuptools.setup(
         "sentencepiece==0.1.99",
         "selectolax"
         "loguru",
+        "ray",
+        "Faker"
         ])

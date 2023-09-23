@@ -21,5 +21,6 @@ def scan_pii_text(text):
     result = result + detect_phones(text)
 
     # for name and password use huggingface ner model
-    result = result + detect_name_password(text)
+    # result = result + detect_name_password(text)
     return result
+
