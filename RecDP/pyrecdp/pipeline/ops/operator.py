@@ -31,8 +31,6 @@ class Operator:
 
         :param process_list: A process list. Each item is an op name and its
             arguments.
-        :param op_fusion: whether to fuse ops that share the same intermediate
-            variables.
         :return: The op instance list.
         """
         ops = []

@@ -1,3 +1,16 @@
+""" This code is adapted from Alibaba data-juicer
+https://github.com/alibaba/data-juicer/blob/main/data_juicer/utils/model_utils.py
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
 import os
 
 import wget
@@ -240,11 +253,12 @@ def prepare_model(lang='en', model_type='sentencepiece', model_key=None):
     return model_key
 
 
-def get_model(model_key, lang='en', model_type='sentencepiece'):
+def get_model(model_key, lang='en', model_type='huggingface'):
     """
     Get a model or a tokenizer from MODEL_ZOO.
 
-    :param model_key: name of the model or tokenzier
+    Args:
+        model_key: name of the model or tokenzier
     """
     if model_key not in MODEL_ZOO:
         prepare_model(lang=lang, model_type=model_type, model_key=model_key)
@@ -255,12 +269,14 @@ def get_pipeline(model_key, task_key=None, **kwargs):
     """
     Get a pipeline from MODEL_ZOO.
 
-    :param model_key: name of the model or tokenzier
+    Args:
+        task_key:  The task defining which pipeline will be returned. Currently accepted tasks are:
+        model_key: name of the model
     """
     pipeline_key = '{}.{}'.format(model_key, task_key) if task_key else model_key
     if pipeline_key not in MODEL_ZOO:
         from transformers import pipeline
-        logger.info('Loading pipeline from HuggingFace...')
+        logger.info('Loading pipeline {} from HuggingFace...', model_key)
         MODEL_ZOO[pipeline_key] = pipeline(task=task_key, model=model_key, **kwargs)
 
     return MODEL_ZOO.get(pipeline_key, None)

@@ -1,21 +1,18 @@
-# Copyright (c) Alibaba, Inc. and its affiliates.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+""" This code is adapted from Alibaba data-juicer
+https://github.com/alibaba/data-juicer/blob/main/data_juicer/utils/registry.py
 
-# --------------------------------------------------------
-# Most of the code here has been modified from:
-#  https://github.com/modelscope/modelscope/blob/master/modelscope/utils/registry.py
-# --------------------------------------------------------
+Copyright (c) Alibaba, Inc. and its affiliates.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
 
 from loguru import logger
 
@@ -100,13 +97,10 @@ class Registry(object):
         Example:
             >>> registry = Registry()
             >>> @registry.register_module()
-            >>> class TextFormatter:
+            >>> class MyOperator(Operator):
             >>>     pass
-
-            >>> class TextFormatter2:
-            >>>     pass
-            >>> registry.register_module( module_name='text_formatter2',
-                                        module_cls=TextFormatter2)
+            >>> registry.register_module( module_name='my_operator',
+                                        module_cls=MyOperator)
         """
         if not (module_name is None or isinstance(module_name, str)):
             raise TypeError(f'module_name must be either of None, str,'
