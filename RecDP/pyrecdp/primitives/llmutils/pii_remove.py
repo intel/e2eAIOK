@@ -71,22 +71,22 @@ def getArgs():
     return parser.parse_args()
 
 
-def pii_remove_text(text,replacements):
+def pii_remove_text(text, replacements):
     secrets = scan_pii_text(text)
-    text,modified = redact_pii_text(text, secrets, replacements)
-    return text, secrets, modified
+    text, _ = redact_pii_text(text, secrets, replacements)
+    return text, secrets
 
 
-def pii_remove(dataset: DataFrame, text_column="text", keep_secret_column=False):
+def pii_remove(dataset: DataFrame, text_column="text", secret_column="__SECRETS__"):
     def pii_remove_partition(batch):
         replacements = random_replacements()
         for row in batch:
-            text, secrets, modified = pii_remove_text(row[text_column],replacements)
             row_dict = dict(**row.asDict())
+            text = row_dict[text_column]
+
+            text, secrets = pii_remove_text(text, replacements)
             row_dict[text_column] = text
-            if keep_secret_column:
-                row_dict["__SECRETS__"] = secrets
-                row_dict["__MODIFIED__"] = modified
+            row_dict[secret_column] = secrets
 
             yield SparkRow(**row_dict)
 
@@ -114,7 +114,7 @@ if __name__ == "__main__":
     sparkDP = SparkDataProcessor(spark_mode=args.spark_mode, spark_master=args.spark_master,num_instances=args.num_instances)
     spark = sparkDP.spark
     input_dataset = spark.read.load(path=args.input_path, format=args.input_format)
-    output_dataset = pii_remove(input_dataset, text_column=args.text_column, keep_secret_column=args.keep_secret_column)
+    output_dataset = pii_remove(input_dataset, text_column=args.text_column)
     output_dataset.write.save(path=args.output_path, format=args.output_format, mode="overwrite")
 
     logger.info(f" ===== Dataset saved successfully =====")
