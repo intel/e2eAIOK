@@ -302,3 +302,10 @@ class Test_LLMUtils(unittest.TestCase):
         spark_df = spark.read.json(data_file)
         quality_classifier_df = quality_classifier_spark(spark_df)
         quality_classifier_df.show()
+
+    def test_llm_pipeline(self):
+        from pyrecdp.pipeline import config, Pipeline
+        cfg = config.init_configs(["--config", "tests/config/llm_pipeline/demo.yaml", "--debug", "true"])
+        pipeline = Pipeline(cfg)
+        dataset = pipeline.run()
+        dataset.show

@@ -148,6 +148,12 @@ if [ $? != 0 ]; then
     failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_classify_spark\n"
 fi
 
+echo "test_llmutils.Test_LLMUtils.test_llm_pipeline"
+python -m unittest tests.test_llmutils.Test_LLMUtils.test_llm_pipeline
+if [ $? != 0 ]; then
+    failed_tests=${failed_tests}"tests.test_llmutils.Test_LLMUtils.test_llm_pipeline\n"
+fi
+
 if [ -z ${failed_tests} ]; then
     echo "All tests are passed"
 else
