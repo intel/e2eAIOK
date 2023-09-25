@@ -320,3 +320,10 @@ class Test_LLMUtils(unittest.TestCase):
         df = sentence_split(df)
         for _, row in df.toPandas().iterrows():
             self.assertEqual(row["text"], row["target"])
+
+    def test_llm_pipeline(self):
+        from pyrecdp.pipeline import config,Pipeline
+        cfg = config.init_configs(["--config", "./tests/config/llm_pipeline/demo.yaml", "--debug", "true"])
+        pipeline = Pipeline(cfg)
+        dataset = pipeline.run()
+        dataset.show()

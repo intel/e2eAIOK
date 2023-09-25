@@ -77,5 +77,8 @@ setuptools.setup(
         "sentencepiece==0.1.99",
         "selectolax",
         "Faker==19.6.2",
-        "torch",
+        "torch==2.0.1",
+        "loguru==0.7.2",
+        "ray==2.7.0",
+        "jsonargparse",
         ])
