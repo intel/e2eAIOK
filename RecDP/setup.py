@@ -62,7 +62,6 @@ setuptools.setup(
         "jsonlines==3.1.0",
         "networkit==10.1",
         "nltk==3.8.1",
-        "numpy==1.24.3",
         "regex==2023.6.3",
         "scipy==1.10.1",
         "datasets>=2.7.0",

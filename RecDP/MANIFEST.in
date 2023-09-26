@@ -2,4 +2,5 @@ include pyrecdp/ScalaProcessUtils/target/*.jar
 include pyrecdp/ScalaProcessUtils/spark-env.sh
 include pyrecdp/ScalaProcessUtils/spark-defaults.conf
 include pyrecdp/widgets/templates/*.html
+graft pyrecdp/primitives/llmutils/bad_words_lists
 include version
