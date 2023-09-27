@@ -3,13 +3,16 @@
 
 import os
 
+import pandas
 import pandas as pd
 import spacy
 from pyrecdp.core.model_utils import MODEL_ZOO, prepare_model
-from pyspark.sql import DataFrame
 from pyrecdp.primitives.spark_data_processor.data_processor import DataProcessor as SparkDataProcessor
 from pyrecdp.core.utils import Timer
-from .utils import get_target_file_list, read_parquet, read_json
+from pyrecdp.primitives.llmutils.utils import get_target_file_list, read_parquet, read_json
+from pyspark.sql import functions as F
+from pyspark.sql.types import StructType, StructField, StringType
+from pyspark.sql.functions import udf
 
 
 # Modify from self_instruct, please refer to
@@ -102,7 +105,7 @@ class DiversityAnalysis:
             os.makedirs(self.output_path)
         self.lang_or_model = lang_or_model
 
-    def compute(self, lang_or_model=None, column_name='text'):
+    def compute(self, lang_or_model=None):
         """
         Apply lexical tree analysis on each sample.
 
@@ -121,17 +124,25 @@ class DiversityAnalysis:
 
         assert isinstance(diversity_model, spacy.Language)
 
+        schema = StructType([
+            StructField("verb", StringType(), True),
+            StructField("noun", StringType(), True)
+        ])
+
         def find_verb_noun(sample):
             try:
                 verb, noun = find_root_verb_and_its_dobj_in_string(
-                    diversity_model, sample[column_name])
+                    diversity_model, sample)
             except Exception as e:
                 print(str(e))
                 verb, noun = None, None
-            return {'verb': verb, 'noun': noun}
+            print(verb, noun)
+            return verb, noun
 
-        dataset = self.dataset.map(find_verb_noun)
-        return pd.DataFrame(dataset)
+        operator = udf(find_verb_noun, schema)
+        dataset = self.dataset.withColumn('diversity', operator(F.col("text")))
+        dataset = dataset.select("filename_docid", "text", "meta", "diversity.*")
+        return dataset.toPandas()
 
     def analyse(self,
                 lang_or_model=None,
@@ -158,11 +169,10 @@ class DiversityAnalysis:
         # export to result report file
         df.to_csv(os.path.join(self.output_path, 'diversity.csv'))
         df.to_markdown(os.path.join(self.output_path, 'diversity.md'))
-
         return df
 
 
-def diversity(data_dir, in_type, output_path: str, language: str,enable_ray=False):
+def diversity(data_dir, in_type, output_path, language="en", enable_ray=False):
     if enable_ray:
         rdp = SparkDataProcessor(spark_mode='ray')
     else:
@@ -186,8 +196,4 @@ def diversity(data_dir, in_type, output_path: str, language: str,enable_ray=Fals
     except Exception as e:
         spark.stop()
         print("Failed", e)
-
-
-
-
 
