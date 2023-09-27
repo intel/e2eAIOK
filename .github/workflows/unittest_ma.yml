@@ -1,4 +1,4 @@
-name: Unit Test
+name: Unit Test MA
 
 on:
   pull_request:
@@ -9,14 +9,15 @@ on:
     - 'conf/**'
     - 'demo/**'
     - 'Dockerfile-ubuntu/**'
-    - 'e2eAIOK/**'
+    - 'e2eAIOK/ModelAdapter/**'
+    - 'e2eAIOK/common/**'
     - 'modelzoo/**'
-    - 'tests/unittest/**'
+    - 'tests/unittest/ma/**'
     - 'setup.py'
 
 jobs:
   unit_tests:
-    name: Unit Test
+    name: Unit Test MA
     runs-on: self-hosted
     steps:
     - name: Checkout
@@ -45,13 +46,8 @@ jobs:
 
     - name: Run test
       run: |
-        pytest tests/unittest 
+        pytest tests/unittest/ma 
 
     - name: After test summary
       run: |
         codecov
-
-    - name: Submodule package check
-      run: |
-        python setup.py bdist_wheel --denas && twine check dist/e2eAIOK_denas-*.*.*-py3-none-any.whl && rm -rf build && rm -rf dist
-        python setup.py bdist_wheel --sda && twine check dist/e2eAIOK_sda-*.*.*-py3-none-any.whl && rm -rf build && rm -rf dist 
