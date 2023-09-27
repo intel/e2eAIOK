@@ -74,5 +74,6 @@ setuptools.setup(
         "loguru==0.7.2",
         "tabulate==0.9.0",
         "sentencepiece==0.1.99",
-        "selectolax"
+        "selectolax",
+        "spacy"
         ])
