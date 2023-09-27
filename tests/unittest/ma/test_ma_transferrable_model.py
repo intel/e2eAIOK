@@ -35,11 +35,11 @@ class TestMakeTransferrable:
         '''
         model = torchvision.models.resnet18(pretrained=False)
         teacher_model = torchvision.models.resnet18(pretrained=False)
-        teacher_model.load_state_dict(torch.load("/home/vmagent/app/data/dataset/pretrained/resnet18-5c106cde.pth"))
+        teacher_model.load_state_dict(torch.load("/home/vmagent/app/data/dataset/resnet18/resnet18-5c106cde.pth"))
         # teacher_model = torchvision.models.resnet18(pretrained=True)
 
         finetuner_model = torchvision.models.resnet18(pretrained=False)
-        finetuner_model.load_state_dict(torch.load("/home/vmagent/app/data/dataset/pretrained/resnet18-5c106cde.pth"))
+        finetuner_model.load_state_dict(torch.load("/home/vmagent/app/data/dataset/resnet18/resnet18-5c106cde.pth"))
 
         return {
             'model': model,
@@ -87,7 +87,7 @@ class TestMakeTransferrable:
                 # return super(A, cls).__new__(cls)
                 super().__init__()
                 tmpmodel = torchvision.models.resnet18(pretrained=False)
-                tmpmodel.load_state_dict(torch.load("/home/vmagent/app/data/dataset/pretrained/resnet18-5c106cde.pth"))
+                tmpmodel.load_state_dict(torch.load("/home/vmagent/app/data/dataset/resnet18/resnet18-5c106cde.pth"))
                 self.m = tmpmodel
                 # self.m = torchvision.models.resnet18(pretrained=True)
             def forward(self,x):
@@ -228,11 +228,11 @@ class TestTransferrableModel:
         '''
         model = torchvision.models.resnet18(pretrained=False)
         teacher_model = torchvision.models.resnet18(pretrained=False)
-        teacher_model.load_state_dict(torch.load("/home/vmagent/app/data/dataset/pretrained/resnet18-5c106cde.pth"))
+        teacher_model.load_state_dict(torch.load("/home/vmagent/app/data/dataset/resnet18/resnet18-5c106cde.pth"))
         # teacher_model = torchvision.models.resnet18(pretrained=True)
 
         finetuner_model = torchvision.models.resnet18(pretrained=False)
-        finetuner_model.load_state_dict(torch.load("/home/vmagent/app/data/dataset/pretrained/resnet18-5c106cde.pth"))
+        finetuner_model.load_state_dict(torch.load("/home/vmagent/app/data/dataset/resnet18/resnet18-5c106cde.pth"))
 
         return {
             'model': model,
@@ -266,11 +266,11 @@ class TestTransferrableModel:
         '''
         model = torchvision.models.resnet18(pretrained=False)
         finetuner_model = torchvision.models.resnet18(pretrained=False)
-        finetuner_model.load_state_dict(torch.load("/home/vmagent/app/data/dataset/pretrained/resnet18-5c106cde.pth"))
+        finetuner_model.load_state_dict(torch.load("/home/vmagent/app/data/dataset/resnet18/resnet18-5c106cde.pth"))
         finetunner = BasicFinetunner(finetuner_model,True)
         adapter = DANNAdapter(512, 8, 0.0, 5.0, 1.0, 100)
         distiller_resnet18_model = torchvision.models.resnet18(pretrained=False)
-        distiller_resnet18_model.load_state_dict(torch.load("/home/vmagent/app/data/dataset/pretrained/resnet18-5c106cde.pth"))
+        distiller_resnet18_model.load_state_dict(torch.load("/home/vmagent/app/data/dataset/resnet18/resnet18-5c106cde.pth"))
         distiller = BasicDistiller(distiller_resnet18_model, True)
 
         for enable_target_training_label in [True,False]:

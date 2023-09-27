@@ -45,14 +45,14 @@ class TestBasicDistiller:
         '''
         ################ frozen create ###################
         distiller_resnet18_model_frozen = torchvision.models.resnet18(pretrained=False)
-        distiller_resnet18_model_frozen.load_state_dict(torch.load("/home/vmagent/app/data/dataset/pretrained/resnet18-5c106cde.pth"))
+        distiller_resnet18_model_frozen.load_state_dict(torch.load("/home/vmagent/app/data/dataset/resnet18/resnet18-5c106cde.pth"))
         distiller = BasicDistiller(distiller_resnet18_model_frozen, is_frozen=True)
         for param in distiller.pretrained_model.parameters():
             assert param.requires_grad == False
 
         ################ unfrozen create ###################
         distiller_resnet18_model_unfrozen = torchvision.models.resnet18(pretrained=False)
-        distiller_resnet18_model_unfrozen.load_state_dict(torch.load("/home/vmagent/app/data/dataset/pretrained/resnet18-5c106cde.pth"))
+        distiller_resnet18_model_unfrozen.load_state_dict(torch.load("/home/vmagent/app/data/dataset/resnet18/resnet18-5c106cde.pth"))
         distiller = BasicDistiller(distiller_resnet18_model_unfrozen, is_frozen=False)
         for param in distiller.pretrained_model.parameters():
             assert param.requires_grad == True
@@ -77,7 +77,7 @@ class TestBasicDistiller:
         num_classes = 1000
         bath_size = 16
         distiller_resnet18_model = torchvision.models.resnet18(pretrained=False)
-        distiller_resnet18_model.load_state_dict(torch.load("/home/vmagent/app/data/dataset/pretrained/resnet18-5c106cde.pth"))
+        distiller_resnet18_model.load_state_dict(torch.load("/home/vmagent/app/data/dataset/resnet18/resnet18-5c106cde.pth"))
         distiller = BasicDistiller(distiller_resnet18_model, is_frozen=True)
         x = torch.zeros([bath_size,3,224,224])
         y = distiller(x)
@@ -99,7 +99,7 @@ class TestKD:
     '''
     def _get_kwargs(self):
         pretrained_resnet18_model = torchvision.models.resnet18(pretrained=False)
-        pretrained_resnet18_model.load_state_dict(torch.load("/home/vmagent/app/data/dataset/pretrained/resnet18-5c106cde.pth"))
+        pretrained_resnet18_model.load_state_dict(torch.load("/home/vmagent/app/data/dataset/resnet18/resnet18-5c106cde.pth"))
         kwargs = {
             "pretrained_model": pretrained_resnet18_model,
             "temperature": 4.0,
@@ -131,7 +131,7 @@ class TestDKD:
     '''
     def _get_kwargs(self):
         pretrained_resnet18_model = torchvision.models.resnet18(pretrained=False)
-        pretrained_resnet18_model.load_state_dict(torch.load("/home/vmagent/app/data/dataset/pretrained/resnet18-5c106cde.pth"))
+        pretrained_resnet18_model.load_state_dict(torch.load("/home/vmagent/app/data/dataset/resnet18/resnet18-5c106cde.pth"))
         kwargs = {
             "pretrained_model": pretrained_resnet18_model,
             "alpha": 1.0,
