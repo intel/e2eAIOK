@@ -14,7 +14,7 @@ from tqdm import tqdm
 logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', level=logging.ERROR, datefmt='%I:%M:%S')
 logger = logging.getLogger(__name__)
 
-class BasePipeline:
+class TabularPipeline:
     def __init__(self, dataset, label, exclude_op = [], include_op = [], *args, **kwargs):
         # properties
         # self.main_table: main table names

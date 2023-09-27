@@ -1,6 +1,6 @@
 from pyrecdp.primitives.generators import *
 from pyrecdp.primitives.profilers import *
-from .BasePipeline import BasePipeline
+from pyrecdp.autofe.TabularPipeline import TabularPipeline
 import logging
 from pyrecdp.core.dataframe import DataFrameAPI
 from pyrecdp.core import SeriesSchema
@@ -10,7 +10,7 @@ import copy
 logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', level=logging.ERROR, datefmt='%I:%M:%S')
 logger = logging.getLogger(__name__)
 
-class FeatureWrangler(BasePipeline):
+class FeatureWrangler(TabularPipeline):
     def __init__(self, dataset=None, label=None, data_pipeline=None, time_series = None, exclude_op = [], include_op = [], *args, **kwargs):
         if data_pipeline is None:
             super().__init__(dataset, label, exclude_op, include_op)
