@@ -161,8 +161,7 @@ class DiversityAnalysis:
         :return:
         """
         # get the lexical tree analysis result
-        raw_df = self.compute(lang_or_model=lang_or_model,
-                              column_name=column_name)
+        raw_df = self.compute(lang_or_model=lang_or_model)
         # get the result of diversity analysis
         df = postproc_func(raw_df, **postproc_kwarg)
 
