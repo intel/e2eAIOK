@@ -5,8 +5,6 @@ from pathlib import Path
 import os
 from IPython.display import display
 
-from pyrecdp.primitives.llmutils.text_fixer import text_fixer
-
 pathlib = str(Path(__file__).parent.parent.resolve())
 print(pathlib)
 try:
@@ -17,7 +15,8 @@ except:
 from pyrecdp.primitives.llmutils import near_dedup, near_dedup_spk, shrink_document_MP, text_to_jsonl_MP, pii_remove, \
     filter_by_blocklist, language_identify, language_identify_spark, profanity_filter, filter_by_bad_words, \
     filter_by_length, global_hash_mp, global_dedup, global_dedup_spk, \
-    classify, classify_spark, sentence_split
+    classify, classify_spark, diversity, text_fixer, sentence_split
+
 from pyrecdp.primitives.llmutils.utils import get_target_file_list
 
 cur_dir = str(Path(__file__).parent.resolve())
@@ -303,7 +302,6 @@ class Test_LLMUtils(unittest.TestCase):
         quality_classifier_df = quality_classifier_spark(spark_df)
         quality_classifier_df.show()
 
-
     def test_sentence_split(self):
         from pyrecdp.core import SparkDataProcessor
         import pandas as pd
@@ -321,3 +319,9 @@ class Test_LLMUtils(unittest.TestCase):
         df = sentence_split(df)
         for _, row in df.toPandas().iterrows():
             self.assertEqual(row["text"], row["target"])
+
+    def test_diversity_analysis(self):
+        data_dir = "tests/data/llm_data/"
+        output_path = "tests/data/diversity_out"
+        in_type = "jsonl"
+        diversity(data_dir, in_type, output_path)
