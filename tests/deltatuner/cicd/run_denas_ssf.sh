@@ -1,7 +1,7 @@
 set -x
 mkdir -p log
 
-DATA_PATH="/home/data"
+DATA_PATH="/home/vmagent/app/data"
 
 #run mpt with ssf and denas, bf16
 python instruction_tuning_pipeline/finetune_clm.py \
