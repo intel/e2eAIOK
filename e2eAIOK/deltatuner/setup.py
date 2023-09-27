@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 REQUIRED_PACKAGES = [
-    'torch>=1.13.0', 'transformers', 'datasets', 'sentenpiece', 
+    'torch>=1.13.0', 'transformers', 'datasets', 'sentencepiece', 
     'peft==0.4.0', 'evaluate', 'nltk', 'rouge_score', 'einops', 
     'sigopt', 'torchsummary'
 ]
