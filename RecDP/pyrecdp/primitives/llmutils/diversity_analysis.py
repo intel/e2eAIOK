@@ -136,7 +136,6 @@ class DiversityAnalysis:
             except Exception as e:
                 print(str(e))
                 verb, noun = None, None
-            print(verb, noun)
             return verb, noun
 
         operator = udf(find_verb_noun, schema)
