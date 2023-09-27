@@ -15,7 +15,8 @@ except:
 from pyrecdp.primitives.llmutils import near_dedup, near_dedup_spk, shrink_document_MP, text_to_jsonl_MP, pii_remove, \
     filter_by_blocklist, language_identify, language_identify_spark, profanity_filter, filter_by_bad_words, \
     filter_by_length, global_hash_mp, global_dedup, global_dedup_spk, \
-    classify, classify_spark, diversity, text_fixer
+    classify, classify_spark, diversity, text_fixer, sentence_split
+
 from pyrecdp.primitives.llmutils.utils import get_target_file_list
 
 cur_dir = str(Path(__file__).parent.resolve())
@@ -192,8 +193,8 @@ class Test_LLMUtils(unittest.TestCase):
         in_type = "jsonl"
         text_types = ["html", 'latex', "codes"]
         text_fixer(data_dir, in_type, out_dir,text_types)
-        
-        
+
+
     def test_language_identify(self):
         data_dir = os.path.join(cur_dir, "data/llm_data/PILE")
         fasttext_model_dir = self.fasttext_model
@@ -256,7 +257,7 @@ class Test_LLMUtils(unittest.TestCase):
         print(f"out dir contains {list_file}")
         pdf = pd.read_parquet(out_dir)
         display(pdf)
-        
+
     def test_text_normalization(self):
         from pyrecdp.primitives.llmutils import text_normalization
         data_dir = "tests/data/llm_data/PILE/"
@@ -266,7 +267,7 @@ class Test_LLMUtils(unittest.TestCase):
         print(f"out dir contains {list_file}")
         pdf = pd.read_parquet(out_dir)
         display(pdf)
-        
+
     def test_text_normalization_spark(self):
         from pyrecdp.primitives.llmutils import text_normalization_spk
         from pyrecdp.core import SparkDataProcessor
@@ -275,13 +276,13 @@ class Test_LLMUtils(unittest.TestCase):
         data_file = "tests/data/llm_data/PILE/NIH_sample.jsonl"
         rdp = SparkDataProcessor()
         spark=rdp.spark
-        schema = StructType([ 
-            StructField("text",StringType(),True), 
+        schema = StructType([
+            StructField("text",StringType(),True),
             StructField("meta",StringType(),True)
         ])
         spark_df = spark.read.text(data_file)
         spark_df = spark_df.withColumn('jsonData', F.from_json(F.col('value'), schema)).select("jsonData.*")
-        
+
         ret = text_normalization_spk(spark_df)
         ret.show()
 
@@ -300,6 +301,24 @@ class Test_LLMUtils(unittest.TestCase):
         spark_df = spark.read.json(data_file)
         quality_classifier_df = quality_classifier_spark(spark_df)
         quality_classifier_df.show()
+
+    def test_sentence_split(self):
+        from pyrecdp.core import SparkDataProcessor
+        import pandas as pd
+        samples = [(
+                    'Smithfield employs 3,700 people at its plant in Sioux Falls, '
+                    'South Dakota. The plant slaughters 19,500 pigs a day — 5 '
+                    'percent of U.S. pork.',
+                    'Smithfield employs 3,700 people at its plant in Sioux Falls, '
+                    'South Dakota.\nThe plant slaughters 19,500 pigs a day — 5 '
+                    'percent of U.S. pork.')]
+        pdf = pd.DataFrame(samples, columns=["text", "target"])
+        rdp = SparkDataProcessor()
+        spark = rdp.spark
+        df = spark.createDataFrame(pdf)
+        df = sentence_split(df)
+        for _, row in df.toPandas().iterrows():
+            self.assertEqual(row["text"], row["target"])
 
     def test_diversity_analysis(self):
         data_dir = "tests/data/llm_data/"
