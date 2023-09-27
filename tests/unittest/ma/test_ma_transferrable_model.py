@@ -34,12 +34,17 @@ class TestMakeTransferrable:
         :return:
         '''
         model = torchvision.models.resnet18(pretrained=False)
-        teacher_model = torchvision.models.resnet18(pretrained=True)
+        teacher_model = torchvision.models.resnet18(pretrained=False)
+        teacher_model.load_state_dict(torch.load("/home/vmagent/app/data/dataset/resnet18/resnet18-5c106cde.pth"))
+        # teacher_model = torchvision.models.resnet18(pretrained=True)
+
+        finetuner_model = torchvision.models.resnet18(pretrained=False)
+        finetuner_model.load_state_dict(torch.load("/home/vmagent/app/data/dataset/resnet18/resnet18-5c106cde.pth"))
 
         return {
             'model': model,
             'loss': torch.nn.CrossEntropyLoss(),
-            'finetunner':BasicFinetunner(torchvision.models.resnet18(pretrained=True),True),
+            'finetunner':BasicFinetunner(finetuner_model,True),
             'distiller': BasicDistiller(teacher_model, True),
             'adapter': DANNAdapter(512, 8, 0.0, 5.0, 1.0, 100),
             # 'training_dataloader': torch.utils.data.DataLoader(
@@ -81,7 +86,10 @@ class TestMakeTransferrable:
                 # TypeError: super() argument 1 must be type, not function
                 # return super(A, cls).__new__(cls)
                 super().__init__()
-                self.m = torchvision.models.resnet18(pretrained=True)
+                tmpmodel = torchvision.models.resnet18(pretrained=False)
+                tmpmodel.load_state_dict(torch.load("/home/vmagent/app/data/dataset/resnet18/resnet18-5c106cde.pth"))
+                self.m = tmpmodel
+                # self.m = torchvision.models.resnet18(pretrained=True)
             def forward(self,x):
                 return self.m(x)
 
@@ -219,12 +227,17 @@ class TestTransferrableModel:
         :return:
         '''
         model = torchvision.models.resnet18(pretrained=False)
-        teacher_model = torchvision.models.resnet18(pretrained=True)
+        teacher_model = torchvision.models.resnet18(pretrained=False)
+        teacher_model.load_state_dict(torch.load("/home/vmagent/app/data/dataset/resnet18/resnet18-5c106cde.pth"))
+        # teacher_model = torchvision.models.resnet18(pretrained=True)
+
+        finetuner_model = torchvision.models.resnet18(pretrained=False)
+        finetuner_model.load_state_dict(torch.load("/home/vmagent/app/data/dataset/resnet18/resnet18-5c106cde.pth"))
 
         return {
             'model': model,
             'loss': torch.nn.CrossEntropyLoss(),
-            'finetunner': BasicFinetunner(torchvision.models.resnet18(pretrained=True), True),
+            'finetunner': BasicFinetunner(finetuner_model, True),
             'distiller': BasicDistiller(teacher_model, True),
             'adapter': DANNAdapter(512, 8, 0.0, 5.0, 1.0, 100),
             # 'training_dataloader': torch.utils.data.DataLoader(
@@ -252,9 +265,13 @@ class TestTransferrableModel:
         :return:
         '''
         model = torchvision.models.resnet18(pretrained=False)
-        finetunner = BasicFinetunner( torchvision.models.resnet18(pretrained=True),True)
+        finetuner_model = torchvision.models.resnet18(pretrained=False)
+        finetuner_model.load_state_dict(torch.load("/home/vmagent/app/data/dataset/resnet18/resnet18-5c106cde.pth"))
+        finetunner = BasicFinetunner(finetuner_model,True)
         adapter = DANNAdapter(512, 8, 0.0, 5.0, 1.0, 100)
-        distiller = BasicDistiller(torchvision.models.resnet18(pretrained=True), True)
+        distiller_resnet18_model = torchvision.models.resnet18(pretrained=False)
+        distiller_resnet18_model.load_state_dict(torch.load("/home/vmagent/app/data/dataset/resnet18/resnet18-5c106cde.pth"))
+        distiller = BasicDistiller(distiller_resnet18_model, True)
 
         for enable_target_training_label in [True,False]:
             for transfer_strategy in ALL_STRATEGIES:
