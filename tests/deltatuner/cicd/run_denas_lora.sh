@@ -3,7 +3,7 @@ set -x
 
 cd /home/vmagent/app/e2eaiok/e2eAIOK/deltatuner
 pip install -e .
-pip uninstall wandb
+pip uninstall wandb -y
 
 cd /home/vmagent/app/e2eaiok
 
