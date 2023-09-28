@@ -1,16 +1,16 @@
 @startuml RecDP class Diagram
 
-BasePipeline <|-- FeatureWrangler
-BasePipeline <|-- DataProfiler
+TabularPipeline <|-- FeatureWrangler
+TabularPipeline <|-- DataProfiler
 DataProfiler --* FeatureVisualizer
 
-BasePipeline : original_data : DataFrame 
-BasePipeline : generators : [BaseFeatureGenerator[]]
-BasePipeline : rdp: DataProcessor 
-BasePipeline : __init__(datasets, label)
-BasePipeline : fit_analyze()
-BasePipeline : fit_transform(engine_type)
-BasePipeline : dump_pipeline_codes()
+TabularPipeline : original_data : DataFrame 
+TabularPipeline : generators : [BaseFeatureGenerator[]]
+TabularPipeline : rdp: DataProcessor 
+TabularPipeline : __init__(datasets, label)
+TabularPipeline : fit_analyze()
+TabularPipeline : fit_transform(engine_type)
+TabularPipeline : dump_pipeline_codes()
 
 DataProfiler : generators
 DataProfiler : __init__()

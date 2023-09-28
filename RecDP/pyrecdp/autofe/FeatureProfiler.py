@@ -1,7 +1,7 @@
 from jinja2 import Environment, PackageLoader
 from pyrecdp.primitives.profilers import *
 from pyrecdp.primitives.generators import *
-from .BasePipeline import BasePipeline
+from pyrecdp.autofe.TabularPipeline import TabularPipeline
 from pyrecdp.core.dataframe import DataFrameAPI
 from pyrecdp.core import SeriesSchema
 import pandas as pd
@@ -52,7 +52,7 @@ class FeatureVisulizer:
             fh.write(self.report)
         return f"{CELL_HEIGHT_OVERRIDE}</script><div style='background-color: #fff;'>{self.report}</div>"
 
-class FeatureProfiler(BasePipeline):        
+class FeatureProfiler(TabularPipeline):        
     def __init__(self, dataset, label, *args, **kwargs):
         super().__init__(dataset, label)
 

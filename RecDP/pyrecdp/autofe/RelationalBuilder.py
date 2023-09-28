@@ -1,6 +1,6 @@
 from pyrecdp.primitives.generators import *
 from pyrecdp.primitives.profilers import *
-from .BasePipeline import BasePipeline
+from pyrecdp.autofe.TabularPipeline import TabularPipeline
 from pyrecdp.core import DataFrameSchema
 from pyrecdp.core.utils import sample_read
 from pyrecdp.primitives.operations import Operation
@@ -10,7 +10,7 @@ import logging
 logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', level=logging.ERROR, datefmt='%I:%M:%S')
 logger = logging.getLogger(__name__)
 
-class RelationalBuilder(BasePipeline):
+class RelationalBuilder(TabularPipeline):
     def __init__(self, dataset, label, *args, **kwargs):
         super().__init__(dataset, label)
 

@@ -9,7 +9,7 @@ try:
 except:
     print("Not detect system installed pyrecdp, using local one")
     sys.path.append(pathlib)
-from pyrecdp.autofe import FeatureWrangler, BasePipeline
+from pyrecdp.autofe import FeatureWrangler, TabularPipeline
 
 cur_dir = str(Path(__file__).parent.resolve())
 
@@ -23,7 +23,7 @@ class TestPipielineJson(unittest.TestCase):
         pipeline.export(f"{cur_dir}/nyc_taxi_fare_pipeline.json")
 
         # create a brand-new pipeline and import from json
-        new_pipeline = BasePipeline(dataset=train_data, label="fare_amount")
+        new_pipeline = TabularPipeline(dataset=train_data, label="fare_amount")
         new_pipeline.import_from_json(f"{cur_dir}/nyc_taxi_fare_pipeline.json")
         new_pipeline.fit_transform()
         
@@ -35,7 +35,7 @@ class TestPipielineJson(unittest.TestCase):
         pipeline.export(f"{cur_dir}/amazon_pipeline.json")
 
         # create a brand-new pipeline and import from json
-        new_pipeline = BasePipeline(dataset=train_data, label="star_rating")
+        new_pipeline = TabularPipeline(dataset=train_data, label="star_rating")
         new_pipeline.import_from_json(f"{cur_dir}/amazon_pipeline.json")
         new_pipeline.fit_transform()
         
@@ -47,7 +47,7 @@ class TestPipielineJson(unittest.TestCase):
         pipeline.export(f"{cur_dir}/twitter_pipeline.json")
 
         # create a brand-new pipeline and import from json
-        new_pipeline = BasePipeline(dataset=train_data, label="reply")
+        new_pipeline = TabularPipeline(dataset=train_data, label="reply")
         new_pipeline.import_from_json(f"{cur_dir}/twitter_pipeline.json")
         new_pipeline.fit_transform()
 
@@ -59,7 +59,7 @@ class TestPipielineJson(unittest.TestCase):
         pipeline.export(f"{cur_dir}/nyc_taxi_fare_pipeline.json")
 
         # create a brand-new pipeline and import from json
-        new_pipeline = BasePipeline(dataset=train_data, label="fare_amount")
+        new_pipeline = TabularPipeline(dataset=train_data, label="fare_amount")
         new_pipeline.import_from_json(f"{cur_dir}/nyc_taxi_fare_pipeline.json")
         new_pipeline.fit_transform('spark')
         
@@ -72,7 +72,7 @@ class TestPipielineJson(unittest.TestCase):
         pipeline.export(f"{cur_dir}/amazon_pipeline.json")
 
         # create a brand-new pipeline and import from json
-        new_pipeline = BasePipeline(dataset=train_data, label="star_rating")
+        new_pipeline = TabularPipeline(dataset=train_data, label="star_rating")
         new_pipeline.import_from_json(f"{cur_dir}/amazon_pipeline.json")
         new_pipeline.fit_transform('spark')
         
@@ -84,6 +84,6 @@ class TestPipielineJson(unittest.TestCase):
         pipeline.export(f"{cur_dir}/twitter_pipeline.json")
 
         # create a brand-new pipeline and import from json
-        new_pipeline = BasePipeline(dataset=train_data, label="reply")
+        new_pipeline = TabularPipeline(dataset=train_data, label="reply")
         new_pipeline.import_from_json(f"{cur_dir}/twitter_pipeline.json")
         new_pipeline.fit_transform('spark')

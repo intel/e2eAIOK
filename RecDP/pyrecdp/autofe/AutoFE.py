@@ -2,7 +2,7 @@ import logging
 from pyrecdp.core.utils import Timer, infer_problem_type
 from pyrecdp.core.dataframe import DataFrameAPI
 
-from pyrecdp.autofe import FeatureWrangler, FeatureProfiler, RelationalBuilder, FeatureEstimator, BasePipeline
+from pyrecdp.autofe import FeatureWrangler, FeatureProfiler, RelationalBuilder, FeatureEstimator, TabularPipeline
 
 import os
 
@@ -98,6 +98,6 @@ class AutoFE():
     @classmethod
     def clone_pipeline(cls, origin_pipeline, data):
         pipeline_json = origin_pipeline.export()
-        new_pipeline = BasePipeline(data, origin_pipeline.label)
+        new_pipeline = TabularPipeline(data, origin_pipeline.label)
         new_pipeline.import_from_json(pipeline_json)
         return new_pipeline

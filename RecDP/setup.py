@@ -78,4 +78,5 @@ setuptools.setup(
         "spacy",
         "torch",
         "Faker",
+        "ray"
         ])

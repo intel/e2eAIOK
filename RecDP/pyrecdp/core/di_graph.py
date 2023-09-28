@@ -71,7 +71,8 @@ class Graph:
 
 class DiGraph(dict):
     def get_max_idx(self):
-        return max(list(self.keys()))
+        id_list = list(self.keys())
+        return max(id_list) if len(id_list) > 0 else -1
     
     def convert_to_node_chain(self):
         graph = Graph()
@@ -81,10 +82,14 @@ class DiGraph(dict):
             if config.children:
                 for src_id in config.children:
                     edges.append([src_id, node_id])
-        for edge in edges:
-            graph.addEdge(*edge)
-            
-        ret = graph.chain()
+        
+        if len(edges):
+            for edge in edges:
+                graph.addEdge(*edge)
+                
+            ret = graph.chain()
+        else:
+            ret = list(self.keys())
         return ret
 
     def json_dump(self):

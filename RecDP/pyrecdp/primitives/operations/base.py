@@ -5,6 +5,7 @@ from pyspark.sql import DataFrame as SparkDataFrame
 from pyspark import RDD as SparkRDD
 from pyrecdp.core.utils import dump_fix
 from IPython.display import display
+from pyrecdp.core.registry import Registry
 
 class Operation:
     def __init__(self, idx, children, output, op, config):
@@ -65,6 +66,8 @@ class Operation:
 
         if self.op in operations_:
             return operations_[self.op](self)
+        elif self.op in RAYOPERATORS.modules:
+            return RAYOPERATORS.modules[self.op].instantiate(self, self.config)
         else:
             try:
                 return FeaturetoolsOperation(self)
@@ -76,6 +79,7 @@ class Operation:
         obj = Operation(idx, dump_dict['children'], None, dump_dict['op'], dump_dict['config'])
         return obj
 
+BASEOPERATORS = Registry('BaseOperation')
 class BaseOperation:
     def __init__(self, op_base):
         # option1: for get_function_pd use
@@ -86,11 +90,12 @@ class BaseOperation:
         self.cache = None
         self.support_spark_dataframe = False
         self.support_spark_rdd = False
+        self.support_spark_ray = False
         self.fast_without_dpp = False
        
     def __repr__(self) -> str:
         return self.op.op
-
+    
     def describe(self) -> str:
         return str(self.op.dump())
         
@@ -145,7 +150,7 @@ class BaseOperation:
                 pipeline[self.op.children[0]].cache = child_output
             self.cache = _proc(child_output)
             #print(self.cache.take(1))
-
+    
     def get_function_spark_rdd(self, rdp, trans_type = 'fit_transform'):
         actual_func = self.get_function_pd(trans_type)
         def transform(iter, *args):
@@ -155,6 +160,38 @@ class BaseOperation:
             return rdd.mapPartitions(transform)
         return base_spark_feature_generator
 
+RAYOPERATORS = Registry('BaseRayOperation')
+class BaseRayOperation(BaseOperation):
+    def __init__(self, args_dict = {}):
+        self.op = Operation(-1, None, [], f'{self.__class__.__name__}', args_dict)
+        self.cache = None
+        self.support_spark_dataframe = False
+        self.support_spark_rdd = False
+        self.support_spark_ray = True
+        self.fast_without_dpp = False
+        
+    @classmethod
+    def instantiate(cls, op_obj, config):
+        ins = cls(**config)
+        ins.op = op_obj
+        return ins
+        
+    def execute_ray(self, pipeline):
+        child_output = []
+        children = self.op.children if self.op.children is not None else []
+        for op in children:
+            child_output.append(pipeline[op].cache)
+        self.cache = self.process_rayds(*child_output)
+        
+    def process_rayds(self, ds):
+        raise NotImplementedError(f"{self.__class__.__name__} does not support process_rayds yet")
+    
+    def process_row(self, sample: dict) -> dict:
+        raise NotImplementedError(f"{self.__class__.__name__} does not support process_row yet")
+    
+    def process_batch(self, sample: dict) -> dict:
+        raise NotImplementedError(f"{self.__class__.__name__} does not support process_batch yet")
+        
 class DummyOperation(BaseOperation):
     def __init__(self, op_base):
         super().__init__(op_base)

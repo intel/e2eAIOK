@@ -1,5 +1,5 @@
 from pyrecdp.primitives.generators import *
-from .BasePipeline import BasePipeline
+from pyrecdp.autofe.TabularPipeline import TabularPipeline
 import logging
 from pyrecdp.primitives.operations import Operation
 from pyrecdp.core import DiGraph
@@ -9,7 +9,7 @@ from pyrecdp.core import SparkDataProcessor
 logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', level=logging.ERROR, datefmt='%I:%M:%S')
 logger = logging.getLogger(__name__)
 
-class FeatureEstimator(BasePipeline):
+class FeatureEstimator(TabularPipeline):
     def __init__(self, data_pipeline, config = None):
         """
         Parameters: data_pipeline, method and config
@@ -34,7 +34,7 @@ class FeatureEstimator(BasePipeline):
             if dataset is not None:
                 super().__init__(dataset, label)
                 self.import_from_json(data_pipeline)
-        elif isinstance(data_pipeline, BasePipeline):
+        elif isinstance(data_pipeline, TabularPipeline):
             self.nested_pipeline_obj = data_pipeline
             self.pipeline = data_pipeline.pipeline.copy()
             self.dataset = data_pipeline.dataset
