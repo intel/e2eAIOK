@@ -50,7 +50,7 @@ setuptools.setup(
         "graphviz",
         "requests",
         "distro",
-        "pyspark",
+        "pyspark==3.4.0",
         "lightgbm<4.0.0",
         "matplotlib",
         "category_encoders",
