@@ -1,4 +1,8 @@
 set -x
+
+cd /home/vmagent/app/e2eaiok/e2eAIOK/deltatuner
+pip install -e .
+
 cd /home/vmagent/app/e2eaiok
 
 mkdir -p log
@@ -6,7 +10,7 @@ mkdir -p log
 DATA_PATH="/home/vmagent/app/data"
 
 #run mpt with ssf and denas, bf16
-python instruction_tuning_pipeline/finetune_clm.py \
+python example/instruction_tuning_pipeline/finetune_clm.py \
         --model_name_or_path "$DATA_PATH/mpt-7b" \
         --train_file "$DATA_PATH/alpaca_data.json" \
         --dataset_concatenation \
@@ -32,7 +36,7 @@ python instruction_tuning_pipeline/finetune_clm.py \
         2>&1 | tee "log/mpt-7b-ssf-allmodules-denas-bf16-run-1epoch.log"
 
 #run llama with ssf and denas, bf16
-python instruction_tuning_pipeline/finetune_clm.py \
+python example/instruction_tuning_pipeline/finetune_clm.py \
         --model_name_or_path "$DATA_PATH/Llama-2-7b-hf" \
         --train_file "$DATA_PATH/alpaca_data.json" \
         --dataset_concatenation \

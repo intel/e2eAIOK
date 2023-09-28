@@ -1,5 +1,9 @@
 #!/bin/bash
 set -x
+
+cd /home/vmagent/app/e2eaiok/e2eAIOK/deltatuner
+pip install -e .
+
 cd /home/vmagent/app/e2eaiok
 
 mkdir -p log models
