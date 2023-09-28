@@ -54,11 +54,9 @@ import re
 import torch
 import importlib.util
 from transformers.utils.import_utils import is_optimum_available
-import wandb
 
 IGNORE_INDEX = -100
 
-os.environ["WANDB_DISABLED"] = "false"
 
 logger = logging.getLogger(__name__)
 

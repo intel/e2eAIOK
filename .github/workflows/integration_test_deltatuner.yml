@@ -1,0 +1,49 @@
+name: Integration Test Deltatuner
+
+on:
+  pull_request:
+    branches:
+    - main
+    paths:
+    - '.github/workflows/integration_test_deltatuner.yml'
+    - 'e2eAIOK/deltatuner/deltatuner/**'
+    - 'example/instruction_tuning_pipeline/finetune_clm.py'
+    - 'tests/deltatuner/cicd/**'
+
+jobs:
+  integration_test:
+    name: Integration Test Deltatuner
+    runs-on: self-hosted
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Clean Docker Env
+      run: |
+        docker container prune && yes | docker image prune
+
+    - name : Test Lora
+      run: |
+        if [[ $(docker ps -q --filter "name=test-deltatuner" | wc -l) -ne 0 ]]; then docker ps -q --filter "name=test-deltatuner" | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi
+        docker run --rm --name test-deltatuner --shm-size=100g --privileged --network host --device=/dev/dri -v /mnt/DP_disk2/dataset:/home/vmagent/app/data  -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ chatbot_finetune \
+        /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/deltatuner/cicd/run_lora.sh"
+
+    - name : Test SSF
+      run: |
+        if [[ $(docker ps -q --filter "name=test-deltatuner" | wc -l) -ne 0 ]]; then docker ps -q --filter "name=test-deltatuner" | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi
+        docker run --rm --name test-deltatuner --shm-size=100g --privileged --network host --device=/dev/dri -v /mnt/DP_disk2/dataset:/home/vmagent/app/data  -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ chatbot_finetune \
+        /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/deltatuner/cicd/run_ssf.sh"
+
+    - name : Test DENAS Lora
+      run: |
+        if [[ $(docker ps -q --filter "name=test-deltatuner" | wc -l) -ne 0 ]]; then docker ps -q --filter "name=test-deltatuner" | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi
+        docker run --rm --name test-deltatuner --shm-size=100g --privileged --network host --device=/dev/dri -v /mnt/DP_disk2/dataset:/home/vmagent/app/data  -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ chatbot_finetune \
+        /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/deltatuner/cicd/run_denas_lora.sh"
+
+    - name : Test DENAS SSF
+      run: |
+        if [[ $(docker ps -q --filter "name=test-deltatuner" | wc -l) -ne 0 ]]; then docker ps -q --filter "name=test-deltatuner" | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi
+        docker run --rm --name test-deltatuner --shm-size=100g --privileged --network host --device=/dev/dri -v /mnt/DP_disk2/dataset:/home/vmagent/app/data  -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ chatbot_finetune \
+        /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/deltatuner/cicd/run_denas_ssf.sh"

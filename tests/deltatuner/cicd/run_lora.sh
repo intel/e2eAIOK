@@ -1,11 +1,20 @@
 #!/bin/bash
 set -x
+
+cd /home/vmagent/app/e2eaiok/e2eAIOK/deltatuner
+pip install -e .
+pip uninstall wandb -y
+
+cd /home/vmagent/app/e2eaiok
+
 mkdir -p log models
+
+DATA_PATH="/home/vmagent/app/data"
 
 # fine-tune mpt-7b with denas-lora
 python example/instruction_tuning_pipeline/finetune_clm.py \
-    --model_name_or_path "/home/vmagent/app/dataset/mpt-7b" \
-    --train_file "/home/vmagent/app/dataset/stanford_alpaca/alpaca_data.json" \
+    --model_name_or_path $DATA_PATH"/mpt-7b" \
+    --train_file $DATA_PATH"/alpaca_data.json" \
     --dataset_concatenation \
     --per_device_train_batch_size 8 \
     --per_device_eval_batch_size 8 \
@@ -25,12 +34,12 @@ python example/instruction_tuning_pipeline/finetune_clm.py \
     --debugs \
     --trust_remote_code True \
     --no_cuda \
-    --bf16 True 2>&1 | tee log/mpt-lora-run-1epoch.log
+    2>&1 | tee log/mpt-lora-run-1epoch.log
 
 # fine-tune llama2-7b with denas-lora
 python example/instruction_tuning_pipeline/finetune_clm.py \
-    --model_name_or_path "/home/vmagent/app/dataset/Llama-2-7b-hf" \
-    --train_file "/home/vmagent/app/dataset/stanford_alpaca/alpaca_data.json" \
+    --model_name_or_path $DATA_PATH"/Llama-2-7b-hf" \
+    --train_file $DATA_PATH"/alpaca_data.json" \
     --dataset_concatenation \
     --per_device_train_batch_size 8 \
     --per_device_eval_batch_size 8 \
@@ -50,4 +59,4 @@ python example/instruction_tuning_pipeline/finetune_clm.py \
     --debugs \
     --trust_remote_code True \
     --no_cuda \
-    --bf16 True 2>&1 | tee log/llama2-lora-run-1epoch.log
+    2>&1 | tee log/llama2-lora-run-1epoch.log

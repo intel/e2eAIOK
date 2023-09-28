@@ -1,10 +1,17 @@
 set -x
+
+cd /home/vmagent/app/e2eaiok/e2eAIOK/deltatuner
+pip install -e .
+pip uninstall wandb -y
+
+cd /home/vmagent/app/e2eaiok
+
 mkdir -p log
 
-DATA_PATH="/home/data"
+DATA_PATH="/home/vmagent/app/data"
 
 #run mpt with ssf, bf16
-python instruction_tuning_pipeline/finetune_clm.py \
+python example/instruction_tuning_pipeline/finetune_clm.py \
         --model_name_or_path "$DATA_PATH/mpt-7b" \
         --train_file "$DATA_PATH/alpaca_data.json" \
         --dataset_concatenation \
@@ -25,12 +32,11 @@ python instruction_tuning_pipeline/finetune_clm.py \
         --output_dir "$DATA_PATH/mpt-7b-ssf-allmodules-bf16" \
         --delta ssf \
         --denas False \
-        --bf16 True \
         --debugs \
         2>&1 | tee log/mpt-ssf-run-allmodules-bf16-1epoch.log
     
 #run llama2 with ssf, bf16
-python instruction_tuning_pipeline/finetune_clm.py \
+python example/instruction_tuning_pipeline/finetune_clm.py \
         --model_name_or_path "$DATA_PATH/Llama-2-7b-hf" \
         --train_file "$DATA_PATH/alpaca_data.json" \
         --dataset_concatenation \
@@ -51,6 +57,5 @@ python instruction_tuning_pipeline/finetune_clm.py \
         --output_dir "$DATA_PATH/llama2-7b-ssf-bf16" \
         --delta ssf \
         --denas False \
-        --bf16 True \
         --debugs \
         2>&1 | tee log/llama2-7b-ssf-bf16-1epoch.log
