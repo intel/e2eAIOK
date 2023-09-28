@@ -34,7 +34,7 @@ python example/instruction_tuning_pipeline/finetune_clm.py \
     --debugs \
     --trust_remote_code True \
     --no_cuda \
-    --bf16 True 2>&1 | tee log/mpt-lora-run-1epoch.log
+    2>&1 | tee log/mpt-lora-run-1epoch.log
 
 # fine-tune llama2-7b with denas-lora
 python example/instruction_tuning_pipeline/finetune_clm.py \
@@ -59,4 +59,4 @@ python example/instruction_tuning_pipeline/finetune_clm.py \
     --debugs \
     --trust_remote_code True \
     --no_cuda \
-    --bf16 True 2>&1 | tee log/llama2-lora-run-1epoch.log
+    2>&1 | tee log/llama2-lora-run-1epoch.log

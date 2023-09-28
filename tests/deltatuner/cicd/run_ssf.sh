@@ -32,7 +32,6 @@ python example/instruction_tuning_pipeline/finetune_clm.py \
         --output_dir "$DATA_PATH/mpt-7b-ssf-allmodules-bf16" \
         --delta ssf \
         --denas False \
-        --bf16 True \
         --debugs \
         2>&1 | tee log/mpt-ssf-run-allmodules-bf16-1epoch.log
     
@@ -58,6 +57,5 @@ python example/instruction_tuning_pipeline/finetune_clm.py \
         --output_dir "$DATA_PATH/llama2-7b-ssf-bf16" \
         --delta ssf \
         --denas False \
-        --bf16 True \
         --debugs \
         2>&1 | tee log/llama2-7b-ssf-bf16-1epoch.log
