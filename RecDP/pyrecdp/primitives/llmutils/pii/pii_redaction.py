@@ -3,6 +3,8 @@ import random
 import string
 import ipaddress
 
+import faker
+
 # List of random private IP addresses to use as replacements
 REPLACEMENTS_IP = {
     "IPv4": ["172.16.31.10", "172.16.58.3", "172.16.17.32", "192.168.127.12", "192.168.3.11"],
@@ -32,6 +34,8 @@ POPULAR_DNS_SERVERS = [
     "94.140.14.14",
     "94.140.15.15",
 ]
+
+FAKER = faker.Faker()
 
 
 def load_json(sample):
@@ -66,7 +70,17 @@ def random_replacements(n=10):
         "".join(random.choice(string.digits) for i in range(10))
         for i in range(n)
     ]
-    return {"EMAIL": emails, "KEY": keys, "IP_ADDRESS": ip_addresses, "PHONE_NUMBER": phones}
+
+    names = []
+    for i in range(n):
+        names.append(FAKER.name())
+
+    passwords = []
+    for i in range(n):
+        passwords.append(FAKER.password())
+
+    return {"EMAIL": emails, "KEY": keys, "IP_ADDRESS": ip_addresses, "PHONE_NUMBER": phones,
+            "NAME": names, "PASSWORD": passwords}
 
 
 def replace_ip(value, replacements_dict):

@@ -50,7 +50,7 @@ setuptools.setup(
         "graphviz",
         "requests",
         "distro",
-        "pyspark",
+        "pyspark==3.4.0",
         "lightgbm<4.0.0",
         "matplotlib",
         "category_encoders",
@@ -75,5 +75,7 @@ setuptools.setup(
         "tabulate==0.9.0",
         "sentencepiece==0.1.99",
         "selectolax",
-        "spacy"
+        "spacy",
+        "torch",
+        "Faker",
         ])
