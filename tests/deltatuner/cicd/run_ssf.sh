@@ -1,4 +1,6 @@
 set -x
+cd /home/vmagent/app/e2eaiok
+
 mkdir -p log
 
 DATA_PATH="/home/vmagent/app/data"

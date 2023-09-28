@@ -1,5 +1,7 @@
 #!/bin/bash
 set -x
+cd /home/vmagent/app/e2eaiok
+
 mkdir -p log models
 
 DATA_PATH="/home/vmagent/app/data"
