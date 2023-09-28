@@ -83,12 +83,11 @@ Please refer to [example page](https://github.com/intel/e2eAIOK/tree/main/exampl
 
 | Model        | LoRA | SSF  |
 |--------------| ---- | ---- |
-| GPT-2        |  |  |
-| GPT-J        |  |  |
-| Bloom        |  |  |
-| OPT          |  |  |
-| GPT-Neo      |  |  |
-| Falcon       |  |  |
-| Flan-T5      |  |  |
-| LLaMA        | ✅  | ✅  |
-| MPT          | ✅  | ✅  |
+| GPT-2        | ✅  |  |
+| GPT-J        | ✅  |  |
+| Bloom        | ✅  |  |
+| OPT          | ✅  |  |
+| GPT-Neo      | ✅  |  |
+| Falcon       | ✅  |  |
+| LLaMA        | ✅  | ✅ |
+| MPT          | ✅  | ✅ |
