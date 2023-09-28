@@ -161,10 +161,12 @@ class Test_LLMUtils(unittest.TestCase):
 
         sparkDP = SparkDataProcessor()
         spark = sparkDP.spark
-        input_dataset = spark.read.load(path="tests/data/llm_data/arxiv_sample_100.jsonl", format="json")
-        output_dataset = pii_remove(input_dataset,text_column="text",keep_secret_column=True)
-        output_dataset.write.save("tmp/pii", mode="overwrite", format="json")
-        output_dataset.show(truncate=True)
+        input_dataset = spark.read.load(path="tests/data/llm_data/tiny_c4_sample_for_pii.jsonl", format="json")
+        output_dataset = pii_remove(dataset=input_dataset,text_column="text", show_secret_column=True, secret_column="secret")
+        df = output_dataset.select("secret","__SECRETS__")
+        df.show(truncate=False)
+        for _, row in df.toPandas().iterrows():
+            self.assertEqual(row["secret"], row["__SECRETS__"])
 
     def test_filter_jsonl(self):
         data_dir = "tests/data/llm_data"

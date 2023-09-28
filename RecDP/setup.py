@@ -75,5 +75,7 @@ setuptools.setup(
         "tabulate==0.9.0",
         "sentencepiece==0.1.99",
         "selectolax",
-        "spacy"
+        "spacy",
+        "torch",
+        "Faker",
         ])
