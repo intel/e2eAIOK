@@ -176,6 +176,6 @@ if [ -z ${failed_tests} ]; then
     echo "All tests are passed"
 else
     echo "*** Failed Tests are: ***"
-    echo ${failed_tests}
+    echo -e ${failed_tests}
     exit 1
 fi

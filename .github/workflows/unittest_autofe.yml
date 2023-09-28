@@ -28,3 +28,7 @@ jobs:
     - name: RUN Unittests
       run: |
         cd RecDP && docker run --rm --name unittest-pyrecdp-autofe-pandas --shm-size=100g --privileged --network host --device=/dev/dri -v `pwd`:/home/vmagent/app/ -w /home/vmagent/app/ pyrecdp-test-env /bin/bash -c "sh tests/cicd/bashrun_unittest_autofe.sh"
+
+    - name: Clean env
+      run: |
+        docker ps --filter name=unittest-pyrecdp-autofe-pandas; while read line; do docker stop unittest-pyrecdp-autofe-pandas;done

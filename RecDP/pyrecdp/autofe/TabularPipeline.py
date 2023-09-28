@@ -21,7 +21,7 @@ class TabularPipeline(BasePipeline):
         # self.dataset: a dictionary, main_table will be indicated with key 'main_table'
         # self.y: target label
         # self.pipeline: a direct graph to store the operation
-
+        super().__init__()
         if isinstance(dataset, pd.DataFrame):
             self.dataset = {'main_table': dataset}
         elif isinstance(dataset, list):
