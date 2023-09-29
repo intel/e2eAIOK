@@ -94,7 +94,7 @@ class TextPipeline(BasePipeline):
         
         # we need to find nexts
         if find_children_skip:
-            return
+            return self.pipeline
         for to_replace_child in children:
             next = []
             for idx in pipeline_chain:
@@ -109,10 +109,12 @@ class TextPipeline(BasePipeline):
                         found[id] = cur_idx
                 for k, v in found.items():
                     self.pipeline[idx].children[k] = v
+        return self.pipeline
                     
     def add_operations(self, config_list):
         for op in config_list:
-            self.add_operation(op)    
+            self.add_operation(op)
+        return self.pipeline
      
     def profile(self):
         # TODO: print analysis and log for each component.
