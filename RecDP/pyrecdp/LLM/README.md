@@ -20,7 +20,7 @@ RecDP LLM is a set of python components that enables quick and easy establish of
 | [ Text Fixer ](https://github.com/intel/e2eAIOK/blob/main/RecDP/pyrecdp/primitives/llmutils/text_fixer.py)                 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/text_fixer.ipynb)          | Clean repeated format in html, latex, codes               | html, latex, codes                                   | RefinedWeb - 1.7 TB                   |
 | [ Document splitter  ](https://github.com/intel/e2eAIOK/blob/main/RecDP/pyrecdp/primitives/llmutils/sentence_split.py)     | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/document_split.ipynb)      | Split Document into multiple sub documents                | chapter_based, length_based                          | RefinedWeb - 1.7 TB                   |
 
-## LLM data quality enhancement
+## LLM data quality enhancement module
 
 | Type                                                                                                                            | notebook                                                                                                                                                                                                       | Description                                                                        | supports                                             |
 | :------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------- | :--------------------------------------------------- |
@@ -63,6 +63,8 @@ ret = pipeline.add_operations(ops).execute(dataset)
 
 pd = ret.preview_as_pandas()
 display(pd)
+
+pipeline.export_to_yaml("custom_llm_data_pipeline.yaml")
 ```
 
 ## * run with individual component
@@ -71,12 +73,23 @@ display(pd)
   * python function mode provided to easily integrate to your codes
   * spark dataframe mode provided to easily integrate to your spark env
 
+
+## LLM Data Quality Analysis
+
+| Diversity   |  GPT-3 Scoring | Toxicity | 
+| :-------- | :---------- | :------------|
+| Visualize the diversity distribution of data | Leverage GPT-3 to scoring | Visualize Toxicity probability |
+| ![diversity](/RecDP/resources/diversity_analysis.png) | ![quality](/RecDP/resources/quality_scoring.png) | ![toxicity](/RecDP/resources/toxicity_analysis.png)|
+| [learn more](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/text_quality_assessment.ipynb) | [learn more](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/data_diversity_control.ipynb) | [learn more](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/toxicity_bias_control.ipynb) |
+
+
+
 ## Use Cases
 
 ### * Foundation Model data preparation
 ```
 from pyrecdp.LLM import TextPipeline
-pipeline = TextPipeline("use_case/itl_foundation_pipeline.yaml")
+pipeline = TextPipeline("usecase/itl_foundation_pipeline.yaml")
 ret = pipeline.execute()
 pd = ret.preview_as_pandas()
 display(pd)
@@ -85,7 +98,7 @@ display(pd)
 ### * FineTune Model Data Preparation
 ```
 from pyrecdp.LLM import TextPipeline
-pipeline = TextPipeline("use_case/itl_finetune_pipeline.yaml")
+pipeline = TextPipeline("usecase/itl_finetune_pipeline.yaml")
 ret = pipeline.execute()
 pd = ret.preview_as_pandas()
 display(pd)
