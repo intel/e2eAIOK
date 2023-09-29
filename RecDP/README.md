@@ -2,8 +2,8 @@
 
 We provide intel optimized solution for
 
-* **Tabular** - Auto Feature Engineering Pipeline, 50+ essential primitives for feature engineering.
-* **LLM Text** - 10+ essential primitives for text clean, fixing, deduplication, 4 quality control module, 2 built-in high quality data pipelines.
+* [**Tabular**](pyrecdp/autofe/README.md) - Auto Feature Engineering Pipeline, 50+ essential primitives for feature engineering.
+* [**LLM Text**](pyrecdp/LLM/README.md) - 10+ essential primitives for text clean, fixing, deduplication, 4 quality control module, 2 built-in high quality data pipelines.
 
 ## Getting Started
 
