@@ -1,4 +1,4 @@
-from .base import BaseRayOperation, RAYOPERATORS
+from .base import BaseLLMOperation, LLMOPERATORS
 from ray.data import Dataset
 import os
 
@@ -41,7 +41,7 @@ def prepare_func_filter_by_profanity():
     return check_profanity
 
 
-class LengthFilter(BaseRayOperation):
+class LengthFilter(BaseLLMOperation):
     def __init__(self, text_key = 'text', minimum_length=100, maximum_length=-1):
         self.text_key = text_key
         self.inplace = True
@@ -58,10 +58,10 @@ class LengthFilter(BaseRayOperation):
             return ds.filter(lambda x: check_length(x[self.text_key]))
         else:
             raise NotImplementedError("We only support inplace modification for LengthFilter.")
-RAYOPERATORS.register(LengthFilter)
+LLMOPERATORS.register(LengthFilter)
 
 
-class BadwordsFilter(BaseRayOperation):
+class BadwordsFilter(BaseLLMOperation):
     def __init__(self, text_key = 'text', language = 'en'):
         self.text_key = text_key
         self.inplace = True
@@ -78,10 +78,10 @@ class BadwordsFilter(BaseRayOperation):
         else:
             raise NotImplementedError("We only support inplace modification for BadwordsFilter.")
 
-RAYOPERATORS.register(BadwordsFilter)
+LLMOPERATORS.register(BadwordsFilter)
 
 
-class ProfanityFilter(BaseRayOperation):
+class ProfanityFilter(BaseLLMOperation):
     def __init__(self, text_key = 'text', inplace = True):
         self.text_key = text_key
         self.inplace = inplace
@@ -96,10 +96,10 @@ class ProfanityFilter(BaseRayOperation):
         else:
             raise NotImplementedError("We only support inplace modification for ProfanityFilter.")
         
-RAYOPERATORS.register(ProfanityFilter)
+LLMOPERATORS.register(ProfanityFilter)
 
 
-class URLFilter(BaseRayOperation):
+class URLFilter(BaseLLMOperation):
     def __init__(self, text_key = 'text'):
         self.text_key = text_key
         self.inplace = True
@@ -113,4 +113,4 @@ class URLFilter(BaseRayOperation):
         else:
             raise NotImplementedError("We only support inplace modification for URLFilter.")
         
-RAYOPERATORS.register(URLFilter)
+LLMOPERATORS.register(URLFilter)

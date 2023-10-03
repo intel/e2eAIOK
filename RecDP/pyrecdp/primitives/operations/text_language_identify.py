@@ -1,4 +1,4 @@
-from .base import BaseRayOperation, RAYOPERATORS
+from .base import BaseLLMOperation, LLMOPERATORS
 from ray.data import Dataset
 from huggingface_hub import hf_hub_download
 import fasttext
@@ -189,7 +189,7 @@ def prepare_func_language_id(fasttext_model_dir, language_identify_field, langua
         return content[classifier.out_field] if content else ""
     return generate_lang_label
 
-class LanguageIdentify(BaseRayOperation):
+class LanguageIdentify(BaseLLMOperation):
     def __init__(self, text_key = 'text', inplace = False, fasttext_model_dir = ""):
         self.text_key = text_key
         self.inplace = False
@@ -205,4 +205,4 @@ class LanguageIdentify(BaseRayOperation):
         actual_func = prepare_func_language_id(fasttext_model_dir = self.fasttext_model_dir, language_identify_field = self.text_key, language_identify_output_field = new_name)
         return ds.map(lambda x: self.process_row(x, self.text_key, new_name, actual_func))
     
-RAYOPERATORS.register(LanguageIdentify)
+LLMOPERATORS.register(LanguageIdentify)

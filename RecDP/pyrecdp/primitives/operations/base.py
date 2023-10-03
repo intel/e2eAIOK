@@ -66,8 +66,8 @@ class Operation:
 
         if self.op in operations_:
             return operations_[self.op](self)
-        elif self.op in RAYOPERATORS.modules:
-            return RAYOPERATORS.modules[self.op].instantiate(self, self.config)
+        elif self.op in LLMOPERATORS.modules:
+            return LLMOPERATORS.modules[self.op].instantiate(self, self.config)
         else:
             try:
                 return FeaturetoolsOperation(self)
@@ -160,15 +160,13 @@ class BaseOperation:
             return rdd.mapPartitions(transform)
         return base_spark_feature_generator
 
-RAYOPERATORS = Registry('BaseRayOperation')
-class BaseRayOperation(BaseOperation):
+LLMOPERATORS = Registry('BaseLLMOperation')
+class BaseLLMOperation(BaseOperation):
     def __init__(self, args_dict = {}):
         self.op = Operation(-1, None, [], f'{self.__class__.__name__}', args_dict)
         self.cache = None
-        self.support_spark_dataframe = False
-        self.support_spark_rdd = False
-        self.support_spark_ray = True
-        self.fast_without_dpp = False
+        self.support_spark = False
+        self.support_ray = True
         
     @classmethod
     def instantiate(cls, op_obj, config):

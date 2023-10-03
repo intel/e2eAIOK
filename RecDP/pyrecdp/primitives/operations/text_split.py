@@ -1,4 +1,4 @@
-from .base import BaseRayOperation, RAYOPERATORS
+from .base import BaseLLMOperation, LLMOPERATORS
 from ray.data import Dataset
 from pyrecdp.core.model_utils import prepare_model, MODEL_ZOO
     
@@ -12,7 +12,7 @@ def prepare_func_sentencesplit(lang: str = 'en'):
         return '\n'.join(sentences)
     return process
 
-class DocumentSplit(BaseRayOperation):
+class DocumentSplit(BaseLLMOperation):
     def __init__(self, text_key = 'text', inplace = True, language = 'en'):
         self.text_key = text_key
         self.inplace = inplace
@@ -28,4 +28,4 @@ class DocumentSplit(BaseRayOperation):
         actual_func = prepare_func_sentencesplit(lang = self.language)
         return ds.map(lambda x: self.process_row(x, self.text_key, new_name, actual_func))
     
-RAYOPERATORS.register(DocumentSplit)
+LLMOPERATORS.register(DocumentSplit)

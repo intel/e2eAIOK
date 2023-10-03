@@ -1,10 +1,10 @@
-from .base import BaseRayOperation, RAYOPERATORS
+from .base import BaseLLMOperation, LLMOPERATORS
 from ray.data import Dataset
 
 def text_fuzzy_duplicate_detect(s):
     return s
 
-class FuzzyDeduplicate(BaseRayOperation):
+class FuzzyDeduplicate(BaseLLMOperation):
     def __init__(self, text_key = 'text', inplace = True):
         self.text_key = text_key
         self.inplace = inplace
@@ -22,12 +22,12 @@ class FuzzyDeduplicate(BaseRayOperation):
         sample[new_name] = text_fuzzy_duplicate_detect(sample[self.text_key])
         return sample
     
-RAYOPERATORS.register(FuzzyDeduplicate)
+LLMOPERATORS.register(FuzzyDeduplicate)
 
 def text_hash_duplicate_detect(s):
     return s
 
-class GlobalDeduplicate(BaseRayOperation):
+class GlobalDeduplicate(BaseLLMOperation):
     def __init__(self, text_key = 'text', inplace = True):
         self.text_key = text_key
         self.inplace = inplace
@@ -45,4 +45,4 @@ class GlobalDeduplicate(BaseRayOperation):
         sample[new_name] = text_hash_duplicate_detect(sample[self.text_key])
         return sample
     
-RAYOPERATORS.register(GlobalDeduplicate)
+LLMOPERATORS.register(GlobalDeduplicate)

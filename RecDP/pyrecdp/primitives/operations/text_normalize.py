@@ -1,4 +1,4 @@
-from .base import BaseRayOperation, RAYOPERATORS
+from .base import BaseLLMOperation, LLMOPERATORS
 from ray.data import Dataset
 import ftfy, re, string
 
@@ -15,7 +15,7 @@ def clean_str(s):
 def text_normalization(s):
     return clean_str(s)
 
-class TextNormalize(BaseRayOperation):
+class TextNormalize(BaseLLMOperation):
     def __init__(self, text_key = 'text', inplace = True):
         self.text_key = text_key
         self.inplace = inplace
@@ -29,4 +29,4 @@ class TextNormalize(BaseRayOperation):
             new_name = 'fixed_text'
         return ds.map(lambda x: self.process_row(x, self.text_key, new_name, text_normalization))
     
-RAYOPERATORS.register(TextNormalize)
+LLMOPERATORS.register(TextNormalize)

@@ -1,4 +1,4 @@
-from .base import BaseRayOperation, RAYOPERATORS
+from .base import BaseLLMOperation, LLMOPERATORS
 from ray.data import Dataset
 import os
 from transformers import pipeline
@@ -19,7 +19,7 @@ def prepare_func_pii_removal(model_root_path = "", debug_mode = False):
     return process
 
 
-class PIIRemoval(BaseRayOperation):
+class PIIRemoval(BaseLLMOperation):
     def __init__(self, text_key = 'text', inplace = True, model_root_path = ""):
         self.text_key = text_key
         self.inplace = inplace
@@ -39,4 +39,4 @@ class PIIRemoval(BaseRayOperation):
         sample[new_name], sample['is_modified_by_pii'], sample['secrets'] = actual_func(sample[text_key], *actual_func_args)
         return sample
 
-RAYOPERATORS.register(PIIRemoval)
+LLMOPERATORS.register(PIIRemoval)

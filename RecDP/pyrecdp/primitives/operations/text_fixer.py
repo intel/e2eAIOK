@@ -1,4 +1,4 @@
-from .base import BaseRayOperation, RAYOPERATORS
+from .base import BaseLLMOperation, LLMOPERATORS
 from ray.data import Dataset
 
 import os
@@ -227,7 +227,7 @@ def get_fixer_by_type(text_type):
         return clean_codes
 
 
-class TextFix(BaseRayOperation):
+class TextFix(BaseLLMOperation):
     def __init__(self, text_key = 'text', inplace = True, text_type = 'html'):
         self.text_key = text_key
         self.inplace = inplace
@@ -243,4 +243,4 @@ class TextFix(BaseRayOperation):
         actual_func = get_fixer_by_type(self.text_type)
         return ds.map(lambda x: self.process_row(x, self.text_key, new_name, actual_func))
     
-RAYOPERATORS.register(TextFix)
+LLMOPERATORS.register(TextFix)

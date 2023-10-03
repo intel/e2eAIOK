@@ -1,11 +1,11 @@
-from .base import BaseRayOperation, RAYOPERATORS
+from .base import BaseLLMOperation, LLMOPERATORS
 import copy
 from ray.data import Dataset
 
 def read_data():
     return None
 
-class RayDatasetReader(BaseRayOperation):
+class RayDatasetReader(BaseLLMOperation):
     def __init__(self):
         super().__init__()
         
@@ -13,13 +13,13 @@ class RayDatasetReader(BaseRayOperation):
         if self.cache == None:
             self.cache = read_data()
         return self.cache
-RAYOPERATORS.register(RayDatasetReader)
+LLMOPERATORS.register(RayDatasetReader)
 
 
-class RayDatasetWriter(BaseRayOperation):
+class RayDatasetWriter(BaseLLMOperation):
     def __init__(self):
         super().__init__()
         
     def process_rayds(self, ds: Dataset) -> Dataset:
         return ds
-RAYOPERATORS.register(RayDatasetWriter)
+LLMOPERATORS.register(RayDatasetWriter)

@@ -1,10 +1,10 @@
-from .base import BaseRayOperation, RAYOPERATORS
+from .base import BaseLLMOperation, LLMOPERATORS
 from ray.data import Dataset
 
 def text_classify(s):
     return s
 
-class Classify(BaseRayOperation):
+class Classify(BaseLLMOperation):
     def __init__(self, text_key = 'text', inplace = True):
         self.text_key = text_key
         self.inplace = inplace
@@ -22,4 +22,4 @@ class Classify(BaseRayOperation):
         sample[new_name] = text_classify(sample[self.text_key])
         return sample
     
-RAYOPERATORS.register(Classify)
+LLMOPERATORS.register(Classify)
