@@ -43,102 +43,88 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
     def test_TextNormalize(self):
         pipeline = TextPipeline()
         ops = [
+            JsonlReader("tests/data/llm_data/tiny_c4_sample.jsonl"),
             TextNormalize() 
         ]
         pipeline.add_operations(ops)
-        
-        dataset = rd.read_json("tests/data/llm_data/PILE/NIH_sample.jsonl")
-        ret = pipeline.execute(dataset)
+        ret = pipeline.execute()
         pd = ret.to_pandas()
         display(pd)
         
     def test_TextLengthFilter(self):
         pipeline = TextPipeline()
         ops = [
+            JsonlReader("tests/data/llm_data/tiny_c4_sample.jsonl"),
             LengthFilter() 
         ]
         pipeline.add_operations(ops)
-        
-        dataset = rd.read_json("tests/data/llm_data/arxiv_sample_100.jsonl")
-        ret = pipeline.execute(dataset)
+        ret = pipeline.execute()
         pd = ret.to_pandas()
         display(pd)
         
     def test_TextBadwordsFilter(self):
         pipeline = TextPipeline()
         ops = [
+            JsonlReader("tests/data/llm_data/tiny_c4_sample.jsonl"),
             BadwordsFilter() 
         ]
         pipeline.add_operations(ops)
-        
-        dataset = rd.read_text("tests/data/llm_data/tiny_c4_sample.jsonl")
-        dataset = dataset.map(convert_json)
-        display(dataset)
-        ret = pipeline.execute(dataset)
+        ret = pipeline.execute()
         pd = ret.to_pandas()
         display(pd)
         
     def test_TextProfanityFilter(self):
         pipeline = TextPipeline()
         ops = [
+            JsonlReader("tests/data/llm_data/tiny_c4_sample.jsonl"),
             ProfanityFilter() 
         ]
         pipeline.add_operations(ops)
-        
-        dataset = rd.read_text("tests/data/llm_data/tiny_c4_sample.jsonl")
-        dataset = dataset.map(convert_json)
-        ret = pipeline.execute(dataset)
+        ret = pipeline.execute()
         pd = ret.to_pandas()
         display(pd)
         
     def test_TextFixer(self):
         pipeline = TextPipeline()
         ops = [
+            JsonlReader("tests/data/llm_data/tiny_c4_sample.jsonl"),
             TextFix() 
         ]
         pipeline.add_operations(ops)
-        
-        dataset = rd.read_text("tests/data/llm_data/tiny_c4_sample.jsonl")
-        dataset = dataset.map(convert_json)
-        ret = pipeline.execute(dataset)
+        ret = pipeline.execute()
         pd = ret.to_pandas()
         display(pd)
         
     def test_TextLanguageIdentify(self):
         pipeline = TextPipeline()
         ops = [
+            JsonlReader("tests/data/llm_data/tiny_c4_sample.jsonl"),
             LanguageIdentify(fasttext_model_dir = os.path.join(RECDP_MODELS_CACHE, "lid.bin")) 
         ]
         pipeline.add_operations(ops)
-        
-        dataset = rd.read_text("tests/data/llm_data/tiny_c4_sample.jsonl")
-        dataset = dataset.map(convert_json)
-        ret = pipeline.execute(dataset)
+
+        ret = pipeline.execute()
         pd = ret.to_pandas()
         display(pd)
         
     def test_TextDocumentSplit(self):
         pipeline = TextPipeline()
         ops = [
+            JsonlReader("tests/data/llm_data/tiny_c4_sample.jsonl"),
             DocumentSplit() 
         ]
         pipeline.add_operations(ops)
-        
-        dataset = rd.read_text("tests/data/llm_data/tiny_c4_sample.jsonl")
-        dataset = dataset.map(convert_json)
-        ret = pipeline.execute(dataset)
+        ret = pipeline.execute()
         pd = ret.to_pandas()
         display(pd)
         
     def test_TextPIIRemoval(self):
         pipeline = TextPipeline()
         ops = [
+            JsonlReader("tests/data/llm_data/tiny_c4_sample.jsonl"),
             PIIRemoval(model_root_path = os.path.join(RECDP_MODELS_CACHE, "huggingface")) 
         ]
         pipeline.add_operations(ops)
-        
-        dataset = rd.read_text("tests/data/llm_data/tiny_c4_sample.jsonl")
-        dataset = dataset.map(convert_json)
-        ret = pipeline.execute(dataset)
+        ret = pipeline.execute()
         pd = ret.to_pandas()
         display(pd)
