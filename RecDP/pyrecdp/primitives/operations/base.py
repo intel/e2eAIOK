@@ -186,8 +186,9 @@ class BaseRayOperation(BaseOperation):
     def process_rayds(self, ds):
         raise NotImplementedError(f"{self.__class__.__name__} does not support process_rayds yet")
     
-    def process_row(self, sample: dict) -> dict:
-        raise NotImplementedError(f"{self.__class__.__name__} does not support process_row yet")
+    def process_row(self, sample: dict, text_key, new_name, actual_func, *actual_func_args) -> dict:
+        sample[new_name] = actual_func(sample[text_key], *actual_func_args)
+        return sample
     
     def process_batch(self, sample: dict) -> dict:
         raise NotImplementedError(f"{self.__class__.__name__} does not support process_batch yet")

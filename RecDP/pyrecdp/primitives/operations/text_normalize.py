@@ -1,5 +1,4 @@
 from .base import BaseRayOperation, RAYOPERATORS
-import copy
 from ray.data import Dataset
 import ftfy, re, string
 
@@ -17,16 +16,17 @@ def text_normalization(s):
     return clean_str(s)
 
 class TextNormalize(BaseRayOperation):
-    def __init__(self, text_key = 'text'):
+    def __init__(self, text_key = 'text', inplace = True):
         self.text_key = text_key
-        super().__init__({'text_key': text_key})
+        self.inplace = inplace
+        settings = {'text_key': text_key, 'inplace': inplace}
+        super().__init__(settings)
         
     def process_rayds(self, ds: Dataset) -> Dataset:
-        return ds.map(self.process_row)
-        
-    def process_row(self, sample: dict) -> dict:
-        new_name = 'norm_text'
-        sample[new_name] = text_normalization(sample[self.text_key])
-        return sample
+        if self.inplace:
+            new_name = self.text_key
+        else:
+            new_name = 'fixed_text'
+        return ds.map(lambda x: self.process_row(x, self.text_key, new_name, text_normalization))
     
 RAYOPERATORS.register(TextNormalize)
