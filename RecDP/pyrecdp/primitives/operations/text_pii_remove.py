@@ -24,6 +24,7 @@ class PIIRemoval(BaseLLMOperation):
         self.text_key = text_key
         self.inplace = inplace
         self.model_root_path = model_root_path
+        self.actual_func = None
         settings = {'text_key': text_key, 'inplace': inplace, 'model_root_path': model_root_path}
         super().__init__(settings)
         
@@ -32,8 +33,9 @@ class PIIRemoval(BaseLLMOperation):
             new_name = self.text_key
         else:
             new_name = 'pii_clean_text'
-        actual_func = prepare_func_pii_removal(self.model_root_path)
-        return ds.map(lambda x: self.process_row(x, self.text_key, new_name, actual_func))
+        if self.actual_func is None:
+            self.actual_func = prepare_func_pii_removal(self.model_root_path)
+        return ds.map(lambda x: self.process_row(x, self.text_key, new_name, self.actual_func))
     
     def process_row(self, sample: dict, text_key, new_name, actual_func, *actual_func_args) -> dict:
         sample[new_name], sample['is_modified_by_pii'], sample['secrets'] = actual_func(sample[text_key], *actual_func_args)

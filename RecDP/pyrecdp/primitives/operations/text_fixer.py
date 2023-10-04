@@ -232,6 +232,7 @@ class TextFix(BaseLLMOperation):
         self.text_key = text_key
         self.inplace = inplace
         self.text_type = text_type
+        self.actual_func = None
         settings = {'text_key': text_key, 'inplace': inplace, 'text_type': text_type}
         super().__init__(settings)
         
@@ -240,7 +241,8 @@ class TextFix(BaseLLMOperation):
             new_name = self.text_key
         else:
             new_name = 'fixed_text'
-        actual_func = get_fixer_by_type(self.text_type)
-        return ds.map(lambda x: self.process_row(x, self.text_key, new_name, actual_func))
+        if self.actual_func is None:
+            self.actual_func = get_fixer_by_type(self.text_type)
+        return ds.map(lambda x: self.process_row(x, self.text_key, new_name, self.actual_func))
     
 LLMOPERATORS.register(TextFix)

@@ -194,6 +194,7 @@ class LanguageIdentify(BaseLLMOperation):
         self.text_key = text_key
         self.inplace = False
         self.fasttext_model_dir = fasttext_model_dir
+        self.actual_func = None
         settings = {'text_key': text_key, 'inplace': self.inplace, 'fasttext_model_dir': self.fasttext_model_dir}
         super().__init__(settings)
         
@@ -202,7 +203,8 @@ class LanguageIdentify(BaseLLMOperation):
             raise NotImplementedError("We only support non-inplace modification for LanguageIdentify.")
         else:
             new_name = 'language'
-        actual_func = prepare_func_language_id(fasttext_model_dir = self.fasttext_model_dir, language_identify_field = self.text_key, language_identify_output_field = new_name)
-        return ds.map(lambda x: self.process_row(x, self.text_key, new_name, actual_func))
+        if self.actual_func is None:
+            self.actual_func = prepare_func_language_id(fasttext_model_dir = self.fasttext_model_dir, language_identify_field = self.text_key, language_identify_output_field = new_name)
+        return ds.map(lambda x: self.process_row(x, self.text_key, new_name, self.actual_func))
     
 LLMOPERATORS.register(LanguageIdentify)

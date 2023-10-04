@@ -25,7 +25,6 @@ def prepare_func_filter_by_badwords(language):
     def check_badwords(text):
         found = re.search(bad_words_pattern, text)
         if found:
-            print(found)
             return False
         else:
             return True
@@ -37,8 +36,6 @@ def prepare_func_filter_by_profanity():
     def check_profanity(text):
         scores = predict([text])
         ret = not bool(scores[0])
-        if not ret:
-            print(text)
         return ret
     return check_profanity
 
@@ -49,15 +46,17 @@ class LengthFilter(BaseLLMOperation):
         self.inplace = True
         self.minimum_length = minimum_length
         self.maximum_length = maximum_length
+        self.check_length = None
         settings = {'text_key': text_key}
         settings.update({'minimum_length': minimum_length, 'maximum_length': maximum_length})
         super().__init__(settings)
         
     def process_rayds(self, ds: Dataset) -> Dataset:
-        check_length = prepare_func_filter_by_length(self.minimum_length, self.maximum_length)
+        if self.check_length is None:
+            self.check_length = prepare_func_filter_by_length(self.minimum_length, self.maximum_length)
         if self.inplace:
             # remove unwanted text row inplace
-            return ds.filter(lambda x: check_length(x[self.text_key]))
+            return ds.filter(lambda x: self.check_length(x[self.text_key]))
         else:
             raise NotImplementedError("We only support inplace modification for LengthFilter.")
 LLMOPERATORS.register(LengthFilter)
@@ -68,15 +67,17 @@ class BadwordsFilter(BaseLLMOperation):
         self.text_key = text_key
         self.inplace = True
         self.language = language
+        self.check_badwords = None
         settings = {'text_key': text_key}
         settings.update({'language': language})
         super().__init__(settings)
         
-    def process_rayds(self, ds: Dataset) -> Dataset:
-        check_badwords = prepare_func_filter_by_badwords(self.language)
+    def process_rayds(self, ds: Dataset) -> Dataset:        
+        if self.check_badwords is None:
+            self.check_badwords = prepare_func_filter_by_badwords(self.language)
         if self.inplace:
             # remove unwanted text row inplace
-            return ds.filter(lambda x: check_badwords(x[self.text_key]))
+            return ds.filter(lambda x: self.check_badwords(x[self.text_key]))
         else:
             raise NotImplementedError("We only support inplace modification for BadwordsFilter.")
 
@@ -87,14 +88,16 @@ class ProfanityFilter(BaseLLMOperation):
     def __init__(self, text_key = 'text', inplace = True):
         self.text_key = text_key
         self.inplace = inplace
+        self.check_profanity = None
         settings = {'text_key': text_key}
         super().__init__(settings)
         
     def process_rayds(self, ds: Dataset) -> Dataset:
-        check_profanity = prepare_func_filter_by_profanity()
+        if self.check_profanity is None: 
+            self.check_profanity = prepare_func_filter_by_profanity()
         if self.inplace:
             # remove unwanted text row inplace
-            return ds.filter(lambda x: check_profanity(x[self.text_key]))
+            return ds.filter(lambda x: self.check_profanity(x[self.text_key]))
         else:
             raise NotImplementedError("We only support inplace modification for ProfanityFilter.")
         

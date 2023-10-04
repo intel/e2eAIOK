@@ -174,12 +174,16 @@ class BaseLLMOperation(BaseOperation):
         ins.op = op_obj
         return ins
         
-    def execute_ray(self, pipeline):
+    def execute_ray(self, pipeline, child_ds = None):
         child_output = []
-        children = self.op.children if self.op.children is not None else []
-        for op in children:
-            child_output.append(pipeline[op].cache)
-        self.cache = self.process_rayds(*child_output)
+        if child_ds is not None:
+            self.cache = self.process_rayds(child_ds)
+        else:
+            children = self.op.children if self.op.children is not None else []
+            for op in children:
+                child_output.append(pipeline[op].cache)
+            self.cache = self.process_rayds(*child_output)
+        return self.cache
         
     def execute_spark(self, pipeline, rdp):
         child_output = []
@@ -187,6 +191,7 @@ class BaseLLMOperation(BaseOperation):
         for op in children:
             child_output.append(pipeline[op].cache)
         self.cache = self.process_spark(rdp.spark, *child_output)
+        return self.cache
         
     def process_rayds(self, ds = None):
         return self.cache

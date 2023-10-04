@@ -119,7 +119,11 @@ def sub_task_per_folder(file_list):
     return sub_task
 
 def get_target_file_list_from_local(data_dir, file_type):
-    cmd = ["find", data_dir, "-name", f"*.{file_type}"]
+    if not os.path.isdir(data_dir):
+        data_dir = os.path.dirname(data_dir)
+        cmd = ["find", data_dir, "-name", f"{file_type}"]
+    else:
+        cmd = ["find", data_dir, "-name", f"*.{file_type}"]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     stdout, stderr = proc.communicate()
     exitcode = proc.returncode

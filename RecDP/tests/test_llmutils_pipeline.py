@@ -13,7 +13,7 @@ except:
     print("Not detect system installed pyrecdp, using local one")
     sys.path.append(pathlib)
 from pyrecdp.primitives.operations import *
-from pyrecdp.LLM import TextPipeline
+from pyrecdp.LLM import TextPipeline, ResumableTextPipeline
 import json
 from pyrecdp.core.cache_utils import RECDP_MODELS_CACHE
 from pyspark.sql import DataFrame
@@ -57,6 +57,37 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         ops = [
             JsonlReader("tests/data/llm_data/tiny_c4_sample.jsonl"),
             TextNormalize() 
+        ]
+        pipeline.add_operations(ops)
+        ret = pipeline.execute()
+        pd = RDS(ret).to_pandas()
+        display(pd)
+        
+    def test_TextBytesize(self):
+        pipeline = TextPipeline()
+        ops = [
+            JsonlReader("tests/data/llm_data/tiny_c4_sample.jsonl"),
+            TextBytesize() 
+        ]
+        pipeline.add_operations(ops)
+        ret = pipeline.execute()
+        pd = RDS(ret).to_pandas()
+        display(pd)
+        
+    def test_TextSourceId(self):
+        pipeline = TextPipeline()
+        ops = [
+            SourcedJsonlReader("tests/data/llm_data/", source_prefix="")
+        ]
+        pipeline.add_operations(ops)
+        ret = pipeline.execute()
+        pd = RDS(ret).to_pandas()
+        display(pd)
+        
+    def test_TextSourceIdParquet(self):
+        pipeline = TextPipeline()
+        ops = [
+            SourcedParquetReader("tests/data/llm_data/", source_prefix="")
         ]
         pipeline.add_operations(ops)
         ret = pipeline.execute()
@@ -173,3 +204,24 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         ret = pipeline.execute()
         pd = RDS(ret).to_pandas()
         display(pd)
+        
+    def test_TextPIIRemoval_resumable(self):
+        pipeline = ResumableTextPipeline()
+        ops = [
+            JsonlReader("tests/data/llm_data/"),
+            PIIRemoval(model_root_path = os.path.join(RECDP_MODELS_CACHE, "huggingface"))
+        ]
+        pipeline.add_operations(ops)
+        pipeline.execute()
+        
+    def test_TextPipeline_resumable(self):
+        pipeline = ResumableTextPipeline()
+        ops = [
+            JsonlReader("tests/data/llm_data/"),
+            LengthFilter(),
+            ProfanityFilter(),
+            LanguageIdentify(fasttext_model_dir = os.path.join(RECDP_MODELS_CACHE, "lid.bin")),
+            PerfileParquetWriter("ResumableTextPipeline_output_20231004205724")
+        ]
+        pipeline.add_operations(ops)
+        pipeline.execute()
