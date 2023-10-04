@@ -181,8 +181,18 @@ class BaseLLMOperation(BaseOperation):
             child_output.append(pipeline[op].cache)
         self.cache = self.process_rayds(*child_output)
         
-    def process_rayds(self, ds):
-        raise NotImplementedError(f"{self.__class__.__name__} does not support process_rayds yet")
+    def execute_spark(self, pipeline, rdp):
+        child_output = []
+        children = self.op.children if self.op.children is not None else []
+        for op in children:
+            child_output.append(pipeline[op].cache)
+        self.cache = self.process_spark(rdp.spark, *child_output)
+        
+    def process_rayds(self, ds = None):
+        return self.cache
+            
+    def process_spark(self, spark, df = None):
+        return self.cache
     
     def process_row(self, sample: dict, text_key, new_name, actual_func, *actual_func_args) -> dict:
         sample[new_name] = actual_func(sample[text_key], *actual_func_args)

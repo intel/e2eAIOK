@@ -14,11 +14,23 @@ except:
     sys.path.append(pathlib)
 from pyrecdp.primitives.operations import *
 from pyrecdp.LLM import TextPipeline
-import ray.data as rd
 import json
 from pyrecdp.core.cache_utils import RECDP_MODELS_CACHE
+from pyspark.sql import DataFrame
 
 cur_dir = str(Path(__file__).parent.resolve())
+class RDS:
+    def __init__(self, ds):
+        self.ds_engine = 'spark' if isinstance(ds, DataFrame) else 'ray'
+        self.ds = ds
+    def to_pandas(self):
+        print(self.ds_engine)
+        if self.ds_engine == 'ray':
+            return self.ds.to_pandas()
+        elif self.ds_engine == 'spark':
+            return self.ds.toPandas()
+        else:
+            pass
 
 def convert_json(s):
     if isinstance(s, str):
@@ -48,7 +60,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         ]
         pipeline.add_operations(ops)
         ret = pipeline.execute()
-        pd = ret.to_pandas()
+        pd = RDS(ret).to_pandas()
         display(pd)
         
     def test_TextLengthFilter(self):
@@ -59,7 +71,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         ]
         pipeline.add_operations(ops)
         ret = pipeline.execute()
-        pd = ret.to_pandas()
+        pd = RDS(ret).to_pandas()
         display(pd)
         
     def test_TextBadwordsFilter(self):
@@ -70,7 +82,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         ]
         pipeline.add_operations(ops)
         ret = pipeline.execute()
-        pd = ret.to_pandas()
+        pd = RDS(ret).to_pandas()
         display(pd)
         
     def test_TextProfanityFilter(self):
@@ -81,7 +93,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         ]
         pipeline.add_operations(ops)
         ret = pipeline.execute()
-        pd = ret.to_pandas()
+        pd = RDS(ret).to_pandas()
         display(pd)
         
     def test_TextFixer(self):
@@ -92,7 +104,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         ]
         pipeline.add_operations(ops)
         ret = pipeline.execute()
-        pd = ret.to_pandas()
+        pd = RDS(ret).to_pandas()
         display(pd)
         
     def test_TextLanguageIdentify(self):
@@ -104,7 +116,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         pipeline.add_operations(ops)
 
         ret = pipeline.execute()
-        pd = ret.to_pandas()
+        pd = RDS(ret).to_pandas()
         display(pd)
         
     def test_TextDocumentSplit(self):
@@ -115,7 +127,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         ]
         pipeline.add_operations(ops)
         ret = pipeline.execute()
-        pd = ret.to_pandas()
+        pd = RDS(ret).to_pandas()
         display(pd)
         
     def test_TextPIIRemoval(self):
@@ -126,5 +138,38 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         ]
         pipeline.add_operations(ops)
         ret = pipeline.execute()
-        pd = ret.to_pandas()
+        pd = RDS(ret).to_pandas()
+        display(pd)
+        
+    def test_TextURLFilter(self):
+        pipeline = TextPipeline()
+        ops = [
+            JsonlReader("tests/data/llm_data/tiny_c4_sample.jsonl"),
+            URLFilter() 
+        ]
+        pipeline.add_operations(ops)
+        ret = pipeline.execute()
+        pd = RDS(ret).to_pandas()
+        display(pd)
+        
+    def test_TextFuzzyDeduplicate(self):
+        pipeline = TextPipeline()
+        ops = [
+            JsonlReader("tests/data/llm_data/PILE/NIH_sample.jsonl"),
+            FuzzyDeduplicate() 
+        ]
+        pipeline.add_operations(ops)
+        ret = pipeline.execute()
+        pd = RDS(ret).to_pandas()
+        display(pd)
+        
+    def test_TextGlobalDeduplicate(self):
+        pipeline = TextPipeline()
+        ops = [
+            JsonlReader("tests/data/llm_data/PILE/NIH_sample.jsonl"),
+            GlobalDeduplicate() 
+        ]
+        pipeline.add_operations(ops)
+        ret = pipeline.execute()
+        pd = RDS(ret).to_pandas()
         display(pd)

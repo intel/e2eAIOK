@@ -1,6 +1,8 @@
 from .base import BaseLLMOperation, LLMOPERATORS
 from ray.data import Dataset
+from pyspark.sql import DataFrame
 import os
+from pyrecdp.core.cache_utils import RECDP_MODELS_CACHE
 
 def prepare_func_filter_by_length(minimum_length=100, maximum_length=10000):
     def check_length(text):
@@ -98,18 +100,55 @@ class ProfanityFilter(BaseLLMOperation):
         
 LLMOPERATORS.register(ProfanityFilter)
 
+def load_blacklist(spark):
+    from pyrecdp.datasets.download import download
+    from pyspark.sql.types import StructType, StructField, StringType, BooleanType
+    
+    BLACKLIST_URL = "https://dsi.ut-capitole.fr/blacklists/download/blacklists.tar.gz"
+    BLACKLIST_CATEGORIES = ["adult", "phishing", "dating", "gambling", "filehosting", "ddos", "agressif", "chat",
+                            "mixed_adult",
+                            "arjel"]
+    blacklist_tar_path = os.path.join(RECDP_MODELS_CACHE, "blacklists")
+    downloader = download(name = blacklist_tar_path, url = BLACKLIST_URL, unzip = True)
+    
+    data_schema = StructType([
+        StructField('domain', StringType()),
+    ])
+    blacklist_df: DataFrame = spark.createDataFrame(spark.sparkContext.emptyRDD(), schema=data_schema)
+    for category in BLACKLIST_CATEGORIES:
+        domain_file = os.path.join(downloader.saved_path, category, "domains")
+        df = spark.read.text(domain_file)
+        df = df.withColumnRenamed("value", "domain")
+        blacklist_df = blacklist_df.union(df)
+    return blacklist_df
 
 class URLFilter(BaseLLMOperation):
     def __init__(self, text_key = 'text'):
         self.text_key = text_key
         self.inplace = True
+        self.support_spark = True
+        self.support_ray = False
         settings = {'text_key': text_key}
         super().__init__(settings)
-        
-    def process_rayds(self, ds: Dataset) -> Dataset:
+    
+    def process_spark(self, rdp, spark_df: DataFrame) -> DataFrame:
         if self.inplace:
+            import pyspark.sql.functions as F
+            from urllib.parse import urlparse
+            source_df = spark_df
+            spark = rdp.spark
             # remove unwanted text row inplace
-            pass
+            blacklist_df = load_blacklist(spark)
+            with_url_df = source_df.filter(~F.isnull("url"))
+            filtered_df = source_df.filter(F.isnull("url")).select(F.col("text"), F.col("meta"))
+
+            rdd = with_url_df.rdd.map(
+                lambda x: (x['text'], x['meta'], x['url'], urlparse(x['url']).hostname if x['url'] else ""))
+            with_domain_df = spark.createDataFrame(rdd, ["text", "meta", "url", 'domain'])
+            left_anti_df = with_domain_df.join(blacklist_df, on='domain', how='left_anti')
+            filtered_df = filtered_df.union(left_anti_df.select(F.col("text"), F.col("meta")))
+            return filtered_df
+            
         else:
             raise NotImplementedError("We only support inplace modification for URLFilter.")
         

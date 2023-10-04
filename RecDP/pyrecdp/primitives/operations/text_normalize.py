@@ -16,17 +16,17 @@ def text_normalization(s):
     return clean_str(s)
 
 class TextNormalize(BaseLLMOperation):
-    def __init__(self, text_key = 'text', inplace = True):
+    def __init__(self, text_key = 'text'):
         self.text_key = text_key
-        self.inplace = inplace
-        settings = {'text_key': text_key, 'inplace': inplace}
+        self.inplace = False
+        settings = {'text_key': text_key}
         super().__init__(settings)
         
     def process_rayds(self, ds: Dataset) -> Dataset:
         if self.inplace:
-            new_name = self.text_key
+            raise NotImplementedError("We don't inplace modify text with normalization")
         else:
-            new_name = 'fixed_text'
+            new_name = 'norm_text'
         return ds.map(lambda x: self.process_row(x, self.text_key, new_name, text_normalization))
     
 LLMOPERATORS.register(TextNormalize)

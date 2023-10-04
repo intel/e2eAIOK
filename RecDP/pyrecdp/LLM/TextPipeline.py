@@ -1,14 +1,16 @@
 from pyrecdp.core import DiGraph
 from pyrecdp.core.pipeline import BasePipeline
 from pyrecdp.primitives.operations import Operation, BaseOperation
-from pyrecdp.primitives.operations.ray_dataset import RayDatasetReader
+from pyrecdp.primitives.operations.ray_dataset import DatasetReader
 import logging
 from pyrecdp.core.utils import Timer, deepcopy
 from IPython.display import display
 from tqdm import tqdm
 import types
 from ray.data import Dataset
+from pyspark.sql import DataFrame
 import ray
+from pyrecdp.core import SparkDataProcessor
 
 logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', level=logging.ERROR, datefmt='%I:%M:%S')
 logger = logging.getLogger(__name__)
@@ -20,35 +22,78 @@ class TextPipeline(BasePipeline):
             self.import_from_yaml(pipeline_file)
         else:
             #add a data set input place holder
-            op = RayDatasetReader()
+            op = DatasetReader()
             self.add_operation(op)
             
     def __del__(self):
-        if ray.is_initialized():
-            ray.shutdown()
+        if hasattr(self, 'engine_name') and self.engine_name == 'ray':
+            if ray.is_initialized():
+                ray.shutdown()
             
-    def execute(self, ds: Dataset = None) -> Dataset:
+    def check_platform(self, executable_sequence):
+        is_spark = True
+        is_ray = True
+        spark_list = []
+        ray_list = []
+        for op in executable_sequence:
+            is_spark = op.support_spark if is_spark else False
+            is_ray = op.support_ray if is_ray else False
+            if op.support_ray:
+                ray_list.append(str(op))
+            if op.support_spark:
+                spark_list.append(str(op))
+        if is_ray:
+            return 'ray'
+        elif is_spark:
+            return 'spark'
+        else:
+            print(f"We can't identify an uniform engine for this pipeline. \n  Operations work on Ray are {ray_list}. \n  Operations work on Spark are {spark_list}")
+            return 'mixed'
+            
+    def execute(self, ds = None):
         # prepare pipeline
         if not hasattr(self, 'executable_pipeline') or not hasattr(self, 'executable_sequence'):
             self.executable_pipeline, self.executable_sequence = self.create_executable_pipeline()
         executable_pipeline = self.executable_pipeline
         executable_sequence = self.executable_sequence
         
-        print("init ray")
-        if not ray.is_initialized():
-            ray.init()
+        engine_name = self.check_platform(executable_sequence)
+        
+        if engine_name == 'ray':
+            print("init ray")
+            if not ray.is_initialized():
+                ray.init()
 
-        # execute
-        with Timer(f"execute with ray"):
-            for op in executable_sequence:
-                if ds != None and isinstance(op, RayDatasetReader):
-                    op.cache = ds
-                else:
-                    op.execute_ray(executable_pipeline)
-            if len(executable_sequence) > 0:
-                ds = executable_sequence[-1].cache
-                if isinstance(ds, Dataset):
-                    ds = ds.materialize()
+            # execute
+            with Timer(f"execute with ray"):
+                for op in executable_sequence:
+                    if ds != None and isinstance(op, DatasetReader):
+                        op.cache = ds
+                    else:
+                        op.execute_ray(executable_pipeline)
+                if len(executable_sequence) > 0:
+                    ds = executable_sequence[-1].cache
+                    if isinstance(ds, Dataset):
+                        ds = ds.materialize()
+        elif engine_name == 'spark':
+            print("init spark")
+            if not hasattr(self, 'rdp') or self.rdp is None:
+                self.rdp = SparkDataProcessor()
+
+            # execute
+            with Timer(f"execute with spark"):
+                for op in executable_sequence:
+                    if ds != None and isinstance(op, DatasetReader):
+                        op.cache = ds
+                    else:
+                        op.execute_spark(executable_pipeline, self.rdp)
+                if len(executable_sequence) > 0:
+                    ds = executable_sequence[-1].cache
+                    if isinstance(ds, DataFrame):
+                        ds = ds.cache()
+                        total_len = ds.count()
+                        
+        self.engine_name = engine_name
         
         # fetch result
         return ds
