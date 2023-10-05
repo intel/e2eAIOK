@@ -66,8 +66,8 @@ class Operation:
 
         if self.op in operations_:
             return operations_[self.op](self)
-        elif self.op in RAYOPERATORS.modules:
-            return RAYOPERATORS.modules[self.op].instantiate(self, self.config)
+        elif self.op in LLMOPERATORS.modules:
+            return LLMOPERATORS.modules[self.op].instantiate(self, self.config)
         else:
             try:
                 return FeaturetoolsOperation(self)
@@ -160,15 +160,13 @@ class BaseOperation:
             return rdd.mapPartitions(transform)
         return base_spark_feature_generator
 
-RAYOPERATORS = Registry('BaseRayOperation')
-class BaseRayOperation(BaseOperation):
+LLMOPERATORS = Registry('BaseLLMOperation')
+class BaseLLMOperation(BaseOperation):
     def __init__(self, args_dict = {}):
         self.op = Operation(-1, None, [], f'{self.__class__.__name__}', args_dict)
         self.cache = None
-        self.support_spark_dataframe = False
-        self.support_spark_rdd = False
-        self.support_spark_ray = True
-        self.fast_without_dpp = False
+        self.support_spark = False
+        self.support_ray = True
         
     @classmethod
     def instantiate(cls, op_obj, config):
@@ -176,18 +174,34 @@ class BaseRayOperation(BaseOperation):
         ins.op = op_obj
         return ins
         
-    def execute_ray(self, pipeline):
+    def execute_ray(self, pipeline, child_ds = None):
+        child_output = []
+        if child_ds is not None:
+            self.cache = self.process_rayds(child_ds)
+        else:
+            children = self.op.children if self.op.children is not None else []
+            for op in children:
+                child_output.append(pipeline[op].cache)
+            self.cache = self.process_rayds(*child_output)
+        return self.cache
+        
+    def execute_spark(self, pipeline, rdp):
         child_output = []
         children = self.op.children if self.op.children is not None else []
         for op in children:
             child_output.append(pipeline[op].cache)
-        self.cache = self.process_rayds(*child_output)
+        self.cache = self.process_spark(rdp.spark, *child_output)
+        return self.cache
         
-    def process_rayds(self, ds):
-        raise NotImplementedError(f"{self.__class__.__name__} does not support process_rayds yet")
+    def process_rayds(self, ds = None):
+        return self.cache
+            
+    def process_spark(self, spark, df = None):
+        return self.cache
     
-    def process_row(self, sample: dict) -> dict:
-        raise NotImplementedError(f"{self.__class__.__name__} does not support process_row yet")
+    def process_row(self, sample: dict, text_key, new_name, actual_func, *actual_func_args) -> dict:
+        sample[new_name] = actual_func(sample[text_key], *actual_func_args)
+        return sample
     
     def process_batch(self, sample: dict) -> dict:
         raise NotImplementedError(f"{self.__class__.__name__} does not support process_batch yet")
