@@ -1,14 +1,14 @@
 import argparse
 import logging
-import os.path
-
 from pyspark.sql.dataframe import DataFrame
-from pyspark.sql.functions import udf, col
-from pyspark.sql.types import StructType, StructField, StringType
-from transformers import pipeline
 
-from pyrecdp.primitives.llmutils.pii.pii_detection import scan_pii_text
-from pyrecdp.primitives.llmutils.pii.pii_redaction import redact_pii_text, random_replacements
+def pii_remove(dataset: DataFrame, model_root_path=None, text_column="text", new_text_column="text", show_secret_column=True,
+               secret_column="__SECRETS__"):
+    from pyrecdp.primitives.operations import PIIRemoval
+    spark_df = dataset
+    op = PIIRemoval(text_key=text_column, inplace=True, model_root_path=model_root_path, debug_mode=show_secret_column)
+    ret = op.process_spark(spark_df.sparkSession, spark_df)
+    return ret
 
 
 def getArgs():
@@ -72,38 +72,6 @@ def getArgs():
     )
     # add an option of evaluating the pipeline on the PII benchmark we built
     return parser.parse_args()
-
-
-class PiiRemove:
-    def __init__(self,model_root_path=None):
-        self.replacements = random_replacements()
-        self.pipeline = None
-        _model_key = "bigcode/starpii"
-        self.model_key = _model_key if model_root_path is None else os.path.join(model_root_path, _model_key)
-
-    def process(self, sample):
-        if self.pipeline is None:
-            self.pipeline = pipeline(model=self.model_key, task='token-classification', grouped_entities=True)
-
-        secrets = scan_pii_text(sample, self.pipeline)
-        text, _ = redact_pii_text(sample, secrets, self.replacements)
-        return text, secrets
-
-
-def pii_remove(dataset: DataFrame, model_root_path=None, text_column="text", new_text_column="text", show_secret_column=True,
-               secret_column="__SECRETS__"):
-    schema = StructType([StructField("content", StringType()), StructField("secrets", StringType())])
-    piiRemove = PiiRemove(model_root_path=model_root_path)
-    pii_remove_udf = udf(lambda sample: piiRemove.process(sample), schema)
-
-    dataset = dataset.withColumn("redact_text", pii_remove_udf(text_column)) \
-        .withColumn(new_text_column, col("redact_text.content"))
-
-    if show_secret_column:
-        dataset = dataset.withColumn(secret_column, col("redact_text.secrets"))
-
-    return dataset.drop("redact_text")
-
 
 if __name__ == "__main__":
     logger = logging.getLogger(__name__)

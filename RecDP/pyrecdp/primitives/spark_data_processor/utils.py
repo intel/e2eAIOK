@@ -54,7 +54,10 @@ def create_spark_context(spark_mode='local', spark_master=None, local_dir=None, 
         conf_pairs.append(("spark.driver.memory", f"{total_mem}M"))
     
     def close_spark(spark_inst):
-        spark_inst.stop()
+        try:
+            spark_inst.stop()
+        except:
+            pass
     def close_spark_ray(spark_inst):
         raydp.stop_spark()
         if ray.is_initialized():

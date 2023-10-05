@@ -41,7 +41,7 @@ class JsonlReader(BaseLLMOperation):
             StructField("text",StringType(),True), 
             StructField("meta",StringType(),True)
         ])
-        df = spark.read.text(self.input_dir)            
+        df = spark.read.text(self.input_dir)
         df = df.withColumn('jsonData', F.from_json(F.col('value'), schema)).select("jsonData.*")
         self.cache = df            
         return self.cache

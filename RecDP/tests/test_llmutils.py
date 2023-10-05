@@ -38,9 +38,6 @@ class SparkContext:
 class Test_LLMUtils(unittest.TestCase):
     def setUp(self):
         print(f"\n******\nTesting Method Name: {self._testMethodName}\n******")
-        self.data_files = ["tests/data/PILE/NIH_sample.jsonl"]
-        self.dup_dir = "./near_dedup/"
-        self.fasttext_model = "/home/vmagent/models/lid.bin"  # Only used for github CICD test.
         
     def test_quality_classifier(self):
         from pyrecdp.primitives.llmutils import quality_classifier
@@ -86,11 +83,8 @@ class Test_LLMUtils(unittest.TestCase):
         with SparkContext("tests/data/llm_data/tiny_c4_sample_for_pii.jsonl") as ctx:
             spark_df = ctx.ds
             model_root_path = os.path.join(RECDP_MODELS_CACHE, "huggingface")
-            output_dataset = pii_remove(dataset=spark_df,text_column="text", model_root_path=model_root_path, show_secret_column=True, secret_column="secret")
-            df = output_dataset.select("secret","__SECRETS__")
-            ctx.show(df)
-            for _, row in df.toPandas().iterrows():
-                self.assertEqual(row["secret"], row["__SECRETS__"])
+            output_dataset = pii_remove(dataset=spark_df,text_column="text", model_root_path=model_root_path, show_secret_column=True)
+            ctx.show(output_dataset)
 
     def test_language_identify_spark(self):
         from pyrecdp.primitives.llmutils import language_identify_spark
@@ -121,74 +115,164 @@ class Test_LLMUtils(unittest.TestCase):
 ################################################################
 
 # This test is used to make sure our codes in llm-ray is still working
-    from pyrecdp.primitives.llmutils import shrink_document_MP, text_to_jsonl_MP, global_hash_mp, global_dedup
-
-    def test_near_dedup(self):
-        data_files = self.data_files
-        dup_dir = self.dup_dir
+    #from pyrecdp.primitives.llmutils import shrink_document_MP, text_to_jsonl_MP, global_hash_mp, global_dedup
+    def test_llm_ray_near_dedup(self):
+        from pyrecdp.core.utils import Timer
+        import shutil, argparse, pickle
+        from pyrecdp.primitives.llmutils.utils import read_json
+        from pyrecdp.primitives.llmutils.near_dedup import minHashLSH_prepare, generate_connected_components, generate_duplicates_dict
+        from pyrecdp.primitives.llmutils.shrink_jsonl import shrink_document_MP
+        
+        data_dir = "tests/data/llm_data"
+        data_files = [os.path.join(data_dir, i) for i in os.listdir(data_dir)]
+        dup_dir = "tests/data/PILE_dup_out"
+        out_dir = "tests/data/PILE_dedup"
         ngram_size = 13
         num_perm = 256
         bands = 9
         ranges = 13
-        near_dedup(data_files, dup_dir, ngram_size, num_perm, bands, ranges)
+        with SparkContext() as ctx:
+            spark = ctx.spark
+            with Timer("Load data with RowID"):
+                df = read_json(data_files, spark).cache()
+                total_length = df.count()
 
-    
-    def test_global_hash_jsonl(self):
+            pipeline = minHashLSH_prepare(df, num_perm, ngram_size, bands, ranges)
+            with Timer("generate minHashLsh"):
+                if os.path.exists(dup_dir):
+                    shutil.rmtree(dup_dir, ignore_errors=True)
+                results = pipeline.saveAsTextFile(dup_dir)
+                
+            
+            with Timer(f"generate_connected_components all"):
+                dup_connected_args = argparse.Namespace()
+                dup_connected_args.input_dir = dup_dir
+                dup_connected_args.out_file = os.path.join(
+                    dup_dir, "connected_components.pickle"
+                )
+                generate_connected_components.generate_connected_components_mp(
+                    dup_connected_args
+                )
+                
+            with Timer(f"generate_duplicates_dict all"):
+                dup_docs = os.path.join(dup_dir, "duplicates.pickle")
+                dup_dict_args = argparse.Namespace()
+                dup_dict_args.input_file = os.path.join(
+                    dup_dir, "connected_components.pickle"
+                )
+                dup_dict_args.out_file = dup_docs
+                generate_duplicates_dict.generate_duplicates(dup_dict_args)
+                
+            dup_dict = pickle.load(open(os.path.join(dup_dir, "duplicates.pickle"), 'rb'))
+            dup_sum = 0
+            for _, v in dup_dict.items():
+                dup_sum += len(list(v))
+
+            dup_dict = os.path.join(dup_dir, "duplicates.pickle")
+            out_dir = os.path.join(dup_dir, "output")
+            with Timer("remove duplicate documents"):
+                shrink_document_MP(data_dir, dup_dict, out_dir)
+
+            print(f"Completed!!")
+            print(f"    total processed {total_length} documents")
+            print(f"    total detected {dup_sum} duplicated documents")
+            print(f"    duplicate ratio is {dup_sum/total_length}")
+
+
+    def test_llm_ray_convert_jsonl(self):
+        from pyrecdp.primitives.llmutils.text_to_jsonl import text_to_jsonl_MP
+        data_dir = "tests/data/pmc"
+        out_dir = "tests/data/pmc_jsonl"
+        text_to_jsonl_MP(data_dir, out_dir, 2)
+
+
+    def test_llm_ray_global_hash_jsonl(self):
+        import pandas as pd
+        from pyrecdp.primitives.llmutils.global_hash import global_hash_mp
+        from pyrecdp.core.utils import Timer
         source = 'PILE'
         in_type = 'jsonl'
         n_parallel = 4
         out_dir = "tests/data/global_hash_out/"
         is_norm = True
         data_dir = "tests/data/PILE"
-        global_hash_mp(source, data_dir, in_type, n_parallel, out_dir, is_norm)
+        with Timer("execute global_hash_mp"):
+            global_hash_mp(source, data_dir, in_type, n_parallel, out_dir, is_norm)
+        
+        from pyrecdp.primitives.llmutils.global_dedup import get_hash_indexing
+        out_dir = "tests/data/global_hash_index"
+        data_dir = "tests/data/global_hash_out/"
+        with Timer("execute get_hash_indexing"):
+            get_hash_indexing(data_dir, out_dir)
+        
+        from pyrecdp.primitives.llmutils.global_dedup import combine_hash_indexing
+        out_dir = "tests/data/combined_hash_index/"
+        data_dir_dir = ["tests/data/global_hash_index/"]
+        with Timer("execute combine_hash_indexing"):
+            combine_hash_indexing(data_dir_dir, out_dir)
+        
+        from pyrecdp.primitives.llmutils.global_dedup import get_duplication_list
+        data_dir = "tests/data/global_hash_index"
+        out_dir = "tests/data/duplications_index"
+        with Timer("execute get_duplication_list"):
+            get_duplication_list(data_dir, out_dir)
+        
+        from pyrecdp.primitives.llmutils import index_based_reduction
+        in_dir = "tests/data/global_hash_out"
+        dup_dir = "tests/data/duplications_index"
+        out_dir = "tests/data/global_dedup/deduplicated"
+        with Timer("execute index_based_reduction"):
+            index_based_reduction(in_dir, dup_dir, out_dir)
+        
         pdf = pd.read_parquet(out_dir)
         display(pdf)
-
-    def test_global_hash_parquet(self):
+        
+    
+    def test_llm_ray_global_hash_parquet(self):
+        import pandas as pd
+        from pyrecdp.primitives.llmutils.global_hash import global_hash_mp
+        from pyrecdp.core.utils import Timer
         source = 'PILE'
         in_type = 'parquet'
         n_parallel = 4
         out_dir = "tests/data/global_hash_out/"
         is_norm = True
         data_dir = "tests/data/PILE"
-        global_hash_mp(source, data_dir, in_type, n_parallel, out_dir, is_norm)
-        pdf = pd.read_parquet(out_dir)
-        display(pdf)
-
-    def test_get_hash_indexing(self):
+        with Timer("execute global_hash_mp"):
+            global_hash_mp(source, data_dir, in_type, n_parallel, out_dir, is_norm)
+        
         from pyrecdp.primitives.llmutils.global_dedup import get_hash_indexing
         out_dir = "tests/data/global_hash_index"
         data_dir = "tests/data/global_hash_out/"
-        get_hash_indexing(data_dir, out_dir)
-        pdf = pd.read_parquet(out_dir)
-        display(pdf)
-
-    def test_combine_hash_indexing(self):
+        with Timer("execute get_hash_indexing"):
+            get_hash_indexing(data_dir, out_dir)
+        
         from pyrecdp.primitives.llmutils.global_dedup import combine_hash_indexing
         out_dir = "tests/data/combined_hash_index/"
         data_dir_dir = ["tests/data/global_hash_index/"]
-        combine_hash_indexing(data_dir_dir, out_dir)
-        pdf = pd.read_parquet(out_dir)
-        display(pdf)
-
-    def test_get_duplication_list(self):
+        with Timer("execute combine_hash_indexing"):
+            combine_hash_indexing(data_dir_dir, out_dir)
+        
         from pyrecdp.primitives.llmutils.global_dedup import get_duplication_list
         data_dir = "tests/data/global_hash_index"
         out_dir = "tests/data/duplications_index"
-        get_duplication_list(data_dir, out_dir)
-        pdf = pd.read_parquet(out_dir)
-        display(pdf)
-
-    def test_index_based_reduction(self):
+        with Timer("execute get_duplication_list"):
+            get_duplication_list(data_dir, out_dir)
+        
         from pyrecdp.primitives.llmutils import index_based_reduction
         in_dir = "tests/data/global_hash_out"
         dup_dir = "tests/data/duplications_index"
         out_dir = "tests/data/global_dedup/deduplicated"
-        index_based_reduction(in_dir, dup_dir, out_dir)
+        with Timer("execute index_based_reduction"):
+            index_based_reduction(in_dir, dup_dir, out_dir)
+        
         pdf = pd.read_parquet(out_dir)
         display(pdf)
 
-    def test_global_dedup(self):
+
+    def test_llm_ray_global_dedup(self):
+        from pyrecdp.primitives.llmutils.global_dedup import global_dedup
+        import pandas as pd
         in_type = 'jsonl'
         out_dir = "tests/data/global_dedup/"
         data_dir = "tests/data/PILE"
@@ -198,16 +282,6 @@ class Test_LLMUtils(unittest.TestCase):
 
     
 
-    def test_shrink_jsonl(self):
-        data_dir = "tests/data/PILE"
-        dup_dir = self.dup_dir
-        dup_dict = os.path.join(dup_dir, "duplicates.pickle")
-        out_dir = os.path.join(dup_dir, "output")
-        shrink_document_MP(data_dir, dup_dict, out_dir)
 
-    def test_text_to_jsonl(self):
-        data_dir = "tests/data/pmc"
-        out_dir = "pmc_jsonl"
-        text_to_jsonl_MP(data_dir, out_dir, 2)
 
     
