@@ -13,6 +13,8 @@ class ParquetWriter(BaseLLMOperation):
         self.output_dir = output_dir
         
     def process_rayds(self, ds: Dataset) -> Dataset:
+        if os.path.exists(self.output_dir) and os.path.isdir(self.output_dir):
+            shutil.rmtree(self.output_dir)
         ds.write_parquet(self.output_dir)
         return ds
     
@@ -21,6 +23,26 @@ class ParquetWriter(BaseLLMOperation):
         return spark_df
     
 LLMOPERATORS.register(ParquetWriter)
+
+class JsonlWriter(BaseLLMOperation):
+    def __init__(self, output_dir):
+        settings = {'output_dir': output_dir}
+        super().__init__(settings)
+        self.support_ray = False
+        self.support_spark = True
+        self.output_dir = output_dir
+
+    def process_rayds(self, ds: Dataset) -> Dataset:
+        if os.path.exists(self.output_dir) and os.path.isdir(self.output_dir):
+            shutil.rmtree(self.output_dir)
+        ds.write_json(self.output_dir)
+        return ds
+
+    def process_spark(self, spark, spark_df: DataFrame = None) -> DataFrame:
+        spark_df.write.json(self.output_dir, mode='overwrite')
+        return spark_df
+
+LLMOPERATORS.register(JsonlWriter)
 
 class PerfileParquetWriter(BaseLLMOperation):
     def __init__(self, output_dir):

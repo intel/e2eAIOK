@@ -27,9 +27,9 @@ class JsonlReader(BaseLLMOperation):
             if isinstance(s, str):
                 content = json.loads(s)
             elif isinstance(s, dict):
-                content = {}
-                for key in s:
-                    content[key] = str(s[key])  
+                content = json.loads(s['text'])
+            if 'meta' in content:
+                content['meta'] = str(content['meta'])
             return content
         self.cache = rd.read_text(self.input_dir).map(convert_json)
         return self.cache
@@ -80,9 +80,9 @@ class SourcedJsonlReader(SourcedReader):
             if isinstance(s, str):
                 content = json.loads(s)
             elif isinstance(s, dict):
-                content = {}
-                for key in s:
-                    content[key] = str(s[key])
+                content = json.loads(s['text'])
+            if 'meta' in content:
+                content['meta'] = str(content['meta'])
             content['source_id'] = source_str  
             return content
         to_read_list = [(sub_task, os.path.join(input_dir, f)) for sub_task, file_list in files_with_subtask.items() for f in file_list]
@@ -170,10 +170,10 @@ class PerfileSourcedJsonlWriter(SourcedReader, PerfileReader):
             if isinstance(s, str):
                 content = json.loads(s)
             elif isinstance(s, dict):
-                content = {}
-                for key in s:
-                    content[key] = str(s[key])
-            content['source_id'] = source_str  
+                content = json.loads(s['text'])
+            content['source_id'] = source_str
+            if 'meta' in content:
+                content['meta'] = str(content['meta'])
             return content
         to_read_list = [(sub_task, os.path.join(input_dir, f)) for sub_task, file_list in files_with_subtask.items() for f in file_list]
         self.cache = []

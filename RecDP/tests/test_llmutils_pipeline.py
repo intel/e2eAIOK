@@ -51,6 +51,17 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
     
     def setUp(self) -> None:
         pass
+    
+    def test_TextReadWrite(self):
+        pipeline = TextPipeline()
+        ops = [
+            JsonlReader("tests/data/llm_data/tiny_c4_sample.jsonl"),
+            JsonlWriter("tests/data/llm_data/tiny_c4_sample_out.jsonl") 
+        ]
+        pipeline.add_operations(ops)
+        ret = pipeline.execute()
+        pd = RDS(ret).to_pandas()
+        display(pd)
 
     def test_TextNormalize(self):
         pipeline = TextPipeline()
