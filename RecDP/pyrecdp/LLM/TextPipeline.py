@@ -70,7 +70,10 @@ class TextPipeline(BasePipeline):
             print("init ray")
             if not ray.is_initialized():
                 print(f"init ray with total mem of {total_mem}, total core of {total_cores}")
-                ray.init(object_store_memory=total_mem, num_cpus=total_cores)
+                try:
+                    ray.init(object_store_memory=total_mem, num_cpus=total_cores)
+                except:
+                    ray.init()
 
             # execute
             with Timer(f"execute with ray"):
@@ -218,7 +221,10 @@ class ResumableTextPipeline(TextPipeline):
         self.engine_name = engine_name
         if not ray.is_initialized():
             print(f"init ray with total mem of {total_mem}")
-            ray.init(object_store_memory=total_mem, num_cpus=total_cores)
+            try:
+                ray.init(object_store_memory=total_mem, num_cpus=total_cores)
+            except:
+                ray.init()
 
         # explode one pipeline to multiple sub pipeline (per file)
         sub_pipelines = []
