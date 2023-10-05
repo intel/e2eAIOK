@@ -1,5 +1,6 @@
 from .base import BaseLLMOperation, LLMOPERATORS
 from ray.data import Dataset
+from pyspark.sql import DataFrame
 from pyrecdp.core.model_utils import prepare_model, MODEL_ZOO
     
 def prepare_func_sentencesplit(lang: str = 'en'):
@@ -20,6 +21,8 @@ class DocumentSplit(BaseLLMOperation):
         self.inplace = inplace
         self.language = language
         self.actual_func = None
+        self.support_spark = True
+        self.support_ray = True
         
     def process_rayds(self, ds: Dataset) -> Dataset:
         if self.inplace:
@@ -29,5 +32,15 @@ class DocumentSplit(BaseLLMOperation):
         if self.actual_func is None:
             self.actual_func = prepare_func_sentencesplit(lang = self.language)
         return ds.map(lambda x: self.process_row(x, self.text_key, new_name, self.actual_func))
+    
+    def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
+        import pyspark.sql.functions as F
+        from pyspark.sql import types as T
+        if self.inplace:
+            new_name = self.text_key
+        else:
+            new_name = 'split_text'
+        sentencesplit_udf = F.udf(prepare_func_sentencesplit(lang = self.language))
+        return spark_df.withColumn(new_name, sentencesplit_udf(F.col(self.text_key)))
     
 LLMOPERATORS.register(DocumentSplit)

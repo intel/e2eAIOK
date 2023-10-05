@@ -1,5 +1,6 @@
 from .base import BaseLLMOperation, LLMOPERATORS
 from ray.data import Dataset
+from pyspark.sql import DataFrame
 import ftfy, re, string
 
 def normalize_str(s):
@@ -21,6 +22,8 @@ class TextNormalize(BaseLLMOperation):
         super().__init__(settings)
         self.text_key = text_key
         self.inplace = False
+        self.support_spark = True
+        self.support_ray = True
         
     def process_rayds(self, ds: Dataset) -> Dataset:
         if self.inplace:
@@ -28,5 +31,12 @@ class TextNormalize(BaseLLMOperation):
         else:
             new_name = 'norm_text'
         return ds.map(lambda x: self.process_row(x, self.text_key, new_name, text_normalization))
+    
+    def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
+        import pyspark.sql.functions as F
+        from pyspark.sql import types as T
+        new_name = 'norm_text'
+        text_norm_udf = F.udf(text_normalization)
+        return spark_df.withColumn(new_name, text_norm_udf(F.col(self.text_key)))
     
 LLMOPERATORS.register(TextNormalize)

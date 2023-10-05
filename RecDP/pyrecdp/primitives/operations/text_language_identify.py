@@ -1,5 +1,6 @@
 from .base import BaseLLMOperation, LLMOPERATORS
 from ray.data import Dataset
+from pyspark.sql import DataFrame
 from huggingface_hub import hf_hub_download
 import fasttext
 import os
@@ -197,6 +198,8 @@ class LanguageIdentify(BaseLLMOperation):
         self.inplace = False
         self.fasttext_model_dir = fasttext_model_dir
         self.actual_func = None
+        self.support_spark = True
+        self.support_ray = True
         
     def process_rayds(self, ds: Dataset) -> Dataset:
         if self.inplace:
@@ -206,5 +209,12 @@ class LanguageIdentify(BaseLLMOperation):
         if self.actual_func is None:
             self.actual_func = prepare_func_language_id(fasttext_model_dir = self.fasttext_model_dir, language_identify_field = self.text_key, language_identify_output_field = new_name)
         return ds.map(lambda x: self.process_row(x, self.text_key, new_name, self.actual_func))
+    
+    def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
+        import pyspark.sql.functions as F
+        from pyspark.sql import types as T
+        new_name = "language"
+        language_id_udf = F.udf(prepare_func_language_id(fasttext_model_dir = self.fasttext_model_dir, language_identify_field = self.text_key, language_identify_output_field = new_name))
+        return spark_df.withColumn(new_name, language_id_udf(F.col(self.text_key)))
     
 LLMOPERATORS.register(LanguageIdentify)

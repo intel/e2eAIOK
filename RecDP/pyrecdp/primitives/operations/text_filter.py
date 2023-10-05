@@ -49,6 +49,8 @@ class LengthFilter(BaseLLMOperation):
         self.minimum_length = minimum_length
         self.maximum_length = maximum_length
         self.check_length = None
+        self.support_ray = True
+        self.support_spark = True
         
     def process_rayds(self, ds: Dataset) -> Dataset:
         if self.check_length is None:
@@ -58,6 +60,13 @@ class LengthFilter(BaseLLMOperation):
             return ds.filter(lambda x: self.check_length(x[self.text_key]))
         else:
             raise NotImplementedError("We only support inplace modification for LengthFilter.")
+
+    def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
+        import pyspark.sql.types as T
+        import pyspark.sql.functions as F
+        check_length_udf = F.udf(prepare_func_filter_by_length(self.minimum_length, self.maximum_length), T.BooleanType())
+        return spark_df.filter(check_length_udf(F.col(self.text_key)))
+        
 LLMOPERATORS.register(LengthFilter)
 
 
@@ -69,6 +78,8 @@ class BadwordsFilter(BaseLLMOperation):
         self.inplace = True
         self.language = language
         self.check_badwords = None
+        self.support_ray = True
+        self.support_spark = True
         
     def process_rayds(self, ds: Dataset) -> Dataset:        
         if self.check_badwords is None:
@@ -78,6 +89,12 @@ class BadwordsFilter(BaseLLMOperation):
             return ds.filter(lambda x: self.check_badwords(x[self.text_key]))
         else:
             raise NotImplementedError("We only support inplace modification for BadwordsFilter.")
+        
+    def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
+        import pyspark.sql.types as T
+        import pyspark.sql.functions as F
+        check_badwords_udf = F.udf(prepare_func_filter_by_badwords(self.language), T.BooleanType())
+        return spark_df.filter(check_badwords_udf(F.col(self.text_key)))
 
 LLMOPERATORS.register(BadwordsFilter)
 
@@ -89,6 +106,8 @@ class ProfanityFilter(BaseLLMOperation):
         self.text_key = text_key
         self.inplace = inplace
         self.check_profanity = None
+        self.support_ray = True
+        self.support_spark = True
         
     def process_rayds(self, ds: Dataset) -> Dataset:
         if self.check_profanity is None: 
@@ -98,6 +117,12 @@ class ProfanityFilter(BaseLLMOperation):
             return ds.filter(lambda x: self.check_profanity(x[self.text_key]))
         else:
             raise NotImplementedError("We only support inplace modification for ProfanityFilter.")
+        
+    def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
+        import pyspark.sql.types as T
+        import pyspark.sql.functions as F
+        check_profanity_udf = F.udf(prepare_func_filter_by_profanity(), T.BooleanType())
+        return spark_df.filter(check_profanity_udf(F.col(self.text_key)))
         
 LLMOPERATORS.register(ProfanityFilter)
 
