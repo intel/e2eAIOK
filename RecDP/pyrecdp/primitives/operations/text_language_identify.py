@@ -191,12 +191,12 @@ def prepare_func_language_id(fasttext_model_dir, language_identify_field, langua
 
 class LanguageIdentify(BaseLLMOperation):
     def __init__(self, text_key = 'text', inplace = False, fasttext_model_dir = ""):
+        settings = {'text_key': text_key, 'inplace': self.inplace, 'fasttext_model_dir': self.fasttext_model_dir}
+        super().__init__(settings)
         self.text_key = text_key
         self.inplace = False
         self.fasttext_model_dir = fasttext_model_dir
         self.actual_func = None
-        settings = {'text_key': text_key, 'inplace': self.inplace, 'fasttext_model_dir': self.fasttext_model_dir}
-        super().__init__(settings)
         
     def process_rayds(self, ds: Dataset) -> Dataset:
         if self.inplace:

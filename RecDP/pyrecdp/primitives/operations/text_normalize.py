@@ -17,10 +17,10 @@ def text_normalization(s):
 
 class TextNormalize(BaseLLMOperation):
     def __init__(self, text_key = 'text'):
-        self.text_key = text_key
-        self.inplace = False
         settings = {'text_key': text_key}
         super().__init__(settings)
+        self.text_key = text_key
+        self.inplace = False
         
     def process_rayds(self, ds: Dataset) -> Dataset:
         if self.inplace:

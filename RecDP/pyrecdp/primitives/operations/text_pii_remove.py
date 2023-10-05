@@ -21,12 +21,12 @@ def prepare_func_pii_removal(model_root_path = "", debug_mode = False):
 
 class PIIRemoval(BaseLLMOperation):
     def __init__(self, text_key = 'text', inplace = True, model_root_path = ""):
+        settings = {'text_key': text_key, 'inplace': inplace, 'model_root_path': model_root_path}
+        super().__init__(settings)
         self.text_key = text_key
         self.inplace = inplace
         self.model_root_path = model_root_path
         self.actual_func = None
-        settings = {'text_key': text_key, 'inplace': inplace, 'model_root_path': model_root_path}
-        super().__init__(settings)
         
     def process_rayds(self, ds: Dataset) -> Dataset:
         if self.inplace:

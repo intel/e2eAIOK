@@ -14,12 +14,12 @@ def prepare_func_sentencesplit(lang: str = 'en'):
 
 class DocumentSplit(BaseLLMOperation):
     def __init__(self, text_key = 'text', inplace = True, language = 'en'):
+        settings = {'text_key': text_key, 'inplace': inplace, 'language': language}
+        super().__init__(settings)
         self.text_key = text_key
         self.inplace = inplace
         self.language = language
         self.actual_func = None
-        settings = {'text_key': text_key, 'inplace': inplace, 'language': language}
-        super().__init__(settings)
         
     def process_rayds(self, ds: Dataset) -> Dataset:
         if self.inplace:

@@ -176,6 +176,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         pipeline = TextPipeline()
         ops = [
             JsonlReader("tests/data/llm_data/tiny_c4_sample.jsonl"),
+            #JsonlReader("tests/data/llm_data/PILE/NIH_sample.jsonl"),
             URLFilter() 
         ]
         pipeline.add_operations(ops)
