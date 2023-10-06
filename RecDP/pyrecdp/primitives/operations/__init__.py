@@ -12,3 +12,5 @@ from .text_language_identify import LanguageIdentify
 from .text_split import DocumentSplit
 from .text_pii_remove import PIIRemoval
 from .text_deduplication import FuzzyDeduplicate, GlobalDeduplicate
+from .text_qualityscorer import TextQualityScorer
+from .text_diversityindicate import TextDiversityIndicate

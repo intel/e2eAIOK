@@ -202,6 +202,16 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
 
+    def test_qualityscore_spark(self):
+        op = TextQualityScorer()
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark, ctx.ds))
+            
+    def test_diversityindicate_spark(self):
+        op = TextDiversityIndicate()
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
 class RDS:
     def __init__(self, ds):
         self.ds_engine = 'spark' if isinstance(ds, DataFrame) else 'ray'
