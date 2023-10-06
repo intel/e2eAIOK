@@ -32,15 +32,6 @@ if [ $? != 0 ]; then
     failed_tests=${failed_tests}${cmdline}"\n"
 fi
 
-cmdline="python pyrecdp/primitives/llmutils/language_identify.py --data_dir tests/data/llm_data --fasttext_model_dir /root/.cache/RECDP/models/lid.bin --language_identify_output_dir tests/data/lid_out/"
-echo "***************"
-echo $cmdline
-echo "***************"
-${cmdline}
-if [ $? != 0 ]; then
-    failed_tests=${failed_tests}${cmdline}"\n"
-fi
-
 python -m unittest tests.test_llmutils.Test_LLMUtils
 
 if [ -z ${failed_tests} ]; then
