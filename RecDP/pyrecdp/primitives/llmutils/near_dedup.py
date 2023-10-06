@@ -1,34 +1,15 @@
+# ****** Functions used in LLM-Ray ****** #
+# Don't remove
+from pyrecdp.primitives.llmutils.third_party import generate_connected_components, generate_duplicates_dict
 import argparse
-import os
-import sys
-
-import re
-import numpy as np
-import pickle
 from pyrecdp.core.utils import Timer
-from pyrecdp.core import SparkDataProcessor
-from pyrecdp.core.utils import Timer
-import pyspark.sql.functions as F
-from pyspark.sql import Row
-
-import shutil
-from nltk import ngrams
-from .utils import normalize_str, clean_str, read_json, global_unique_id, convert_listoflist_to_spk
-
-
-cur_path = os.path.dirname(__file__)
-
-NON_ALPHA = re.compile("[^A-Za-z_0-9]")
-THRESHOLD = 200
-
-if not os.path.exists(os.path.join(cur_path, "third_party")):
-    print(f"'third_party' is not found! please use 'cp -r third_party' {cur_path}")
-    exit
-
-from .third_party import generate_connected_components, generate_duplicates_dict
-from datasketch import MinHash
 
 def generate_hash_values(content, idx, num_perm, ngram_size, hashranges, permutations):
+    from datasketch import MinHash
+    from .utils import clean_str
+    from nltk import ngrams
+    import re
+    NON_ALPHA = re.compile("[^A-Za-z_0-9]")
     # 0. apply normalization to content
     content = clean_str(content)
     tokens = {" ".join(t) for t in ngrams(NON_ALPHA.split(content), ngram_size)}
@@ -78,81 +59,57 @@ def minHashLSH_prepare(df, num_perm, ngram_size, B, R):
     )
     return pipeline
 
-def filter_data(data):
-    return len(clean_str(data)) >= THRESHOLD
+###########################################
 
-def near_dedup_spk(spark_df, ngram_size, num_perm, bands, ranges):
-    df = spark_df
-    input_count = df.count()
-    spark = df.sparkSession
-    df_with_id = global_unique_id(df, 'filename_docid')
-    pipeline = minHashLSH_prepare(df_with_id, num_perm, ngram_size, bands, ranges)
-    with Timer("generate minHashLsh"):
-        results = pipeline.collect()
-        
-    with Timer("generate_connected_components => duplicates"):
-        components = generate_connected_components.generate_connected_components_py(results)
-        duplicates = [c for c_list in components for c in c_list[1:]]
-        R = Row('filename_docid')
-        duplicates_sdf = spark.createDataFrame([R(dup) for dup in duplicates]).cache()
-        total_dup = duplicates_sdf.count()
-        
-    with Timer("deduplicate input data"):
-        ret = df_with_id.join(duplicates_sdf, 'filename_docid', 'anti').cache()
-        ret_count = ret.count()
-        
-    dup_sum = input_count - ret_count
-    print(f"Completed!!")
-    print(f"    total processed {input_count} documents")
-    print(f"    total detected {total_dup} duplicated documents, exact deduplicated counts is {dup_sum}")
-    print(f"    duplicate ratio is {dup_sum/input_count}")
-        
+# ****** Functions used in EasyData ****** #
+# Don't remove
+def near_dedup_spk(spark_df, ngram_size = 13, num_perm = 256, bands = 9, ranges = 13):
+    from pyrecdp.primitives.operations import FuzzyDeduplicate
+    op = FuzzyDeduplicate(num_perm=num_perm, ngram_size=ngram_size, bands=bands, ranges=ranges)
+    ret = op.process_spark(spark_df.sparkSession, spark_df)
     return ret
 
+###########################################
 
-def near_dedup(data_files, dup_dir, ngram_size, num_perm, bands, ranges):
-    rdp = SparkDataProcessor()
-    spark=rdp.spark
-    try:
-        with Timer("Load data with RowID"):
-            df = read_json(data_files, spark, rowid = True).cache()
-            total_length = df.count()
-            
-        pipeline = minHashLSH_prepare(df, num_perm, ngram_size, bands, ranges)
-        with Timer("generate minHashLsh"):
-            if os.path.exists(dup_dir):
-                shutil.rmtree(dup_dir, ignore_errors=True)
-            results = pipeline.saveAsTextFile(dup_dir)
- 
-        with Timer(f"generate_connected_components all"):
-            dup_connected_args = argparse.Namespace()
-            dup_connected_args.input_dir = dup_dir
-            dup_connected_args.out_file = os.path.join(
-                dup_dir, "connected_components.pickle"
-            )
-            generate_connected_components.generate_connected_components_mp(
-                dup_connected_args
-            )
-            
-        with Timer(f"generate_duplicates_dict all"):
-            dup_docs = os.path.join(dup_dir, "duplicates.pickle")
-            dup_dict_args = argparse.Namespace()
-            dup_dict_args.input_file = os.path.join(
-                dup_dir, "connected_components.pickle"
-            )
-            dup_dict_args.out_file = dup_docs
-            generate_duplicates_dict.generate_duplicates(dup_dict_args)
+def run(text_key, data_dir, out_dir, data_type, ngram_size, num_perm, bands, ranges):
+    from pyrecdp.LLM import TextPipeline
+    from pyrecdp.primitives.operations import SourcedJsonlReader, SourcedParquetReader, FuzzyDeduplicate, ParquetWriter
+    pipeline = TextPipeline()
+    if data_type == "jsonl":
+        reader = SourcedJsonlReader(data_dir, source_prefix="")
+    elif data_type == 'parquet':
+        reader = SourcedParquetReader(data_dir, source_prefix="")
+    else:
+        raise NotImplementedError(f"{data_type} is not supported in RecDP LLM TextPipeline yet.")
+    ops = [
+        reader,
+        FuzzyDeduplicate(text_key=text_key, num_perm=num_perm, ngram_size=ngram_size, bands=bands, ranges=range),
+        ParquetWriter(out_dir)
+    ]
+    pipeline.add_operations(ops)
+    ret = pipeline.execute()
 
-        with open(os.path.join(dup_dir, "duplicates.pickle"), 'rb') as f:
-            dup_dict = pickle.load(f)
-            dup_sum = 0
-            for _, v in dup_dict.items():
-                dup_sum += len(list(v))
-
-        print(f"Completed!!")
-        print(f"    total processed {total_length} documents")
-        print(f"    total detected {dup_sum} duplicated documents")
-        print(f"    duplicate ratio is {dup_sum/total_length}")
-    except Exception as e:
-        spark.stop()
-        print("Failed", e)
+        
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    # data_files, dup_dir, ngram_size, num_perm, bands, ranges
+    #pipeline = minHashLSH_prepare(df, num_perm = 256, ngram_size = 6, bands = 9, ranges = 13)
+    parser.add_argument("-d", dest="data_dir", type=str)
+    parser.add_argument("-o", dest="out_dir", type=str)
+    parser.add_argument("-t", dest="data_type", type=str)
+    parser.add_argument("-k", dest="text_key", type=str, default='text')
+    parser.add_argument("--nperm", dest="num_perm", type=int, default=256)
+    parser.add_argument("--ngram", dest="ngram_size", type=int, default=6)
+    parser.add_argument("--bands", dest="bands", type=int, default=9)
+    parser.add_argument("--ranges", dest="ranges", type=int, default=13)
+    args = parser.parse_args()
+    text_key = args.text_key
+    data_dir = args.data_dir
+    out_dir = args.out_dir
+    data_type = args.data_type
+    num_perm = args.num_perm
+    ngram_size = args.ngram_size
+    bands = args.bands
+    ranges = args.ranges
+    with Timer(f"Generate duplicate dict for {data_dir}"):
+        run(text_key, data_dir, out_dir, data_type, ngram_size, num_perm, bands, ranges)

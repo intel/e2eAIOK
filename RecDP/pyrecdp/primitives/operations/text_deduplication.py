@@ -128,12 +128,18 @@ class FuzzyDeduplicate(BaseLLMOperation):
                 components = generate_connected_components.generate_connected_components_py(results)
                 duplicates = [c for c_list in components for c in c_list[1:]]
                 R = Row('filename_docid')
-                duplicates_sdf = spark.createDataFrame([R(dup) for dup in duplicates]).cache()
-                total_dup = duplicates_sdf.count()
-                
-            with Timer("deduplicate input data"):
-                ret = df_with_id.join(duplicates_sdf, 'filename_docid', 'left_anti').drop('filename_docid').cache()
+                total_dup = len(duplicates)
+                if total_dup != 0:
+                    duplicates_sdf = spark.createDataFrame([R(dup) for dup in duplicates]).cache()
+                    total_dup = duplicates_sdf.count()
+                    
+            if total_dup == 0:
+                ret = df_with_id.drop('filename_docid').cache()
                 ret_count = ret.count()
+            else:
+                with Timer("deduplicate input data"):
+                    ret = df_with_id.join(duplicates_sdf, 'filename_docid', 'left_anti').drop('filename_docid').cache()
+                    ret_count = ret.count()
             return ret
             
         else:

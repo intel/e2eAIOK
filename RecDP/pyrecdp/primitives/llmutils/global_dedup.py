@@ -6,6 +6,9 @@ from pyrecdp.primitives.llmutils import global_hash_mp, global_hash_spk, index_b
 import pyspark.sql.functions as F
 from pyrecdp.core import SparkDataProcessor
 
+# ****** Functions used in LLM-Ray ****** #
+# Don't remove
+
 def pre_check(spark_df):
     column_names = spark_df.columns
     print(column_names)
@@ -94,7 +97,6 @@ def get_duplication_list(data_dir, out_dir, spark = None):
     duplicate_df = get_duplication_list_spk(dict_df_all)
     duplicate_df.write.mode("overwrite").parquet(f"{out_dir}")
 
-
 def global_dedup(data_dir, out_dir, source = "", in_type = 'parquet', is_norm = True, dup_dir = None):
     data_files = get_target_file_list(data_dir, in_type)
     sub_task_dict = sub_task_per_folder(data_files)
@@ -166,32 +168,49 @@ def global_dedup(data_dir, out_dir, source = "", in_type = 'parquet', is_norm = 
     print(f"  duplication count is {duplication_count}")
     print(f"  post-deduplication count is {post_global_dedup_count}")
         
-    
-def global_dedup_spk(spark_df, source, is_norm):
-    spark = spark_df.sparkSession
-    # 1. if input hasn't been processed by global hash
-    with Timer(f"Generate Global Hash, normailization is {is_norm}"):
-        hash_df = global_hash_spk(spark_df, source, is_norm).cache()
-        post_global_hash_count = hash_df.count()
-    
-    # 2. get global hash indexing
-    with Timer(f"Generate Global indexing based on hash"):
-        ret_df = get_hash_indexing_spk(hash_df).cache()
-        index_count = ret_df.count()
+############################################
 
-    # 3. generate duplication indexing
-    with Timer(f"Generate global duplication list"):
-        ret_df = get_duplication_list_spk(ret_df).cache()
-        duplication_count = ret_df.count()
+# ****** Functions used in EasyData ****** #
+# Don't remove 
+def global_dedup_spk(spark_df, source = "", is_norm = True):
+    from pyrecdp.primitives.operations import GlobalDeduplicate
+    op = GlobalDeduplicate()
+    ret = op.process_spark(spark_df.sparkSession, spark_df)
+    return ret
+############################################
+
+def run(text_key, data_dir, out_dir, data_type):
+    from pyrecdp.LLM import TextPipeline
+    from pyrecdp.primitives.operations import SourcedJsonlReader, SourcedParquetReader, GlobalDeduplicate, ParquetWriter
+    pipeline = TextPipeline()
+    if data_type == "jsonl":
+        reader = SourcedJsonlReader(data_dir, source_prefix="")
+    elif data_type == 'parquet':
+        reader = SourcedParquetReader(data_dir, source_prefix="")
+    else:
+        raise NotImplementedError(f"{data_type} is not supported in RecDP LLM TextPipeline yet.")
+    ops = [
+        reader,
+        GlobalDeduplicate(text_key=text_key),
+        ParquetWriter(out_dir)
+    ]
+    pipeline.add_operations(ops)
+    ret = pipeline.execute()
+
+        
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    # data_files, dup_dir, ngram_size, num_perm, bands, ranges
+    #pipeline = minHashLSH_prepare(df, num_perm = 256, ngram_size = 6, bands = 9, ranges = 13)
+    parser.add_argument("-d", dest="data_dir", type=str)
+    parser.add_argument("-o", dest="out_dir", type=str)
+    parser.add_argument("-t", dest="data_type", type=str)
+    parser.add_argument("-k", dest="text_key", type=str, default='text')
+    args = parser.parse_args()
+    text_key = args.text_key
+    data_dir = args.data_dir
+    out_dir = args.out_dir
+    data_type = args.data_type
     
-    # 4. deduplicate input
-    with Timer(f"reduce input file based on detected duplication"):
-        out_df = index_based_reduction_spk(hash_df, ret_df, True).cache()
-        post_global_dedup_count = out_df.count()
-        
-    print(f"Input data count is {post_global_hash_count}")
-    print(f"  unique data count is {index_count}")
-    print(f"  duplication count is {duplication_count}")
-    print(f"  post-deduplication count is {post_global_dedup_count}")
-        
-    return out_df
+    with Timer(f"Generate duplicate dict for {data_dir}"):
+        run(text_key, data_dir, out_dir, data_type)

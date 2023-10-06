@@ -1,5 +1,6 @@
 from .base import BaseLLMOperation, LLMOPERATORS
 from ray.data import Dataset
+from pyspark.sql import DataFrame
 
 import os
 import re
@@ -229,12 +230,14 @@ def get_fixer_by_type(text_type):
 
 class TextFix(BaseLLMOperation):
     def __init__(self, text_key = 'text', inplace = True, text_type = 'html'):
+        settings = {'text_key': text_key, 'inplace': inplace, 'text_type': text_type}
+        super().__init__(settings)
         self.text_key = text_key
         self.inplace = inplace
         self.text_type = text_type
         self.actual_func = None
-        settings = {'text_key': text_key, 'inplace': inplace, 'text_type': text_type}
-        super().__init__(settings)
+        self.support_spark = True
+        self.support_ray = True
         
     def process_rayds(self, ds: Dataset) -> Dataset:
         if self.inplace:
@@ -244,5 +247,15 @@ class TextFix(BaseLLMOperation):
         if self.actual_func is None:
             self.actual_func = get_fixer_by_type(self.text_type)
         return ds.map(lambda x: self.process_row(x, self.text_key, new_name, self.actual_func))
+    
+    def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
+        import pyspark.sql.functions as F
+        from pyspark.sql import types as T
+        fix_by_type_udf = F.udf(get_fixer_by_type(self.text_type))
+        if self.inplace:
+            new_name = self.text_key
+        else:
+            new_name = 'fixed_text'
+        return spark_df.withColumn(new_name, fix_by_type_udf(F.col(self.text_key)))
     
 LLMOPERATORS.register(TextFix)

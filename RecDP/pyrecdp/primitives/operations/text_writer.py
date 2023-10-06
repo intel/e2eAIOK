@@ -28,7 +28,7 @@ class JsonlWriter(BaseLLMOperation):
     def __init__(self, output_dir):
         settings = {'output_dir': output_dir}
         super().__init__(settings)
-        self.support_ray = False
+        self.support_ray = True
         self.support_spark = True
         self.output_dir = output_dir
 
@@ -43,6 +43,36 @@ class JsonlWriter(BaseLLMOperation):
         return spark_df
 
 LLMOPERATORS.register(JsonlWriter)
+
+class ClassifyParquetWriter(BaseLLMOperation):
+    def __init__(self, output_dir, key):
+        settings = {'output_dir': output_dir, 'key': key}
+        super().__init__(settings)
+        self.support_ray = False
+        self.support_spark = True
+        self.output_dir = output_dir
+        self.key = key
+    
+    def process_spark(self, spark, spark_df: DataFrame = None) -> DataFrame:
+        spark_df.write.mode("overwrite").partitionBy(self.key).parquet(self.output_dir)
+        return spark_df
+    
+LLMOPERATORS.register(ClassifyParquetWriter)
+
+class ClassifyJsonlWriter(BaseLLMOperation):
+    def __init__(self, output_dir, key):
+        settings = {'output_dir': output_dir, 'key': key}
+        super().__init__(settings)
+        self.support_ray = False
+        self.support_spark = True
+        self.output_dir = output_dir
+        self.key = key
+
+    def process_spark(self, spark, spark_df: DataFrame = None) -> DataFrame:
+        spark_df.write.mode("overwrite").partitionBy(self.key).json(self.output_dir)
+        return spark_df
+
+LLMOPERATORS.register(ClassifyJsonlWriter)
 
 class PerfileParquetWriter(BaseLLMOperation):
     def __init__(self, output_dir):
