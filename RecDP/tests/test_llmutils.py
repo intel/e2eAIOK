@@ -43,7 +43,7 @@ class Test_LLMUtils(unittest.TestCase):
         from pyrecdp.primitives.llmutils import quality_classifier
         file_path = os.path.join(cur_dir, "data/llm_data/arxiv_sample_100.jsonl")
         save_path = os.path.join(cur_dir, "data/output/qualify_classify")
-        quality_classifier(file_path, save_path, overall_stats=True, file_system_prefix="file://")
+        quality_classifier(file_path, save_path, "jsonl")
 
     def test_quality_classifier_spark(self):
         from pyrecdp.primitives.llmutils import quality_classifier_spark
