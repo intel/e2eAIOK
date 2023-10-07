@@ -24,7 +24,7 @@ on:
 jobs:
   integration_test:
     name: Integration Test Workload Basic Pipeline
-    runs-on: self-hosted
+    runs-on: intel-ubuntu-latest
     steps:
     - name: Checkout
       uses: actions/checkout@v2

@@ -14,7 +14,7 @@ on:
 jobs:
   unit_tests:
     name: Unit Test Util
-    runs-on: self-hosted
+    runs-on: intel-ubuntu-latest
     steps:
     - name: Checkout
       uses: actions/checkout@v2

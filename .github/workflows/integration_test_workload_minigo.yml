@@ -22,7 +22,7 @@ on:
 jobs:
   integration_test:
     name: Integration Test Workload MiniGo
-    runs-on: sr613
+    runs-on: intel-ubuntu-latest
     steps:
     - name: Cleanup for MiniGo
       run: |

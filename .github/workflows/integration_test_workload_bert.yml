@@ -23,7 +23,7 @@ on:
 jobs:
   integration_test:
     name: Integration Test Workload BERT
-    runs-on: self-hosted
+    runs-on: intel-ubuntu-latest
     steps:
     - name: Cleanup for BERT
       run: |

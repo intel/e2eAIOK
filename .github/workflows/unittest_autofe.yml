@@ -16,7 +16,7 @@ on:
 jobs:
   unittest:
     name: Unittest AutoFE
-    runs-on: self-hosted
+    runs-on: intel-ubuntu-latest
     steps:
     - name: Checkout
       uses: actions/checkout@v2

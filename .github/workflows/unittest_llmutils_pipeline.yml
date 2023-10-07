@@ -12,7 +12,7 @@ on:
 jobs:
   unittest:
     name: Unittest LLM
-    runs-on: self-hosted
+    runs-on: intel-ubuntu-latest
     steps:
     - name: Checkout
       uses: actions/checkout@v2

@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   e2eaiok-release-python-pypi:
-    runs-on: ubuntu-latest
+    runs-on: intel-ubuntu-latest
     if: ${{ github.repository_owner == 'intel' }}
     steps:
     - uses: actions/checkout@v2

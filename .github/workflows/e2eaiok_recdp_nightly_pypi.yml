@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   e2eaiok-recdp-nightly-python-pypi:
-    runs-on: self-hosted
+    runs-on: intel-ubuntu-latest
     steps:
     - uses: actions/checkout@v2
 

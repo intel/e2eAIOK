@@ -15,7 +15,7 @@ on:
 
 jobs:
   e2eaiok-release-docker:
-    runs-on: self-hosted
+    runs-on: intel-ubuntu-latest
     if: ${{ github.repository_owner == 'intel' }}
     steps:
       -
