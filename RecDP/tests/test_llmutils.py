@@ -92,7 +92,7 @@ class Test_LLMUtils(unittest.TestCase):
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             spark_df = ctx.ds
             fasttext_model_dir = os.path.join(RECDP_MODELS_CACHE, "lid.bin")
-            lid_df = language_identify_spark(spark_df, fasttext_model_dir, 'text', 'lang')
+            lid_df = language_identify_spark(spark_df, fasttext_model_dir)
             ctx.show(lid_df)
 
     def test_sentence_split_spark(self):
