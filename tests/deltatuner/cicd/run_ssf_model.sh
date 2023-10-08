@@ -16,8 +16,9 @@ model_name_list="mosaicml/mpt-7b"
 for model_name in $model_name_list
 do
     model_name_or_path=${model_name}
-    model_save_path=${MODEL_SAVE_PATH}"/"${model_name}"_ssf"
-    log_save_path=$LOG_PATH"/"${model_name}"_ssf-1epoch.log"
+    short_model_name=`echo $model_name | cut -d/ -f2`
+    model_save_path=${MODEL_SAVE_PATH}"/"${short_model_name}"_ssf"
+    log_save_path=$LOG_PATH"/"${short_model_name}"_ssf-1epoch.log"
     python example/instruction_tuning_pipeline/finetune_clm.py \
         --model_name_or_path $model_name_or_path \
         --train_file "$DATA_PATH/alpaca_data.json" \
