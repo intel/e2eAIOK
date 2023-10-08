@@ -12,8 +12,8 @@ MODEL_SAVE_PATH=$DATA_PATH"/dtuner_test/models"
 mkdir -p $LOG_PATH $MODEL_SAVE_PATH
 
 # fine-tune with ssf
-#  gpt2 EleutherAI/gpt-j-6b EleutherAI/gpt-neo-125m
-model_name_list="EleutherAI/gpt-neo-125m"
+#  gpt2 EleutherAI/gpt-j-6b EleutherAI/gpt-neo-125m bigscience/bloom facebook/opt-125m
+model_name_list="facebook/opt-125m"
 for model_name in $model_name_list
 do
     model_name_or_path=${model_name}
