@@ -532,7 +532,6 @@ def main():
             trust_remote_code=True if model_args.trust_remote_code else None,
             torch_dtype=model_dtype,
             low_cpu_mem_usage=True,
-            load_in_8bit=True, 
         )
     else:
         raise ValueError(
