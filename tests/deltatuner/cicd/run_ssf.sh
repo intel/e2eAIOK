@@ -17,8 +17,8 @@ model_name_list="mpt-7b Llama-2-7b-hf"
 for model_name in $model_name_list
 do
     model_name_or_path=${DATA_PATH}"/"${model_name}
-    model_save_path=${MODEL_SAVE_PATH}"/"${model_name}"_denas-lora"
-    log_save_path=$LOG_PATH"/"${model_name}"_denas-lora-1epoch.log"
+    model_save_path=${MODEL_SAVE_PATH}"/"${model_name}"_ssf"
+    log_save_path=$LOG_PATH"/"${model_name}"_ssf-1epoch.log"
     python example/instruction_tuning_pipeline/finetune_clm.py \
         --model_name_or_path $model_name_or_path \
         --train_file "$DATA_PATH/alpaca_data.json" \
