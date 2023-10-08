@@ -13,7 +13,7 @@ mkdir -p $LOG_PATH $MODEL_SAVE_PATH
 
 # fine-tune with ssf
 #  gpt2 EleutherAI/gpt-j-6b
-model_name_list="mosaicml/mpt-7b"
+model_name_list="gpt2"
 for model_name in $model_name_list
 do
     model_name_or_path=${model_name}
