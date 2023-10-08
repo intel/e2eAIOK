@@ -2,7 +2,6 @@ set -x
 
 cd /home/vmagent/app/e2eaiok/e2eAIOK/deltatuner
 pip install -e .
-pip uninstall wandb -y
 
 cd /home/vmagent/app/e2eaiok
 
@@ -13,10 +12,10 @@ MODEL_SAVE_PATH=$DATA_PATH"/dtuner_test/models"
 mkdir -p $LOG_PATH $MODEL_SAVE_PATH
 
 # fine-tune with ssf
-model_name_list="mpt-7b Llama-2-7b-hf"
+model_name_list="mosaicml/mpt-7b"
 for model_name in $model_name_list
 do
-    model_name_or_path=${DATA_PATH}"/"${model_name}
+    model_name_or_path=${model_name}
     model_save_path=${MODEL_SAVE_PATH}"/"${model_name}"_ssf"
     log_save_path=$LOG_PATH"/"${model_name}"_ssf-1epoch.log"
     python example/instruction_tuning_pipeline/finetune_clm.py \
@@ -36,7 +35,6 @@ do
         --log_level info \
         --save_strategy epoch \
         --trust_remote_code True \
-        --no_cuda \
         --output_dir $model_save_path \
         --delta ssf \
         --denas False \
