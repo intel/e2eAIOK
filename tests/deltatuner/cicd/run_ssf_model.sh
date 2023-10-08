@@ -44,5 +44,5 @@ do
         --debugs \
         --fp16 \
         2>&1 | tee $log_save_path
-    # rm -rf ~/.cache/huggingface
+    # rm -rf ~/.cache/huggingface/hub
 done
