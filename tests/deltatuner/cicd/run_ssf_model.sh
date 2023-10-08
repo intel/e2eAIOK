@@ -12,7 +12,8 @@ MODEL_SAVE_PATH=$DATA_PATH"/dtuner_test/models"
 mkdir -p $LOG_PATH $MODEL_SAVE_PATH
 
 # fine-tune with ssf
-#  gpt2 EleutherAI/gpt-j-6b EleutherAI/gpt-neo-125m bigscience/bloom facebook/opt-125m
+# gpt2 EleutherAI/gpt-j-6b bigscience/bloom facebook/opt-125m EleutherAI/gpt-neo-125m tiiuae/falcon-7b
+# EleutherAI/gpt-j-6b bigscience/bloom tiiuae/falcon-7b
 model_name_list="facebook/opt-125m"
 for model_name in $model_name_list
 do
@@ -43,5 +44,5 @@ do
         --debugs \
         --fp16 \
         2>&1 | tee $log_save_path
-    # rm -rf ~/.cache
+    # rm -rf ~/.cache/huggingface
 done
