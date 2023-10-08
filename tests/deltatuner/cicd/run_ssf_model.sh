@@ -12,6 +12,7 @@ MODEL_SAVE_PATH=$DATA_PATH"/dtuner_test/models"
 mkdir -p $LOG_PATH $MODEL_SAVE_PATH
 
 # fine-tune with ssf
+#  gpt2 EleutherAI/gpt-j-6b
 model_name_list="mosaicml/mpt-7b"
 for model_name in $model_name_list
 do
@@ -40,5 +41,7 @@ do
         --delta ssf \
         --denas False \
         --debugs \
+        --fp16 \
         2>&1 | tee $log_save_path
+    # rm -rf ~/.cache
 done
