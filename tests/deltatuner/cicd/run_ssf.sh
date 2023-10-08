@@ -6,9 +6,11 @@ pip uninstall wandb -y
 
 cd /home/vmagent/app/e2eaiok
 
-mkdir -p log
-
 DATA_PATH="/home/vmagent/app/data"
+LOG_PATH=$DATA_PATH"/dtuner_test/log"
+MODEL_SAVE_PATH=$DATA_PATH"/dtuner_test/models"
+
+mkdir -p $LOG_PATH $MODEL_SAVE_PATH
 
 #run mpt with ssf, bf16
 python example/instruction_tuning_pipeline/finetune_clm.py \
@@ -29,11 +31,11 @@ python example/instruction_tuning_pipeline/finetune_clm.py \
         --save_strategy epoch \
         --trust_remote_code True \
         --no_cuda \
-        --output_dir "$DATA_PATH/mpt-7b-ssf-allmodules-bf16" \
+        --output_dir $MODEL_SAVE_PATH"/mpt-7b-ssf-allmodules" \
         --delta ssf \
         --denas False \
         --debugs \
-        2>&1 | tee log/mpt-ssf-run-allmodules-bf16-1epoch.log
+        2>&1 | tee $LOG_PATH"/mpt-7b-ssf-allmodules-1epoch.log"
     
 #run llama2 with ssf, bf16
 python example/instruction_tuning_pipeline/finetune_clm.py \
@@ -54,8 +56,8 @@ python example/instruction_tuning_pipeline/finetune_clm.py \
         --save_strategy epoch \
         --trust_remote_code True \
         --no_cuda \
-        --output_dir "$DATA_PATH/llama2-7b-ssf-bf16" \
+        --output_dir $MODEL_SAVE_PATH"/llama2-7b-ssf" \
         --delta ssf \
         --denas False \
         --debugs \
-        2>&1 | tee log/llama2-7b-ssf-bf16-1epoch.log
+        2>&1 | tee $LOG_PATH"/llama2-7b-ssf-1epoch.log"

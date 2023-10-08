@@ -7,9 +7,11 @@ pip uninstall wandb -y
 
 cd /home/vmagent/app/e2eaiok
 
-mkdir -p log models
-
 DATA_PATH="/home/vmagent/app/data"
+LOG_PATH=$DATA_PATH"/dtuner_test/log"
+MODEL_SAVE_PATH=$DATA_PATH"/dtuner_test/models"
+
+mkdir -p $LOG_PATH $MODEL_SAVE_PATH
 
 # fine-tune mpt-7b with denas-lora
 python example/instruction_tuning_pipeline/finetune_clm.py \
@@ -28,13 +30,13 @@ python example/instruction_tuning_pipeline/finetune_clm.py \
     --save_total_limit 1 \
     --log_level info \
     --save_strategy epoch \
-    --output_dir models/mpt_lora_model \
+    --output_dir $MODEL_SAVE_PATH"/mpt-7b_lora" \
     --peft lora \
     --denas False \
     --debugs \
     --trust_remote_code True \
     --no_cuda \
-    2>&1 | tee log/mpt-lora-run-1epoch.log
+    2>&1 | tee $LOG_PATH"/mpt-7b-lora-1epoch.log"
 
 # fine-tune llama2-7b with denas-lora
 python example/instruction_tuning_pipeline/finetune_clm.py \
@@ -53,10 +55,10 @@ python example/instruction_tuning_pipeline/finetune_clm.py \
     --save_total_limit 1 \
     --log_level info \
     --save_strategy epoch \
-    --output_dir models/llama2_lora_model \
+    --output_dir $MODEL_SAVE_PATH"/llama2-7b_lora" \
     --peft lora \
     --denas False \
     --debugs \
     --trust_remote_code True \
     --no_cuda \
-    2>&1 | tee log/llama2-lora-run-1epoch.log
+    2>&1 | tee $LOG_PATH"/llama2-7b-lora-1epoch.log"
