@@ -13,9 +13,9 @@ mkdir -p $LOG_PATH $MODEL_SAVE_PATH
 
 # fine-tune with ssf
 # gpt2 EleutherAI/gpt-j-6b bigscience/bloom facebook/opt-125m EleutherAI/gpt-neo-125m tiiuae/falcon-7b
-# EleutherAI/gpt-j-6b bigscience/bloom tiiuae/falcon-7b
+# EleutherAI/gpt-j-6b bigscience/bloom-560m tiiuae/falcon-7b
 # mosaicml/mpt-7b
-model_name_list="mosaicml/mpt-7b"
+model_name_list="bigscience/bloom-560m"
 for model_name in $model_name_list
 do
     model_name_or_path=${model_name}
