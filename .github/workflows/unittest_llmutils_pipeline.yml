@@ -4,8 +4,8 @@ on:
     branches:
     - main
     paths:
-    - 'RecDP/pyrecdp/LLM'
-    - 'RecDP/pyrecdp/primitives/operations'
+    - 'RecDP/pyrecdp/LLM/**'
+    - 'RecDP/pyrecdp/primitives/operations/**'
     - 'RecDP/tests/cicd/bashrun_unittest_llmutilspipeline.sh'
     - 'RecDP/tests/test_llmutils_operations.py'
 
