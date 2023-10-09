@@ -3,6 +3,7 @@ from ray.data import Dataset
 from pyspark.sql import DataFrame
 import os
 from pyrecdp.core.cache_utils import RECDP_MODELS_CACHE
+import pyspark.sql.functions as F
 
 
 def prepare_func_filter_by_length(minimum_length=100, maximum_length=10000):
@@ -68,7 +69,6 @@ class LengthFilter(BaseLLMOperation):
 
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
         import pyspark.sql.types as T
-        import pyspark.sql.functions as F
         check_length_udf = F.udf(prepare_func_filter_by_length(self.minimum_length, self.maximum_length),
                                  T.BooleanType())
         return spark_df.filter(check_length_udf(F.col(self.text_key)))
@@ -99,7 +99,6 @@ class BadwordsFilter(BaseLLMOperation):
 
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
         import pyspark.sql.types as T
-        import pyspark.sql.functions as F
         check_badwords_udf = F.udf(prepare_func_filter_by_badwords(self.language), T.BooleanType())
         return spark_df.filter(check_badwords_udf(F.col(self.text_key)))
 
@@ -128,13 +127,15 @@ class ProfanityFilter(BaseLLMOperation):
 
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
         import pyspark.sql.types as T
-        import pyspark.sql.functions as F
         check_profanity_udf = F.udf(prepare_func_filter_by_profanity(), T.BooleanType())
         return spark_df.filter(check_profanity_udf(F.col(self.text_key)))
 
 
 LLMOPERATORS.register(ProfanityFilter)
 
+
+BLACKLIST_URL = "https://dsi.ut-capitole.fr/blacklists/download/blacklists.tar.gz"
+BLACKLIST_STORE_PATH = "/tmp"
 BLACKLIST_CATEGORIES = ["adult", "phishing", "dating", "gambling", "filehosting", "ddos", "agressif", "chat",
                         "mixed_adult",
                         "arjel"]
@@ -172,7 +173,6 @@ def load_blacklist_set():
         with open(domain_file, "r") as f:
             lines = f.readlines()
         blacklist.extend(lines)
-    print(len(blacklist))
     return set(blacklist)
 
 
@@ -186,6 +186,14 @@ def get_url_from_meta(x):
             return "Not Provided"
     except:
         return "Not Provided"
+
+
+def get_domain(x):
+    from urllib.parse import urlparse
+    domain = urlparse(x).hostname
+    if not domain:
+        domain = "Not Provided"
+    return domain
 
 
 class URLFilter(BaseLLMOperation):
@@ -206,25 +214,14 @@ class URLFilter(BaseLLMOperation):
             raise NotImplementedError("We only support inplace modification for URLFilter.")
 
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
-        from pyspark.sql.types import StringType
-        import pyspark.sql.functions as F
         get_url_from_meta_udf = F.udf(get_url_from_meta)
-
-        @F.udf(returnType=StringType())
-        def get_domain(x):
-            domain = urlparse(x).hostname
-            if not domain:
-                domain = "Not Provided"
-            return domain
+        get_domain_udf = F.udf(get_domain)
 
         if self.inplace:
-            import pyspark.sql.functions as F
-            from urllib.parse import urlparse
             # remove unwanted text row inplace
             blacklist_df = load_blacklist_spark_df(spark)
-
             source_df = spark_df
-            with_domain_df = source_df.withColumn('domain', get_domain(get_url_from_meta_udf('meta')))
+            with_domain_df = source_df.withColumn('domain', get_domain_udf(get_url_from_meta_udf('meta')))
             left_anti_df = with_domain_df.join(blacklist_df, on='domain', how='left_anti')
             return left_anti_df
 
