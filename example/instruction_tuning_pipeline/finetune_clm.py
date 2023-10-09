@@ -710,6 +710,14 @@ def main():
             model = deltatuner.optimize(model, tokenizer, algo=finetune_args.delta, deltatuning_args=deltatuner_args)
         logger.info("***deltatuner optimized model parameter***")
         model.print_trainable_parameters()
+
+    if finetune_args.save_merged_model:
+        if isinstance(model, PeftModel):
+            model = model.merge_and_unload()
+            saved_dir = os.path.join(training_args.output_dir, "merged_model")
+            os.makedirs(saved_dir, exist_ok=True)
+            torch.save(model.state_dict(), os.path.join(saved_dir, "pytorch_model.bin"))
+            print(f"Save merged model to {saved_dir}")
          
     if finetune_args.debugs:
         if training_args.do_train:
@@ -771,12 +779,6 @@ def main():
         trainer.log_metrics("eval", metrics)
         trainer.save_metrics("eval", metrics)
 
-    if finetune_args.save_merged_model:
-        if isinstance(model, PeftModel):
-            merged_model = model.merge_and_unload()
-            os.makedirs(os.path.join(training_args.output_dir,"merged_model"),exist_ok=True)
-            torch.save(merged_model.state_dict(),os.path.join(training_args.output_dir,"merged_model","pytorch_model.bin"))
-            print(f"Save merged model to {training_args.output_dir}")
 
 def profile_model(model, train_dataset, data_collator, args):
     from transformers import get_scheduler
