@@ -44,12 +44,16 @@ class TestBasicDistiller:
         :return:
         '''
         ################ frozen create ###################
-        distiller = BasicDistiller(torchvision.models.resnet18(pretrained=True), is_frozen=True)
+        distiller_resnet18_model_frozen = torchvision.models.resnet18(pretrained=False)
+        distiller_resnet18_model_frozen.load_state_dict(torch.load("/home/vmagent/app/data/dataset/resnet18/resnet18-5c106cde.pth"))
+        distiller = BasicDistiller(distiller_resnet18_model_frozen, is_frozen=True)
         for param in distiller.pretrained_model.parameters():
             assert param.requires_grad == False
 
         ################ unfrozen create ###################
-        distiller = BasicDistiller(torchvision.models.resnet18(pretrained=True), is_frozen=False)
+        distiller_resnet18_model_unfrozen = torchvision.models.resnet18(pretrained=False)
+        distiller_resnet18_model_unfrozen.load_state_dict(torch.load("/home/vmagent/app/data/dataset/resnet18/resnet18-5c106cde.pth"))
+        distiller = BasicDistiller(distiller_resnet18_model_unfrozen, is_frozen=False)
         for param in distiller.pretrained_model.parameters():
             assert param.requires_grad == True
 
@@ -72,7 +76,9 @@ class TestBasicDistiller:
         ########################## directly forward test ############################
         num_classes = 1000
         bath_size = 16
-        distiller = BasicDistiller(torchvision.models.resnet18(pretrained=True), is_frozen=True)
+        distiller_resnet18_model = torchvision.models.resnet18(pretrained=False)
+        distiller_resnet18_model.load_state_dict(torch.load("/home/vmagent/app/data/dataset/resnet18/resnet18-5c106cde.pth"))
+        distiller = BasicDistiller(distiller_resnet18_model, is_frozen=True)
         x = torch.zeros([bath_size,3,224,224])
         y = distiller(x)
         assert y.shape == torch.Size([bath_size,num_classes])
@@ -92,8 +98,10 @@ class TestKD:
     
     '''
     def _get_kwargs(self):
+        pretrained_resnet18_model = torchvision.models.resnet18(pretrained=False)
+        pretrained_resnet18_model.load_state_dict(torch.load("/home/vmagent/app/data/dataset/resnet18/resnet18-5c106cde.pth"))
         kwargs = {
-            "pretrained_model": torchvision.models.resnet18(pretrained=True),
+            "pretrained_model": pretrained_resnet18_model,
             "temperature": 4.0,
             "is_frozen": True,
         }
@@ -122,8 +130,10 @@ class TestDKD:
     
     '''
     def _get_kwargs(self):
+        pretrained_resnet18_model = torchvision.models.resnet18(pretrained=False)
+        pretrained_resnet18_model.load_state_dict(torch.load("/home/vmagent/app/data/dataset/resnet18/resnet18-5c106cde.pth"))
         kwargs = {
-            "pretrained_model": torchvision.models.resnet18(pretrained=True),
+            "pretrained_model": pretrained_resnet18_model,
             "alpha": 1.0,
             "beta": 8.0,
             "temperature": 4.0,
