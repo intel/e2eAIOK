@@ -15,7 +15,7 @@ mkdir -p $LOG_PATH $MODEL_SAVE_PATH
 # gpt2 EleutherAI/gpt-j-6b bigscience/bloom-560m facebook/opt-125m EleutherAI/gpt-neo-125m tiiuae/falcon-7b
 # EleutherAI/gpt-j-6b tiiuae/falcon-7b TheBloke/falcon-7b-instruct-GPTQ
 # mosaicml/mpt-7b
-model_name_list="TheBloke/falcon-7b-instruct-GPTQ"
+model_name_list=""
 for model_name in $model_name_list
 do
     model_name_or_path=${model_name}
