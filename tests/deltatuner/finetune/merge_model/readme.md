@@ -1,4 +1,4 @@
-# Run Deltatuner with ssf
+# Run Deltatuner with Merged model
 
 ## Llama2-7b
 
