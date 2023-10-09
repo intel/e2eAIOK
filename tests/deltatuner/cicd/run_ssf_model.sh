@@ -13,7 +13,7 @@ mkdir -p $LOG_PATH $MODEL_SAVE_PATH
 
 # fine-tune with ssf
 # gpt2 EleutherAI/gpt-j-6b bigscience/bloom-560m facebook/opt-125m EleutherAI/gpt-neo-125m tiiuae/falcon-7b
-# EleutherAI/gpt-j-6b tiiuae/falcon-7b TheBloke/falcon-7b-instruct-GPTQ
+# EleutherAI/gpt-j-6b tiiuae/falcon-7b
 # mosaicml/mpt-7b
 model_name_list=""
 for model_name in $model_name_list
@@ -43,7 +43,7 @@ do
         --delta ssf \
         --denas False \
         --debugs \
-        --fp16 \
+        --no_cuda \
         2>&1 | tee $log_save_path
     # rm -rf ~/.cache/huggingface/hub
 done
