@@ -2,7 +2,7 @@ from .base import Operation, BaseOperation
 from .data import DataFrameOperation
 from .dataframe import RDDToDataFrameConverter, SparkDataFrameToDataFrameConverter
 from .encode import TargetEncodeOperation
-from .text_reader import DatasetReader, JsonlReader, ParquetReader, SourcedJsonlReader, SourcedParquetReader
+from .text_reader import DatasetReader, JsonlReader, ParquetReader, SourcedJsonlReader, SourcedParquetReader, PerfileSourcedJsonlReader, PerfileSourcedParquetReader
 from .text_writer import PerfileParquetWriter, ParquetWriter, JsonlWriter, ClassifyJsonlWriter, ClassifyParquetWriter
 from .text_normalize import TextNormalize
 from .text_bytesize import TextBytesize

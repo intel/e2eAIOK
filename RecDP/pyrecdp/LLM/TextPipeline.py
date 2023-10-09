@@ -188,7 +188,7 @@ class ResumableTextPipeline(TextPipeline):
             if op.op in ['SourcedParquetReader', 'ParquetReader']:
                 op.op = 'PerfileSourcedParquetReader'
             if op.op in ['SourcedJsonlReader', 'JsonlReader']:
-                op.op = 'PerfileSourcedJsonlWriter'
+                op.op = 'PerfileSourcedJsonlReader'
             if op.op in ['ParquetWriter', 'PerfileParquetWriter']:
                 op.op = 'PerfileParquetWriter'
                 output_dir = op.config['output_dir']
@@ -207,6 +207,7 @@ class ResumableTextPipeline(TextPipeline):
             status_tracker = open(status_log_path, 'w')
             done_files = []
         self.export(os.path.join(output_dir, "pipeline.json"))
+        self.plot()
         
         # prepare pipeline
         if not hasattr(self, 'executable_pipeline') or not hasattr(self, 'executable_sequence'):

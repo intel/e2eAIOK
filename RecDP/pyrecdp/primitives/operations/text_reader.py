@@ -157,7 +157,7 @@ LLMOPERATORS.register(SourcedParquetReader)
 class PerfileReader:
     pass
 
-class PerfileSourcedJsonlWriter(SourcedReader, PerfileReader):
+class PerfileSourcedJsonlReader(SourcedReader, PerfileReader):
     def __init__(self, input_dir = "", source_prefix = ""):
         super().__init__(input_dir = input_dir, source_prefix = source_prefix)
         self.support_spark = False
@@ -182,7 +182,7 @@ class PerfileSourcedJsonlWriter(SourcedReader, PerfileReader):
             ds = rd.read_text(file_path).map(lambda x: convert_json(x, source_id))
             self.cache.append((ds, source_id))
         return self.cache
-LLMOPERATORS.register(PerfileSourcedJsonlWriter)
+LLMOPERATORS.register(PerfileSourcedJsonlReader)
     
 class PerfileSourcedParquetReader(SourcedReader, PerfileReader):
     def __init__(self, input_dir = "", source_prefix = ""):
