@@ -7,14 +7,15 @@ import re
 from typing import Dict
 from selectolax.parser import HTMLParser
 
-
 CPAT = re.compile("copyright", re.IGNORECASE)
 PAT = re.compile("/\\*[^*]*\\*+(?:[^/*][^*]*\\*+)*/")
+
 
 class SupportedType:
     HTML = 'html'
     LATEX = 'latex'
     CODES = 'codes'
+
 
 def clean_html(text):
     text = text.replace('<li>', '\n*')
@@ -23,6 +24,7 @@ def clean_html(text):
     text = text.replace('</ol>', '')
     parser = HTMLParser(text)
     return parser.text()
+
 
 def clean_latex(text):
     non_arg_macros = {}
@@ -38,8 +40,10 @@ def clean_latex(text):
     )
     return cleaned_text
 
+
 def clean_codes(text):
     return _clean_copyright_comments(text)
+
 
 def _clean_text_file(
         file_content: str, arg_macros: Dict, non_arg_macros: Dict
@@ -217,6 +221,7 @@ def _clean_copyright_comments(text: str):
         text = "\n".join(lines[skip:])
     return text
 
+
 def get_fixer_by_type(text_type):
     if isinstance(text_type, str):
         text_type = getattr(SupportedType, text_type.upper())
@@ -229,7 +234,7 @@ def get_fixer_by_type(text_type):
 
 
 class TextFix(BaseLLMOperation):
-    def __init__(self, text_key = 'text', inplace = True, text_type = 'html'):
+    def __init__(self, text_key='text', inplace=True, text_type='html'):
         settings = {'text_key': text_key, 'inplace': inplace, 'text_type': text_type}
         super().__init__(settings)
         self.text_key = text_key
@@ -238,7 +243,7 @@ class TextFix(BaseLLMOperation):
         self.actual_func = None
         self.support_spark = True
         self.support_ray = True
-        
+
     def process_rayds(self, ds: Dataset) -> Dataset:
         if self.inplace:
             new_name = self.text_key
@@ -250,12 +255,12 @@ class TextFix(BaseLLMOperation):
     
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
         import pyspark.sql.functions as F
-        from pyspark.sql import types as T
         fix_by_type_udf = F.udf(get_fixer_by_type(self.text_type))
         if self.inplace:
             new_name = self.text_key
         else:
             new_name = 'fixed_text'
         return spark_df.withColumn(new_name, fix_by_type_udf(F.col(self.text_key)))
-    
+
+
 LLMOPERATORS.register(TextFix)
