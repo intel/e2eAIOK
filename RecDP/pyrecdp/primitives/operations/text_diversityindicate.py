@@ -40,7 +40,6 @@ def find_root_verb_and_its_dobj(tree_root):
     # if no children satisfy the condition, return None
     return None, None
 
-
 # Modify from self_instruct, please refer to
 # https://github.com/yizhongw/self-instruct/blob/main/self_instruct/instruction_visualize.ipynb
 def find_root_verb_and_its_dobj_in_string(nlp, s, first_sent=True):
@@ -98,12 +97,13 @@ class DiversityAnalysis:
 
         assert isinstance(diversity_model, spacy.Language)
 
-        schema = StructType([
-            StructField("verb", StringType(), True),
-            StructField("noun", StringType(), True)
-        ])
         if isinstance(self.dataset, DataFrame):
-            def find_verb_noun(sample):
+            schema = StructType([
+                StructField("verb", StringType(), True),
+                StructField("noun", StringType(), True)
+            ])
+
+            def find_verb_noun_spark(sample):
                 try:
                     verb, noun = find_root_verb_and_its_dobj_in_string(
                         diversity_model, sample)
@@ -113,21 +113,21 @@ class DiversityAnalysis:
                 return verb, noun
 
             existing_columns = self.dataset.columns
-            operator = udf(find_verb_noun, schema)
+            operator = udf(find_verb_noun_spark, schema)
             dataset = self.dataset.withColumn('diversity', operator(F.col(self.text_key)))
-            dataset = dataset.select(*existing_columns, "diversity.*")
+            dataset = dataset.select("diversity.*").toPandas()
         else:
-            def find_verb_noun(sample, text_key):
+            import copy
+
+            def find_verb_noun_ray(sample):
                 try:
-                    verb, noun = find_root_verb_and_its_dobj_in_string(
-                        diversity_model, sample[text_key])
+                    nlp = copy.deepcopy(diversity_model)
+                    verb, noun = find_root_verb_and_its_dobj_in_string(nlp, sample)
                 except Exception as e:
                     print(str(e))
                     verb, noun = None, None
-                sample["verb"] = verb
-                sample["noun"] = noun
-                return sample
-            dataset = self.dataset.map(lambda x: find_verb_noun(x, self.text_key))
+                return {'verb': verb, 'noun': noun}
+            dataset = self.dataset.map(lambda x: find_verb_noun_ray(x[self.text_key])).to_pandas()
         return dataset
 
     def get_diversity(self, dataset, top_k_verbs=20, top_k_nouns=4, **kwargs):
@@ -171,8 +171,7 @@ class DiversityAnalysis:
         :return:
         """
         # get the lexical tree analysis result
-        raw_df = self.compute(lang_or_model=lang_or_model)
-        pdf = raw_df.toPandas()
+        pdf = self.compute(lang_or_model=lang_or_model)
         # get the result of diversity analysis
         df = self.get_diversity(pdf, **postproc_kwarg)
         return df

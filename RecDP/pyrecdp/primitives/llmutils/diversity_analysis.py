@@ -1,6 +1,5 @@
 import argparse
 
-from pyrecdp.LLM import ResumableTextPipeline
 from pyrecdp.core.utils import Timer
 from pyrecdp.primitives.operations import JsonlReader, ParquetReader, PerfileParquetWriter
 
@@ -12,8 +11,9 @@ def diversity_indicate_spark(spark_df):
     return ret
 
 
-def diversity_indicate(data_dir, data_file_type, out_dir, language):
+def diversity_indicate(data_dir, data_file_type, out_dir, language="en"):
     from pyrecdp.primitives.operations import TextDiversityIndicate
+    from pyrecdp.LLM import ResumableTextPipeline
 
     if data_file_type == 'jsonl':
         reader = JsonlReader(data_dir)
