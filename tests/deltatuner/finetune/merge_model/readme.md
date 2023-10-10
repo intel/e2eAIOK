@@ -1,6 +1,5 @@
-# Run Deltatuner with Merged model
+## Run Deltatuner with Merged model
 
-## Llama2-7b
 
 ### 1. Finetune the model
 If use Denas, can use command:
