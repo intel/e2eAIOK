@@ -2,11 +2,13 @@ import argparse
 import logging
 from pyspark.sql.dataframe import DataFrame
 
-def pii_remove(dataset: DataFrame, model_root_path=None, text_column="text", new_text_column="text", show_secret_column=True,
-               secret_column="__SECRETS__"):
+
+def pii_remove(dataset: DataFrame, model_root_path=None, text_column="text", show_secret_column=True, inplace=True,
+               entity_types=None):
     from pyrecdp.primitives.operations import PIIRemoval
     spark_df = dataset
-    op = PIIRemoval(text_key=text_column, inplace=True, model_root_path=model_root_path, debug_mode=show_secret_column)
+    op = PIIRemoval(text_key=text_column, inplace=inplace, model_root_path=model_root_path,
+                    debug_mode=show_secret_column, entity_types=entity_types)
     ret = op.process_spark(spark_df.sparkSession, spark_df)
     return ret
 
@@ -72,6 +74,7 @@ def getArgs():
     )
     # add an option of evaluating the pipeline on the PII benchmark we built
     return parser.parse_args()
+
 
 if __name__ == "__main__":
     logger = logging.getLogger(__name__)

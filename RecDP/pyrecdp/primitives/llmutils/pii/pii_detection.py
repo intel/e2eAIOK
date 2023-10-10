@@ -2,18 +2,29 @@ from .detect.ip_detection import detect_ip
 from .detect.emails_detection import detect_email
 from .detect.phones_detection import detect_phones
 from .detect.name_password_detection import detect_name_password
+from .detect.utils import PIIEntityType
 from transformers import Pipeline
 
+from typing import List
 
-def scan_pii_text(text:str, pipeline: Pipeline):
+
+def scan_pii_text(text: str, pipeline: Pipeline, entity_types: List[PIIEntityType] = None):
     result = []
     # use a regex to detect ip addresses
-    result = result + detect_ip(text)
+
+    if entity_types is None:
+        entity_types = PIIEntityType.all()
+
+    if PIIEntityType.IP_ADDRESS in entity_types:
+        result = result + detect_ip(text)
     # use a regex to detect emails
-    result = result + detect_email(text)
+    if PIIEntityType.EMAIL in entity_types:
+        result = result + detect_email(text)
     # for phone number use phonenumbers tool
-    result = result + detect_phones(text)
+    if PIIEntityType.PHONE_NUMBER in entity_types:
+        result = result + detect_phones(text)
 
     # for phone number use phonenumbers tool
-    result = result + detect_name_password(text, pipeline)
+    if PIIEntityType.NAME in entity_types or PIIEntityType.PASSWORD in entity_types:
+        result = result + detect_name_password(text, pipeline, entity_types)
     return result
