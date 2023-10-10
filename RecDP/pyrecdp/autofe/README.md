@@ -14,10 +14,10 @@ Steps explained:
 
 | Workflow Name | Description |
 | --- | --- |
-| [NYC taxi fare](applications/nyc_taxi_fare/interactive_notebook.ipynb) | Fare prediction based on NYC taxi dataset |
-| [Amazon Product Review](applications/amazon_product_review/interactive_notebook.ipynb) | Product recommandation based on reviews from Amazon |
-| [IBM Card Transaction Fraud Detect](applications/fraud_detect/interactive_notebook.ipynb) | Recognize fraudulent credit card transactions |
-| [Twitter Recsys](applications/twitter_recsys/interactive_notebook.ipynb) | Real-world task of tweet engagement prediction |
-| [Outbrain](applications/outbrain_ctr/interactive_notebook.ipynb) | Click prediction for recommendation system |
-| [Covid19 TabUtils](applications/covid19_tabutils/interactive_notebook.ipynb) | integration example with Tabular Utils |
-| [PredictiveAssetsMaintenance](applications/predictive_assets_maintenance/interactive_notebook.ipynb) | integration example with predictive assets maintenance use case |
+| [NYC taxi fare](https://colab.research.google.com/github/intel/auto-feature-engineering/blob/main/applications/nyc_taxi_fare/interactive_notebook.ipynb) | Fare prediction based on NYC taxi dataset |
+| [Amazon Product Review](https://colab.research.google.com/github/intel/auto-feature-engineering/blob/main/applications/amazon_product_review/interactive_notebook.ipynb) | Product recommandation based on reviews from Amazon |
+| [IBM Card Transaction Fraud Detect](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/fraud_detection/recdp_aucpr.ipynb) | Recognize fraudulent credit card transactions |
+| [Recsys 2023](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/recsys2023/recdp.ipynb) | Real-world task of tweet engagement prediction |
+| [Outbrain](https://colab.research.google.com/github/intel/auto-feature-engineering/blob/main/applications/outbrain_ctr/interactive_notebook.ipynb) | Click prediction for recommendation system |
+| [Covid19 TabUtils](https://colab.research.google.com/github/intel/auto-feature-engineering/blob/main/applications/covid19_tabutils/interactive_notebook.ipynb) | integration example with Tabular Utils |
+| [PredictiveAssetsMaintenance](https://colab.research.google.com/github/intel/auto-feature-engineering/blob/main/applications/predictive_assets_maintenance/interactive_notebook.ipynb) | integration example with predictive assets maintenance use case |
