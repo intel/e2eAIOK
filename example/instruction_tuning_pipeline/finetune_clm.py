@@ -762,9 +762,10 @@ def main():
             model = model.merge_and_unload()
             saved_dir = os.path.join(training_args.output_dir, "merged_model")
             os.makedirs(saved_dir, exist_ok=True)
-            torch.save(model.state_dict(), os.path.join(saved_dir, "pytorch_model.bin"))
+            os.system(f"cp {model_args.model_name_or_path}/* {saved_dir}")
             print(f"Save merged model to {saved_dir}")
-
+            torch.save(model.state_dict(), os.path.join(saved_dir, "pytorch_model.bin"))
+            
     # Evaluation
     if training_args.do_eval:
         logger.info("*** Evaluate ***")
