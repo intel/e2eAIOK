@@ -11,7 +11,7 @@ def profanity_filter_spark(spark_df):
     return ret
 
 
-def profanity_filter(data_dir, data_file_type, out_dir):
+def profanity_filter(data_dir, out_dir, data_file_type="jsonl"):
     from pyrecdp.primitives.operations import ProfanityFilter
     from pyrecdp.LLM import ResumableTextPipeline
 

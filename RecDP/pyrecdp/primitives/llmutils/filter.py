@@ -11,7 +11,8 @@ def filter_by_blocklist_spark(spark_df):
     return ret
 
 
-def filter_by_blocklist(data_dir, data_file_type, out_dir):
+def filter_by_blocklist(data_dir, out_dir, data_file_type="jsonl"):
+    from pyrecdp.LLM import ResumableTextPipeline
     from pyrecdp.primitives.operations import URLFilter
     from pyrecdp.LLM import ResumableTextPipeline
 
@@ -39,7 +40,8 @@ def filter_by_bad_words_spark(spark_df, language="en"):
     return ret
 
 
-def filter_by_bad_words(data_dir, data_file_type, out_dir, language="en"):
+def filter_by_bad_words(data_dir, out_dir, data_file_type="jsonl", language="en"):
+    from pyrecdp.LLM import ResumableTextPipeline
     from pyrecdp.primitives.operations import BadwordsFilter
     from pyrecdp.LLM import ResumableTextPipeline
 
@@ -67,7 +69,8 @@ def filter_by_length_spark(spark_df, minimum_length=100, maximum_length=-1):
     return ret
 
 
-def filter_by_length(data_dir, data_file_type, out_dir, minimum_length=100, maximum_length=-1):
+def filter_by_length(data_dir, out_dir, data_file_type="jsonl", minimum_length=100, maximum_length=-1):
+    from pyrecdp.LLM import ResumableTextPipeline
     from pyrecdp.primitives.operations import LengthFilter
     from pyrecdp.LLM import ResumableTextPipeline
 
@@ -93,7 +96,7 @@ if __name__ == "__main__":
     parser.add_argument("--data_dir", dest="data_dir", type=str)
     parser.add_argument("--data_file_type", dest="data_file_type", type=str, default="jsonl")
     parser.add_argument("--output_dir", dest="output_dir", type=str, default="")
-    parser.add_argument("--filter_type", dest="support length,bad_words,url_blocklist", type=str, default="length")
+    parser.add_argument("--filter_type", dest="filter_type", type=str, default="length")
     args = parser.parse_args()
     data_dir = args.data_dir
     data_file_type = args.data_file_type
@@ -101,13 +104,13 @@ if __name__ == "__main__":
     filter_type = args.filter_type
     if "length" == filter_type:
         with Timer(f"Processing {filter_type} filter for {data_dir}"):
-            filter_by_length(data_dir, data_file_type, output_dir)
+            filter_by_length(data_dir, output_dir, data_file_type)
     elif "bad_words" == filter_type:
         with Timer(f"Processing {filter_type} filter for {data_dir}"):
-            filter_by_bad_words(data_dir, data_file_type, output_dir)
+            filter_by_bad_words(data_dir, output_dir, data_file_type)
     elif "url_blocklist" == filter_type:
         with Timer(f"Processing {filter_type} filter for {data_dir}"):
-            filter_by_blocklist(data_dir, data_file_type, output_dir)
+            filter_by_blocklist(data_dir, output_dir, data_file_type)
     else:
         raise NotImplementedError(f"{filter_type} is not supported in RecDP LLM Filter yet.")
 

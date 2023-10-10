@@ -2,7 +2,6 @@ from .base import BaseLLMOperation, LLMOPERATORS
 from ray.data import Dataset
 from pyspark.sql import DataFrame
 import os
-from pyrecdp.core.cache_utils import RECDP_MODELS_CACHE
 import pyspark.sql.functions as F
 
 
@@ -63,7 +62,11 @@ class LengthFilter(BaseLLMOperation):
             self.check_length = prepare_func_filter_by_length(self.minimum_length, self.maximum_length)
         if self.inplace:
             # remove unwanted text row inplace
-            return ds.filter(lambda x: self.check_length(x[self.text_key]))
+            original_num = ds.count()
+            filtered_ds = ds.filter(lambda x: self.check_length(x[self.text_key]))
+            filtered_num = filtered_ds.count()
+            print(f"Processed a total of {original_num} rows of data, filtered out {original_num - filtered_num} rows of data")
+            return filtered_ds
         else:
             raise NotImplementedError("We only support inplace modification for LengthFilter.")
 
@@ -93,7 +96,11 @@ class BadwordsFilter(BaseLLMOperation):
             self.check_badwords = prepare_func_filter_by_badwords(self.language)
         if self.inplace:
             # remove unwanted text row inplace
-            return ds.filter(lambda x: self.check_badwords(x[self.text_key]))
+            original_num = ds.count()
+            filtered_ds = ds.filter(lambda x: self.check_badwords(x[self.text_key]))
+            filtered_num = filtered_ds.count()
+            print(f"Processed a total of {original_num} rows of data, filtered out {original_num - filtered_num} rows of data")
+            return filtered_ds
         else:
             raise NotImplementedError("We only support inplace modification for BadwordsFilter.")
 
@@ -121,7 +128,11 @@ class ProfanityFilter(BaseLLMOperation):
             self.check_profanity = prepare_func_filter_by_profanity()
         if self.inplace:
             # remove unwanted text row inplace
-            return ds.filter(lambda x: self.check_profanity(x[self.text_key]))
+            original_num = ds.count()
+            filtered_ds = ds.filter(lambda x: self.check_profanity(x[self.text_key]))
+            filtered_num = filtered_ds.count()
+            print(f"Processed a total of {original_num} rows of data, filtered out {original_num - filtered_num} rows of data")
+            return filtered_ds
         else:
             raise NotImplementedError("We only support inplace modification for ProfanityFilter.")
 
@@ -209,7 +220,11 @@ class URLFilter(BaseLLMOperation):
         blacklist = load_blacklist_set()
         if self.inplace:
             # remove unwanted text row inplace
-            return ds.filter(lambda x: get_url_from_meta(x) not in blacklist)
+            original_num = ds.count()
+            filtered_ds = ds.filter(lambda x: get_url_from_meta(x) not in blacklist)
+            filtered_num = filtered_ds.count()
+            print(f"Processed a total of {original_num} rows of data, filtered out {original_num - filtered_num} rows of data")
+            return filtered_ds
         else:
             raise NotImplementedError("We only support inplace modification for URLFilter.")
 
