@@ -38,7 +38,7 @@ transformed_train_df = pipeline.fit_transform()
 Low Code to build your own pipeline
 ```
 from pyrecdp.LLM import TextPipeline
-pipeline = TextPipeline("usecase/finetune_pipeline.yaml")
+pipeline = ResumableTextPipeline("usecase/finetune_pipeline.yaml")
 ret = pipeline.execute()
 ```
 or
@@ -46,22 +46,19 @@ or
 from pyrecdp.primitives.operations import *
 from pyrecdp.LLM import TextPipeline
 
-pipeline = TextPipeline()
+pipeline = ResumableTextPipeline()
 ops = [
-    JsonlReader(input_dir = "in_path"),
+    JsonlReader("data/"),
     URLFilter(),
     LengthFilter(),
     ProfanityFilter(),
     TextFix(),
     LanguageIdentify(),
-    Classify(),
-    FuzzyDeduplicate(),
-    DocumentSplit(),
-    GlobalDeduplicate(),
     PIIRemoval(),
-    ParquetWriter(out_dir = "out_path"),
+    PerfileParquetWriter("ResumableTextPipeline_output")
 ]
-ret = pipeline.add_operations(ops).execute(dataset)
+pipeline.add_operations(ops)
+pipeline.execute()
 ```
 
 * Pre-Training LLM Quality Control
