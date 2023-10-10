@@ -1,4 +1,5 @@
 import os
+import errno
 import torch
 import json
 import inspect
@@ -218,6 +219,12 @@ class DeltaTunerModel(PeftModel, torch.nn.Module):
         from peft.mapping import PEFT_TYPE_TO_CONFIG_MAPPING
         from .mapping import DELTATUNER_TYPE_TO_CONFIG_MAPPING, MODEL_TYPE_TO_DELTATUNER_MODEL_MAPPING
         denas_config = kwargs.pop("denas_config", None)
+
+        best_structure_file = os.path.join(model_id, "best_model_structure.txt")
+        if os.path.isfile(best_structure_file):
+            denas_config.denas = best_structure_file
+        else:
+            raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), best_structure_file) 
 
         # load the config
         if config is None:
