@@ -13,6 +13,7 @@ def text_fixer_spark(spark_df, text_type='html'):
 def text_fixer(data_dir, data_file_type, out_dir, text_type='html'):
     from pyrecdp.LLM import ResumableTextPipeline
     from pyrecdp.primitives.operations import JsonlReader, ParquetReader, PerfileParquetWriter
+
     if data_file_type == 'jsonl':
         reader = JsonlReader(data_dir)
     elif data_file_type == 'parquet':

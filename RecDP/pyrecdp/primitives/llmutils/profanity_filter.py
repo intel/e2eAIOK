@@ -1,6 +1,5 @@
 import argparse
 
-from pyrecdp.LLM import ResumableTextPipeline
 from pyrecdp.core.utils import Timer
 from pyrecdp.primitives.operations import JsonlReader, ParquetReader, PerfileParquetWriter
 
@@ -14,6 +13,7 @@ def profanity_filter_spark(spark_df):
 
 def profanity_filter(data_dir, out_dir, data_file_type="jsonl"):
     from pyrecdp.primitives.operations import ProfanityFilter
+    from pyrecdp.LLM import ResumableTextPipeline
 
     if data_file_type == 'jsonl':
         reader = JsonlReader(data_dir)
