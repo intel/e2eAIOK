@@ -767,7 +767,7 @@ def main():
             os.system(f"cp {finetune_args.merge_model_code_dir}/* {saved_dir}")
             print(f"Save merged model to {saved_dir}")
             torch.save(model.state_dict(), os.path.join(saved_dir, "pytorch_model.bin"))
-            if finetune_args.delta == 'ssf'
+            if finetune_args.delta == 'ssf':
                 pre_train_config_file = os.path.join(saved_dir, "config.json")
                 with open(pre_train_config_file, "r") as file:
                     config_json = json.load(file)
