@@ -292,6 +292,10 @@ class FinetuneArguments:
         default=False,
         metadata={"help": "save merged model"},
     )
+    merge_model_code_dir: Optional[str] = field(
+        default="",
+        metadata={"help": "the code path of base model with enable bias on target modules for ssf algo"},
+    )
 
 PROMPT_DICT = {
     "prompt_with_input": (
@@ -757,7 +761,10 @@ def main():
             model = model.merge_and_unload()
             saved_dir = os.path.join(training_args.output_dir, "merged_model")
             os.makedirs(saved_dir, exist_ok=True)
+            print(f"copy base model config to {saved_dir}")
             os.system(f"cp {model_args.model_name_or_path}/* {saved_dir}")
+            print(f"copy merged model code to {saved_dir}")
+            os.system(f"cp {finetune_args.merge_model_code_dir}/* {saved_dir}")
             print(f"Save merged model to {saved_dir}")
             torch.save(model.state_dict(), os.path.join(saved_dir, "pytorch_model.bin"))
             if finetune_args.delta == 'ssf'
