@@ -37,14 +37,14 @@ transformed_train_df = pipeline.fit_transform()
 
 Low Code to build your own pipeline
 ```
-from pyrecdp.LLM import TextPipeline
+from pyrecdp.LLM import ResumableTextPipeline
 pipeline = ResumableTextPipeline("usecase/finetune_pipeline.yaml")
 ret = pipeline.execute()
 ```
 or
 ```
 from pyrecdp.primitives.operations import *
-from pyrecdp.LLM import TextPipeline
+from pyrecdp.LLM import ResumableTextPipeline
 
 pipeline = ResumableTextPipeline()
 ops = [
@@ -60,10 +60,6 @@ ops = [
 pipeline.add_operations(ops)
 pipeline.execute()
 ```
-
-* Pre-Training LLM Quality Control
-
-WIP...
 
 ## LICENSE
 * Apache 2.0
