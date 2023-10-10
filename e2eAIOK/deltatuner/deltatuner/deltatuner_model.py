@@ -1,5 +1,4 @@
 import os
-import errno
 import torch
 import json
 import inspect
@@ -224,7 +223,7 @@ class DeltaTunerModel(PeftModel, torch.nn.Module):
         if os.path.isfile(best_structure_file):
             denas_config.denas = best_structure_file
         else:
-            raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), best_structure_file) 
+            denas_config.denas = False
 
         # load the config
         if config is None:

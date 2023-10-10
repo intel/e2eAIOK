@@ -700,12 +700,7 @@ def main():
 
     if finetune_args.delta:
         if finetune_args.resume_peft != "":
-            if finetune_args.delta == "ssf":
-                peft_config = SSFConfig(target_modules=deltatuner_args.ssf_target_modules,
-                bias="none",
-                task_type="CAUSAL_LM",
-                )
-            model = DeltaTunerModel.from_pretrained(model, finetune_args.resume_peft, config=peft_config, denas_config=deltatuner_args)
+            model = DeltaTunerModel.from_pretrained(model, finetune_args.resume_peft, denas_config=deltatuner_args)
         else:
             model = deltatuner.optimize(model, tokenizer, algo=finetune_args.delta, deltatuning_args=deltatuner_args)
         logger.info("***deltatuner optimized model parameter***")
@@ -765,6 +760,20 @@ def main():
             os.system(f"cp {model_args.model_name_or_path}/* {saved_dir}")
             print(f"Save merged model to {saved_dir}")
             torch.save(model.state_dict(), os.path.join(saved_dir, "pytorch_model.bin"))
+            if finetune_args.delta == 'ssf'
+                pre_train_config_file = os.path.join(saved_dir, "config.json")
+                with open(pre_train_config_file, "r") as file:
+                    config_json = json.load(file)
+                adapter_config_file = os.path.join(finetune_args.resume_peft, "adapter_config.json")
+                with open(adapter_config_file, "r") as file:
+                    adapter_config_json = json.load(file)
+                config_json['target_modules'] = adapter_config_json['target_modules']
+
+                best_structure_file = os.path.join(finetune_args.resume_peft, "best_model_structure.txt")
+                if os.path.isfile(best_structure_file):
+                    with open(best_structure_file, "r") as file:
+                        best_structure_json = json.loads(file.readline().strip())
+                    config_json['best_model_structure'] = best_structure_json
             
     # Evaluation
     if training_args.do_eval:
