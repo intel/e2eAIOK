@@ -7,9 +7,6 @@ import pandas
 import pandas as pd
 import spacy
 from pyrecdp.core.model_utils import MODEL_ZOO, prepare_model
-from pyrecdp.primitives.spark_data_processor.data_processor import DataProcessor as SparkDataProcessor
-from pyrecdp.core.utils import Timer
-from pyrecdp.primitives.llmutils.utils import get_target_file_list, read_parquet, read_json
 from pyspark.sql import functions as F
 from pyspark.sql.types import StructType, StructField, StringType
 from pyspark.sql.functions import udf
@@ -71,13 +68,14 @@ class DiversityAnalysis:
     """Apply diversity analysis for each sample and get an overall analysis
     result."""
 
-    def __init__(self, dataset, lang_or_model='en'):
+    def __init__(self, dataset, text_key="text", lang_or_model='en'):
         """Initialization method :param dataset: the dataset to be analysed
         :param output_path: path to store the analysis results :param
         lang_or_model: the diversity model or a specific language used to load
         the diversity model."""
 
         self.dataset = dataset
+        self.text_key = text_key
         self.lang_or_model = lang_or_model
 
     def compute(self, lang_or_model=None):
@@ -89,6 +87,7 @@ class DiversityAnalysis:
         :param column_name: the name of column to be analysed
         :return: the analysis result.
         """
+
         # load diversity model
         lang_or_model = lang_or_model if lang_or_model else self.lang_or_model
         if isinstance(lang_or_model, str):
@@ -103,19 +102,32 @@ class DiversityAnalysis:
             StructField("verb", StringType(), True),
             StructField("noun", StringType(), True)
         ])
+        if isinstance(self.dataset, DataFrame):
+            def find_verb_noun(sample):
+                try:
+                    verb, noun = find_root_verb_and_its_dobj_in_string(
+                        diversity_model, sample)
+                except Exception as e:
+                    print(str(e))
+                    verb, noun = None, None
+                return verb, noun
 
-        def find_verb_noun(sample):
-            try:
-                verb, noun = find_root_verb_and_its_dobj_in_string(
-                    diversity_model, sample)
-            except Exception as e:
-                print(str(e))
-                verb, noun = None, None
-            return verb, noun
-        existing_columns = self.dataset.columns
-        operator = udf(find_verb_noun, schema)
-        dataset = self.dataset.withColumn('diversity', operator(F.col("text")))
-        dataset = dataset.select(*existing_columns, "diversity.*")
+            existing_columns = self.dataset.columns
+            operator = udf(find_verb_noun, schema)
+            dataset = self.dataset.withColumn('diversity', operator(F.col(self.text_key)))
+            dataset = dataset.select(*existing_columns, "diversity.*")
+        else:
+            def find_verb_noun(sample, text_key):
+                try:
+                    verb, noun = find_root_verb_and_its_dobj_in_string(
+                        diversity_model, sample[text_key])
+                except Exception as e:
+                    print(str(e))
+                    verb, noun = None, None
+                sample["verb"] = verb
+                sample["noun"] = noun
+                return sample
+            dataset = self.dataset.map(lambda x: find_verb_noun(x, self.text_key))
         return dataset
 
     def get_diversity(self, dataset, top_k_verbs=20, top_k_nouns=4, **kwargs):
@@ -132,7 +144,7 @@ class DiversityAnalysis:
         phrases = pd.DataFrame(dataset).dropna()
 
         top_verbs = phrases.groupby(['verb'
-                                    ]).size().nlargest(top_k_verbs).reset_index()
+                                     ]).size().nlargest(top_k_verbs).reset_index()
 
         df = phrases[phrases['verb'].isin(top_verbs['verb'].tolist())]
         df = df.groupby(['verb', 'noun']).size().reset_index().rename(columns={
@@ -165,8 +177,9 @@ class DiversityAnalysis:
         df = self.get_diversity(pdf, **postproc_kwarg)
         return df
 
+
 class TextDiversityIndicate(BaseLLMOperation):
-    def __init__(self, text_key = 'text', language = 'en', out_dir = ''):
+    def __init__(self, text_key='text', language='en', out_dir=''):
         settings = {'text_key': text_key, 'language': language, 'out_dir': out_dir}
         super().__init__(settings)
         self.text_key = text_key
@@ -174,19 +187,21 @@ class TextDiversityIndicate(BaseLLMOperation):
         self.output_path = out_dir
         self.inplace = False
         self.support_spark = True
-        self.support_ray = False
-        
+        self.support_ray = True
+
     def process_rayds(self, ds: Dataset) -> Dataset:
-        raise NotImplementedError("Not implemented yet")
-        return ds.map(lambda x: self.process_row(x, self.text_key, new_name, text_bytesize))
-    
+        diversity_analysis = DiversityAnalysis(ds, text_key=self.text_key, lang_or_model=self.language)
+        analyse_df = diversity_analysis.analyse(lang_or_model=self.language)
+        analyse_df.to_csv(os.path.join(self.output_path, 'diversity.csv'))
+        analyse_df.to_markdown(os.path.join(self.output_path, 'diversity.md'))
+        return ds
+
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
-        import pyspark.sql.functions as F
-        from pyspark.sql import types as T
-        diversity_analysis = DiversityAnalysis(spark_df)
+        diversity_analysis = DiversityAnalysis(spark_df, text_key=self.text_key, lang_or_model=self.language)
         analyse_df = diversity_analysis.analyse(lang_or_model=self.language)
         analyse_df.to_csv(os.path.join(self.output_path, 'diversity.csv'))
         analyse_df.to_markdown(os.path.join(self.output_path, 'diversity.md'))
         return spark_df
-    
+
+
 LLMOPERATORS.register(TextDiversityIndicate)
