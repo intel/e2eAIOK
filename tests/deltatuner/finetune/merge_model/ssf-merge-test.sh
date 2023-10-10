@@ -19,6 +19,7 @@ python instruction_tuning_pipeline/finetune_clm.py \
         --delta ssf \
         --resume_peft "$DATA_PATH/mpt-7b-ssf-allmodules-denas-bf16" \
         --save_merged_model True \
+        --merge_model_code_dir instruction_tuning_pipeline/models/llama2-ssf \
         --debugs
 
 
