@@ -710,14 +710,6 @@ def main():
             model = deltatuner.optimize(model, tokenizer, algo=finetune_args.delta, deltatuning_args=deltatuner_args)
         logger.info("***deltatuner optimized model parameter***")
         model.print_trainable_parameters()
-
-    if finetune_args.save_merged_model:
-        if isinstance(model, PeftModel):
-            model = model.merge_and_unload()
-            saved_dir = os.path.join(training_args.output_dir, "merged_model")
-            os.makedirs(saved_dir, exist_ok=True)
-            torch.save(model.state_dict(), os.path.join(saved_dir, "pytorch_model.bin"))
-            print(f"Save merged model to {saved_dir}")
          
     if finetune_args.debugs:
         if training_args.do_train:
@@ -764,6 +756,14 @@ def main():
                 unwrapped_model.save_pretrained(
                     training_args.output_dir, state_dict=unwrapped_model.state_dict()
                 )
+
+    if finetune_args.save_merged_model:
+        if isinstance(model, PeftModel):
+            model = model.merge_and_unload()
+            saved_dir = os.path.join(training_args.output_dir, "merged_model")
+            os.makedirs(saved_dir, exist_ok=True)
+            torch.save(model.state_dict(), os.path.join(saved_dir, "pytorch_model.bin"))
+            print(f"Save merged model to {saved_dir}")
 
     # Evaluation
     if training_args.do_eval:
