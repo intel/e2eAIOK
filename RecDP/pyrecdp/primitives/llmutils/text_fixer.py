@@ -1,6 +1,5 @@
 import argparse
 
-from pyrecdp.LLM import ResumableTextPipeline
 from pyrecdp.core.utils import Timer
 from pyrecdp.primitives.operations import JsonlReader, ParquetReader, PerfileParquetWriter
 from pyrecdp.primitives.operations import TextFix
@@ -13,6 +12,7 @@ def text_fixer_spark(spark_df, text_type='html'):
 
 
 def text_fixer(data_dir, data_file_type, out_dir, text_type='html'):
+    from pyrecdp.LLM import ResumableTextPipeline
 
     if data_file_type == 'jsonl':
         reader = JsonlReader(data_dir)
