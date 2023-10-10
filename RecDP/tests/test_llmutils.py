@@ -69,13 +69,14 @@ class Test_LLMUtils(unittest.TestCase):
         quality_classifier_df.show()
 
     def test_diversity_analysis(self):
-        from pyrecdp.primitives.llmutils import diversity
+        from pyrecdp.primitives.llmutils import diversity_indicate
         data_dir = "tests/data/llm_data/"
         output_path = "tests/data/diversity_out"
         in_type = "jsonl"
-        diversity(data_dir, in_type, output_path)
+        diversity_indicate(data_dir, in_type, output_path)
+        
+# ***** This test is to provide an example for EasyData ***** #
 
-    # ***** This test is to provide an example for EasyData ***** #
     def test_near_dedup_spark(self):
         from pyrecdp.primitives.llmutils import near_dedup_spk
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
