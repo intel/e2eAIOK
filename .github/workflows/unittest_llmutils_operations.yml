@@ -1,0 +1,30 @@
+name: Unittest LLM Operations
+on:
+  pull_request:
+    branches:
+    - main
+    paths:
+    - 'RecDP/pyrecdp/LLM/**'
+    - 'RecDP/pyrecdp/primitives/operations/**'
+    - 'RecDP/tests/cicd/bashrun_unittest_llmutilspipeline.sh'
+    - 'RecDP/tests/test_llmutils_operations.py'
+
+jobs:
+  unittest:
+    name: Unittest LLM
+    runs-on: self-hosted
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Build Docker
+      run: |
+        cd RecDP && cd Dockerfile && docker build -t pyrecdp-test-env . -f DockerfileUbuntu --build-arg https_proxy=${https_proxy} && cd .. && yes | docker container prune && yes | docker image prune 
+
+    - name: RUN Unittests
+      run: |
+        cd RecDP && docker run --rm --name unittest-pyrecdp-autofe-pandas --shm-size=300g --privileged --network host --device=/dev/dri -e RECDP_MODELS_CACHE=/home/vmagent/models  -v `pwd`:/home/vmagent/app/ -v `pwd`/../../models:/home/vmagent/models/ -w /home/vmagent/app/ pyrecdp-test-env /bin/bash -c "sh tests/cicd/bashrun_unittest_llmutils_operations.sh"
+
+    - name: Clean env
+      run: |
+        docker ps --filter name=unittest-pyrecdp-autofe-pandas; while read line; do docker stop unittest-pyrecdp-autofe-pandas;done
