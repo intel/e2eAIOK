@@ -384,7 +384,7 @@ class DeltaTunerModel(PeftModel, torch.nn.Module):
 
 class DelatunerModelForCausalLM(DeltaTunerModel):
     def __init__(self, model: PeftModel, peft_config: PeftConfig, adapter_name: str = "default", denas_config: DeltaTunerArguments = None, tokenizer: AutoTokenizer = None):
-        super().__init__(model, tokenizer, peft_config, adapter_name, denas_config)
+        super().__init__(model, peft_config, adapter_name, denas_config, tokenizer)
         self.base_model_prepare_inputs_for_generation = self.base_model.prepare_inputs_for_generation
     
     def forward(
