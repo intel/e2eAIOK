@@ -92,6 +92,8 @@ class SSFConfig(PeftConfig):
             kwargs (additional keyword arguments, *optional*):
                 Additional keyword arguments passed along to the child class initialization.
         """
+        from peft.utils import CONFIG_NAME
+        
         path = (
             os.path.join(pretrained_model_name_or_path, subfolder)
             if subfolder is not None
