@@ -20,6 +20,7 @@
 import datasets
 import logging
 import os
+import errno
 import sys
 import transformers
 from transformers.modeling_utils import unwrap_model
@@ -763,11 +764,14 @@ def main():
             os.makedirs(saved_dir, exist_ok=True)
             print(f"copy base model config to {saved_dir}")
             os.system(f"cp {model_args.model_name_or_path}/* {saved_dir}")
-            print(f"copy merged model code to {saved_dir}")
-            os.system(f"cp {finetune_args.merge_model_code_dir}/* {saved_dir}")
             print(f"Save merged model to {saved_dir}")
             torch.save(model.state_dict(), os.path.join(saved_dir, "pytorch_model.bin"))
             if finetune_args.delta == 'ssf':
+                if os.path.exists(finetune_args.merge_model_code_dir):
+                    print(f"copy merged model code to {saved_dir}")
+                    os.system(f"cp {finetune_args.merge_model_code_dir}/* {saved_dir}")
+                else:
+                    raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), finetune_args.merge_model_code_dir)
                 pre_train_config_file = os.path.join(saved_dir, "config.json")
                 with open(pre_train_config_file, "r") as file:
                     config_json = json.load(file)
