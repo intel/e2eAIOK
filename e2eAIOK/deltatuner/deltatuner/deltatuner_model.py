@@ -222,7 +222,8 @@ class DeltaTunerModel(PeftModel, torch.nn.Module):
 
         best_structure_file = os.path.join(model_id, "best_model_structure.txt")
         if os.path.isfile(best_structure_file):
-            denas_config.denas = best_structure_file
+            denas_config.denas = True
+            denas_config.best_model_structure = best_structure_file
         else:
             denas_config.denas = False
 
