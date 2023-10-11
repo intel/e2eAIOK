@@ -37,6 +37,7 @@ python example/instruction_tuning_pipeline/finetune_clm.py \
         --log_level info \
         --trust_remote_code True \
         --no_cuda \
+        --bf16 True \
         --output_dir $DATA_PATH"/dtuner_test/models/llama2-7b-ssf-denas-bf16-merge/eval_merge" \
         --debugs
 

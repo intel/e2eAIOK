@@ -765,6 +765,8 @@ def main():
             os.makedirs(saved_dir, exist_ok=True)
             print(f"copy base model config to {saved_dir}")
             os.system(f"cp {model_args.model_name_or_path}/* {saved_dir}")
+            print(f"remove unnecessary file from {model_args.model_name_or_path}")
+            os.system(f"rm {saved_dir}/*.bin* {saved_dir}/*.safetensors*")
             print(f"Save merged model to {saved_dir}")
             torch.save(model.state_dict(), os.path.join(saved_dir, "pytorch_model.bin"))
             if finetune_args.delta == 'ssf':
