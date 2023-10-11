@@ -26,7 +26,7 @@ python example/instruction_tuning_pipeline/finetune_clm.py \
 
 # evaluate merged model
 python example/instruction_tuning_pipeline/finetune_clm.py \
-        --model_name_or_path "$DATA_PATH/llama2-7b-ssf-denas-bf16-merge/merged_model" \
+        --model_name_or_path $DATA_PATH"/dtuner_test/models/llama2-7b-ssf-denas-bf16-merge/merged_model" \
         --train_file "$DATA_PATH/alpaca_data.json" \
         --dataset_concatenation \
         --per_device_eval_batch_size 8 \
@@ -37,6 +37,6 @@ python example/instruction_tuning_pipeline/finetune_clm.py \
         --log_level info \
         --trust_remote_code True \
         --no_cuda \
-        --output_dir "$DATA_PATH/llama2-7b-ssf-denas-bf16-merge/eval_merge" \
+        --output_dir $DATA_PATH"/dtuner_test/models/llama2-7b-ssf-denas-bf16-merge/eval_merge" \
         --debugs
 
