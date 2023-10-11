@@ -125,6 +125,10 @@ python example/instruction_tuning_pipeline/finetune_clm.py \
     --bf16 True 2>&1 | tee log/mpt-lora-run-1epoch.log
 ```
 
+- If you are using 4th Xeon or later (SPR etc.), please specify the `--bf16 --no_cuda` args;
+- If you are using 3th Xeon or before (ICX etc.): please specify the `--no_cuda` args;
+- If you are using GPU server: please specify the `--fp16` args.
+
 ## Evaluate the model
 
 For model evaluation, we follow the same method in [open_llm_leaderboard](https://huggingface.co/spaces/HuggingFaceH4/open_llm_leaderboard), which evaluate 4 key benchmarks in the [Eleuther AI Language Model Evaluation Harness](https://github.com/EleutherAI/lm-evaluation-harness).

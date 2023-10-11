@@ -1,3 +1,4 @@
+import os
 import math
 import re
 import warnings
@@ -79,6 +80,50 @@ class SSFConfig(PeftConfig):
 
     def __post_init__(self):
         self.peft_type = DeltaTunerType.SSF
+
+    @classmethod
+    def from_pretrained(cls, pretrained_model_name_or_path: str, subfolder: Optional[str] = None, **kwargs):
+        r"""
+        This method loads the configuration of your adapter model from a directory.
+
+        Args:
+            pretrained_model_name_or_path (`str`):
+                The directory or the Hub repository id where the configuration is saved.
+            kwargs (additional keyword arguments, *optional*):
+                Additional keyword arguments passed along to the child class initialization.
+        """
+        from peft.utils import CONFIG_NAME
+        
+        path = (
+            os.path.join(pretrained_model_name_or_path, subfolder)
+            if subfolder is not None
+            else pretrained_model_name_or_path
+        )
+
+        hf_hub_download_kwargs, class_kwargs, _ = cls._split_kwargs(kwargs)
+
+        if os.path.isfile(os.path.join(path, CONFIG_NAME)):
+            config_file = os.path.join(path, CONFIG_NAME)
+        else:
+            try:
+                config_file = hf_hub_download(
+                    pretrained_model_name_or_path, CONFIG_NAME, subfolder=subfolder, **hf_hub_download_kwargs
+                )
+            except Exception:
+                raise ValueError(f"Can't find '{CONFIG_NAME}' at '{pretrained_model_name_or_path}'")
+
+        loaded_attributes = cls.from_json_file(config_file)
+
+        config_cls = cls
+
+        config = config_cls(**class_kwargs)
+
+        for key, value in loaded_attributes.items():
+            if hasattr(config, key):
+                setattr(config, key, value)
+
+        return config
+
 
 class DeltaSSFSearchSpace:
     @classmethod

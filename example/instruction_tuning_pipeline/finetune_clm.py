@@ -20,6 +20,8 @@
 import datasets
 import logging
 import os
+import json
+import errno
 import sys
 import transformers
 from transformers.modeling_utils import unwrap_model
@@ -291,6 +293,10 @@ class FinetuneArguments:
     save_merged_model: bool = field(
         default=False,
         metadata={"help": "save merged model"},
+    )
+    merge_model_code_dir: Optional[str] = field(
+        default="",
+        metadata={"help": "the code path of base model with enable bias on target modules for ssf algo"},
     )
 
 PROMPT_DICT = {
@@ -700,12 +706,7 @@ def main():
 
     if finetune_args.delta:
         if finetune_args.resume_peft != "":
-            if finetune_args.delta == "ssf":
-                peft_config = SSFConfig(target_modules=deltatuner_args.ssf_target_modules,
-                bias="none",
-                task_type="CAUSAL_LM",
-                )
-            model = DeltaTunerModel.from_pretrained(model, finetune_args.resume_peft, config=peft_config, denas_config=deltatuner_args)
+            model = DeltaTunerModel.from_pretrained(model, finetune_args.resume_peft, denas_config=deltatuner_args)
         else:
             model = deltatuner.optimize(model, tokenizer, algo=finetune_args.delta, deltatuning_args=deltatuner_args)
         logger.info("***deltatuner optimized model parameter***")
@@ -757,6 +758,37 @@ def main():
                     training_args.output_dir, state_dict=unwrapped_model.state_dict()
                 )
 
+    if finetune_args.save_merged_model:
+        if isinstance(model, PeftModel):
+            model = model.merge_and_unload()
+            saved_dir = os.path.join(training_args.output_dir, "merged_model")
+            os.makedirs(saved_dir, exist_ok=True)
+            print(f"copy base model config to {saved_dir}")
+            os.system(f"cp {model_args.model_name_or_path}/* {saved_dir}")
+            print(f"remove unnecessary file from {model_args.model_name_or_path}")
+            os.system(f"rm {saved_dir}/*.bin* {saved_dir}/*.safetensors*")
+            print(f"Save merged model to {saved_dir}")
+            torch.save(model.state_dict(), os.path.join(saved_dir, "pytorch_model.bin"))
+            if finetune_args.delta == 'ssf':
+                if os.path.exists(finetune_args.merge_model_code_dir):
+                    print(f"copy merged model code to {saved_dir}")
+                    os.system(f"cp {finetune_args.merge_model_code_dir}/* {saved_dir}")
+                else:
+                    raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), finetune_args.merge_model_code_dir)
+                pre_train_config_file = os.path.join(saved_dir, "config.json")
+                with open(pre_train_config_file, "r") as file:
+                    config_json = json.load(file)
+                adapter_config_file = os.path.join(finetune_args.resume_peft, "adapter_config.json")
+                with open(adapter_config_file, "r") as file:
+                    adapter_config_json = json.load(file)
+                config_json['target_modules'] = adapter_config_json['target_modules']
+
+                best_structure_file = os.path.join(finetune_args.resume_peft, "best_model_structure.txt")
+                if os.path.isfile(best_structure_file):
+                    with open(best_structure_file, "r") as file:
+                        best_structure_json = json.loads(file.readline().strip())
+                    config_json['best_model_structure'] = best_structure_json
+            
     # Evaluation
     if training_args.do_eval:
         logger.info("*** Evaluate ***")
@@ -771,12 +803,6 @@ def main():
         trainer.log_metrics("eval", metrics)
         trainer.save_metrics("eval", metrics)
 
-    if finetune_args.save_merged_model:
-        if isinstance(model, PeftModel):
-            merged_model = model.merge_and_unload()
-            os.makedirs(os.path.join(training_args.output_dir,"merged_model"),exist_ok=True)
-            torch.save(merged_model.state_dict(),os.path.join(training_args.output_dir,"merged_model","pytorch_model.bin"))
-            print(f"Save merged model to {training_args.output_dir}")
 
 def profile_model(model, train_dataset, data_collator, args):
     from transformers import get_scheduler

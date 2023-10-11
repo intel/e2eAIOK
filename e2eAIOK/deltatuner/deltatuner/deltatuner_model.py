@@ -52,7 +52,7 @@ def setup_seed(seed):
     torch.manual_seed(seed)
 
 class DeltaTunerModel(PeftModel, torch.nn.Module):
-    def __init__(self, model, tokenizer: AutoTokenizer, peft_config: PeftConfig, adapter_name: str = "default", denas_config: DeltaTunerArguments = None):
+    def __init__(self, model, peft_config: PeftConfig, adapter_name: str = "default", denas_config: DeltaTunerArguments = None, tokenizer: AutoTokenizer = None):
         torch.nn.Module.__init__(self)
         self.base_model = model
         self.tokenizer = tokenizer
@@ -104,7 +104,8 @@ class DeltaTunerModel(PeftModel, torch.nn.Module):
         self.denas_config.model_id = self.base_model.config._name_or_path
         self.denas_config.tokenizer = self.tokenizer
         self.denas_config.max_param_limits = sum(param.numel() for param in self.base_model.parameters() if param.requires_grad) / 10.**6 if self.denas_config.max_param_limits is None else self.denas_config.max_param_limits
-        self.denas_config.budget_latency_max = network_latency(self.base_model, self.tokenizer, batch_size=self.denas_config.batch_size) if self.denas_config.budget_latency_max is not None else self.denas_config.budget_latency_max
+        if self.tokenizer:
+            self.denas_config.budget_latency_max = network_latency(self.base_model, self.tokenizer, batch_size=self.denas_config.batch_size) if self.denas_config.budget_latency_max is not None else self.denas_config.budget_latency_max
 
     def search(self, denas_config, super_net, search_space):
         setup_seed(denas_config.random_seed)
@@ -218,6 +219,13 @@ class DeltaTunerModel(PeftModel, torch.nn.Module):
         from peft.mapping import PEFT_TYPE_TO_CONFIG_MAPPING
         from .mapping import DELTATUNER_TYPE_TO_CONFIG_MAPPING, MODEL_TYPE_TO_DELTATUNER_MODEL_MAPPING
         denas_config = kwargs.pop("denas_config", None)
+
+        best_structure_file = os.path.join(model_id, "best_model_structure.txt")
+        if os.path.isfile(best_structure_file):
+            denas_config.denas = True
+            denas_config.best_model_structure = best_structure_file
+        else:
+            denas_config.denas = False
 
         # load the config
         if config is None:
@@ -376,8 +384,8 @@ class DeltaTunerModel(PeftModel, torch.nn.Module):
         return load_result
 
 class DelatunerModelForCausalLM(DeltaTunerModel):
-    def __init__(self, model: PeftModel, tokenizer: AutoTokenizer, peft_config: PeftConfig, adapter_name: str = "default", denas_config: DeltaTunerArguments = None):
-        super().__init__(model, tokenizer, peft_config, adapter_name, denas_config)
+    def __init__(self, model: PeftModel, peft_config: PeftConfig, adapter_name: str = "default", denas_config: DeltaTunerArguments = None, tokenizer: AutoTokenizer = None):
+        super().__init__(model, peft_config, adapter_name, denas_config, tokenizer)
         self.base_model_prepare_inputs_for_generation = self.base_model.prepare_inputs_for_generation
     
     def forward(
