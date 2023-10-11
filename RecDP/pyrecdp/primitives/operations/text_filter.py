@@ -1,4 +1,4 @@
-from .base import BaseLLMOperation, LLMOPERATORS
+from .base import BaseLLMOperation, LLMOPERATORS, statistics_decorator
 from ray.data import Dataset
 from pyspark.sql import DataFrame
 import os
@@ -57,19 +57,18 @@ class LengthFilter(BaseLLMOperation):
         self.support_ray = True
         self.support_spark = True
 
+    @statistics_decorator
     def process_rayds(self, ds: Dataset) -> Dataset:
         if self.check_length is None:
             self.check_length = prepare_func_filter_by_length(self.minimum_length, self.maximum_length)
         if self.inplace:
             # remove unwanted text row inplace
-            original_num = ds.count()
             filtered_ds = ds.filter(lambda x: self.check_length(x[self.text_key]))
-            filtered_num = filtered_ds.count()
-            print(f"Processed a total of {original_num} rows of data, filtered out {original_num - filtered_num} rows of data")
             return filtered_ds
         else:
             raise NotImplementedError("We only support inplace modification for LengthFilter.")
 
+    @statistics_decorator
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
         import pyspark.sql.types as T
         check_length_udf = F.udf(prepare_func_filter_by_length(self.minimum_length, self.maximum_length),
@@ -91,19 +90,18 @@ class BadwordsFilter(BaseLLMOperation):
         self.support_ray = True
         self.support_spark = True
 
+    @statistics_decorator
     def process_rayds(self, ds: Dataset) -> Dataset:
         if self.check_badwords is None:
             self.check_badwords = prepare_func_filter_by_badwords(self.language)
         if self.inplace:
             # remove unwanted text row inplace
-            original_num = ds.count()
             filtered_ds = ds.filter(lambda x: self.check_badwords(x[self.text_key]))
-            filtered_num = filtered_ds.count()
-            print(f"Processed a total of {original_num} rows of data, filtered out {original_num - filtered_num} rows of data")
             return filtered_ds
         else:
             raise NotImplementedError("We only support inplace modification for BadwordsFilter.")
 
+    @statistics_decorator
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
         import pyspark.sql.types as T
         check_badwords_udf = F.udf(prepare_func_filter_by_badwords(self.language), T.BooleanType())
@@ -123,19 +121,18 @@ class ProfanityFilter(BaseLLMOperation):
         self.support_ray = True
         self.support_spark = True
 
+    @statistics_decorator
     def process_rayds(self, ds: Dataset) -> Dataset:
         if self.check_profanity is None:
             self.check_profanity = prepare_func_filter_by_profanity()
         if self.inplace:
             # remove unwanted text row inplace
-            original_num = ds.count()
             filtered_ds = ds.filter(lambda x: self.check_profanity(x[self.text_key]))
-            filtered_num = filtered_ds.count()
-            print(f"Processed a total of {original_num} rows of data, filtered out {original_num - filtered_num} rows of data")
             return filtered_ds
         else:
             raise NotImplementedError("We only support inplace modification for ProfanityFilter.")
 
+    @statistics_decorator
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
         import pyspark.sql.types as T
         check_profanity_udf = F.udf(prepare_func_filter_by_profanity(), T.BooleanType())
@@ -216,18 +213,17 @@ class URLFilter(BaseLLMOperation):
         self.support_spark = True
         self.support_ray = True
 
+    @statistics_decorator
     def process_rayds(self, ds: Dataset) -> Dataset:
         blacklist = load_blacklist_set()
         if self.inplace:
             # remove unwanted text row inplace
-            original_num = ds.count()
             filtered_ds = ds.filter(lambda x: get_url_from_meta(x) not in blacklist)
-            filtered_num = filtered_ds.count()
-            print(f"Processed a total of {original_num} rows of data, filtered out {original_num - filtered_num} rows of data")
             return filtered_ds
         else:
             raise NotImplementedError("We only support inplace modification for URLFilter.")
 
+    @statistics_decorator
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
         get_url_from_meta_udf = F.udf(get_url_from_meta)
         get_domain_udf = F.udf(get_domain)

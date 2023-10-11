@@ -78,5 +78,6 @@ setuptools.setup(
         "spacy",
         "torch",
         "Faker",
-        "ray"
+        "ray",
+        "loguru",
         ])
