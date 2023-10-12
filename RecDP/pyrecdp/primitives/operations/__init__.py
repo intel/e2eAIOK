@@ -6,7 +6,7 @@ from .text_reader import DatasetReader, JsonlReader, ParquetReader, SourcedJsonl
 from .text_writer import PerfileParquetWriter, ParquetWriter, JsonlWriter, ClassifyJsonlWriter, ClassifyParquetWriter
 from .text_normalize import TextNormalize
 from .text_bytesize import TextBytesize
-from .text_filter import LengthFilter, BadwordsFilter, ProfanityFilter, URLFilter
+from .filter import *
 from .text_fixer import TextFix
 from .text_language_identify import LanguageIdentify
 from .text_split import DocumentSplit
