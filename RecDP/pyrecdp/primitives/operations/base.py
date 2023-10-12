@@ -184,6 +184,7 @@ class BaseLLMOperation(BaseOperation):
         self.support_spark = False
         self.support_ray = True
         self.statistics = OperationStatistics(0, 0, 0, 0)
+        self.statistics_flag = False
 
     @classmethod
     def instantiate(cls, op_obj, config):
@@ -262,22 +263,25 @@ class OperationStatistics:
 
 def statistics_decorator(func):
     def wrapper(self, *args, **kwargs):
-        if isinstance(args[0], Dataset):
-            ds = args[0]
-            self.statistics.total_in += ds.count()
-            start = time.time()
-            result = func(self, *args, **kwargs)
-            self.statistics.total_out += result.count()
-            elapse = time.time() - start
-            self.statistics.used_time += elapse
+        if self.statistics_flag:
+            if isinstance(args[0], Dataset):
+                ds = args[0]
+                self.statistics.total_in += ds.count()
+                start = time.time()
+                result = func(self, *args, **kwargs)
+                self.statistics.total_out += result.count()
+                elapse = time.time() - start
+                self.statistics.used_time += elapse
+            else:
+                df = args[1]
+                self.statistics.total_in += df.count()
+                start = time.time()
+                result = func(self, *args, **kwargs)
+                self.statistics.total_out += result.count()
+                elapse = time.time() - start
+                self.statistics.used_time += elapse
         else:
-            df = args[1]
-            self.statistics.total_in += df.count()
-            start = time.time()
             result = func(self, *args, **kwargs)
-            self.statistics.total_out += result.count()
-            elapse = time.time() - start
-            self.statistics.used_time += elapse
         return result
 
     return wrapper

@@ -181,6 +181,12 @@ class ResumableTextPipeline(TextPipeline):
     # Provide a pipeline for large dir. We will handle files one by one and resume when pipeline broken.
     def __init__(self, pipeline_file=None):
         super().__init__(pipeline_file)
+        # Enabling this option will result in a decrease in execution speed
+        self.statistics_flag = False
+
+    def enable_statistics(self):
+        logger.warning("Enabling this option will result in a decrease in execution speed")
+        self.statistics_flag = True
 
     def execute(self):
         # Fix pipeline
@@ -251,6 +257,7 @@ class ResumableTextPipeline(TextPipeline):
             pbar.set_description(f"ResumableTextPipeline, current on {source_id}")
             start = time.time()
             for idx, op in enumerate(op_chain):
+                op.statistics_flag = self.statistics_flag
                 if idx == 0:
                     op.execute_ray(executable_pipeline, ds_reader)
                 elif isinstance(op, PerfileParquetWriter):
@@ -262,8 +269,9 @@ class ResumableTextPipeline(TextPipeline):
             status_tracker.flush()
             done_files.append(status_tracker)
             del ds_reader
-        for op in op_chain:
-            logger.info(f"{op.__class__.__name__}: {op.summarize()}")
+        if self.statistics_flag:
+            for op in op_chain:
+                logger.info(f"{op.__class__.__name__}: {op.summarize()}")
 
         logger.info(
             f"Completed! ResumableTextPipeline will not return dataset, please check {output_dir} for verification.")
