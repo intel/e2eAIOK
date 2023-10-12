@@ -160,9 +160,10 @@ class PerfileReader:
 class PerfileSourcedJsonlReader(SourcedReader, PerfileReader):
     def __init__(self, input_dir = "", source_prefix = ""):
         super().__init__(input_dir = input_dir, source_prefix = source_prefix)
-        self.support_spark = False
+        self.support_spark = True
+        self.support_ray = True
         
-    def process_rayds(self, ds) -> Dataset:
+    def process_rayds(self, ds):
         import ray.data as rd
         files_with_subtask, input_dir = self.get_files_with_subtask("jsonl")
         
@@ -182,12 +183,32 @@ class PerfileSourcedJsonlReader(SourcedReader, PerfileReader):
             ds = rd.read_text(file_path).map(lambda x: convert_json(x, source_id))
             self.cache.append((ds, source_id))
         return self.cache
+    
+    def process_spark(self, spark, spark_df: DataFrame = None):
+        files_with_subtask, input_dir = self.get_files_with_subtask("jsonl")
+        to_read_list = [(sub_task, os.path.join(input_dir, f)) for sub_task, file_list in files_with_subtask.items() for f in file_list]
+        self.cache = []
+        from pyspark.sql.types import StructType, StructField, StringType
+        import pyspark.sql.functions as F
+        schema = StructType([ 
+            StructField("text",StringType(),True), 
+            StructField("meta",StringType(),True)
+        ])
+
+        for sub_task, file_path in to_read_list:
+            source_id = os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))
+            df = spark.read.text(file_path)
+            df = df.withColumn('jsonData', F.from_json(F.col('value'), schema)).select("jsonData.*")
+            df = df.withColumn('source_id', F.lit(source_id))
+            self.cache.append((df, source_id))
+        return self.cache
 LLMOPERATORS.register(PerfileSourcedJsonlReader)
     
 class PerfileSourcedParquetReader(SourcedReader, PerfileReader):
     def __init__(self, input_dir = "", source_prefix = ""):
         super().__init__(input_dir = input_dir, source_prefix = source_prefix)
-        self.support_spark = False
+        self.support_spark = True
+        self.support_ray = True
         
     def process_rayds(self, ds) -> Dataset:
         import ray.data as rd
@@ -201,6 +222,16 @@ class PerfileSourcedParquetReader(SourcedReader, PerfileReader):
             source_id = os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))
             ds = rd.read_parquet(file_path).map(lambda x: add_source(x, source_id))
             self.cache.append((ds, source_id))
+        return self.cache
+    
+    def process_spark(self, spark, spark_df: DataFrame = None):
+        files_with_subtask, input_dir = self.get_files_with_subtask("jsonl")
+        to_read_list = [(sub_task, os.path.join(input_dir, f)) for sub_task, file_list in files_with_subtask.items() for f in file_list]
+        self.cache = []
+        for sub_task, file_path in to_read_list:
+            source_id = os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))
+            df = spark.read.parquet(file_path)
+            self.cache.append((df, source_id))
         return self.cache
     
 LLMOPERATORS.register(PerfileSourcedParquetReader)

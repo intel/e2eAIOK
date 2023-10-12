@@ -25,7 +25,6 @@ class BaseFilter(BaseLLMOperation):
     @statistics_decorator
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
         if self.inplace:
-
             import pyspark.sql.types as T
             compute_udf = F.udf(self.compute, T.BooleanType())
             return spark_df.filter(compute_udf(F.col(self.text_key)))

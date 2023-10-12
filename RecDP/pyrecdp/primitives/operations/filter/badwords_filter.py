@@ -32,7 +32,7 @@ class BadwordsFilter(BaseFilter):
 
     def compute(self, text) -> bool:
         func = prepare_func_filter_by_badwords(self.language)
-        func(text)
+        return func(text)
 
 
 LLMOPERATORS.register(BadwordsFilter)

@@ -14,3 +14,4 @@ from .text_pii_remove import PIIRemoval
 from .text_deduplication import FuzzyDeduplicate, GlobalDeduplicate
 from .text_qualityscorer import TextQualityScorer
 from .text_diversityindicate import TextDiversityIndicate
+from .text_custom import TextCustomerMap, TextCustomerFilter
