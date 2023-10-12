@@ -34,18 +34,6 @@
         "children": [
             3
         ],
-        "op": "LanguageIdentify",
-        "config": {
-            "text_key": "text",
-            "inplace": false,
-            "fasttext_model_dir": "/root/.cache/RECDP/models/lid.bin",
-            "threshold": 0
-        }
-    },
-    "5": {
-        "children": [
-            4
-        ],
         "op": "PerfileParquetWriter",
         "config": {
             "output_dir": "ResumableTextPipeline_output_import"
