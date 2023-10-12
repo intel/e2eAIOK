@@ -19,7 +19,9 @@ class BasePipeline:
         return repr(self.pipeline)
 
     def export(self, file_path = None):
-        json_object = self.pipeline.json_dump()
+        import copy
+        pipeline_deepcopy = copy.deepcopy(self.pipeline)
+        json_object = pipeline_deepcopy.json_dump()
         if file_path:
             # Writing to sample.json
             with open(file_path, "w") as outfile:

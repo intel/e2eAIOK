@@ -2,7 +2,7 @@ from pyrecdp.core import DiGraph
 from pyrecdp.core.pipeline import BasePipeline
 from pyrecdp.primitives.operations import Operation, BaseOperation
 from pyrecdp.primitives.operations.text_reader import DatasetReader, PerfileReader
-from pyrecdp.primitives.operations.text_writer import PerfileParquetWriter
+from pyrecdp.primitives.operations.text_writer import PerfileParquetWriter, PerfileJsonlWriter
 import logging
 from pyrecdp.core.utils import Timer, deepcopy
 from IPython.display import display
@@ -111,7 +111,7 @@ class TextPipeline(BasePipeline):
         # fetch result
         return ds
 
-    def add_operation(self, config):
+    def add_operation(self, config, function_type = 'map', text_key = 'text'):
         # get current max operator id
         max_idx = self.pipeline.get_max_idx()
         cur_idx = max_idx + 1
@@ -139,10 +139,17 @@ class TextPipeline(BasePipeline):
         # ====== Start to add it to pipeline ====== #
         if isinstance(inline_function, types.FunctionType):
             config = {
-                "func_name": inline_function,
+                "func": inline_function,
+                "text_key": text_key
             }
-            self.pipeline[cur_idx] = Operation(
-                cur_idx, children, output=None, op="ray_python", config=config)
+            if function_type == 'map':
+                self.pipeline[cur_idx] = Operation(
+                    cur_idx, children, output=None, op="TextCustomerMap", config=config)
+            elif function_type == 'filter':
+                self.pipeline[cur_idx] = Operation(
+                    cur_idx, children, output=None, op="TextCustomerFilter", config=config)
+            else:
+                raise NotImplementedError(f"{function_type} is not supported as customer function yet")
         elif isinstance(inline_function, BaseOperation):
             op_name = inline_function.op.op
             # config = vars(inline_function)
@@ -201,6 +208,9 @@ class ResumableTextPipeline(TextPipeline):
             if op.op in ['ParquetWriter', 'PerfileParquetWriter']:
                 op.op = 'PerfileParquetWriter'
                 output_dir = op.config['output_dir']
+            if op.op in ['JsonlWriter', 'PerfileJsonlWriter']:
+                op.op = 'PerfileJsonlWriter'
+                output_dir = op.config['output_dir']
         if output_dir == "":
             output_dir = f"ResumableTextPipeline_output_{time.strftime('%Y%m%d%H%M%S')}"
             self.add_operation(PerfileParquetWriter(output_dir=output_dir))
@@ -227,50 +237,87 @@ class ResumableTextPipeline(TextPipeline):
         executable_sequence = self.executable_sequence
 
         engine_name = self.check_platform(executable_sequence)
-
-        if engine_name != 'ray':
-            raise NotImplementedError("ResumableTextPipeline only support operations with ray mode")
         self.engine_name = engine_name
-        if not ray.is_initialized():
-            print(f"init ray with total mem of {total_mem}")
-            try:
-                ray.init(object_store_memory=total_mem, num_cpus=total_cores)
-            except:
-                ray.init()
-
         # explode one pipeline to multiple sub pipeline (per file)
         sub_pipelines = []
         op_chain = []
-        for op in executable_sequence:
-            if isinstance(op, PerfileReader):
-                op.execute_ray(executable_pipeline)
-                sub_pipelines = op.cache
-            elif len(sub_pipelines) > 0:
-                op_chain.append(op)
 
-        for ds_reader, source_id in (pbar := tqdm(sub_pipelines, total=len(sub_pipelines))):
-            # check if we should skip
-            if source_id in done_files:
-                print(f"skip {source_id}, it was processed in last round")
-                del ds_reader
-                continue
+        if engine_name == 'ray':
+            if not ray.is_initialized():
+                print(f"init ray with total mem of {total_mem}")
+                try:
+                    ray.init(object_store_memory=total_mem, num_cpus=total_cores)
+                except:
+                    ray.init()
 
-            # If not skip, then
-            pbar.set_description(f"ResumableTextPipeline, current on {source_id}")
-            start = time.time()
-            for idx, op in enumerate(op_chain):
-                op.statistics_flag = self.statistics_flag
-                if idx == 0:
-                    op.execute_ray(executable_pipeline, ds_reader)
-                elif isinstance(op, PerfileParquetWriter):
-                    op.execute_ray(executable_pipeline, source_id)
-                else:
+            for op in executable_sequence:
+                if isinstance(op, PerfileReader):
                     op.execute_ray(executable_pipeline)
-            elapse = time.time() - start
-            status_tracker.write(f"{source_id}, {elapse} secs\n")
-            status_tracker.flush()
-            done_files.append(status_tracker)
-            del ds_reader
+                    sub_pipelines = op.cache
+                elif len(sub_pipelines) > 0:
+                    op_chain.append(op)
+
+            for ds_reader, source_id in (pbar := tqdm(sub_pipelines, total=len(sub_pipelines))):
+                # check if we should skip
+                if source_id in done_files:
+                    print(f"skip {source_id}, it was processed in last round")
+                    del ds_reader
+                    continue
+
+                # If not skip, then
+                pbar.set_description(f"ResumableTextPipeline, current on {source_id}")
+                start = time.time()
+                for idx, op in enumerate(op_chain):
+                    op.statistics_flag = self.statistics_flag
+                    if idx == 0:
+                        op.execute_ray(executable_pipeline, ds_reader)
+                    elif isinstance(op, PerfileParquetWriter) or isinstance(op, PerfileJsonlWriter):
+                        op.execute_ray(executable_pipeline, source_id)
+                    else:
+                        op.execute_ray(executable_pipeline)
+                elapse = time.time() - start
+                status_tracker.write(f"{source_id}, {elapse} secs\n")
+                status_tracker.flush()
+                done_files.append(status_tracker)
+                del ds_reader
+        elif engine_name == 'spark':
+            if not hasattr(self, 'rdp') or self.rdp is None:
+                self.rdp = SparkDataProcessor()
+
+            for op in executable_sequence:
+                if isinstance(op, PerfileReader):
+                    op.execute_spark(executable_pipeline, rdp = self.rdp)
+                    sub_pipelines = op.cache
+                elif len(sub_pipelines) > 0:
+                    op_chain.append(op)
+
+            # execute
+            for ds_reader, source_id in (pbar := tqdm(sub_pipelines, total=len(sub_pipelines))):
+                # check if we should skip
+                if source_id in done_files:
+                    print(f"skip {source_id}, it was processed in last round")
+                    del ds_reader
+                    continue
+
+                # If not skip, then
+                pbar.set_description(f"ResumableTextPipeline, current on {source_id}")
+                start = time.time()
+                for idx, op in enumerate(op_chain):
+                    op.statistics_flag = self.statistics_flag
+                    if idx == 0:
+                        op.execute_spark(executable_pipeline, rdp = self.rdp, child_ds = ds_reader)
+                    elif isinstance(op, PerfileParquetWriter) or isinstance(op, PerfileJsonlWriter):
+                        op.execute_spark(executable_pipeline, source_id = source_id)
+                    else:
+                        op.execute_spark(executable_pipeline, rdp = self.rdp)
+                elapse = time.time() - start
+                status_tracker.write(f"{source_id}, {elapse} secs\n")
+                status_tracker.flush()
+                done_files.append(status_tracker)
+                del ds_reader
+        else:
+            raise NotImplementedError(f"ResumableTextPipeline is not support {engine_name} yet")
+        
         if self.statistics_flag:
             for op in op_chain:
                 logger.info(f"{op.__class__.__name__}: {op.summarize()}")

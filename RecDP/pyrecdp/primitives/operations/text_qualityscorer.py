@@ -290,7 +290,6 @@ class TextQualityScorer(BaseLLMOperation):
         
     def process_rayds(self, ds: Dataset) -> Dataset:
         raise NotImplementedError("Not implemented yet")
-        return ds.map(lambda x: self.process_row(x, self.text_key, new_name, text_bytesize))
     
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
         import pyspark.sql.functions as F

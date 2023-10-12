@@ -137,6 +137,22 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         op = DocumentSplit()
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds(ctx.ds))
+            
+    def test_customermap_ray(self):
+        def proc(text):
+            return f'processed_{text}'
+        
+        op = TextCustomerMap(func=proc, text_key='text')
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds(ctx.ds))
+            
+    def test_customerfilter_ray(self):
+        def cond(text):
+            return len(text) < 200
+        
+        op = TextCustomerFilter(func=cond, text_key='text')
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds(ctx.ds))
 
     ### ======  Spark ====== ###
             
@@ -209,5 +225,21 @@ class Test_LLMUtils_Operations(unittest.TestCase):
             
     def test_diversityindicate_spark(self):
         op = TextDiversityIndicate()
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
+    def test_customermap_spark(self):
+        def proc(text):
+            return f'processed_{text}'
+        
+        op = TextCustomerMap(func=proc, text_key='text')
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark, ctx.ds))
+            
+    def test_customerfilter_spark(self):
+        def cond(text):
+            return len(text) < 200
+        
+        op = TextCustomerFilter(func=cond, text_key='text')
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
