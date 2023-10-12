@@ -25,7 +25,9 @@ class TextPipeline(BasePipeline):
     def __init__(self, pipeline_file=None):
         super().__init__()
         if pipeline_file != None:
-            self.import_from_yaml(pipeline_file)
+            self.import_from_json(pipeline_file) if pipeline_file.endswith(
+                '.json') else self.import_from_yaml(pipeline_file)
+            self.plot()
         else:
             # add a data set input place holder
             op = DatasetReader()

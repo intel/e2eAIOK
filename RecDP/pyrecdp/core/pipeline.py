@@ -95,7 +95,7 @@ class BasePipeline:
             self.transformed_end_idx = children[0]
         del self.pipeline[cur_idx]
           
-    def plot(self):
+    def plot(self, filename=None):
         f = graphviz.Digraph(format='svg')
         edges = []
         nodes = []
@@ -133,7 +133,10 @@ class BasePipeline:
         for edge in edges:
             f.edge(*edge)
         try:
-            f.render(filename='pipeline', view = False)
+            if filename is None:
+                f.render(filename='pipeline_plot', view=False)
+            else:
+                f.render(filename=filename, view=False)
         except:
             pass
         return f
