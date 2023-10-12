@@ -1,0 +1,42 @@
+{
+    "0": {
+        "children": null,
+        "op": "DatasetReader",
+        "config": {}
+    },
+    "1": {
+        "children": [
+            0
+        ],
+        "op": "PerfileSourcedJsonlReader",
+        "config": {
+            "input_dir": "tests/data/llm_data/"
+        }
+    },
+    "2": {
+        "children": [
+            1
+        ],
+        "op": "LengthFilter",
+        "config": {
+            "minimum_length": 100,
+            "maximum_length": -1
+        }
+    },
+    "3": {
+        "children": [
+            2
+        ],
+        "op": "ProfanityFilter",
+        "config": {}
+    },
+    "4": {
+        "children": [
+            3
+        ],
+        "op": "PerfileParquetWriter",
+        "config": {
+            "output_dir": "ResumableTextPipeline_output_import"
+        }
+    }
+}

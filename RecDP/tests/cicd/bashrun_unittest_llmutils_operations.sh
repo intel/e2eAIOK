@@ -4,7 +4,7 @@ failed_tests=""
 echo "Setup pyrecdp latest package"
 python setup.py sdist && pip install dist/pyrecdp-*.*.*.tar.gz
 
-python -m unittest tests.test_llmutils_pipelines.Test_LLMUtils_Pipeline
+python -m unittest tests.test_llmutils_operations.Test_LLMUtils_Operations
 
 # echo "test_llmutils_pipeline.Test_LLMUtils_Pipeline.test_TextGlobalDeduplicate"
 # python -m unittest tests.test_llmutils_pipeline.Test_LLMUtils_Pipeline.test_TextGlobalDeduplicate
