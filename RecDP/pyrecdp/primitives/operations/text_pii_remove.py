@@ -9,32 +9,33 @@ from pyrecdp.primitives.llmutils.pii.pii_redaction import redact_pii_text, rando
 from pyrecdp.primitives.llmutils.pii.detect.utils import PIIEntityType
 
 
-def prepare_pipeline(model_root_path=None, entity_types: List[PIIEntityType] = None):
+def prepare_pipeline(model_root_path=None):
+    from transformers import pipeline
+    from transformers import AutoTokenizer
+
     _model_key = "bigcode/starpii"
-    model_key = _model_key if model_root_path is None else os.path.join(model_root_path, _model_key)
-    if entity_types is None:
-        entity_types = PIIEntityType.all()
-
-    is_name_password_detect = PIIEntityType.NAME in entity_types or PIIEntityType.PASSWORD in entity_types
-
-    if is_name_password_detect:
-        from transformers import pipeline
-        return pipeline(model=model_key, task='token-classification', grouped_entities=True)
-    else:
-        return None
+    _model_key = _model_key if model_root_path is None else os.path.join(model_root_path, _model_key)
+    tokenizer = AutoTokenizer.from_pretrained(_model_key, model_max_length=512)
+    return pipeline(model=_model_key, task='token-classification', tokenizer=tokenizer, grouped_entities=True)
 
 
 def prepare_func_pii_removal(model_root_path=None, debug_mode=True, entity_types: List[PIIEntityType] = None):
     replacements = random_replacements()
-    pipeline_inst = prepare_pipeline(model_root_path, entity_types)
+
+    has_name_detection = entity_types is not None and PIIEntityType.NAME in entity_types
+    has_password_detection = entity_types is not None and PIIEntityType.PASSWORD in entity_types
+    if has_name_detection or has_password_detection:
+        pipe_inst = prepare_pipeline(model_root_path)
+    else:
+        pipe_inst = None
 
     def process_debug(sample):
-        secrets = scan_pii_text(sample, pipeline_inst, entity_types)
+        secrets = scan_pii_text(sample, pipe_inst, entity_types)
         text, is_modified = redact_pii_text(sample, secrets, replacements)
         return text, is_modified, str(secrets)
 
     def process(sample):
-        secrets = scan_pii_text(sample, pipeline_inst, entity_types)
+        secrets = scan_pii_text(sample, pipe_inst, entity_types)
         text, _ = redact_pii_text(sample, secrets, replacements)
         return text
 
@@ -57,7 +58,7 @@ class PIIRemoval(BaseLLMOperation):
         self.support_spark = True
         self.support_ray = True
         self.debug_mode = debug_mode
-        self.entity_types = entity_types
+        self.entity_types = PIIEntityType.default() if entity_types is None else entity_types
 
     def process_rayds(self, ds: Dataset) -> Dataset:
         if self.inplace:
