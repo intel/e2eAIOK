@@ -73,11 +73,12 @@ setuptools.setup(
         "huggingface-hub==0.16.4",
         "loguru==0.7.2",
         "tabulate==0.9.0",
-        "sentencepiece==0.1.99",
+        "sentencepiece",
         "selectolax",
         "spacy",
         "torch",
         "Faker",
         "ray",
         "loguru",
+        "detoxify",
         ])

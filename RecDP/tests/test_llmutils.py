@@ -72,7 +72,7 @@ class Test_LLMUtils(unittest.TestCase):
         from pyrecdp.primitives.llmutils import toxicity_score
         file_path = os.path.join(cur_dir, "data/llm_data/tiny_c4_sample_for_pii.jsonl")
         save_path = os.path.join(cur_dir, "data/output/toxicity_score")
-        toxicity_score(file_path, save_path, "jsonl", text_key='text', threshold=0, api_key=None)
+        toxicity_score(file_path, save_path, "jsonl", text_key='text', threshold=0, model_type="original")
 
     def test_toxicity_score_spark(self):
         from pyrecdp.primitives.llmutils import toxicity_score_spark
@@ -81,7 +81,7 @@ class Test_LLMUtils(unittest.TestCase):
         rdp = SparkDataProcessor()
         spark = rdp.spark
         spark_df = spark.read.json(data_file)
-        toxicity_score_df = toxicity_score_spark(spark_df, text_key='text', threshold=0, api_key=None)
+        toxicity_score_df = toxicity_score_spark(spark_df, text_key='text', threshold=0, model_type="original")
         toxicity_score_df.show()
 
     def test_diversity_analysis(self):
