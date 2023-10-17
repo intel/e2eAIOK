@@ -16,13 +16,13 @@ class TokenNumFilter(BaseFilter):
         self.max_num = max_num
         self.model_key = prepare_model(model_type='huggingface',
                                        model_key=HF_TOKENIZER)
+        self.tokenizer = get_model(self.model_key, model_type='huggingface')
 
     def compute(self, text) -> bool:
 
-        tokenizer = get_model(self.model_key, model_type='huggingface')
         tokens = get_words_from_document(
             text,
-            token_func=tokenizer.tokenize if tokenizer else None
+            token_func=self.tokenizer.tokenize if self.tokenizer else None
         )
         num_token = len(tokens)
         if self.min_num <= num_token <= self.max_num:
