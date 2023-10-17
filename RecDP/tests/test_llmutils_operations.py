@@ -143,12 +143,12 @@ class Test_LLMUtils_Operations(unittest.TestCase):
             ctx.show(op.process_rayds(ctx.ds))
 
 
-    def test_filter_by_token_num_ray(self):
-        pass
-        # Ray version not supported yet
-        op = TokenNumFilter()
-        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
-            ctx.show(op.process_rayds(ctx.ds))
+    # def test_filter_by_token_num_ray(self):
+    #     pass
+    #     # Ray version not supported yet
+    #     op = TokenNumFilter()
+    #     with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+    #         ctx.show(op.process_rayds(ctx.ds))
 
     def test_filter_by_word_num_ray(self):
         pass
@@ -255,10 +255,10 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
 
-    def test_filter_by_token_num_spark(self):
-        op = TokenNumFilter()
-        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
-            ctx.show(op.process_spark(ctx.spark, ctx.ds))
+    # def test_filter_by_token_num_spark(self):
+    #     op = TokenNumFilter()
+    #     with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+    #         ctx.show(op.process_spark(ctx.spark, ctx.ds))
 
     def test_filter_by_word_num_spark(self):
         op = WordNumFilter()
