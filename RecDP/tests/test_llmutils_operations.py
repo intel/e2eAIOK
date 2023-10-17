@@ -113,6 +113,50 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds(ctx.ds))
 
+    def test_filter_by_alphanumeric_ray(self):
+        pass
+        # Ray version not supported yet
+        op = AlphanumericFilter()
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds(ctx.ds))
+
+
+    def test_filter_by_average_line_length_ray(self):
+        pass
+        # Ray version not supported yet
+        op = AverageLineLengthFilter()
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds(ctx.ds))
+
+    def test_filter_by_maximum_line_length_ray(self):
+        pass
+        # Ray version not supported yet
+        op = MaximumLineLengthFilter()
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds(ctx.ds))
+
+    def test_filter_by_special_characters_ray(self):
+        pass
+        # Ray version not supported yet
+        op = SpecialCharactersFilter()
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds(ctx.ds))
+
+
+    # def test_filter_by_token_num_ray(self):
+    #     pass
+    #     # Ray version not supported yet
+    #     op = TokenNumFilter()
+    #     with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+    #         ctx.show(op.process_rayds(ctx.ds))
+
+    def test_filter_by_word_num_ray(self):
+        pass
+        # Ray version not supported yet
+        op = WordNumFilter()
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds(ctx.ds))
+
     def test_text_fixer_ray(self):
         op = TextFix()
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
@@ -188,6 +232,36 @@ class Test_LLMUtils_Operations(unittest.TestCase):
 
     def test_filter_by_url_spark(self):
         op = URLFilter()
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
+    def test_filter_by_alphanumeric_spark(self):
+        op = AlphanumericFilter()
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
+    def test_filter_by_average_line_length_spark(self):
+        op = AverageLineLengthFilter()
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
+    def test_filter_by_maximum_line_length_spark(self):
+        op = MaximumLineLengthFilter()
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
+    def test_filter_by_special_characters_spark(self):
+        op = SpecialCharactersFilter()
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
+    # def test_filter_by_token_num_spark(self):
+    #     op = TokenNumFilter()
+    #     with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+    #         ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
+    def test_filter_by_word_num_spark(self):
+        op = WordNumFilter()
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
 

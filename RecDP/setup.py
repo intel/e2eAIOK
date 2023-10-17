@@ -80,4 +80,5 @@ setuptools.setup(
         "Faker",
         "ray",
         "loguru",
+        "emoji==2.2.0",
         ])
