@@ -81,4 +81,5 @@ setuptools.setup(
         "ray",
         "loguru",
         "detoxify",
+        "emoji==2.2.0"
         ])
