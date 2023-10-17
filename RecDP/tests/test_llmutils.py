@@ -70,18 +70,24 @@ class Test_LLMUtils(unittest.TestCase):
 
     def test_toxicity_score(self):
         from pyrecdp.primitives.llmutils import toxicity_score
+        from pyrecdp.core.cache_utils import RECDP_MODELS_CACHE
+        huggingface_config_path = os.path.join(RECDP_MODELS_CACHE, "models--xlm-roberta-base")
         file_path = os.path.join(cur_dir, "data/llm_data/tiny_c4_sample_for_pii.jsonl")
         save_path = os.path.join(cur_dir, "data/output/toxicity_score")
-        toxicity_score(file_path, save_path, "jsonl", text_key='text', threshold=0, model_type="original")
+        toxicity_score(file_path, save_path, "jsonl", text_key='text',
+                       threshold=0, model_type="multilingual", huggingface_config_path=huggingface_config_path)
 
     def test_toxicity_score_spark(self):
         from pyrecdp.primitives.llmutils import toxicity_score_spark
         from pyrecdp.core import SparkDataProcessor
+        from pyrecdp.core.cache_utils import RECDP_MODELS_CACHE
+        huggingface_config_path = os.path.join(RECDP_MODELS_CACHE, "models--xlm-roberta-base")
         data_file = f'file://{os.path.join(cur_dir, "data/llm_data/tiny_c4_sample_for_pii.jsonl")}'
         rdp = SparkDataProcessor()
         spark = rdp.spark
         spark_df = spark.read.json(data_file)
-        toxicity_score_df = toxicity_score_spark(spark_df, text_key='text', threshold=0, model_type="original")
+        toxicity_score_df = toxicity_score_spark(spark_df, text_key='text',
+                                                 threshold=0, model_type="multilingual", huggingface_config_path=huggingface_config_path)
         toxicity_score_df.show()
 
     def test_diversity_analysis(self):
