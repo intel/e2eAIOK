@@ -5,15 +5,12 @@ from ray.data import Dataset
 from pyspark.sql import DataFrame
 from detoxify import Detoxify
 
-def prepare_func_text_toxicity(model_type="multilingual", threshold=0, huggingface_config_path=None):
+def prepare_func_text_toxicity(model_type="multilingual", huggingface_config_path=None):
     model = Detoxify(model_type, huggingface_config_path=huggingface_config_path)
 
     def generate_toxicity_label(content):
         result = model.predict(content)
-        if result["toxicity"] < threshold:
-            return None
-        else:
-            return float(result["toxicity"])
+        return float(result["toxicity"])
 
     return generate_toxicity_label
 
@@ -34,16 +31,19 @@ class TextToxicity(BaseLLMOperation):
     def process_rayds(self, ds: Dataset) -> Dataset:
         if self.actual_func is None:
             self.actual_func = prepare_func_text_toxicity(model_type=self.model_type,
-                                                          threshold=self.threshold, huggingface_config_path=self.huggingface_config_path)
-        return ds.map(lambda x: self.process_row(x, self.text_key, self.new_key, self.actual_func))
+                                                          huggingface_config_path=self.huggingface_config_path)
+        ret = ds.map(lambda x: self.process_row(x, self.text_key, self.new_key, self.actual_func)).filter(lambda row: row[self.new_key] > self.threshold)
+        print(ret.schema())
+        # ret.filter(lambda row: row[self.new_key] < self.threshold)
+        return ret
 
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
         import pyspark.sql.functions as F
+        from pyspark.sql.types import FloatType
         if self.actual_func is None:
             self.actual_func = F.udf(prepare_func_text_toxicity(model_type=self.model_type,
-                                                                threshold=self.threshold, huggingface_config_path=self.huggingface_config_path))
-
-        return spark_df.withColumn(self.new_key, self.actual_func(F.col(self.text_key)))
+                                                                huggingface_config_path=self.huggingface_config_path), FloatType())
+        return spark_df.withColumn(self.new_key, self.actual_func(F.col(self.text_key))).filter(f"{self.new_key} > {self.threshold}")
 
 
 LLMOPERATORS.register(TextToxicity)
