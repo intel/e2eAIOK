@@ -33,8 +33,6 @@ class TextToxicity(BaseLLMOperation):
             self.actual_func = prepare_func_text_toxicity(model_type=self.model_type,
                                                           huggingface_config_path=self.huggingface_config_path)
         ret = ds.map(lambda x: self.process_row(x, self.text_key, self.new_key, self.actual_func)).filter(lambda row: row[self.new_key] > self.threshold)
-        print(ret.schema())
-        # ret.filter(lambda row: row[self.new_key] < self.threshold)
         return ret
 
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
