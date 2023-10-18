@@ -2,10 +2,8 @@ import logging
 import os
 from typing import Optional, Type
 
-from pyrecdp.primitives.document.reader import *
-from pyrecdp.primitives.document.writer import DocumentWriter
-
-logger = logging.getLogger(__name__)
+from .reader import *
+from .writer import DocumentWriter
 
 DEFAULT_SUPPORTED_SUFFIX = [
     ".pdf",
@@ -28,6 +26,8 @@ CUSTOMIZE_SUPPORTED_SUFFIX: Dict[str, Type[DocumentReader]] = {
     ".jpeg": ImageReader,
     ".png": ImageReader,
 }
+
+logger = logging.getLogger(__name__)
 
 
 class DocumentExtractor:

@@ -1,6 +1,6 @@
 import os
 
-from pyrecdp.primitives.document.schema import Document
+from .schema import Document
 
 
 class DocumentWriter:

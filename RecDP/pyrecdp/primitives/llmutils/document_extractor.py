@@ -1,8 +1,8 @@
 from typing import Optional
 
-from pyrecdp.primitives.document.extractor import DocumentExtractor
-from pyrecdp.primitives.document.reader import *
-from pyrecdp.primitives.document.writer import DocumentWriter
+from pyrecdp.primitives.llmutils.document.extractor import DocumentExtractor
+from pyrecdp.primitives.llmutils.document.reader import *
+from pyrecdp.primitives.llmutils.document.writer import DocumentWriter
 
 
 def pdf_to_text(in_file: str, out_file: str, password: str = None):
