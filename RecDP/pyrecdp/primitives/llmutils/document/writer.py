@@ -15,5 +15,5 @@ class DocumentWriter:
         self.writer.close()
 
     def write(self, doc: Document):
-        if doc.json().strip() != "":
+        if doc.text.strip() != "":
             self.writer.write(str.encode(doc.json() + os.linesep))
