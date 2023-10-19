@@ -331,23 +331,22 @@ class Test_LLMUtils(unittest.TestCase):
         from pyrecdp.primitives.llmutils.document_extractor import pdf_to_text
         in_file = "tests/data/llm_data/document/layout-parser-paper.pdf"
         out_file = "tests/data/llm_data/document/layout-parser-paper.pdf.jsonl"
-        pdf_to_text(in_file,out_file)
-
+        pdf_to_text(in_file, out_file)
 
     def test_docx_to_json(self):
         from pyrecdp.primitives.llmutils.document_extractor import docx_to_text
         in_file = "tests/data/llm_data/document/handbook-872p.docx"
         out_file = "tests/data/llm_data/document/handbook-872p.docx.jsonl"
-        docx_to_text(in_file,out_file)
+        docx_to_text(in_file, out_file)
 
     def test_image_to_json(self):
         from pyrecdp.primitives.llmutils.document_extractor import image_to_text
         in_file = "tests/data/llm_data/document/layout-parser-paper-10p.jpg"
         out_file = "tests/data/llm_data/document/layout-parser-paper-10p.jpg.jsonl"
-        image_to_text(in_file,out_file)
+        image_to_text(in_file, out_file)
 
     def test_document_to_json(self):
         from pyrecdp.primitives.llmutils.document_extractor import document_to_text
         input_dir = "tests/data/llm_data/document"
         out_file = "tests/data/llm_data/document/document.jsonl"
-        document_to_text(output_file=out_file,input_dir=input_dir)
+        document_to_text(input_dir, out_file, use_multithreading=True)
