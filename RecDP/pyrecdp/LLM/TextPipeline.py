@@ -59,6 +59,9 @@ class TextPipeline(BasePipeline):
                 f"We can't identify an uniform engine for this pipeline. \n  Operations work on Ray are {ray_list}. \n  Operations work on Spark are {spark_list}")
             return 'mixed'
 
+    def optimize_execute_plan(self):
+        return
+    
     def execute(self, ds=None):
         # prepare pipeline
         if not hasattr(self, 'executable_pipeline') or not hasattr(self, 'executable_sequence'):
@@ -116,13 +119,13 @@ class TextPipeline(BasePipeline):
         max_idx = self.pipeline.get_max_idx()
         cur_idx = max_idx + 1
         find_children_skip = False
+        pipeline_chain = self.to_chain()
 
         if not isinstance(config, dict):
             op = config
             if max_idx == -1:
                 leaf_child = None
             else:
-                pipeline_chain = self.to_chain()
                 leaf_child = [pipeline_chain[-1]]
 
             config = {
@@ -174,7 +177,7 @@ class TextPipeline(BasePipeline):
                         found[id] = cur_idx
                 for k, v in found.items():
                     self.pipeline[idx].children[k] = v
-        return self.pipeline
+        return self.pipeline[cur_idx]
 
     def add_operations(self, config_list):
         for op in config_list:
@@ -197,8 +200,44 @@ class ResumableTextPipeline(TextPipeline):
         logger.warning("Enabling this option will result in a decrease in execution speed")
         self.statistics_flag = True
 
-    def execute(self):
-        # Fix pipeline
+    def duplicate_reader(self):
+        from copy import deepcopy
+        op = self.find_operation(['SourcedParquetReader', 'ParquetReader', 'PerfileSourcedParquetReader', 'GlobalParquetReader'])
+        if op is not None:
+            from pyrecdp.primitives.operations import GlobalParquetReader
+            reader_op = self.add_operation(config={"children": deepcopy(op.children), "inline_function": GlobalParquetReader(**op.config)})
+            return reader_op
+
+        op = self.find_operation(['SourcedJsonlReader', 'JsonlReader', 'PerfileSourcedJsonlReader', 'GlobalJsonlReader'])
+        if op is not None:
+            from pyrecdp.primitives.operations import GlobalJsonlReader
+            reader_op = self.add_operation(config={"children": deepcopy(op.children), "inline_function": GlobalJsonlReader(**op.config)})
+            return reader_op                
+
+    def optimize_execute_plan(self):
+        # update for deduplication
+        op = self.find_operation(['FuzzyDeduplicate'])
+        if op is not None:
+            from pyrecdp.primitives.operations import FuzzyDeduplicateGenDict
+            duplicated_reader_op = self.duplicate_reader()
+            gendict_op = self.add_operation(config={"children": duplicated_reader_op.idx, "inline_function": FuzzyDeduplicateGenDict(**op.config)})
+            op.op = 'FuzzyDeduplicateApplyDict'
+            op.children.append(gendict_op.idx)
+        
+        op = self.find_operation(['GlobalDeduplicate'])
+        if op is not None:
+            from pyrecdp.primitives.operations import GlobalDeduplicateGenDict
+            duplicated_reader_op = self.duplicate_reader()
+            gendict_op = self.add_operation(config={"children": duplicated_reader_op.idx, "inline_function": GlobalDeduplicateGenDict(**op.config)})
+            op.op = 'GlobalDeduplicateApplyDict'
+            op.children.append(gendict_op.idx)
+        
+        def skip(children):
+            for c in children:
+                if self.pipeline[c].op in ['FuzzyDeduplicateGenDict', 'GlobalDeduplicateGenDict']:
+                    return True
+            return False
+        # Update Writer
         output_dir = ""
         for idx, op in self.pipeline.items():
             if op.op in ['SourcedParquetReader', 'ParquetReader']:
@@ -215,10 +254,17 @@ class ResumableTextPipeline(TextPipeline):
             output_dir = f"ResumableTextPipeline_output_{time.strftime('%Y%m%d%H%M%S')}"
             self.add_operation(PerfileParquetWriter(output_dir=output_dir))
 
+        return output_dir
+
+    def execute(self):
+        # Fix pipeline
+        output_dir = self.optimize_execute_plan()
+        os.makedirs(output_dir, exist_ok=True)
+        self.export(os.path.join(output_dir, "pipeline.json"))
+        self.plot(os.path.join(output_dir, "pipeline"))
         logger.add(os.path.join(output_dir, "pipeline.log"))
 
         # prepare output dir and record system
-        os.makedirs(output_dir, exist_ok=True)
         status_log_path = os.path.join(output_dir, 'status.log')
         if os.path.exists(status_log_path):
             status_tracker = open(status_log_path, 'r+')
@@ -227,8 +273,7 @@ class ResumableTextPipeline(TextPipeline):
         else:
             status_tracker = open(status_log_path, 'w')
             done_files = []
-        self.export(os.path.join(output_dir, "pipeline.json"))
-        self.plot()
+        
 
         # prepare pipeline
         if not hasattr(self, 'executable_pipeline') or not hasattr(self, 'executable_sequence'):
@@ -236,6 +281,8 @@ class ResumableTextPipeline(TextPipeline):
         executable_pipeline = self.executable_pipeline
         executable_sequence = self.executable_sequence
 
+        print(executable_sequence)
+        return
         engine_name = self.check_platform(executable_sequence)
         self.engine_name = engine_name
         # explode one pipeline to multiple sub pipeline (per file)

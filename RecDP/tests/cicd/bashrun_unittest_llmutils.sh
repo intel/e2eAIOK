@@ -33,6 +33,9 @@ if [ $? != 0 ]; then
 fi
 
 python -m unittest tests.test_llmutils.Test_LLMUtils
+if [ $? != 0 ]; then
+    failed_tests=${failed_tests}"python -m unittest tests.test_llmutils.Test_LLMUtils\n"
+fi
 
 if [ -z ${failed_tests} ]; then
     echo "All tests are passed"

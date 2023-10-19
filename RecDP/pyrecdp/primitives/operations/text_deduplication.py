@@ -147,6 +147,108 @@ class FuzzyDeduplicate(BaseLLMOperation):
     
 LLMOPERATORS.register(FuzzyDeduplicate)
 
+class FuzzyDeduplicateGenDict(BaseLLMOperation):
+    def __init__(self, text_key = 'text', num_perm = 256, ngram_size = 13, bands = 9, ranges = 13):
+        settings = {'text_key': text_key, 'num_perm': 256, 'ngram_size': 3, 'bands': 9, 'ranges': 13}
+        super().__init__(settings)        
+        self.support_spark = True
+        self.support_ray = False
+        self.text_key = text_key
+        self.inplace = True
+        self.num_perm = num_perm
+        self.ngram_size = ngram_size
+        self.bands = bands
+        self.ranges = ranges
+    
+    def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
+        if self.inplace:
+            column_names = spark_df.columns
+            if 'norm_text' in column_names:
+                is_norm = False
+                spark_df = spark_df.select('norm_text', *[n for n in column_names if n != 'norm_text'])
+            else:
+                is_norm = True
+                spark_df = spark_df.select('text', *[n for n in column_names if n != 'text'])
+            
+            df_with_id = global_unique_id(spark_df, 'filename_docid')
+            pipeline = minHashLSH_prepare(df_with_id, self.num_perm, self.ngram_size, self.bands, self.ranges, is_norm)
+            with Timer("generate minHashLsh"):
+                results = pipeline.collect()
+                
+            with Timer("generate_connected_components => duplicates"):
+                components = generate_connected_components.generate_connected_components_py(results)
+                duplicates = [c for c_list in components for c in c_list[1:]]
+                R = Row('filename_docid')
+                total_dup = len(duplicates)
+                if total_dup != 0:
+                    duplicates_sdf = spark.createDataFrame([R(dup) for dup in duplicates]).cache()
+                    total_dup = duplicates_sdf.count()
+                    
+            if total_dup == 0:
+                ret = df_with_id.drop('filename_docid').cache()
+                ret_count = ret.count()
+            else:
+                with Timer("deduplicate input data"):
+                    ret = df_with_id.join(duplicates_sdf, 'filename_docid', 'left_anti').drop('filename_docid').cache()
+                    ret_count = ret.count()
+            return ret
+            
+        else:
+            raise NotImplementedError("We only support inplace modification for FuzzyDeduplicate.")
+    
+LLMOPERATORS.register(FuzzyDeduplicateGenDict)
+
+class FuzzyDeduplicateApplyDict(BaseLLMOperation):
+    def __init__(self, text_key = 'text', num_perm = 256, ngram_size = 13, bands = 9, ranges = 13):
+        settings = {'text_key': text_key, 'num_perm': 256, 'ngram_size': 3, 'bands': 9, 'ranges': 13}
+        super().__init__(settings)        
+        self.support_spark = True
+        self.support_ray = False
+        self.text_key = text_key
+        self.inplace = True
+        self.num_perm = num_perm
+        self.ngram_size = ngram_size
+        self.bands = bands
+        self.ranges = ranges
+    
+    def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
+        if self.inplace:
+            column_names = spark_df.columns
+            if 'norm_text' in column_names:
+                is_norm = False
+                spark_df = spark_df.select('norm_text', *[n for n in column_names if n != 'norm_text'])
+            else:
+                is_norm = True
+                spark_df = spark_df.select('text', *[n for n in column_names if n != 'text'])
+            
+            df_with_id = global_unique_id(spark_df, 'filename_docid')
+            pipeline = minHashLSH_prepare(df_with_id, self.num_perm, self.ngram_size, self.bands, self.ranges, is_norm)
+            with Timer("generate minHashLsh"):
+                results = pipeline.collect()
+                
+            with Timer("generate_connected_components => duplicates"):
+                components = generate_connected_components.generate_connected_components_py(results)
+                duplicates = [c for c_list in components for c in c_list[1:]]
+                R = Row('filename_docid')
+                total_dup = len(duplicates)
+                if total_dup != 0:
+                    duplicates_sdf = spark.createDataFrame([R(dup) for dup in duplicates]).cache()
+                    total_dup = duplicates_sdf.count()
+                    
+            if total_dup == 0:
+                ret = df_with_id.drop('filename_docid').cache()
+                ret_count = ret.count()
+            else:
+                with Timer("deduplicate input data"):
+                    ret = df_with_id.join(duplicates_sdf, 'filename_docid', 'left_anti').drop('filename_docid').cache()
+                    ret_count = ret.count()
+            return ret
+            
+        else:
+            raise NotImplementedError("We only support inplace modification for FuzzyDeduplicate.")
+    
+LLMOPERATORS.register(FuzzyDeduplicateApplyDict)
+
 def sha256str(s):
     h = hashlib.sha256()
     try:
@@ -227,3 +329,77 @@ class GlobalDeduplicate(BaseLLMOperation):
             raise NotImplementedError("We only support inplace modification for FuzzyDeduplicate.")
     
 LLMOPERATORS.register(GlobalDeduplicate)
+
+class GlobalDeduplicateGenDict(BaseLLMOperation):
+    def __init__(self, text_key = 'text'):        
+        settings = {'text_key': text_key}
+        super().__init__(settings)
+        self.text_key = text_key
+        self.inplace = True
+        self.support_spark = True
+        self.support_ray = False
+    
+    def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
+        if self.inplace:
+            # 1. if input hasn't been processed by global hash
+            with Timer(f"Generate Global Hash"):
+                hash_df = global_hash_spk(spark_df, self.text_key).cache()
+                post_global_hash_count = hash_df.count()
+            
+            # 2. get global hash indexing
+            with Timer(f"Generate Global indexing based on hash"):
+                ret_df = get_hash_indexing_spk(hash_df).cache()
+                index_count = ret_df.count()
+
+            # 3. generate duplication indexing
+            with Timer(f"Generate global duplication list"):
+                ret_df = get_duplication_list_spk(ret_df).cache()
+                duplication_count = ret_df.count()
+            
+            # 4. deduplicate input
+            with Timer(f"reduce input file based on detected duplication"):
+                out_df = index_based_reduction_spk(hash_df, ret_df, True).drop('doc_id').cache()
+                post_global_dedup_count = out_df.count()                
+            return out_df
+            
+        else:
+            raise NotImplementedError("We only support inplace modification for FuzzyDeduplicate.")
+    
+LLMOPERATORS.register(GlobalDeduplicateGenDict)
+
+class GlobalDeduplicateApplyDict(BaseLLMOperation):
+    def __init__(self, text_key = 'text'):        
+        settings = {'text_key': text_key}
+        super().__init__(settings)
+        self.text_key = text_key
+        self.inplace = True
+        self.support_spark = True
+        self.support_ray = False
+    
+    def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
+        if self.inplace:
+            # 1. if input hasn't been processed by global hash
+            with Timer(f"Generate Global Hash"):
+                hash_df = global_hash_spk(spark_df, self.text_key).cache()
+                post_global_hash_count = hash_df.count()
+            
+            # 2. get global hash indexing
+            with Timer(f"Generate Global indexing based on hash"):
+                ret_df = get_hash_indexing_spk(hash_df).cache()
+                index_count = ret_df.count()
+
+            # 3. generate duplication indexing
+            with Timer(f"Generate global duplication list"):
+                ret_df = get_duplication_list_spk(ret_df).cache()
+                duplication_count = ret_df.count()
+            
+            # 4. deduplicate input
+            with Timer(f"reduce input file based on detected duplication"):
+                out_df = index_based_reduction_spk(hash_df, ret_df, True).drop('doc_id').cache()
+                post_global_dedup_count = out_df.count()                
+            return out_df
+            
+        else:
+            raise NotImplementedError("We only support inplace modification for FuzzyDeduplicate.")
+    
+LLMOPERATORS.register(GlobalDeduplicateApplyDict)

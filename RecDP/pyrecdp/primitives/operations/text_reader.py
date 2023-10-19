@@ -14,7 +14,7 @@ class DatasetReader(BaseLLMOperation):
 LLMOPERATORS.register(DatasetReader)
 
 class JsonlReader(BaseLLMOperation):
-    def __init__(self, input_dir = ""):        
+    def __init__(self, input_dir = ""):
         settings = {'input_dir': input_dir}
         super().__init__(settings)
         self.support_ray = True
@@ -46,6 +46,12 @@ class JsonlReader(BaseLLMOperation):
         self.cache = df            
         return self.cache
 LLMOPERATORS.register(JsonlReader)
+
+class GlobalJsonlReader(JsonlReader):
+    def __init__(self, input_dir = ""):
+        super().__init__(input_dir)
+
+LLMOPERATORS.register(GlobalJsonlReader)
 
 
 class SourcedReader(BaseLLMOperation):
@@ -126,6 +132,12 @@ class ParquetReader(BaseLLMOperation):
         self.cache = df            
         return self.cache
 LLMOPERATORS.register(ParquetReader)
+
+class GlobalParquetReader(ParquetReader):
+    def __init__(self, input_dir = ""):
+        super().__init__(input_dir)
+
+LLMOPERATORS.register(GlobalParquetReader)
 
 class SourcedParquetReader(SourcedReader):
     def __init__(self, input_dir = "", source_prefix = ""):
