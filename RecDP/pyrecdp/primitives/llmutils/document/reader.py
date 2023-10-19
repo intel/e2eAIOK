@@ -1,7 +1,6 @@
-import os
 from abc import abstractmethod, ABC
 from pathlib import Path
-from typing import Any, List, Dict
+from typing import Any, List, Dict, Union
 
 from .schema import Document
 
@@ -10,55 +9,46 @@ class DocumentReader(ABC):
     """Utilities for loading data from a directory."""
 
     @abstractmethod
-    def load_data(self, file: Path, **load_kwargs: Any) -> List[Document]:
+    def load_data(self, *args: Any, **load_kwargs: Any) -> List[Document]:
         """Load data from the input directory."""
 
 
 class PDFReader(DocumentReader):
     """PDF parser."""
 
-    def __init__(self):
-        try:
-            import pypdf
-        except ImportError:
-            os.system("pip install -q pypdf")
+    def load_data(self, file: Path, password: str = None) -> List[Document]:
+        """Parse file."""
 
-    def load_data(self, file: Path, **load_kwargs: Any) -> List[Document]:
         import pypdf
-        # Create a PDF object
-        pdf = pypdf.PdfReader(file, **load_kwargs)
 
-        # Get the number of pages in the PDF document
-        num_pages = len(pdf.pages)
+        with open(file, "rb") as fp:
+            # Create a PDF object
+            pdf = pypdf.PdfReader(file, password=password)
 
-        # Iterate over every page
-        docs = []
-        for page in range(num_pages):
-            # Extract the text from the page
-            page_text = pdf.pages[page].extract_text()
-            page_label = pdf.page_labels[page]
-            metadata = {"page_label": page_label, "source": str(file)}
-            docs.append(Document(text=page_text, metadata=metadata))
+            # Get the number of pages in the PDF document
+            num_pages = len(pdf.pages)
 
-        return docs
+            # Iterate over every page
+            docs = []
+            for page in range(num_pages):
+                # Extract the text from the page
+                page_text = pdf.pages[page].extract_text()
+                page_label = pdf.page_labels[page]
+                metadata = {"page_label": page_label, "source": file.name}
+                docs.append(Document(text=page_text, metadata=metadata))
+            return docs
 
 
 class DocxReader(DocumentReader):
     """Docx parser."""
 
-    def __init__(self):
-        try:
-            import docx
-        except ImportError:
-            os.system("pip install -q python-docx")
-
-    def load_data(self, file: Path, **load_kwargs: Any) -> List[Document]:
+    def load_data(self, file: Path) -> List[Document]:
         """Parse file."""
         import docx
-        document = docx.Document(file)
+        doc = docx.Document(file)
 
         # read in each paragraph in file
-        return [Document(text=p.text, metadata={"source": str(file)}) for p in document.paragraphs]
+        return [Document(text=p.text, metadata={"source": file.name}) for p in doc.paragraphs]
 
 
 class ImageReader(DocumentReader):
@@ -73,20 +63,8 @@ class ImageReader(DocumentReader):
             keep_image: bool = False,
     ):
         self._keep_image = keep_image
-        try:
-            from PIL import Image
-        except ImportError:
-            import os
-            os.system("pip install -q pillow")
 
-        try:
-            from pytesseract import pytesseract
-        except ImportError:
-            import os
-            os.system("apt-get -qq  install tesseract-ocr")
-            os.system("pip install -q pytesseract")
-
-    def load_data(self, file: Path, **load_kwargs: Any) -> List[Document]:
+    def load_data(self, file: Path) -> List[Document]:
         """Parse file."""
         from PIL import Image
         from pytesseract import pytesseract
@@ -108,38 +86,33 @@ class UnstructuredReader(DocumentReader):
 
     def __init__(
             self,
+            file_path: Union[str, List[str]],
             mode: str = "elements",
-            single_text_per_document: bool = True,
             **unstructured_kwargs: Any,
     ):
-        super().__init__(single_text_per_document)
         _valid_modes = {"single", "elements", "paged"}
         if mode not in _valid_modes:
             raise ValueError(
                 f"Got {mode} for `mode`, but should be one of `{_valid_modes}`"
             )
         self.mode = mode
+        self.file_path = file_path
         self.unstructured_kwargs = unstructured_kwargs
-        try:
-            from unstructured.partition.auto import partition
-        except ImportError:
-            os.system("apt-get -qq install libreoffice")
-            os.system("pip install unstructured[ppt,pptx,xlsx]")
 
-    def _get_elements(self, path: Path) -> List:
+    def _get_elements(self) -> List:
         from unstructured.partition.auto import partition
-        return partition(filename=str(path), **self.unstructured_kwargs)
+        return partition(filename=self.file_path, **self.unstructured_kwargs)
 
-    def _get_metadata(self, path: Path) -> dict:
-        return {"source": str(path)}
+    def _get_metadata(self) -> dict:
+        return {"source": self.file_path}
 
-    def load_data(self, path: Path, **load_kwargs: Any) -> List[Document]:
+    def load_data(self) -> List[Document]:
         """Load file."""
-        elements = self._get_elements(path)
+        elements = self._get_elements()
         if self.mode == "elements":
             docs: List[Document] = list()
             for element in elements:
-                metadata = self._get_metadata(path)
+                metadata = self._get_metadata()
                 # NOTE(MthwRobinson) - the attribute check is for backward compatibility
                 # with unstructured<0.4.9. The metadata attributed was added in 0.4.9.
                 if hasattr(element, "metadata"):
@@ -152,7 +125,7 @@ class UnstructuredReader(DocumentReader):
             meta_dict: Dict[int, Dict] = {}
 
             for idx, element in enumerate(elements):
-                metadata = self._get_metadata(path)
+                metadata = self._get_metadata()
                 if hasattr(element, "metadata"):
                     metadata.update(element.metadata.to_dict())
                 page_number = metadata.get("page_number", 1)
@@ -173,7 +146,7 @@ class UnstructuredReader(DocumentReader):
                 for key in text_dict.keys()
             ]
         elif self.mode == "single":
-            metadata = self._get_metadata(path)
+            metadata = self._get_metadata()
             text = "\n\n".join([str(el) for el in elements])
             docs = [Document(text=text, metadata=metadata)]
         else:

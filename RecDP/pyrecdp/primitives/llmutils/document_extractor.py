@@ -5,11 +5,12 @@ from pyrecdp.primitives.llmutils.document.reader import *
 from pyrecdp.primitives.llmutils.document.writer import DocumentWriter
 
 
-def pdf_to_text(in_file: str, out_file: str):
+def pdf_to_text(in_file: str, out_file: str, password: str = None):
     reader = PDFReader()
     with DocumentWriter(out_file) as writer:
-        for doc in reader.load_data(Path(in_file)):
+        for doc in reader.load_data(Path(in_file), password):
             writer.write(doc)
+
 
 def docx_to_text(in_file: str, out_file: str):
     reader = DocxReader()

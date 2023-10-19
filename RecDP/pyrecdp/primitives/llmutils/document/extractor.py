@@ -141,8 +141,8 @@ class DocumentExtractor:
                     reader = self.file_extractor[file_suffix]
                     docs = reader.load_data(input_file)
                 else:
-                    reader = UnstructuredReader()
-                    docs = reader.load_data(input_file)
+                    reader = UnstructuredReader(input_file)
+                    docs = reader.load_data()
                 for doc in docs:
                     writer.write(doc)
             else:
