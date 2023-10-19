@@ -36,6 +36,8 @@ class DocumentExtractor:
             output_file: str,
             input_dir: Optional[str] = None,
             glob: str = "**/[!.]*",
+            use_multithreading: bool = False,
+            max_concurrency: Optional[int] = None,
             input_files: Optional[List] = None,
             exclude: Optional[List] = None,
             exclude_hidden: bool = True,
@@ -49,6 +51,8 @@ class DocumentExtractor:
         if not output_file:
             raise ValueError("Must provide either `output_file` or `writer`.")
         self.glob = glob
+        self.use_multithreading = use_multithreading
+        self.max_concurrency = max_concurrency
         self.encoding = encoding
         self.silent_errors = silent_errors
         self.exclude = exclude
@@ -69,6 +73,9 @@ class DocumentExtractor:
             self.input_dir = Path(input_dir)
             self.exclude = exclude
             self.input_files = self._add_files(self.input_dir)
+
+        if len(self.input_files) == 1:
+            self.use_multithreading = False
 
         self.supported_suffix = DEFAULT_SUPPORTED_SUFFIX
         self.output_file = output_file
@@ -127,11 +134,36 @@ class DocumentExtractor:
     def execute(self):
         from tqdm import tqdm
         pbar = tqdm(total=len(self.input_files))
-        with DocumentWriter(self.output_file) as writer:
-            for input_file in self.input_files:
-                self.writeDocument(input_file, pbar, writer)
+        if self.use_multithreading:
+            self.asyncWriteDocument(pbar)
+        else:
+            with DocumentWriter(self.output_file) as writer:
+                for input_file in self.input_files:
+                    self.writeDocument(input_file, pbar, writer)
 
-    def writeDocument(self, input_file, pbar, writer: DocumentWriter):
+    def asyncWriteDocument(self, pbar):
+        from concurrent.futures import ThreadPoolExecutor
+
+        def writeDocument(input_file: Path):
+            import tempfile
+            _, tmp_file = tempfile.mkstemp(".jsonl", "doc_extract")
+            with DocumentWriter(tmp_file) as writer:
+                self.writeDocument(input_file, pbar, writer)
+                return tmp_file
+
+        with ThreadPoolExecutor(self.max_concurrency, thread_name_prefix="doc_extract") as executor:
+            text_files = [text_file for text_file in executor.map(writeDocument, self.input_files)]
+
+        # merge files into a single file
+        with open(self.output_file, "w") as writer:
+            for text_file in text_files:
+                try:
+                    with open(text_file) as reader:
+                        writer.write(reader.read())
+                finally:
+                    os.remove(text_file)
+
+    def writeDocument(self, input_file: Path, pbar, writer: DocumentWriter):
         try:
             file_suffix = input_file.suffix.lower()
             if file_suffix in self.supported_suffix:
@@ -145,6 +177,7 @@ class DocumentExtractor:
                     docs = reader.load_data(input_file)
                 for doc in docs:
                     writer.write(doc)
+                logger.debug(f"File {input_file!s} was extracted successfully")
             else:
                 logger.info(f"Skip loading file {input_file!s}: file suffix {file_suffix} is not supported")
 
