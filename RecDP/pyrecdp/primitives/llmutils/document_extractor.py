@@ -95,11 +95,9 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--input_files", dest="input_files", type=str, nargs="*", default=None)
-    parser.add_argument("-d", "--input_dir", dest="input_dir", type=str,
-                        default="/work/e2eAIOK/RecDP/tests/data/llm_data/document")
-    parser.add_argument("-g", "--glob", dest="glob", type=str, default="**/*.png")
-    parser.add_argument("-o", "--output_file", dest="output_file", type=str,
-                        default="/work/e2eAIOK/RecDP/tests/data/llm_data/document/document.png.jsonl")
+    parser.add_argument("-d", "--input_dir", dest="input_dir", type=str,default=None)
+    parser.add_argument("-g", "--glob", dest="glob", type=str, default="**/*.jpeg")
+    parser.add_argument("-o", "--output_file", dest="output_file", type=str)
     parser.add_argument("-e", "--silent_errors", dest="silent_errors", default=False, type=bool)
     parser.add_argument("-r", "--recursive", dest="recursive", type=bool, default=False)
     parser.add_argument("-t", "--required_exts", dest="required_exts", type=str, nargs="*", default=None)

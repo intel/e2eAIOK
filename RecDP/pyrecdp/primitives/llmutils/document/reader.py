@@ -14,6 +14,7 @@ class DocumentReader(ABC):
 
     def load(self, file: Path, **load_kwargs: Any) -> List[Document]:
         docs = self.load_data(file, **load_kwargs)
+        docs = list(filter(lambda d: (d.text.strip() != ""), docs))
         if self.single_text_per_document:
             text = "\n".join([doc.text for doc in docs])
             return [Document(text=text, metadata={"source": str(file)})]
