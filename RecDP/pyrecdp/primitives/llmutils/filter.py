@@ -89,6 +89,7 @@ def filter_by_length(data_dir, out_dir, data_file_type="jsonl", minimum_length=1
     pipeline.add_operations(ops)
     pipeline.execute()
 
+
 def filter_by_alphanumeric_spark(spark_df, min_ratio=0.25, max_ratio=sys.maxsize):
     from pyrecdp.primitives.operations import AlphanumericFilter
     op = AlphanumericFilter(min_ratio=min_ratio, max_ratio=max_ratio)
@@ -257,17 +258,80 @@ def filter_by_word_num(data_dir, out_dir, data_file_type="jsonl", min_num=10, ma
     pipeline.execute()
 
 
+def filter_by_word_repetition_spark(spark_df, rep_len=10, min_ratio=0.0, max_ratio=0.5, language='en'):
+    from pyrecdp.primitives.operations import WordRepetitionFilter
+    op = WordRepetitionFilter(rep_len=rep_len, min_ratio=min_ratio, max_ratio=max_ratio, language=language)
+    ret = op.process_spark(spark_df.sparkSession, spark_df)
+    return ret
+
+
+def filter_by_word_repetition(data_dir, out_dir, data_file_type="jsonl", rep_len=10, min_ratio=0.0, max_ratio=0.5,
+                              language='en'):
+    from pyrecdp.primitives.operations import WordRepetitionFilter
+    from pyrecdp.LLM import ResumableTextPipeline
+
+    if data_file_type == 'jsonl':
+        reader = JsonlReader(data_dir)
+    elif data_file_type == 'parquet':
+        reader = ParquetReader(data_dir)
+    else:
+        raise NotImplementedError(f"{data_file_type} is not supported in RecDP LLM ResumableTextPipeline yet.")
+
+    pipeline = ResumableTextPipeline()
+    ops = [
+        reader,
+        WordRepetitionFilter(rep_len=rep_len, min_ratio=min_ratio, max_ratio=max_ratio, language=language),
+        PerfileParquetWriter(out_dir)
+    ]
+    pipeline.add_operations(ops)
+    pipeline.enable_statistics()
+
+    pipeline.execute()
+
+
+def filter_by_perplexity_spark(spark_df, max_ppl=1500, language='en'):
+    from pyrecdp.primitives.operations import PerplexityFilter
+    op = PerplexityFilter(max_ppl=max_ppl, language=language)
+    ret = op.process_spark(spark_df.sparkSession, spark_df)
+    return ret
+
+
+def filter_by_perplexity(data_dir, out_dir, data_file_type="jsonl", max_ppl=1500, language='en'):
+    from pyrecdp.primitives.operations import PerplexityFilter
+    from pyrecdp.LLM import ResumableTextPipeline
+
+    if data_file_type == 'jsonl':
+        reader = JsonlReader(data_dir)
+    elif data_file_type == 'parquet':
+        reader = ParquetReader(data_dir)
+    else:
+        raise NotImplementedError(f"{data_file_type} is not supported in RecDP LLM ResumableTextPipeline yet.")
+
+    pipeline = ResumableTextPipeline()
+    ops = [
+        reader,
+        PerplexityFilter(max_ppl=max_ppl, language=language),
+        PerfileParquetWriter(out_dir)
+    ]
+    pipeline.add_operations(ops)
+    pipeline.execute()
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_dir", dest="data_dir", type=str)
     parser.add_argument("--data_file_type", dest="data_file_type", type=str, default="jsonl")
     parser.add_argument("--output_dir", dest="output_dir", type=str, default="")
-    parser.add_argument("--filter_type", dest="filter_type", type=str, default="word_num")
+    parser.add_argument("--filter_type", dest="filter_type", type=str, default="word_repetition")
     args = parser.parse_args()
     data_dir = args.data_dir
     data_file_type = args.data_file_type
     output_dir = args.output_dir
     filter_type = args.filter_type
+    if os.path.exists(output_dir):
+        import shutil
+        shutil.rmtree(output_dir)
+        os.makedirs(output_dir)
     if "length" == filter_type:
         with Timer(f"Processing {filter_type} filter for {data_dir}"):
             filter_by_length(data_dir, output_dir, data_file_type)
@@ -295,7 +359,11 @@ if __name__ == "__main__":
     elif "word_num" == filter_type:
         with Timer(f"Processing {filter_type} filter for {data_dir}"):
             filter_by_word_num(data_dir, output_dir, data_file_type)
+    elif "perplexity" == filter_type:
+        with Timer(f"Processing {filter_type} filter for {data_dir}"):
+            filter_by_perplexity(data_dir, output_dir, data_file_type)
+    elif "word_repetition" == filter_type:
+        with Timer(f"Processing {filter_type} filter for {data_dir}"):
+            filter_by_word_repetition(data_dir, output_dir, data_file_type)
     else:
         raise NotImplementedError(f"{filter_type} is not supported in RecDP LLM Filter yet.")
-
-

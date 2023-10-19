@@ -143,17 +143,33 @@ class Test_LLMUtils_Operations(unittest.TestCase):
             ctx.show(op.process_rayds(ctx.ds))
 
 
-    # def test_filter_by_token_num_ray(self):
-    #     pass
-    #     # Ray version not supported yet
-    #     op = TokenNumFilter()
-    #     with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
-    #         ctx.show(op.process_rayds(ctx.ds))
+    def test_filter_by_token_num_ray(self):
+        pass
+        # Ray version not supported yet
+        op = TokenNumFilter(model_key=os.path.join(RECDP_MODELS_CACHE, "pythia-6.9b-deduped"))
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds(ctx.ds))
 
     def test_filter_by_word_num_ray(self):
         pass
         # Ray version not supported yet
         op = WordNumFilter()
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds(ctx.ds))
+
+
+    def test_filter_by_perplexity_ray(self):
+        pass
+        # Ray version not supported yet
+        op = PerplexityFilter()
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds(ctx.ds))
+
+
+    def test_filter_by_word_repetition_ray(self):
+        pass
+        # Ray version not supported yet
+        op = WordRepetitionFilter()
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds(ctx.ds))
 
@@ -255,13 +271,23 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
 
-    # def test_filter_by_token_num_spark(self):
-    #     op = TokenNumFilter()
-    #     with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
-    #         ctx.show(op.process_spark(ctx.spark, ctx.ds))
+    def test_filter_by_token_num_spark(self):
+        op = TokenNumFilter(model_key=os.path.join(RECDP_MODELS_CACHE, "pythia-6.9b-deduped"))
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark, ctx.ds))
 
     def test_filter_by_word_num_spark(self):
         op = WordNumFilter()
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
+    def test_filter_by_perplexity_spark(self):
+        op = PerplexityFilter()
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
+    def test_filter_by_word_repetition_spark(self):
+        op = WordRepetitionFilter()
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
 
