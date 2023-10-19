@@ -9,13 +9,13 @@ from pyrecdp.primitives.operations.filter.constant import HF_TOKENIZER
 
 # This filter is referred from alibaba data juicer project
 class TokenNumFilter(BaseFilter):
-    def __init__(self, min_num=10, max_num=sys.maxsize):
+    def __init__(self, min_num=10, max_num=sys.maxsize, model_key=HF_TOKENIZER):
         settings = {'min_num': min_num, "max_num": max_num}
         super().__init__(args_dict=settings)
         self.min_num = min_num
         self.max_num = max_num
         self.model_key = prepare_model(model_type='huggingface',
-                                       model_key=HF_TOKENIZER)
+                                       model_key=model_key)
         self.tokenizer = get_model(self.model_key, model_type='huggingface')
 
     def compute(self, text) -> bool:
