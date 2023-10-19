@@ -82,4 +82,5 @@ setuptools.setup(
         "loguru",
         "detoxify",
         "emoji==2.2.0",
+        "kenlm"
         ])
