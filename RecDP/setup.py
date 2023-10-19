@@ -82,5 +82,9 @@ setuptools.setup(
         "loguru",
         "detoxify",
         "emoji==2.2.0",
-        "kenlm"
+        "pypdf",
+        "python-docx",
+        "pdfminer",
+        "unstructured[ppt,pptx,xlsx]",
+        "kenlm",
         ])
