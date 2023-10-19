@@ -86,4 +86,5 @@ setuptools.setup(
         "python-docx",
         "pdfminer",
         "unstructured[ppt,pptx,xlsx]",
+        "kenlm",
         ])

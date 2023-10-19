@@ -9,3 +9,5 @@ from .maximum_line_length_filter import MaximumLineLengthFilter
 from .special_characters_filter import SpecialCharactersFilter
 from .token_num_filter import TokenNumFilter
 from .word_num_filter import WordNumFilter
+from .perplexity_filter import PerplexityFilter
+from .word_repetition_filter import WordRepetitionFilter
