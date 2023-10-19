@@ -39,12 +39,14 @@ class DocumentExtractor:
             use_multithreading: bool = False,
             max_concurrency: Optional[int] = None,
             input_files: Optional[List] = None,
+            single_text_per_document: bool = True,
             exclude: Optional[List] = None,
             exclude_hidden: bool = True,
             silent_errors: bool = False,
             recursive: bool = False,
             encoding: str = "utf-8",
             required_exts: Optional[List[str]] = None,
+            **load_kwargs: Any,
     ) -> None:
         if not input_dir and not input_files:
             raise ValueError("Must provide either `input_dir` or `input_files`.")
@@ -60,6 +62,7 @@ class DocumentExtractor:
         self.exclude_hidden = exclude_hidden
         self.required_exts = required_exts
         self.file_extractor = {}
+        self.load_kwargs = load_kwargs
         if input_files:
             self.input_files = []
             for path in input_files:
@@ -79,6 +82,7 @@ class DocumentExtractor:
 
         self.supported_suffix = DEFAULT_SUPPORTED_SUFFIX
         self.output_file = output_file
+        self.single_text_per_document = single_text_per_document
 
     def _add_files(self, input_dir: Path) -> List[Path]:
         """Add files."""
@@ -169,9 +173,11 @@ class DocumentExtractor:
             if file_suffix in self.supported_suffix:
                 if file_suffix in CUSTOMIZE_SUPPORTED_SUFFIX:
                     if file_suffix not in self.file_extractor:
-                        self.file_extractor[file_suffix] = CUSTOMIZE_SUPPORTED_SUFFIX[file_suffix]()
-                    reader = self.file_extractor[file_suffix]
-                    docs = reader.load_data(input_file)
+                        doc_reader_cls = CUSTOMIZE_SUPPORTED_SUFFIX[file_suffix]
+                        self.file_extractor[file_suffix] = doc_reader_cls(
+                            single_text_per_document=self.single_text_per_document)
+                    reader: DocumentReader = self.file_extractor[file_suffix]
+                    docs = reader.load(input_file, **self.load_kwargs)
                 else:
                     reader = UnstructuredReader()
                     docs = reader.load_data(input_file)

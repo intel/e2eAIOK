@@ -9,6 +9,17 @@ from .schema import Document
 class DocumentReader(ABC):
     """Utilities for loading data from a directory."""
 
+    def __init__(self, single_text_per_document: bool = True):
+        self.single_text_per_document = single_text_per_document
+
+    def load(self, file: Path, **load_kwargs: Any) -> List[Document]:
+        docs = self.load_data(file, **load_kwargs)
+        if self.single_text_per_document:
+            text = "\n".join([doc.text for doc in docs])
+            return [Document(text=text, metadata={"source": str(file)})]
+        else:
+            return docs
+
     @abstractmethod
     def load_data(self, file: Path, **load_kwargs: Any) -> List[Document]:
         """Load data from the input directory."""
@@ -17,7 +28,8 @@ class DocumentReader(ABC):
 class PDFReader(DocumentReader):
     """PDF parser."""
 
-    def __init__(self):
+    def __init__(self, single_text_per_document: bool = True):
+        super().__init__(single_text_per_document)
         try:
             import pypdf
         except ImportError:
@@ -46,7 +58,8 @@ class PDFReader(DocumentReader):
 class DocxReader(DocumentReader):
     """Docx parser."""
 
-    def __init__(self):
+    def __init__(self, single_text_per_document: bool = True):
+        super().__init__(single_text_per_document)
         try:
             import docx
         except ImportError:
@@ -70,8 +83,10 @@ class ImageReader(DocumentReader):
 
     def __init__(
             self,
+            single_text_per_document: bool = True,
             keep_image: bool = False,
     ):
+        super().__init__(single_text_per_document)
         self._keep_image = keep_image
         try:
             from PIL import Image

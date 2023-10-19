@@ -82,6 +82,7 @@ def document_to_text(input_dir_or_files: Union[str, List[str]],
             input_files=input_files,
             silent_errors=silent_errors,
             recursive=recursive,
+            single_text_per_document=single_text_per_document,
             required_exts=required_exts,
             use_multithreading=use_multithreading,
             max_concurrency=max_concurrency,
@@ -104,6 +105,7 @@ if __name__ == '__main__':
     parser.add_argument("-t", "--required_exts", dest="required_exts", type=str, nargs="*", default=None)
     parser.add_argument("-m", "--use_multithreading", dest="use_multithreading", type=bool, default=False)
     parser.add_argument("-c", "--max_concurrency", dest="max_concurrency", type=int, default=None)
+    parser.add_argument("-s", "--single_text_per_document", dest="single_text_per_document", type=bool, default=True)
     args = parser.parse_args()
 
     if not args.input_dir and not args.input_files:
@@ -118,5 +120,6 @@ if __name__ == '__main__':
         recursive=args.recursive,
         required_exts=args.required_exts,
         use_multithreading=args.use_multithreading,
+        single_text_per_document=args.single_text_per_document,
         max_concurrency=args.max_concurrency,
     )
