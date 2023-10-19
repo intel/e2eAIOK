@@ -157,6 +157,22 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds(ctx.ds))
 
+
+    def test_filter_by_perplexity_ray(self):
+        pass
+        # Ray version not supported yet
+        op = PerplexityFilter()
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds(ctx.ds))
+
+
+    def test_filter_by_word_repetition_ray(self):
+        pass
+        # Ray version not supported yet
+        op = WordRepetitionFilter()
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds(ctx.ds))
+
     def test_text_fixer_ray(self):
         op = TextFix()
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
@@ -262,6 +278,16 @@ class Test_LLMUtils_Operations(unittest.TestCase):
 
     def test_filter_by_word_num_spark(self):
         op = WordNumFilter()
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
+    def test_filter_by_perplexity_spark(self):
+        op = PerplexityFilter()
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
+    def test_filter_by_word_repetition_spark(self):
+        op = WordRepetitionFilter()
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
 
