@@ -8,7 +8,7 @@ class DocumentWriter:
         self.file = file
 
     def __enter__(self):
-        self.writer = open(self.file, 'wb')
+        self.writer = open(self.file, 'w')
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -16,4 +16,4 @@ class DocumentWriter:
 
     def write(self, doc: Document):
         if doc.text.strip() != "":
-            self.writer.write(str.encode(doc.json() + os.linesep))
+            self.writer.write(doc.json() + os.linesep)
