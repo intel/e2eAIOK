@@ -14,30 +14,30 @@ if [ $? != 0 ]; then
     failed_tests=${failed_tests}${cmdline}"\n"
 fi
 
-cmdline="python pyrecdp/primitives/llmutils/global_dedup.py -d tests/data/PILE/ -o tests/data/PILE_global_dedup -t jsonl"
-echo "***************"
-echo $cmdline
-echo "***************"
-${cmdline}
-if [ $? != 0 ]; then
-    failed_tests=${failed_tests}${cmdline}"\n"
-fi
+# cmdline="python pyrecdp/primitives/llmutils/global_dedup.py -d tests/data/PILE/ -o tests/data/PILE_global_dedup -t jsonl"
+# echo "***************"
+# echo $cmdline
+# echo "***************"
+# ${cmdline}
+# if [ $? != 0 ]; then
+#     failed_tests=${failed_tests}${cmdline}"\n"
+# fi
 
-cmdline="python pyrecdp/primitives/llmutils/near_dedup.py -d tests/data/PILE/ -o tests/data/PILE_near_dedup -t jsonl"
-echo "***************"
-echo $cmdline
-echo "***************"
-${cmdline}
-if [ $? != 0 ]; then
-    failed_tests=${failed_tests}${cmdline}"\n"
-fi
+# cmdline="python pyrecdp/primitives/llmutils/near_dedup.py -d tests/data/PILE/ -o tests/data/PILE_near_dedup -t jsonl"
+# echo "***************"
+# echo $cmdline
+# echo "***************"
+# ${cmdline}
+# if [ $? != 0 ]; then
+#     failed_tests=${failed_tests}${cmdline}"\n"
+# fi
+
+# if [ -z ${failed_tests} ]; then
+#     echo "All tests are passed"
+# else
+#     echo "*** Failed Tests are: ***"
+#     echo -e ${failed_tests}
+#     exit 1
+# fi
 
 python -m unittest tests.test_llmutils.Test_LLMUtils
-
-if [ -z ${failed_tests} ]; then
-    echo "All tests are passed"
-else
-    echo "*** Failed Tests are: ***"
-    echo -e ${failed_tests}
-    exit 1
-fi

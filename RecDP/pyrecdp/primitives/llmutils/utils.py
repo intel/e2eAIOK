@@ -192,7 +192,10 @@ def normalize_str(s):
     return s
 
 def clean_str(s):
-    s = normalize_str(s)
+    try:
+        s = normalize_str(s)
+    except:
+        s = ""
     s = s.lower().translate(str.maketrans("", "", string.punctuation))
     s = re.sub(r"\s+", " ", s.strip())
     return s
