@@ -3,7 +3,7 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-with open("version", "r") as fh:
+with open("deltatuner/version", "r") as fh:
     VERSION = fh.read().strip()
 
 REQUIRED_PACKAGES = [
@@ -24,7 +24,7 @@ setuptools.setup(
     download_url='https://github.com/intel/e2eAIOK/',
     packages=setuptools.find_packages(
         exclude=["example", "docker", ]),
-    package_data={'': ['version']}, 
+    package_data={'deltatuner': ['version']}, 
     python_requires=">=3.7",  # '>=3.4',  # !=3.4.*
     install_requires=REQUIRED_PACKAGES,
     extras_require={
