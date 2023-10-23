@@ -4,14 +4,14 @@ from pyrecdp.core.utils import Timer
 from pyrecdp.primitives.operations import JsonlReader, ParquetReader, PerfileParquetWriter
 
 
-def profanity_filter_spark(spark_df):
+def profanity_filter_spark(spark_df, threshold=0.0):
     from pyrecdp.primitives.operations import ProfanityFilter
-    op = ProfanityFilter()
+    op = ProfanityFilter(threshold=threshold)
     ret = op.process_spark(spark_df.sparkSession, spark_df)
     return ret
 
 
-def profanity_filter(data_dir, out_dir, data_file_type="jsonl"):
+def profanity_filter(data_dir, out_dir, data_file_type="jsonl", threshold=0.0):
     from pyrecdp.primitives.operations import ProfanityFilter
     from pyrecdp.LLM import ResumableTextPipeline
 
@@ -25,7 +25,7 @@ def profanity_filter(data_dir, out_dir, data_file_type="jsonl"):
     pipeline = ResumableTextPipeline()
     ops = [
         reader,
-        ProfanityFilter(),
+        ProfanityFilter(threshold=threshold),
         PerfileParquetWriter(out_dir)
     ]
     pipeline.add_operations(ops)
@@ -37,10 +37,12 @@ if __name__ == "__main__":
     parser.add_argument("--data_dir", dest="data_dir", type=str)
     parser.add_argument("--data_file_type", dest="data_file_type", type=str, default="jsonl")
     parser.add_argument("--output_dir", dest="output_dir", type=str, default="")
+    parser.add_argument("--threshold", dest="threshold", type=float, default="0.0")
     args = parser.parse_args()
+
     data_dir = args.data_dir
     data_file_type = args.data_file_type
     output_dir = args.output_dir
-
+    threshold = args.threshold
     with Timer(f"Processing profanity filter for {data_dir}"):
-        profanity_filter(data_dir, data_file_type, output_dir)
+        profanity_filter(data_dir, output_dir, data_file_type, threshold)
