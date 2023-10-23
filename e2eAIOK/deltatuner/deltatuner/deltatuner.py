@@ -12,9 +12,9 @@ logger = logging.getLogger('deltatuner')
 
 SUPPORTED_ALGO = ["auto", "lora", "ssf"]
 
-def optimize(model, tokenizer, adapter_name: str="default", deltatuning_args: DeltaTunerArguments=None) -> DeltaTunerModel:
+def optimize(model, tokenizer, adapter_name: str="default", deltatuning_args: DeltaTunerArguments=None, **kwargs) -> DeltaTunerModel:
     if deltatuning_args is None:
-        deltatuning_args = DeltaTunerArguments()
+        deltatuning_args = DeltaTunerArguments(**kwargs)
 
     algo = deltatuning_args.algo
     if algo not in SUPPORTED_ALGO:
