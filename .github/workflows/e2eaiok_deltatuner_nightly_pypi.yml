@@ -17,8 +17,6 @@ permissions:
 jobs:
   e2eaiok-dtuner-nightly-python-pypi:
     runs-on: ubuntu-latest
-    environment:
-      url: https://pypi.org/p/deltatuner
     permissions:
       id-token: write
 
