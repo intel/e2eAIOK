@@ -3,6 +3,9 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+with open("version", "r") as fh:
+    VERSION = fh.read().strip()
+
 REQUIRED_PACKAGES = [
     'torch>=1.13.0', 'transformers', 'datasets', 'sentencepiece', 
     'peft==0.4.0', 'evaluate', 'nltk', 'rouge_score', 'einops', 
@@ -11,7 +14,7 @@ REQUIRED_PACKAGES = [
 
 setuptools.setup(
     name="deltatuner",
-    version="0.1",
+    version=VERSION,
     author="Intel AIA",
     author_email="bdf.aiok@intel.com",
     description="Intel extension for peft with PyTorch and DENAS",
