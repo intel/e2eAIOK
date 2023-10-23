@@ -32,7 +32,7 @@ do
         --save_strategy epoch \
         --output_dir $model_save_path \
         --peft lora \
-        --delta lora \
+        --algo lora \
         --denas True \
         --trust_remote_code True \
         --no_cuda \

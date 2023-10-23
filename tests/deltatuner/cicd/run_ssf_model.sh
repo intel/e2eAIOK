@@ -38,7 +38,7 @@ do
         --save_strategy epoch \
         --trust_remote_code True \
         --output_dir $model_save_path \
-        --delta ssf \
+        --algo ssf \
         --denas False \
         --debugs \
         --no_cuda \

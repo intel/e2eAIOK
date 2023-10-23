@@ -39,7 +39,7 @@ do
         --no_cuda \
         --output_dir $model_save_path \
         --debugs --max_epochs 1 --population_num 1 --crossover_num 1 --mutation_num 1 --select_num 1 \
-        --delta ssf \
+        --algo ssf \
         --denas True \
         2>&1 | tee $log_save_path
 done
