@@ -47,3 +47,4 @@ jobs:
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         packages-dir: e2eAIOK/deltatuner/dist
+        verbose: true
