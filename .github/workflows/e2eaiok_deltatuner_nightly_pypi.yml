@@ -10,14 +10,14 @@ on:
     paths:
       - 'e2eAIOK/deltatuner/version'
 
-permissions:
-  contents: read
-  packages: write
-  id-token: write
 
 jobs:
   e2eaiok-dtuner-nightly-python-pypi:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
 
     steps:
     - uses: actions/checkout@v2
