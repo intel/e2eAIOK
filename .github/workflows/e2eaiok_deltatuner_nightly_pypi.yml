@@ -18,7 +18,6 @@ jobs:
   e2eaiok-dtuner-nightly-python-pypi:
     runs-on: ubuntu-latest
     environment:
-      name: pypi_nightly
       url: https://pypi.org/p/deltatuner
     permissions:
       id-token: write
