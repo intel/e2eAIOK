@@ -23,7 +23,7 @@ setuptools.setup(
     url="https://github.com/intel/e2eAIOK/",
     download_url='https://github.com/intel/e2eAIOK/',
     packages=setuptools.find_packages(
-        exclude=["example", "doc", "docker", ]),
+        exclude=["example", "docker", ]),
     python_requires=">=3.7",  # '>=3.4',  # !=3.4.*
     install_requires=REQUIRED_PACKAGES,
     extras_require={

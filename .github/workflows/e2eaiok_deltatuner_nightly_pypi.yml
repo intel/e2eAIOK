@@ -17,6 +17,12 @@ permissions:
 jobs:
   e2eaiok-dtuner-nightly-python-pypi:
     runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/deltatuner
+    permissions:
+      id-token: write
+
     steps:
     - uses: actions/checkout@v2
 
@@ -43,7 +49,4 @@ jobs:
         python3 setup.py sdist
 
     - name: Upload
-      uses: pypa/gh-action-pypi-publish@master
-      with:
-        password: ${{ secrets.PYPI_API_TOKEN_PYRECDP }}
-        packages_dir: e2eAIOK/deltatuner/dist
+      uses: pypa/gh-action-pypi-publish@release/v1
