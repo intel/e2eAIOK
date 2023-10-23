@@ -46,3 +46,4 @@ jobs:
       uses: pypa/gh-action-pypi-publish@master
       with:
         password: ${{ secrets.PYPI_API_TOKEN_PYRECDP }}
+        packages_dir: e2eAIOK/deltatuner/dist
