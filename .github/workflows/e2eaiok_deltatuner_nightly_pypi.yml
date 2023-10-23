@@ -45,4 +45,5 @@ jobs:
 
     - name: Upload
       uses: pypa/gh-action-pypi-publish@release/v1
-      packages_dir: e2eAIOK/deltatuner/dist
+      with:
+        packages_dir: e2eAIOK/deltatuner/dist
