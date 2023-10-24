@@ -131,6 +131,7 @@ def detect_keys(content):
         from detect_secrets.core import scan
     except ImportError:
         os.system("pip install detect-secrets")
+        os.system("pip install gibberish-detector")
 
     from detect_secrets.settings import transient_settings
 
