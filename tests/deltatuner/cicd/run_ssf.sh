@@ -38,7 +38,7 @@ do
         --trust_remote_code True \
         --no_cuda \
         --output_dir $model_save_path \
-        --delta ssf \
+        --algo ssf \
         --denas False \
         --debugs \
         2>&1 | tee $log_save_path

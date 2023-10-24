@@ -267,13 +267,6 @@ class FinetuneArguments:
         default="",
         metadata={"help": "the path of peft model to resume"},
     )
-    delta: Optional[str] = field(
-        default=None,
-        metadata={
-            "help": ("whether to use the deltatuner optimization"),
-            "choices": ["auto", "lora", "ssf"]
-        },
-    )
     profile: bool = field(
         default=False,
         metadata={"help": "Profile the model to get the forward and backward time"}
@@ -704,11 +697,11 @@ def main():
         logger.info("***original optimized model parameter***")
         model.print_trainable_parameters()
 
-    if finetune_args.delta:
+    if deltatuner_args.algo:
         if finetune_args.resume_peft != "":
             model = DeltaTunerModel.from_pretrained(model, finetune_args.resume_peft, denas_config=deltatuner_args)
         else:
-            model = deltatuner.optimize(model, tokenizer, algo=finetune_args.delta, deltatuning_args=deltatuner_args)
+            model = deltatuner.optimize(model, tokenizer, deltatuning_args=deltatuner_args)
         logger.info("***deltatuner optimized model parameter***")
         model.print_trainable_parameters()
          
@@ -769,7 +762,7 @@ def main():
             os.system(f"rm {saved_dir}/*.bin* {saved_dir}/*.safetensors*")
             print(f"Save merged model to {saved_dir}")
             torch.save(model.state_dict(), os.path.join(saved_dir, "pytorch_model.bin"))
-            if finetune_args.delta == 'ssf':
+            if deltatuner_args.algo == 'ssf':
                 if os.path.exists(finetune_args.merge_model_code_dir):
                     print(f"copy merged model code to {saved_dir}")
                     os.system(f"cp {finetune_args.merge_model_code_dir}/* {saved_dir}")

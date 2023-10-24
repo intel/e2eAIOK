@@ -16,7 +16,7 @@ python example/instruction_tuning_pipeline/finetune_clm.py \
         --trust_remote_code True \
         --no_cuda \
         --output_dir "$DATA_PATH/dtuner_test/models/llama2-7b-ssf-denas-bf16-merge" \
-        --delta ssf \
+        --algo ssf \
         --resume_peft "$DATA_PATH/dtuner_test/models/llama2-7b-ssf-denas-bf16" \
         --save_merged_model True \
         --merge_model_code_dir $DATA_PATH"/dtuner_test/ssf_models_code/llama-7b-ssf" \
