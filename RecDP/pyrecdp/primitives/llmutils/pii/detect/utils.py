@@ -7,10 +7,11 @@ class PIIEntityType(Enum):
     EMAIL = auto()
     PHONE_NUMBER = auto()
     PASSWORD = auto()
+    KEY = auto()
 
     @classmethod
     def default(cls):
-        return [PIIEntityType.IP_ADDRESS,PIIEntityType.EMAIL,PIIEntityType.PHONE_NUMBER]
+        return [PIIEntityType.IP_ADDRESS, PIIEntityType.EMAIL, PIIEntityType.PHONE_NUMBER, PIIEntityType.KEY]
 
     @classmethod
     def parse(cls, entity):
@@ -24,5 +25,7 @@ class PIIEntityType(Enum):
             return PIIEntityType.PHONE_NUMBER
         elif "ip" == entity:
             return PIIEntityType.PHONE_NUMBER
+        elif "key" == entity:
+            return PIIEntityType.KEY
         else:
             raise NotImplementedError(f" entity type {entity} is not supported!")

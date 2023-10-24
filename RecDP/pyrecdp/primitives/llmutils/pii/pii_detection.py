@@ -2,6 +2,7 @@ from .detect.ip_detection import detect_ip
 from .detect.emails_detection import detect_email
 from .detect.phones_detection import detect_phones
 from .detect.name_password_detection import detect_name_password
+from .detect.keys_detection import detect_keys
 from .detect.utils import PIIEntityType
 
 from transformers import Pipeline
@@ -23,6 +24,8 @@ def scan_pii_text(text: str, pipeline: Pipeline, entity_types: List[PIIEntityTyp
     # for phone number use phonenumbers tool
     if PIIEntityType.PHONE_NUMBER in entity_types:
         result = result + detect_phones(text)
+    if PIIEntityType.KEY in entity_types:
+        result = result + detect_keys(text)
 
     if PIIEntityType.NAME in entity_types or PIIEntityType.PASSWORD in entity_types:
         result = result + detect_name_password(text, pipeline, entity_types)
