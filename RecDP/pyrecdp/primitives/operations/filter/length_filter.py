@@ -3,14 +3,14 @@ from pyrecdp.primitives.operations.filter.base import BaseFilter
 
 
 class LengthFilter(BaseFilter):
-    def __init__(self, minimum_length=100, maximum_length=-1):
-        settings = {'minimum_length': minimum_length, "maximum_length": maximum_length}
+    def __init__(self, min_len=100, max_len=-1):
+        settings = {'min_len': min_len, "max_len": max_len}
         super().__init__(args_dict=settings)
-        self.minimum_length = minimum_length
-        self.maximum_length = maximum_length
+        self.min_len = min_len
+        self.max_len = max_len
 
     def compute(self, text) -> bool:
-        if len(text) < self.minimum_length or (self.maximum_length != -1 and len(text) > self.maximum_length):
+        if len(text) < self.min_len or (self.max_len != -1 and len(text) > self.max_len):
             return False
         else:
             return True
