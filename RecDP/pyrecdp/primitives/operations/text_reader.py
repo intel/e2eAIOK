@@ -47,13 +47,6 @@ class JsonlReader(BaseLLMOperation):
         return self.cache
 LLMOPERATORS.register(JsonlReader)
 
-class GlobalJsonlReader(JsonlReader):
-    def __init__(self, input_dir = ""):
-        super().__init__(input_dir)
-
-LLMOPERATORS.register(GlobalJsonlReader)
-
-
 class SourcedReader(BaseLLMOperation):
     def __init__(self, input_dir = "", source_prefix = ""):
         settings = {'input_dir': input_dir, "source_prefix": source_prefix}
@@ -114,6 +107,28 @@ class SourcedJsonlReader(SourcedReader):
         return self.cache
 LLMOPERATORS.register(SourcedJsonlReader)
 
+class GlobalJsonlReader(SourcedJsonlReader):
+    def __init__(self, input_dir = "", source_prefix = ""):
+        super().__init__(input_dir = input_dir, source_prefix = source_prefix)
+
+    def process_spark(self, spark, spark_df: DataFrame = None) -> DataFrame:
+        from pyspark.sql.types import StructType, StructField, StringType
+        import pyspark.sql.functions as F
+        schema = StructType([
+            StructField("text",StringType(),True),
+            StructField("meta",StringType(),True)
+        ])
+        files_with_subtask, input_dir = self.get_files_with_subtask("jsonl")
+        to_read_list = [(sub_task, os.path.join(input_dir, f)) for sub_task, file_list in files_with_subtask.items() for f in file_list]
+        for idx, (sub_task, file_path) in enumerate(to_read_list):
+            df = spark.read.text(file_path)
+            df = df.withColumn('jsonData', F.from_json(F.col('value'), schema)).select("jsonData.*")
+            source_id = os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))
+            df = df.select(F.concat_ws("@", F.lit("global_id"), F.monotonically_increasing_id(), F.lit(source_id)).alias("global_id"), "*")
+            self.cache = df if idx == 0 else self.cache.union(df)
+        return self.cache
+LLMOPERATORS.register(GlobalJsonlReader)
+
 class ParquetReader(BaseLLMOperation):
     def __init__(self, input_dir = ""):        
         settings = {'input_dir': input_dir}
@@ -132,12 +147,6 @@ class ParquetReader(BaseLLMOperation):
         self.cache = df            
         return self.cache
 LLMOPERATORS.register(ParquetReader)
-
-class GlobalParquetReader(ParquetReader):
-    def __init__(self, input_dir = ""):
-        super().__init__(input_dir)
-
-LLMOPERATORS.register(GlobalParquetReader)
 
 class SourcedParquetReader(SourcedReader):
     def __init__(self, input_dir = "", source_prefix = ""):
@@ -165,6 +174,29 @@ class SourcedParquetReader(SourcedReader):
             self.cache = df if idx == 0 else self.cache.union(df)
         return self.cache
 LLMOPERATORS.register(SourcedParquetReader)
+
+class GlobalParquetReader(SourcedParquetReader):
+    def __init__(self, input_dir = "", source_prefix = ""):
+        super().__init__(input_dir = input_dir, source_prefix = source_prefix)
+
+    def process_spark(self, spark, spark_df: DataFrame = None) -> DataFrame:
+        if spark_df:
+            self.cache = spark_df
+            return self.cache
+
+        import pyspark.sql.functions as F
+        files_with_subtask, input_dir = self.get_files_with_subtask("parquet")
+        to_read_list = [(sub_task, os.path.join(input_dir, f)) for sub_task, file_list in files_with_subtask.items() for f in file_list]
+        for idx, (sub_task, file_path) in enumerate(to_read_list):
+            df = spark.read.parquet(file_path)
+            source_id = os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))
+            df = df.select(
+                F.concat_ws("@", F.lit("global_id"), F.monotonically_increasing_id(), F.lit(source_id)).alias(
+                    "global_id"), "*")
+            self.cache = df if idx == 0 else self.cache.union(df)
+        return self.cache
+LLMOPERATORS.register(GlobalParquetReader)
+
 
 class PerfileReader:
     pass
@@ -212,6 +244,9 @@ class PerfileSourcedJsonlReader(SourcedReader, PerfileReader):
             df = spark.read.text(file_path)
             df = df.withColumn('jsonData', F.from_json(F.col('value'), schema)).select("jsonData.*")
             df = df.withColumn('source_id', F.lit(source_id))
+            # if spark_df is not None, we need to add global_id for dataframe which will help to filter data with global_id
+            if spark_df:
+                df = df.select(F.concat_ws("@", F.lit("global_id"), F.monotonically_increasing_id(), F.lit(source_id)).alias("global_id"), "*")
             self.cache.append((df, source_id))
         return self.cache
 LLMOPERATORS.register(PerfileSourcedJsonlReader)

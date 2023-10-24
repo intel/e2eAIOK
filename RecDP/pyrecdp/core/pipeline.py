@@ -67,13 +67,13 @@ class BasePipeline:
                 executable_pipeline[idx] = actual_op
                 executable_sequence.append(executable_pipeline[idx])
         return executable_pipeline, executable_sequence
-    
+
     def find_operation(self, target_list):
         for idx, op in self.pipeline.items():
             if op.op in target_list:
                 return op
         return None
-                
+
     def add_operation(self, config):
         pass
 

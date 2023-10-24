@@ -282,11 +282,12 @@ class ResumableTextPipeline(TextPipeline):
         executable_sequence = self.executable_sequence
 
         print(executable_sequence)
-        return
+        
         engine_name = self.check_platform(executable_sequence)
         self.engine_name = engine_name
         # explode one pipeline to multiple sub pipeline (per file)
         sub_pipelines = []
+        global_data = None
         op_chain = []
 
         if engine_name == 'ray':
@@ -331,6 +332,15 @@ class ResumableTextPipeline(TextPipeline):
             if not hasattr(self, 'rdp') or self.rdp is None:
                 self.rdp = SparkDataProcessor()
 
+            from pyrecdp.primitives.operations.text_reader import GlobalJsonlReader, GlobalParquetReader
+            from pyrecdp.primitives.operations.text_deduplication import FuzzyDeduplicateApplyDict, GlobalDeduplicateApplyDict
+
+            for op in executable_sequence:
+                if not isinstance(op, PerfileReader):
+                    op.execute_spark(executable_pipeline, rdp=self.rdp)
+                else:
+                    break
+
             for op in executable_sequence:
                 if isinstance(op, PerfileReader):
                     op.execute_spark(executable_pipeline, rdp = self.rdp)
@@ -352,11 +362,15 @@ class ResumableTextPipeline(TextPipeline):
                 for idx, op in enumerate(op_chain):
                     op.statistics_flag = self.statistics_flag
                     if idx == 0:
-                        op.execute_spark(executable_pipeline, rdp = self.rdp, child_ds = ds_reader)
+                        if isinstance(op, FuzzyDeduplicateApplyDict) or isinstance(op, GlobalDeduplicateApplyDict):
+                            op.execute_spark(executable_pipeline, rdp=self.rdp, child_ds=ds_reader, global_df=self.pipeline[op.children[-1]].cache)
+                        else:
+                            op.execute_spark(executable_pipeline, rdp = self.rdp, child_ds = ds_reader)
                     elif isinstance(op, PerfileParquetWriter) or isinstance(op, PerfileJsonlWriter):
                         op.execute_spark(executable_pipeline, source_id = source_id)
                     else:
-                        op.execute_spark(executable_pipeline, rdp = self.rdp)
+                        op.execute_spark(executable_pipeline, rdp=self.rdp)
+
                 elapse = time.time() - start
                 status_tracker.write(f"{source_id}, {elapse} secs\n")
                 status_tracker.flush()
