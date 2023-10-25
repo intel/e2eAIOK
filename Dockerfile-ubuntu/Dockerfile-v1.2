@@ -1,0 +1,23 @@
+FROM ubuntu
+
+# See http://bugs.python.org/issue19846
+ENV LANG C.UTF-8
+
+# Install system dependencies
+RUN apt-get -y update \
+    && apt-get install -y build-essential \
+    && apt-get install -y wget numactl git \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-pip python-is-python3 graphviz \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y openjdk-8-jre \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install torch==1.13.0 transformers datasets accelerate SentencePiece \
+    evaluate peft==0.4.0 torchsummary \
+    nltk rouge_score protobuf==3.20.1 tokenizers einops wandb \
+    sigopt
+
+RUN pip install --upgrade pip
+RUN pip install pyspark
+RUN pip install graphviz jupyterlab
+RUN pip install featuretools
