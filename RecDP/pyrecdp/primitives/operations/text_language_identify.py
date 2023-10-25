@@ -192,6 +192,14 @@ def prepare_func_language_id(fasttext_model_dir, language_identify_field, langua
 
 class LanguageIdentify(BaseLLMOperation):
     def __init__(self, text_key = 'text', inplace = False, fasttext_model_dir = "", threshold = 0):
+        """
+        Initialization method
+        :param text_key: the name of field which will be apply language_idenfity.
+        :param fasttext_model_dir: The min language identification confidence
+            scores of samples to keep.
+        :param fasttext_model_dir: the path of fasttext model dir. if fasttext_model_dir equals to "", the code will download the model from huggingface
+        :param threshold: the threshold to return identified language. the value range is [0, 1).
+        """
         settings = {'text_key': text_key, 'inplace': inplace, 'fasttext_model_dir': fasttext_model_dir, 'threshold': threshold}
         super().__init__(settings)
         self.text_key = text_key
