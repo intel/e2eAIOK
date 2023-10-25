@@ -5,6 +5,11 @@ from profanity_check import predict, predict_prob
 
 class ProfanityFilter(BaseFilter):
     def __init__(self, threshold: float = 0.0):
+        """
+            Keeps sample without profanity language. Mainly using alt-profanity-check library
+
+            :param threshold: The max profanity threshold, samples will be filtered if their profanity score exceeds this parameter. Default: 0.0 (Float 0-1)
+        """
         settings = {'threshold': threshold}
         super().__init__(args_dict=settings)
         self.threshold = threshold

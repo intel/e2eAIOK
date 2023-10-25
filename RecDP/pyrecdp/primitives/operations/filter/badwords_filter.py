@@ -26,6 +26,11 @@ def prepare_func_filter_by_badwords(language="en"):
 
 class BadwordsFilter(BaseFilter):
     def __init__(self, language='en'):
+        """
+            Keeps samples without bad words. The bad words list comes from https://github.com/LDNOOBW/List-of-Dirty-Naughty-Obscene-and-Otherwise-Bad-Words
+
+            :param language:  Sample in which language. Default: en. Referring https://github.com/LDNOOBW/List-of-Dirty-Naughty-Obscene-and-Otherwise-Bad-Words to get supported language
+        """
         settings = {'language': language}
         super().__init__(args_dict=settings)
         self.language = language

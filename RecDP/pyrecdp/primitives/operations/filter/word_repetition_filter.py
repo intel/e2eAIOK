@@ -14,6 +14,14 @@ class WordRepetitionFilter(BaseFilter):
                  rep_len=10,
                  min_ratio=0.0,
                  max_ratio=0.5, ):
+        """
+            Keeps samples with word-level n-gram repetition ratio within the specified range
+
+            :param language: Sample in which language. Default: en.
+            :param rep_len: Repetition length for word-level n-gram.
+            :param min_ratio: The min filter ratio, samples will be filtered if their word-level n-gram repetition ratio is below this parameter. Default: 0.0
+            :param max_ratio: The max filter ratio, samples will be filtered if their word-level n-gram repetition ratio exceeds this parameter. Default: 0.5
+        """
         settings = {'language': language, "rep_len": rep_len, "min_ratio": min_ratio,
                     "max_ratio": max_ratio}
         super().__init__(args_dict=settings)

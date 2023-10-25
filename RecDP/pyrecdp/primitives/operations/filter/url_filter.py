@@ -69,6 +69,9 @@ def get_domain(x):
 
 class URLFilter(BaseFilter):
     def __init__(self):
+        """
+            Keeps samples according to URLs based on blacklists https://dsi.ut-capitole.fr/blacklists/
+        """
         super().__init__()
         self.text_key = "meta"
         self.blacklist = load_blacklist_set()

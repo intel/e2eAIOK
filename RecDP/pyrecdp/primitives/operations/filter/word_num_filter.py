@@ -10,6 +10,13 @@ from pyrecdp.primitives.operations.filter.constant import SPECIAL_CHARACTERS
 # This filter is referred from alibaba data juicer project
 class WordNumFilter(BaseFilter):
     def __init__(self, min_num=10, max_num=sys.maxsize, language='en'):
+        """
+            Keeps samples with word count within the specified range
+
+            :param min_num: The min filter word number, samples will be filtered if their word number is below this parameter. Default: 10
+            :param max_num: The max filter word number, samples will be filtered if their word number exceeds this parameter. Default: sys.maxsize
+            :param language: Sample in which language. Default: en. (en, zh)
+        """
         settings = {'min_num': min_num, "max_num": max_num, "language": language}
         super().__init__(args_dict=settings)
         self.min_num = min_num

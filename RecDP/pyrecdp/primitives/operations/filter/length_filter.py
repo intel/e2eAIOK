@@ -4,6 +4,12 @@ from pyrecdp.primitives.operations.filter.base import BaseFilter
 
 class LengthFilter(BaseFilter):
     def __init__(self, min_len=100, max_len=-1):
+        """
+            Keeps samples with total text length within the specified range
+
+            :param min_len: The min text length in the filtering. samples will be filtered if their text length is below this parameter. Default: 100
+            :param max_len: The max text length in the filtering. samples will be filtered if their text length exceeds this parameter. Default: -1(unlimited)
+        """
         settings = {'min_len': min_len, "max_len": max_len}
         super().__init__(args_dict=settings)
         self.min_len = min_len

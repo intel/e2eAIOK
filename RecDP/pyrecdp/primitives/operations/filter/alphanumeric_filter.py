@@ -7,6 +7,11 @@ from pyrecdp.primitives.operations.filter.base import BaseFilter
 # This filter is referred from alibaba data juicer project
 class AlphanumericFilter(BaseFilter):
     def __init__(self, min_ratio=0.25, max_ratio=sys.maxsize):
+        """ Keeps samples with alphanumeric ratio within the specified range
+
+            :param min_ratio: The min filter ratio, samples will be filtered if their alphabet/numeric ratio is below this parameter. Default: 0.25
+            :param max_ratio: The max filter ratio, samples will be filtered if their alphabet/numeric ratio exceeds this parameter. Default: sys.maxsize
+        """
         settings = {'min_ratio': min_ratio, "max_ratio": max_ratio}
         super().__init__(args_dict=settings)
         self.min_ratio = min_ratio
@@ -20,6 +25,5 @@ class AlphanumericFilter(BaseFilter):
         else:
             return False
 
+
 LLMOPERATORS.register(AlphanumericFilter)
-
-

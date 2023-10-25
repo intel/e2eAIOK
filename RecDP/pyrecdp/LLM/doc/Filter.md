@@ -53,10 +53,10 @@
 
 ## PerplexityFilter
 
-| Parameters | Distribution                                                                                                   |
-|:-----------|:---------------------------------------------------------------------------------------------------------------|
-| language   | Sample in which language. Default: en.                                                                         | 
-| max_ppl    | The max filter perplexity, samples will be filtered if their perplexity exceeds this parameter. Default: 1500  |
+| Parameters | Distribution                                                                                                  |
+|:-----------|:--------------------------------------------------------------------------------------------------------------|
+| language   | Sample in which language. Default: en. (en, zh)                                                               | 
+| max_ppl    | The max filter perplexity, samples will be filtered if their perplexity exceeds this parameter. Default: 1500 |
 
 ## ProfanityFilter
 
@@ -90,14 +90,14 @@
 |:------------|:-----------------------------------------------------------------------------------------------------------------------|
 | min_num     | The min filter word number, samples will be filtered if their word number is below this parameter. Default: 10         |
 | max_num     | The max filter word number, samples will be filtered if their word number exceeds this parameter. Default: sys.maxsize |
-| language    | Sample in which language. Default: en.                                                                                 |
+| language    | Sample in which language. Default: en. (en, zh)                                                                        |
 
 
 ## WordRepetitionFilter
 
-| Parameters      | Distribution                                                                                                                       |
-|:----------------|:-----------------------------------------------------------------------------------------------------------------------------------|
-| language        | Sample in which language. Default: en.                                                                                             |
-| rep_len         | Repetition length for word-level n-gram.                                                                                           |
-| min_ratio       | The min filter ratio, samples will be filtered if their word-level n-gram repetition ratio is below this parameter.   Default: 0.0 |
-| max_ratio       | The max filter ratio, samples will be filtered if their word-level n-gram repetition ratio exceeds this parameter.   Default: 0.5  |
+| Parameters      | Distribution                                                                                                                          |
+|:----------------|:--------------------------------------------------------------------------------------------------------------------------------------|
+| language        | Sample in which language. Default: en.                                                                                                |
+| rep_len         | Repetition length for word-level n-gram. Default: 10                                                                                  |
+| min_ratio       | The min filter ratio, samples will be filtered if their word-level n-gram repetition ratio is below this parameter. Default: 0.0      |
+| max_ratio       | The max filter ratio, samples will be filtered if their word-level n-gram repetition ratio exceeds this parameter. Default: 0.5       |

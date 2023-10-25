@@ -7,6 +7,12 @@ from pyrecdp.primitives.operations.filter.base import BaseFilter
 # This filter is referred from alibaba data juicer project
 class AverageLineLengthFilter(BaseFilter):
     def __init__(self, min_len=10, max_len=sys.maxsize):
+        """
+            Keeps samples with average line length within the specified range
+
+            :param min_len: The min filter length, samples will be filtered if their average line length is below this parameter. Default: 10
+            :param max_len: The max filter length, samples will be filtered if their average line length exceeds this parameter. Default: sys.maxsize
+        """
         settings = {'min_len': min_len, "max_len": max_len}
         super().__init__(args_dict=settings)
         self.min_len = min_len
@@ -20,6 +26,5 @@ class AverageLineLengthFilter(BaseFilter):
         else:
             return False
 
+
 LLMOPERATORS.register(AverageLineLengthFilter)
-
-
