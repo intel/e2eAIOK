@@ -14,7 +14,16 @@ def prepare_func_sentencesplit(lang: str = 'en'):
     return process
 
 class DocumentSplit(BaseLLMOperation):
-    def __init__(self, text_key = 'text', inplace = True, language = 'en'):
+    def __init__(self, text_key='text', inplace=True, language='en'):
+        """
+        Args:
+            text_key: The name of the text field. Default is 'text'.
+            inplace: Whether to annotate on the original data. Default is True.
+            language: The language in which to split the sentence of text.
+                      Currently supported languages are 'en','fr','pt, and 'es'.
+        Raises:
+            ValueError: If the `language` parameter is not one of the supported languages.
+        """
         settings = {'text_key': text_key, 'inplace': inplace, 'language': language}
         super().__init__(settings)
         self.text_key = text_key
@@ -23,7 +32,9 @@ class DocumentSplit(BaseLLMOperation):
         self.actual_func = None
         self.support_spark = True
         self.support_ray = True
-        
+        if language not in ['en', 'fr', 'pt', 'es']:
+            raise ValueError(f"language {language} is not one of the supported languages")
+
     def process_rayds(self, ds: Dataset) -> Dataset:
         if self.inplace:
             new_name = self.text_key

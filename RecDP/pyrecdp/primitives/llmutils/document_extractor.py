@@ -11,6 +11,21 @@ def pdf_to_text(input_dir_or_files: Union[str, List[str]],
                 use_multithreading: bool = False,
                 single_text_per_document: bool = True,
                 max_concurrency: Optional[int] = None):
+    """Converts PDF files to text.
+
+        Args:
+            input_dir_or_files: The directory containing the PDF files to convert, or a list of PDF file paths.
+            output_file: The path to the output text file.
+            silent_errors: Whether to ignore errors encountered while converting the PDF files.
+            recursive: Whether to recursively convert PDF files in subdirectories.
+            use_multithreading: Whether to use multithreading to convert the PDF files.
+            single_text_per_document: Whether to combine the text from all pages of a PDF file into a single text document.
+            max_concurrency: The maximum number of concurrent threads to use.
+                If `None`, the number of threads will be determined by the number of CPU cores.
+
+        Returns:
+            None.
+        """
     document_to_text(input_dir_or_files,
                      output_file,
                      glob="**/*.pdf",
@@ -28,6 +43,21 @@ def docx_to_text(input_dir_or_files: Union[str, List[str]],
                  use_multithreading: bool = False,
                  single_text_per_document: bool = True,
                  max_concurrency: Optional[int] = None):
+    """Converts DOCX files to text.
+
+        Args:
+            input_dir_or_files: The directory containing the DOCX files to convert, or a list of DOCX file paths.
+            output_file: The path to the output text file.
+            silent_errors: Whether to ignore errors encountered while converting the DOCX files.
+            recursive: Whether to recursively convert DOCX files in subdirectories.
+            use_multithreading: Whether to use multithreading to convert the DOCX files.
+            single_text_per_document: Whether to combine the text from all pages of a DOCX file into a single text document.
+            max_concurrency: The maximum number of concurrent threads to use.
+                If `None`, the number of threads will be determined by the number of CPU cores.
+
+        Returns:
+            None.
+        """
     document_to_text(input_dir_or_files,
                      output_file,
                      glob="**/*.docx",
@@ -45,6 +75,21 @@ def image_to_text(input_dir_or_files: Union[str, List[str]],
                   use_multithreading: bool = False,
                   single_text_per_document: bool = True,
                   max_concurrency: Optional[int] = None):
+    """Converts image files to text using OCR.
+
+        Args:
+            input_dir_or_files: The directory containing the image files to convert, or a list of image file paths.
+            output_file: The path to the output text file.
+            silent_errors: Whether to ignore errors encountered while converting the image files.
+            recursive: Whether to recursively convert image files in subdirectories.
+            use_multithreading: Whether to use multithreading to convert the image files.
+            single_text_per_document: Whether to combine the text from all pages of an image file into a single text document.
+            max_concurrency: The maximum number of concurrent threads to use.
+                If `None`, the number of threads will be determined by the number of CPU cores.
+
+        Returns:
+            None.
+        """
     document_to_text(input_dir_or_files,
                      output_file,
                      required_exts=[".jpeg", ".jpg", ".png"],
@@ -64,6 +109,23 @@ def document_to_text(input_dir_or_files: Union[str, List[str]],
                      use_multithreading: bool = False,
                      single_text_per_document: bool = True,
                      max_concurrency: Optional[int] = None):
+    """Converts documents of various formats to text, including PDF, DOCX, and image files.
+
+       Args:
+           input_dir_or_files: The directory containing the documents to convert, or a list of document file paths.
+           output_file: The path to the output text file.
+           glob: A glob pattern to match the document file paths.
+           silent_errors: Whether to ignore errors encountered while converting the documents.
+           recursive: Whether to recursively convert documents in subdirectories.
+           required_exts: A list of file extensions that are required for the documents to be converted. If `None`, all file extensions we supported will be accepted.
+           use_multithreading: Whether to use multithreading to convert the documents.
+           single_text_per_document: Whether to combine the text from all pages of a document into a single text document.
+           max_concurrency: The maximum number of concurrent threads to use.
+                If `None`, the number of threads will be determined by the number of CPU cores.
+
+       Returns:
+           None.
+       """
     if isinstance(input_dir_or_files, str):
         if os.path.isdir(input_dir_or_files):
             input_dir, input_files = input_dir_or_files, None
