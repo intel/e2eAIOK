@@ -1,9 +1,36 @@
 import argparse
+import os
+from typing import Optional, List
+
+from pyrecdp.primitives.llmutils.pii.detect.utils import PIIEntityType
 from pyspark.sql.dataframe import DataFrame
 
 
-def pii_remove(dataset: DataFrame, model_root_path=None, text_column="text", show_secret_column=True, inplace=True,
-               entity_types=None):
+def pii_remove(dataset: DataFrame,
+               model_root_path:Optional[str]=None,
+               text_column:str="text",
+               show_secret_column:bool=True,
+               inplace:bool=True,
+               entity_types:Optional[List[PIIEntityType]]=None):
+    """
+        Removes PII information from a DataFrame.
+
+        Args:
+            dataset: The DataFrame to be processed.
+            model_root_path: The path to the PII information removal model.
+            text_column: The name of the text column to be processed.
+            show_secret_column: Whether to add a new column to the DataFrame containing the masked PII information.
+            inplace: Whether to update the original text column.
+            entity_types: The types of PII information to be removed.
+
+        Returns:
+            The processed DataFrame.
+
+        Raises:
+            ValueError: If the `text_column` parameter does not exist in the DataFrame.
+        """
+    if text_column not in dataset.columns:
+        raise ValueError('Invalid text_column: {}'.format(text_column))
     from pyrecdp.primitives.operations import PIIRemoval
     spark_df = dataset
     op = PIIRemoval(text_key=text_column, inplace=inplace, model_root_path=model_root_path,

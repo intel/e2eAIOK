@@ -3,6 +3,19 @@ import argparse
 from pyrecdp.core.utils import Timer
 
 def sentence_split(spark_df: DataFrame, language = 'en', text_column='text', new_text_column='text') -> DataFrame:
+    """Splits the text in a Spark DataFrame into sentences.
+
+       Args:
+           spark_df: The Spark DataFrame containing the text to split.
+           language: The language in which to split the sentence of text.
+                     Currently supported languages are 'en','fr','pt, and 'es'.
+           text_column: The name of the column containing the text to split. Defaults to 'text'.
+           new_text_column: The name of the new column containing the split sentences. Defaults to 'text'.
+
+       Returns:
+           A Spark DataFrame with the new column containing the split sentences
+           if value for new_text_column and text_column are not the smae.
+       """
     from pyrecdp.primitives.operations import DocumentSplit
     if new_text_column != text_column:
         inplace = False

@@ -48,6 +48,26 @@ class DocumentExtractor:
             required_exts: Optional[List[str]] = None,
             **load_kwargs: Any,
     ) -> None:
+        """Converts documents of various formats to text, including PDF, DOCX, and image(jpg,jpeg,png) files.
+        Args:
+           output_file: The path to the output text file.
+           input_dir: The directory containing the documents to extract from.
+           glob: A glob pattern to match the document file paths.
+           use_multithreading: Whether to use multithreading to extract the text from the documents.
+           max_concurrency: The maximum number of concurrent threads to use.
+                If `None`, the number of threads will be determined by the number of CPU cores.
+           input_files: A list of document file paths.
+                If `None`, the `input_dir` and `glob` parameters will be used to determine the input files.
+           single_text_per_document: Whether to combine the text from all pages of a document into a single text document.
+           exclude: A list of glob patterns to exclude from the search.
+           exclude_hidden: Whether to exclude hidden files from the search.
+           silent_errors: Whether to ignore errors encountered while extracting the text from the documents.
+           recursive: Whether to recursively search for documents in subdirectories.
+           encoding: The encoding of the output text file.
+           required_exts: A list of file extensions that are required for the documents to be extracted from.
+                If `None`, all file extensions will be accepted.
+           **load_kwargs: Additional keyword arguments to be passed to the underlying document reader.
+        """
         if not input_dir and not input_files:
             raise ValueError("Must provide either `input_dir` or `input_files`.")
         if not output_file:

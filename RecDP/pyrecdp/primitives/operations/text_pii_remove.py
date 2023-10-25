@@ -1,12 +1,13 @@
-from .base import BaseLLMOperation, LLMOPERATORS
-from ray.data import Dataset
-from pyspark.sql import DataFrame
 import os
-from typing import List
+from typing import List, Optional
 
+from pyspark.sql import DataFrame
+from ray.data import Dataset
+
+from pyrecdp.primitives.llmutils.pii.detect.utils import PIIEntityType
 from pyrecdp.primitives.llmutils.pii.pii_detection import scan_pii_text
 from pyrecdp.primitives.llmutils.pii.pii_redaction import redact_pii_text, random_replacements
-from pyrecdp.primitives.llmutils.pii.detect.utils import PIIEntityType
+from .base import BaseLLMOperation, LLMOPERATORS
 
 
 def prepare_pipeline(model_root_path=None):
@@ -46,8 +47,34 @@ def prepare_func_pii_removal(model_root_path=None, debug_mode=True, entity_types
 
 
 class PIIRemoval(BaseLLMOperation):
-    def __init__(self, text_key='text', inplace=True, model_root_path="", debug_mode=False,
+
+    def __init__(self, text_key: str = 'text',
+                 inplace: bool = True,
+                 model_root_path: Optional[str] = None,
+                 debug_mode: bool = False,
                  entity_types: List[PIIEntityType] = None):
+        """
+        Args:
+            text_key(str): The name of the text field to be processed. Default is 'text'.
+            inplace(bool): Whether to update on the original text field. Default is True.
+            model_root_path(str): The root path to the model files.
+                For example, if you manually download the Hugging Face model `bigcode/starpii` for NER detection
+                from [Hugging Face](https://huggingface.co/bigcode/starpii)
+                to `/path/to/your_model_root_path/bigcode/starpii`,
+                then the `model_root_path` should be `"/path/to/your_model_root_path/"`.
+                Default is None, and it will auto download the huggingface model.
+            debug_mode(bool): Whether to enable debug mode. Default is False.
+            entity_types: The types of personal information to be removal. Default is None.
+        Raises:
+            ValueError: If the `text_key` parameter is not a valid string.
+            ValueError: If the `model_root_path` parameter is not a valid path.
+        """
+        if not isinstance(text_key, str):
+            raise ValueError("text_key must be str type.")
+        if model_root_path is not None:
+            if not os.path.isdir(model_root_path):
+                raise ValueError('Invalid model_root_path: {}'.format(model_root_path))
+
         settings = {'text_key': text_key, 'inplace': inplace, 'model_root_path': model_root_path,
                     'debug_mode': debug_mode, 'entity_types': entity_types}
         super().__init__(settings)
