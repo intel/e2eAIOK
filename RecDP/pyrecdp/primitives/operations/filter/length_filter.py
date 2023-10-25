@@ -10,7 +10,7 @@ class LengthFilter(BaseFilter):
         self.maximum_length = maximum_length
 
     def compute(self, text) -> bool:
-        if len(text) < self.minimum_length or (self.maximum_length != -1 and len(text) > self.maximum_length):
+        if text is None or len(text) < self.minimum_length or (self.maximum_length != -1 and len(text) > self.maximum_length):
             return False
         else:
             return True

@@ -25,7 +25,10 @@ import hashlib
 import ftfy, re, string
 
 def normalize_str(s):
-    s = ftfy.fix_text(s, normalization="NFC")
+    if s:
+        s = ftfy.fix_text(s, normalization="NFC")
+    else:
+        s = ""
     return s
 
 def clean_str(s):
@@ -230,9 +233,7 @@ class FuzzyDeduplicateApplyDict(BaseLLMOperation):
                 spark_df = spark_df.select('text', *[n for n in column_names if n != 'text'])
 
             with Timer("deduplicate input data"):
-                print(spark_df.count())
                 ret = spark_df.join(global_df, 'global_id', 'left_anti').cache()
-                print(ret.count())
             return ret
         else:
             raise NotImplementedError("We only support inplace modification for FuzzyDeduplicateApplyDict.")
@@ -273,7 +274,7 @@ def get_duplication_list_spk(spark_df):
     dict_df_all = dict_df_all.filter("hash_count > 1").cache()
     dict_df_all = dict_df_all.withColumn("doc_id_list", F.slice(F.col("doc_id_list"), 2, F.size(F.col("doc_id_list"))))\
                              .withColumn("doc_id_list", F.explode("doc_id_list"))\
-                             .select(F.col("hash"), F.col("doc_id_list").alias("doc_id"))                         
+                             .select(F.col("hash"), F.col("doc_id_list").alias("doc_id"))
     return dict_df_all
 
 def index_based_reduction_spk(src_df, dup_df, enable_hash):
@@ -346,9 +347,9 @@ class GlobalDeduplicateGenDict(BaseLLMOperation):
                 ret_df = get_duplication_list_spk(ret_df).cache()
                 duplication_count = ret_df.count()
             
-            # 4. deduplicate input
-            with Timer(f"reduce input file based on detected duplication"):
-                out_df = index_based_reduction_spk(hash_df, ret_df, True).drop('doc_id').cache()
+            # 4. duplicate rows
+            with Timer(f"Generate global duplication rows"):
+                out_df = hash_df.join(ret_df, ["doc_id", "hash"], "inner").drop('doc_id').cache()
                 post_global_dedup_count = out_df.count()                
             return out_df
             
@@ -380,28 +381,12 @@ class GlobalDeduplicateApplyDict(BaseLLMOperation):
 
     def process_spark(self, spark, spark_df: DataFrame, global_df: DataFrame) -> DataFrame:
         if self.inplace:
-            # 1. if input hasn't been processed by global hash
-            with Timer(f"Generate Global Hash"):
-                hash_df = global_hash_spk(spark_df, self.text_key).cache()
-                post_global_hash_count = hash_df.count()
-            
-            # 2. get global hash indexing
-            with Timer(f"Generate Global indexing based on hash"):
-                ret_df = get_hash_indexing_spk(hash_df).cache()
-                index_count = ret_df.count()
-
-            # 3. generate duplication indexing
-            with Timer(f"Generate global duplication list"):
-                ret_df = get_duplication_list_spk(ret_df).cache()
-                duplication_count = ret_df.count()
-            
-            # 4. deduplicate input
-            with Timer(f"reduce input file based on detected duplication"):
-                out_df = index_based_reduction_spk(hash_df, ret_df, True).drop('doc_id').cache()
-                post_global_dedup_count = out_df.count()                
-            return out_df
-            
+            # 1. deduplicate input
+            with Timer(f"reduce input file based on global duplication rows"):
+                ret = spark_df.join(global_df, 'global_id', 'left_anti').cache()
+                ret_num = ret.count()
+            return ret
         else:
             raise NotImplementedError("We only support inplace modification for FuzzyDeduplicate.")
-    
+
 LLMOPERATORS.register(GlobalDeduplicateApplyDict)
