@@ -18,13 +18,18 @@ class AverageLineLengthFilter(BaseFilter):
         self.min_len = min_len
         self.max_len = max_len
 
-    def compute(self, text) -> bool:
-        lines = text.splitlines()
-        avg_line_length = len(text) / len(lines) if len(lines) != 0 else 0.0
-        if self.min_len <= avg_line_length <= self.max_len:
-            return True
-        else:
-            return False
+    def get_compute_func(self, *args, **kwargs):
+        min_len = self.min_len
+        max_len = self.max_len
+
+        def compute(text) -> bool:
+            lines = text.splitlines()
+            avg_line_length = len(text) / len(lines) if len(lines) != 0 else 0.0
+            if min_len <= avg_line_length <= max_len:
+                return True
+            else:
+                return False
+        return compute
 
 
 LLMOPERATORS.register(AverageLineLengthFilter)

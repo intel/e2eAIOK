@@ -17,7 +17,8 @@ class BaseFilter(BaseLLMOperation):
     def process_rayds(self, ds: Dataset) -> Dataset:
         if self.inplace:
             # remove unwanted text row inplace
-            filtered_ds = ds.filter(lambda x: self.compute(x[self.text_key]))
+            compute_func = self.get_compute_func()
+            filtered_ds = ds.filter(lambda x: compute_func(x[self.text_key]))
             return filtered_ds
         else:
             raise NotImplementedError(f"We only support inplace modification for {self.__class__.__name__}.")
@@ -31,8 +32,5 @@ class BaseFilter(BaseLLMOperation):
         else:
             raise NotImplementedError(f"We only support inplace modification for {self.__class__.__name__}.")
 
-    def compute(self, *args, **kwargs) -> bool:
-        return True
-    
     def get_compute_func(self, *args, **kwargs):
         raise NotImplementedError("Abstract func")

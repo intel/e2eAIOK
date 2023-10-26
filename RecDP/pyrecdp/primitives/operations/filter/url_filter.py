@@ -90,13 +90,15 @@ class URLFilter(BaseFilter):
         else:
             raise NotImplementedError("We only support inplace modification for URLFilter.")
 
-    def compute(self, sample) -> bool:
-        url = get_url_from_meta(sample)
-        domain = get_domain(url)
-        if domain in self.blacklist:
-            return False
-        else:
-            return True
+    def get_compute_func(self, *args, **kwargs):
+        def compute(sample) -> bool:
+            url = get_url_from_meta(sample)
+            domain = get_domain(url)
+            if domain in self.blacklist:
+                return False
+            else:
+                return True
+        return compute
 
 
 LLMOPERATORS.register(URLFilter)

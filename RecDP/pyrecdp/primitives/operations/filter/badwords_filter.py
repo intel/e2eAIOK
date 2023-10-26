@@ -35,9 +35,9 @@ class BadwordsFilter(BaseFilter):
         super().__init__(args_dict=settings)
         self.language = language
 
-    def compute(self, text) -> bool:
+    def get_compute_func(self, *args, **kwargs):
         func = prepare_func_filter_by_badwords(self.language)
-        return func(text)
+        return func
 
 
 LLMOPERATORS.register(BadwordsFilter)

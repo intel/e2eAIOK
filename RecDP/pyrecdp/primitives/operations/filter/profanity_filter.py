@@ -13,18 +13,20 @@ class ProfanityFilter(BaseFilter):
         settings = {'threshold': threshold}
         super().__init__(args_dict=settings)
         self.threshold = threshold
-        if self.threshold == 0:
-            self.predict_func = predict
-        else:
-            self.predict_func = predict_prob
 
-    def compute(self, text) -> bool:
+    def get_compute_func(self, *args, **kwargs):
+        threshold = self.threshold
+        predict_func = predict
+        if self.threshold != 0:
+            predict_func = predict_prob
 
-        scores = self.predict_func([text])
-        if scores[0] <= self.threshold:
-            return True
-        else:
-            return False
+        def compute(text) -> bool:
+            scores = predict_func([text])
+            if scores[0] <= threshold:
+                return True
+            else:
+                return False
+        return compute
 
 
 LLMOPERATORS.register(ProfanityFilter)

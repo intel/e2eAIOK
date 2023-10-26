@@ -24,19 +24,25 @@ class WordNumFilter(BaseFilter):
         self.language = language
         self.model_key = None
 
-    def compute(self, text) -> bool:
-
+    def get_compute_func(self, *args, **kwargs):
         tokenizer = get_model(self.model_key, lang=self.language,
                               model_type='sentencepiece')
-        words = get_words_from_document(
-            text, token_func=tokenizer.encode_as_pieces if tokenizer else None)
+        min_num = self.min_num
+        max_num = self.max_num
 
-        words = words_refinement(words, strip_chars=SPECIAL_CHARACTERS)
-        num_words = len(words)
-        if self.min_num <= num_words <= self.max_num:
-            return True
-        else:
-            return False
+        def compute(text) -> bool:
+
+            words = get_words_from_document(
+                text, token_func=tokenizer.encode_as_pieces if tokenizer else None)
+
+            words = words_refinement(words, strip_chars=SPECIAL_CHARACTERS)
+            num_words = len(words)
+            if min_num <= num_words <= max_num:
+                return True
+            else:
+                return False
+
+        return compute
 
 
 LLMOPERATORS.register(WordNumFilter)

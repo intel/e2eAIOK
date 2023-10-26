@@ -17,13 +17,19 @@ class AlphanumericFilter(BaseFilter):
         self.min_ratio = min_ratio
         self.max_ratio = max_ratio
 
-    def compute(self, text) -> bool:
-        alnum_count = sum(map(lambda char: 1 if char.isalnum() else 0, text))
-        alnum_ratio = (alnum_count / len(text)) if len(text) != 0 else 0.0
-        if self.min_ratio <= alnum_ratio <= self.max_ratio:
-            return True
-        else:
-            return False
+    def get_compute_func(self):
+        min_ratio = self.min_ratio
+        max_ratio = self.max_ratio
+
+        def compute(text) -> bool:
+            alnum_count = sum(map(lambda char: 1 if char.isalnum() else 0, text))
+            alnum_ratio = (alnum_count / len(text)) if len(text) != 0 else 0.0
+            if min_ratio <= alnum_ratio <= max_ratio:
+                return True
+            else:
+                return False
+
+        return compute
 
 
 LLMOPERATORS.register(AlphanumericFilter)

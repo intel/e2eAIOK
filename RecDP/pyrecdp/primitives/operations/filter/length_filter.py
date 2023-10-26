@@ -22,14 +22,16 @@ class LengthFilter(BaseFilter):
             return True
 
     def get_compute_func(self, *args, **kwargs):
+        min_len = self.min_len
+        max_len = self.max_len
+
         def compute(text) -> bool:
-            if text is None or len(text) < 100 or (-1 != -1 and len(text) > -1):
+            if text is None or len(text) < min_len or (max_len != -1 and len(text) > max_len):
                 return False
             else:
                 return True
+
         return compute
 
 
 LLMOPERATORS.register(LengthFilter)
-
-

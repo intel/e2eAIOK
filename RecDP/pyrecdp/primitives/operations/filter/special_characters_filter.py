@@ -19,15 +19,19 @@ class SpecialCharactersFilter(BaseFilter):
         self.min_ratio = max_ratio
         self.max_ratio = max_ratio
 
-    def compute(self, text) -> bool:
-        special_char_ratio = (
-                len([c
-                     for c in text if c in SPECIAL_CHARACTERS]) /
-                len(text)) if len(text) != 0 else 0.0
-        if self.min_ratio <= special_char_ratio <= self.max_ratio:
-            return True
-        else:
-            return False
+    def get_compute_func(self, *args, **kwargs):
+        min_ratio = self.min_ratio
+        max_ratio = self.max_ratio
 
+        def compute(text) -> bool:
+            special_char_ratio = (
+                    len([c
+                         for c in text if c in SPECIAL_CHARACTERS]) /
+                    len(text)) if len(text) != 0 else 0.0
+            if min_ratio <= special_char_ratio <= max_ratio:
+                return True
+            else:
+                return False
+        return compute
 
 LLMOPERATORS.register(SpecialCharactersFilter)
