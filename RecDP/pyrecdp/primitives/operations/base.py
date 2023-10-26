@@ -205,13 +205,17 @@ class BaseLLMOperation(BaseOperation):
 
     def execute_spark(self, pipeline, rdp, child_ds=None):
         child_output = []
+        skip_first = False
         if child_ds is not None:
-            self.cache = self.process_spark(rdp.spark, child_ds)
-        else:
-            children = self.op.children if self.op.children is not None else []
-            for op in children:
-                child_output.append(pipeline[op].cache)
-            self.cache = self.process_spark(rdp.spark, *child_output)
+            child_output.append(child_ds)
+            skip_first = True
+        children = self.op.children if self.op.children is not None else []
+        for idx, op in enumerate(children):
+            if idx == 0 and skip_first:
+                continue
+            child_output.append(pipeline[op].cache)
+        print(self)
+        self.cache = self.process_spark(rdp.spark, *child_output)
         return self.cache
 
     def process_rayds(self, ds=None):
