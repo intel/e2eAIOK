@@ -32,3 +32,4 @@ class DeltaTunerArguments:
     denas: bool = field(default=True, metadata={"help": "Whether to use the denas"})
     ssf_target_module: List[str] = field(default_factory=lambda: None, metadata={"help": "Target modules for the SSF method."},)
     task_type: str = field(default="CAUSAL_LM", metadata={"help": "The task type of the deltatuner model"})
+    algo: str = field(default="auto", metadata={"help": "The base algorithm of the deltatuner model, current support algorithms including: lora, ssf, auto"})

@@ -1,5 +1,5 @@
 from dataclasses import dataclass, asdict
-
+import json
 
 @dataclass
 class Document:
@@ -11,9 +11,5 @@ class Document:
         documents, etc.).
     """
 
-    @property
-    def __dict__(self):
-        return asdict(self)
-
     def json(self):
-        return str(self.__dict__)
+        return json.dumps(asdict(self))

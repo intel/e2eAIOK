@@ -38,7 +38,7 @@ do
         --save_strategy epoch \
         --output_dir $model_save_path \
         --peft lora \
-        --delta lora \
+        --algo lora \
         --denas True \
         --debugs --max_epochs 1 --population_num 1 --crossover_num 1 --mutation_num 1 --select_num 1 \
         --trust_remote_code True \

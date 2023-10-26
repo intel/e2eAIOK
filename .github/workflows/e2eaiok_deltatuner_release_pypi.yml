@@ -2,12 +2,6 @@ name: Publish E2EAIOK Deltatuner nightly to PyPI
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - 'e2eAIOK/deltatuner/version'
-
 
 jobs:
   e2eaiok-dtuner-nightly-python-pypi:
@@ -26,14 +20,9 @@ jobs:
       run: |
         pip install build wheel
         cd e2eAIOK/deltatuner
-        release_version=$(cat deltatuner/version | head -1)
-        nightly_build_date=`date '+%Y%m%d%H%M'`
-        nightly_version=${release_version}b${nightly_build_date}
-        echo $nightly_version > deltatuner/version
         python3 setup.py sdist
 
     - name: Upload
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         packages-dir: e2eAIOK/deltatuner/dist
-        verbose: true

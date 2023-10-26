@@ -179,8 +179,8 @@ class DocumentExtractor:
                     reader: DocumentReader = self.file_extractor[file_suffix]
                     docs = reader.load(input_file, **self.load_kwargs)
                 else:
-                    reader = UnstructuredReader()
-                    docs = reader.load_data(input_file)
+                    reader = UnstructuredReader(single_text_per_document=self.single_text_per_document)
+                    docs = reader.load(input_file, **self.load_kwargs)
                 for doc in docs:
                     writer.write(doc)
                 logger.debug(f"File {input_file!s} was extracted successfully")

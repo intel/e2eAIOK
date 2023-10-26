@@ -1,0 +1,55 @@
+name: Publish e2eAIOK Docker v1.2 for RecDP and deltatuner
+
+on:
+  workflow_run:
+    workflows: ["Publish e2eAIOK Nightly Release to dockerhub"]
+    types:
+      - completed
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Dockerfile-ubuntu/Dockerfile-v1.2'
+      - '.github/workflows/release_docker_e2eaiokv12.yml'
+
+jobs:
+  e2eaiok-release-docker:
+    runs-on: self-hosted
+    if: ${{ github.repository_owner == 'intel' }}
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v2
+      -
+        name: Set up Env
+        run: |
+          echo RELEASE_VERSION=$(cat e2eAIOK/version | head -1) >> $GITHUB_ENV
+          echo http_proxy=${http_proxy} >> $GITHUB_ENV
+          echo https_proxy=${https_proxy} >> $GITHUB_ENV
+          echo no_proxy=${no_proxy} >> $GITHUB_ENV
+      -
+        name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+      -
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+            driver-opts: |
+              env.http_proxy=${{ env.http_proxy }}
+              env.https_proxy=${{ env.https_proxy }}
+              "env.no_proxy='${{ env.no_proxy}}'"
+      -
+        name: Build and Push Docker images
+        uses: docker/build-push-action@v3
+        with:
+          context: ./Dockerfile-ubuntu
+          file: ./Dockerfile-ubuntu/Dockerfile-v1.2
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/e2eaiok-v1.2:${{ env.RELEASE_VERSION }} , ${{ secrets.DOCKER_HUB_USERNAME }}/e2eaiok-v1.2:latest
+          build-args: |
+            "http_proxy=${{ env.http_proxy }}"
+            "https_proxy=${{ env.https_proxy }}"

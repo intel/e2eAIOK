@@ -1,7 +1,7 @@
 import sys
 
 from pyrecdp.core.model_utils import get_model
-from pyrecdp.core.utils import get_words_from_document, words_refinement
+from pyrecdp.primitives.operations.utils import get_words_from_document, words_refinement
 from pyrecdp.primitives.operations.base import LLMOPERATORS
 from pyrecdp.primitives.operations.filter.base import BaseFilter
 from pyrecdp.primitives.operations.filter.constant import SPECIAL_CHARACTERS
