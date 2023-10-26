@@ -7,7 +7,7 @@ with open("deltatuner/version", "r") as fh:
     VERSION = fh.read().strip()
 
 REQUIRED_PACKAGES = [
-    'torch>=1.13.0', 'transformers', 'datasets', 'sentencepiece', 
+    'torch>=1.13.1', 'transformers', 'datasets', 'sentencepiece', 
     'peft==0.4.0', 'evaluate', 'nltk', 'rouge_score', 'einops', 
     'sigopt', 'torchsummary'
 ]

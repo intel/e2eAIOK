@@ -52,7 +52,7 @@ RUN conda init bash && \
     conda create -yn chatbot-finetuning python=3.9 && \
     echo "conda activate chatbot-finetuning" >> ~/.bashrc && \
     source ~/.bashrc && \
-    pip install torch==1.13.0 transformers datasets accelerate SentencePiece \
+    pip install torch>=1.13.1 transformers datasets SentencePiece \
     evaluate peft==0.4.0 torchsummary \
-    nltk rouge_score protobuf==3.20.1 tokenizers einops wandb \
+    nltk rouge_score einops wandb \
     sigopt

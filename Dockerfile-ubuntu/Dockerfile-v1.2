@@ -12,9 +12,9 @@ RUN apt-get -y update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install torch==1.13.0 transformers datasets accelerate SentencePiece \
+RUN pip install torch>=1.13.1 transformers datasets SentencePiece \
     evaluate peft==0.4.0 torchsummary \
-    nltk rouge_score protobuf==3.20.1 tokenizers einops wandb \
+    nltk rouge_score einops wandb \
     sigopt
 
 RUN pip install --upgrade pip
