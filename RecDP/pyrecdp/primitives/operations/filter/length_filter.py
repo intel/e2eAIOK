@@ -21,6 +21,14 @@ class LengthFilter(BaseFilter):
         else:
             return True
 
+    def get_compute_func(self, *args, **kwargs):
+        def compute(text) -> bool:
+            if text is None or len(text) < 100 or (-1 != -1 and len(text) > -1):
+                return False
+            else:
+                return True
+        return compute
+
 
 LLMOPERATORS.register(LengthFilter)
 

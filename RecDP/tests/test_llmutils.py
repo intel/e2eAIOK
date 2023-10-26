@@ -136,6 +136,11 @@ class Test_LLMUtils(unittest.TestCase):
         from pyrecdp.primitives.llmutils.pii.detect.utils import PIIEntityType
         pii_remove_help("tests/data/llm_data/tiny_c4_sample_for_pii.jsonl", entity_types=[PIIEntityType.IP_ADDRESS])
 
+    def test_pii_remove_key_spark(self):
+        from pyrecdp.primitives.llmutils.pii.detect.utils import PIIEntityType
+
+        pii_remove_help("tests/data/llm_data/tiny_c4_sample_for_pii.jsonl", entity_types=[PIIEntityType.KEY])
+
     def test_language_identify_spark(self):
         from pyrecdp.primitives.llmutils import language_identify_spark
         from pyrecdp.core.cache_utils import RECDP_MODELS_CACHE

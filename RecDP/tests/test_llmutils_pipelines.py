@@ -30,9 +30,10 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         import shutil
         output_path = "ResumableTextPipeline_output"
         try:
-            dir_name = [i for i in os.listdir("ResumableTextPipeline_output") if i.endswith('jsonl')][0]
-            print(dir_name)
-            display(pd.read_parquet(os.path.join("ResumableTextPipeline_output", dir_name)))
+            dir_name_list = [i for i in os.listdir("ResumableTextPipeline_output") if i.endswith('jsonl')]
+            for dir_name in dir_name_list:
+                print(dir_name)
+                display(pd.read_parquet(os.path.join("ResumableTextPipeline_output", dir_name)).head())
             shutil.rmtree("ResumableTextPipeline_output")
         except Exception as e:
             print(e)
@@ -71,8 +72,6 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         pipeline.plot()
         pipeline.execute()
         del pipeline
-        
-        
 
     def test_ResumableTextPipeline_customermap_op(self):
         def classify(text):
@@ -99,5 +98,29 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         pipeline.add_operation(proc, text_key='text')
         pipeline.add_operation(PerfileParquetWriter("ResumableTextPipeline_output"))
         pipeline.plot()
+        pipeline.execute()
+        del pipeline
+
+    def test_ResumableTextPipeline_with_fuzzyDedup(self):
+        pipeline = ResumableTextPipeline()
+        ops = [
+            JsonlReader("tests/data/llm_data/"),
+            TextQualityScorer(),
+            FuzzyDeduplicate(),
+            PerfileParquetWriter("ResumableTextPipeline_output")
+        ]
+        pipeline.add_operations(ops)
+        pipeline.execute()
+        del pipeline
+
+    def test_ResumableTextPipeline_with_globalDedup(self):
+        pipeline = ResumableTextPipeline()
+        ops = [
+            JsonlReader("tests/data/llm_data/"),
+            LengthFilter(),
+            GlobalDeduplicate(),
+            PerfileParquetWriter("ResumableTextPipeline_output")
+        ]
+        pipeline.add_operations(ops)
         pipeline.execute()
         del pipeline

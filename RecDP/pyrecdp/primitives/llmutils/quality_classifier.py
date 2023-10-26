@@ -9,8 +9,7 @@ def quality_classifier_spark(spark_df,
     Use specific quality classifier to predict document scores on your dataset
     :param df_spark: spark dataframe
     :param model: quality classifier name to apply. It's "gpt3" in default. You
-        can use one of ["gpt3", "chinese", "code"] we provided, or you can set
-        it to the path to your own model trained using the train.py tool
+        can use one of ["gpt3", "chinese", "code"] we provided
     :param text_key: the field key name to hold texts to be classified. It's
         "text" in default
     :return:
@@ -33,8 +32,7 @@ def quality_classifier(dataset_path,
     :param result_path: the path to store the predicted result dataset
     :param data_file_type: the file type to read, support jsonl and parquet format
     :param model: quality classifier name to apply. It's "gpt3" in default. You
-        can use one of ["gpt3", "chinese", "code"] we provided, or you can set
-        it to the path to your own model trained using the train.py tool
+        can use one of ["gpt3", "chinese", "code"] we provided
     :param text_key: the field key name to hold texts to be classified. It's
         "text" in default
     :return:

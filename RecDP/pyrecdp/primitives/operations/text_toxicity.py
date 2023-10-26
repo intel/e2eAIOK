@@ -17,6 +17,13 @@ def prepare_func_text_toxicity(model_type="multilingual", huggingface_config_pat
 
 class TextToxicity(BaseLLMOperation):
     def __init__(self, text_key='text', threshold=0, model_type="multilingual", huggingface_config_path=None):
+        """
+        Initialization method
+        :param text_key: the name of field which will be apply toxicify_score.
+        :param threshold: the threshold of toxicity score which will determine the data kept or not. the value range is [0, 1)
+        :param model_type:  we can use one of ["multilingual", "unbiased", "original"] type of detoxify lib.
+        :param huggingface_config_path: the local model config for detoxify model.
+        """
         settings = {'text_key': text_key, 'threshold': threshold, 'model_type': model_type, 'huggingface_config_path': huggingface_config_path}
         super().__init__(settings)
         self.support_spark = True
