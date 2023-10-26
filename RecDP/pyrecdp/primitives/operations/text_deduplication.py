@@ -213,16 +213,16 @@ class FuzzyDeduplicateApplyDict(BaseLLMOperation):
         self.bands = bands
         self.ranges = ranges
 
-    def execute_spark(self, pipeline, rdp, child_ds=None, global_df=None):
-        child_output = []
-        if child_ds is not None:
-            self.cache = self.process_spark(rdp.spark, child_ds, global_df)
-        else:
-            children = self.op.children if self.op.children is not None else []
-            for op in children:
-                child_output.append(pipeline[op].cache)
-            self.cache = self.process_spark(rdp.spark, *child_output)
-        return self.cache
+    # def execute_spark(self, pipeline, rdp, child_ds=None, global_df=None):
+    #     child_output = []
+    #     if child_ds is not None:
+    #         self.cache = self.process_spark(rdp.spark, child_ds, global_df)
+    #     else:
+    #         children = self.op.children if self.op.children is not None else []
+    #         for op in children:
+    #             child_output.append(pipeline[op].cache)
+    #         self.cache = self.process_spark(rdp.spark, *child_output)
+    #     return self.cache
 
     def process_spark(self, spark, spark_df: DataFrame, global_df: DataFrame) -> DataFrame:
         if self.inplace:
@@ -368,16 +368,16 @@ class GlobalDeduplicateApplyDict(BaseLLMOperation):
         self.support_ray = False
 
 
-    def execute_spark(self, pipeline, rdp, child_ds=None, global_df=None):
-        child_output = []
-        if child_ds is not None:
-            self.cache = self.process_spark(rdp.spark, child_ds, global_df)
-        else:
-            children = self.op.children if self.op.children is not None else []
-            for op in children:
-                child_output.append(pipeline[op].cache)
-            self.cache = self.process_spark(rdp.spark, *child_output)
-        return self.cache
+    # def execute_spark(self, pipeline, rdp, child_ds=None, global_df=None):
+    #     child_output = []
+    #     if child_ds is not None:
+    #         self.cache = self.process_spark(rdp.spark, child_ds, global_df)
+    #     else:
+    #         children = self.op.children if self.op.children is not None else []
+    #         for op in children:
+    #             child_output.append(pipeline[op].cache)
+    #         self.cache = self.process_spark(rdp.spark, *child_output)
+    #     return self.cache
 
     def process_spark(self, spark, spark_df: DataFrame, global_df: DataFrame) -> DataFrame:
         if self.inplace:

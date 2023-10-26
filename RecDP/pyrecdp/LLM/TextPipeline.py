@@ -332,15 +332,15 @@ class ResumableTextPipeline(TextPipeline):
             if not hasattr(self, 'rdp') or self.rdp is None:
                 self.rdp = SparkDataProcessor()
 
-            from pyrecdp.primitives.operations.text_reader import GlobalJsonlReader, GlobalParquetReader
-            from pyrecdp.primitives.operations.text_deduplication import FuzzyDeduplicateApplyDict, GlobalDeduplicateApplyDict
-
-            for op in executable_sequence:
-                if not isinstance(op, PerfileReader):
-                    op.execute_spark(executable_pipeline, rdp=self.rdp)
-                else:
-                    break
-
+            # To process every op before Perfile Reader
+            with Timer(f"execute with spark for global tasks"):                
+                for op in executable_sequence:
+                    if not isinstance(op, PerfileReader):
+                        op.execute_spark(executable_pipeline, self.rdp)
+                    else:
+                        break
+            
+            # To process since Perfile Reader
             for op in executable_sequence:
                 if isinstance(op, PerfileReader):
                     op.execute_spark(executable_pipeline, rdp = self.rdp)
@@ -359,13 +359,12 @@ class ResumableTextPipeline(TextPipeline):
                 # If not skip, then
                 pbar.set_description(f"ResumableTextPipeline, current on {source_id}")
                 start = time.time()
+                print(op_chain)
                 for idx, op in enumerate(op_chain):
+                    print(op)
                     op.statistics_flag = self.statistics_flag
                     if idx == 0:
-                        if isinstance(op, FuzzyDeduplicateApplyDict) or isinstance(op, GlobalDeduplicateApplyDict):
-                            op.execute_spark(executable_pipeline, rdp=self.rdp, child_ds=ds_reader, global_df=self.pipeline[op.children[-1]].cache)
-                        else:
-                            op.execute_spark(executable_pipeline, rdp = self.rdp, child_ds = ds_reader)
+                        op.execute_spark(executable_pipeline, rdp = self.rdp, child_ds = ds_reader)
                     elif isinstance(op, PerfileParquetWriter) or isinstance(op, PerfileJsonlWriter):
                         op.execute_spark(executable_pipeline, source_id = source_id)
                     else:

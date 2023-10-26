@@ -106,7 +106,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         pipeline = ResumableTextPipeline()
         ops = [
             JsonlReader("tests/data/llm_data/"),
-            LengthFilter(),
+            TextQualityScorer(),
             FuzzyDeduplicate(),
             PerfileParquetWriter("ResumableTextPipeline_output")
         ]
@@ -118,7 +118,6 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         pipeline = ResumableTextPipeline()
         ops = [
             JsonlReader("tests/data/llm_data/"),
-            LengthFilter(),
             GlobalDeduplicate(),
             PerfileParquetWriter("ResumableTextPipeline_output")
         ]
