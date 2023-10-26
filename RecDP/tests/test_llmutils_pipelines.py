@@ -34,7 +34,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
             for dir_name in dir_name_list:
                 print(dir_name)
                 display(pd.read_parquet(os.path.join("ResumableTextPipeline_output", dir_name)).head())
-            shutil.rmtree("ResumableTextPipeline_output")
+            #shutil.rmtree("ResumableTextPipeline_output")
         except Exception as e:
             print(e)
         return super().tearDown()
@@ -72,8 +72,6 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         pipeline.plot()
         pipeline.execute()
         del pipeline
-        
-        
 
     def test_ResumableTextPipeline_customermap_op(self):
         def classify(text):

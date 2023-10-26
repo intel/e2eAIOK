@@ -8,12 +8,21 @@ class LengthFilter(BaseFilter):
         super().__init__(args_dict=settings)
         self.minimum_length = minimum_length
         self.maximum_length = maximum_length
+        
 
     def compute(self, text) -> bool:
-        if text is None or len(text) < self.minimum_length or (self.maximum_length != -1 and len(text) > self.maximum_length):
+        if text is None or len(text) < 100 or (-1 != -1 and len(text) > -1):
             return False
         else:
             return True
+        
+    def get_compute_func(self, *args, **kwargs):
+        def compute(text) -> bool:
+            if text is None or len(text) < 100 or (-1 != -1 and len(text) > -1):
+                return False
+            else:
+                return True
+        return compute
 
 
 LLMOPERATORS.register(LengthFilter)

@@ -214,6 +214,7 @@ class BaseLLMOperation(BaseOperation):
             if idx == 0 and skip_first:
                 continue
             child_output.append(pipeline[op].cache)
+        print(self)
         self.cache = self.process_spark(rdp.spark, *child_output)
         return self.cache
 

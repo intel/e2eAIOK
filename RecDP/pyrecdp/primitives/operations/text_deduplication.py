@@ -383,8 +383,8 @@ class GlobalDeduplicateApplyDict(BaseLLMOperation):
         if self.inplace:
             # 1. deduplicate input
             with Timer(f"reduce input file based on global duplication rows"):
-                ret = spark_df.join(global_df, 'global_id', 'left_anti').cache()
-                ret_num = ret.count()
+                ret = spark_df.join(global_df, 'global_id', 'left_anti')
+                #ret_num = ret.count()
             return ret
         else:
             raise NotImplementedError("We only support inplace modification for FuzzyDeduplicate.")
