@@ -30,9 +30,10 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         import shutil
         output_path = "ResumableTextPipeline_output"
         try:
-            dir_name = [i for i in os.listdir("ResumableTextPipeline_output") if i.endswith('jsonl')][0]
-            print(dir_name)
-            display(pd.read_parquet(os.path.join("ResumableTextPipeline_output", dir_name)))
+            dir_name_list = [i for i in os.listdir("ResumableTextPipeline_output") if i.endswith('jsonl')]
+            for dir_name in dir_name_list:
+                print(dir_name)
+                display(pd.read_parquet(os.path.join("ResumableTextPipeline_output", dir_name)).head())
             shutil.rmtree("ResumableTextPipeline_output")
         except Exception as e:
             print(e)
@@ -118,6 +119,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         pipeline = ResumableTextPipeline()
         ops = [
             JsonlReader("tests/data/llm_data/"),
+            LengthFilter(),
             GlobalDeduplicate(),
             PerfileParquetWriter("ResumableTextPipeline_output")
         ]

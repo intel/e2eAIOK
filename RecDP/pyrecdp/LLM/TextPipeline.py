@@ -358,10 +358,9 @@ class ResumableTextPipeline(TextPipeline):
 
                 # If not skip, then
                 pbar.set_description(f"ResumableTextPipeline, current on {source_id}")
+                print(source_id)
                 start = time.time()
-                print(op_chain)
                 for idx, op in enumerate(op_chain):
-                    print(op)
                     op.statistics_flag = self.statistics_flag
                     if idx == 0:
                         op.execute_spark(executable_pipeline, rdp = self.rdp, child_ds = ds_reader)
@@ -384,6 +383,8 @@ class ResumableTextPipeline(TextPipeline):
 
         logger.info(
             f"Completed! ResumableTextPipeline will not return dataset, please check {output_dir} for verification.")
+        
+        status_tracker.close()
 
         # fetch result
         return None
