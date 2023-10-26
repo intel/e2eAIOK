@@ -26,10 +26,13 @@ class BaseFilter(BaseLLMOperation):
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
         if self.inplace:
             import pyspark.sql.types as T
-            compute_udf = F.udf(self.compute, T.BooleanType())
+            compute_udf = F.udf(self.get_compute_func(), T.BooleanType())
             return spark_df.filter(compute_udf(F.col(self.text_key)))
         else:
             raise NotImplementedError(f"We only support inplace modification for {self.__class__.__name__}.")
 
     def compute(self, *args, **kwargs) -> bool:
         return True
+    
+    def get_compute_func(self, *args, **kwargs):
+        raise NotImplementedError("Abstract func")

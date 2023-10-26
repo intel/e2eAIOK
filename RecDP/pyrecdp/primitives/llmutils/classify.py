@@ -3,6 +3,16 @@ from pyrecdp.core.utils import Timer
 
 
 def classify(dataset_path, result_path, read_data_file_type, write_data_file_type, classify_column):
+    """
+    Split the dataset into different folders according to classify_column
+    :param dataset_path: the path of dataset folder
+    :param result_path: the path of output folder
+    :param read_data_file_type: support parquet and jsonl file
+    :param write_data_file_type: support write as parquet or jsonl format
+    :param classify_column: the field key name to classify the dataset
+    :return:
+    """
+
     from pyrecdp.LLM import TextPipeline
     from pyrecdp.primitives.operations import JsonlReader, ParquetReader, ClassifyParquetWriter, ClassifyJsonlWriter
 
@@ -29,6 +39,14 @@ def classify(dataset_path, result_path, read_data_file_type, write_data_file_typ
 
 
 def classify_spark(spark_df, classify_column, write_data_file_type, result_path):
+    """
+    Split the dataset into different folders according to classify_column
+    :param spark_df: the spark dataframe for dataset
+    :param classify_column: the field key name to classify the dataset
+    :param write_data_file_type: support write as parquet or jsonl format
+    :param classify_column: the field key name to classify the dataset
+    :return dataframe:
+    """
     from pyrecdp.primitives.operations import ClassifyParquetWriter, ClassifyJsonlWriter
     if write_data_file_type == 'jsonl':
         op = ClassifyParquetWriter(result_path, classify_column)

@@ -3,12 +3,26 @@ from pyrecdp.core.utils import Timer
 import os
 
 def language_identify_spark(spark_df, fasttext_model_dir):
+    """
+    Use fasttext model to identify the language of the docs.
+    :param spark_df: the dataframe to be applied language_identify
+    :param fasttext_model_dir: the path of fasttext model
+    :return dataframe:
+    """
     from pyrecdp.primitives.operations import LanguageIdentify
     op = LanguageIdentify(fasttext_model_dir = fasttext_model_dir)
     ret = op.process_spark(spark_df.sparkSession, spark_df)
     return ret
 
 def language_identify(data_dir, data_file_type, fasttext_model_dir, language_identify_output_dir):
+    """
+    Use fasttext model to identify the language of the docs.
+    :param data_dir: the path of dataset folder
+    :param data_file_type: support to parquet and jsonl file
+    :param fasttext_model_dir: the path of fasttext model
+    :param language_identify_output_dir: the output path for language_identify operation
+    :return:
+    """
     from pyrecdp.LLM import ResumableTextPipeline
     from pyrecdp.primitives.operations import JsonlReader, ParquetReader, LanguageIdentify, PerfileParquetWriter
 
