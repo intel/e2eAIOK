@@ -29,3 +29,17 @@ class PIIEntityType(Enum):
             return PIIEntityType.KEY
         else:
             raise NotImplementedError(f" entity type {entity} is not supported!")
+
+    def getValue(self):
+        if self == PIIEntityType.NAME:
+            return "name"
+        elif self == PIIEntityType.PASSWORD:
+            return "password"
+        elif self == PIIEntityType.EMAIL:
+            return "email"
+        elif self == PIIEntityType.PHONE_NUMBER:
+            return "phone_number"
+        elif self == PIIEntityType.PHONE_NUMBER:
+            return "phone_number"
+        else:
+            return "key"
