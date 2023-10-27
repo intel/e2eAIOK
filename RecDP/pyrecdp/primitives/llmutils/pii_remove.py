@@ -16,11 +16,11 @@ def pii_remove(dataset: DataFrame, model_root_path=None, text_column="text", sho
                 entity_types:
                     The types of PII information to be removed.
 
-                    The supported entity types are 'name','email','ip_address',
+                    The supported entity types are 'name','email','ip',
                     'key','password','phone_number'.
 
                     If not provided it will default to use the combination of 'email',
-                     'ip_address','key' and 'phone_number'
+                     'ip','key' and 'phone_number'
 
             Returns:
                 The processed DataFrame.

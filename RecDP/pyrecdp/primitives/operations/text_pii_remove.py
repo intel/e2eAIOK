@@ -63,11 +63,11 @@ class PIIRemoval(BaseLLMOperation):
             entity_types:
                     The types of PII information to be removed.
 
-                    The supported entity types are 'name','email','ip_address',
+                    The supported entity types are 'name','email','ip',
                     'key','password','phone_number'.
 
                     If not provided it will default to use the combination of 'email',
-                     'ip_address','key' and 'phone_number'
+                     'ip','key' and 'phone_number'
         Raises:
             ValueError: If the `text_key` parameter is not a valid string.
             ValueError: If the `model_root_path` parameter is not a valid path.

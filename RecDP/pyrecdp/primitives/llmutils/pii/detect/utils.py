@@ -24,7 +24,7 @@ class PIIEntityType(Enum):
         elif "phone_number" == entity:
             return PIIEntityType.PHONE_NUMBER
         elif "ip" == entity:
-            return PIIEntityType.PHONE_NUMBER
+            return PIIEntityType.IP_ADDRESS
         elif "key" == entity:
             return PIIEntityType.KEY
         else:
@@ -39,7 +39,7 @@ class PIIEntityType(Enum):
             return "email"
         elif self == PIIEntityType.PHONE_NUMBER:
             return "phone_number"
-        elif self == PIIEntityType.PHONE_NUMBER:
-            return "phone_number"
+        elif self == PIIEntityType.IP_ADDRESS:
+            return "ip"
         else:
             return "key"
