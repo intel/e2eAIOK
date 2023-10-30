@@ -124,7 +124,7 @@ class GlobalJsonlReader(SourcedJsonlReader):
             df = spark.read.text(file_path)
             df = df.withColumn('jsonData', F.from_json(F.col('value'), schema)).select("jsonData.*")
             source_id = os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))
-            df = df.select(F.concat_ws("@", F.lit("global_id"), F.monotonically_increasing_id(), F.lit(source_id)).alias("global_id"), "*")
+            df = df.select(F.concat_ws("@", F.monotonically_increasing_id(), F.lit(source_id)).alias("global_id"), "*")
             self.cache = df if idx == 0 else self.cache.union(df)
         return self.cache
 LLMOPERATORS.register(GlobalJsonlReader)
@@ -191,7 +191,7 @@ class GlobalParquetReader(SourcedParquetReader):
             df = spark.read.parquet(file_path)
             source_id = os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))
             df = df.select(
-                F.concat_ws("@", F.lit("global_id"), F.monotonically_increasing_id(), F.lit(source_id)).alias(
+                F.concat_ws("@", F.monotonically_increasing_id(), F.lit(source_id)).alias(
                     "global_id"), "*")
             self.cache = df if idx == 0 else self.cache.union(df)
         return self.cache
