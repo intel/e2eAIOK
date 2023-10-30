@@ -163,11 +163,16 @@ class TextPipeline(BasePipeline):
         # we need to find nexts
         if find_children_skip:
             return self.pipeline
+        # because we insert a new operation, replace next operator with new children
         for to_replace_child in children:
+            # iterate all children, and find next operators
             next = []
             for idx in pipeline_chain:
-                if self.pipeline[idx].children and to_replace_child in self.pipeline[idx].children:
+                if self.pipeline[idx].children and to_replace_child == self.pipeline[idx].children[0]:
+                    # we only replace next when its first child matches.
+                    # This is a fix for deduplication, because we don't want to replace dictDF operator.
                     next.append(idx)
+
             for idx in next:
                 # replace next's children with new added operator
                 children_in_next = self.pipeline[idx].children
