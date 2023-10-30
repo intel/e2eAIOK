@@ -101,6 +101,14 @@ def minHashLSH_prepare(df, num_perm, ngram_size, B, R, is_norm):
 
 class FuzzyDeduplicate(BaseLLMOperation):
     def __init__(self, text_key = 'text', num_perm = 256, ngram_size = 13, bands = 9, ranges = 13):
+        """
+        FuzzyDeduplicate
+        :param text_key: the name of field which will be apply language_idenfity.
+        :param num_perm (int): The number of permutation functions used by the MinHash to be indexed. default is 256.
+        :param ngram_size(int): Number of continuous sequences of words or symbols, or tokens in a document. default is 13
+        :param bands(int): number of bands, The LSH parameters. default is 9.
+        :param ranges(int): size of each bands, The LSH parameters. default is 13
+        """
         settings = {'text_key': text_key, 'num_perm': 256, 'ngram_size': 3, 'bands': 9, 'ranges': 13}
         super().__init__(settings)        
         self.support_spark = True
@@ -152,6 +160,14 @@ LLMOPERATORS.register(FuzzyDeduplicate)
 
 class FuzzyDeduplicateGenDict(BaseLLMOperation):
     def __init__(self, text_key = 'text', num_perm = 256, ngram_size = 13, bands = 9, ranges = 13):
+        """
+        FuzzyDeduplicateGenDict
+        :param text_key: the name of field which will be apply language_idenfity.
+        :param num_perm (int): The number of permutation functions used by the MinHash to be indexed. default is 256.
+        :param ngram_size(int): Number of continuous sequences of words or symbols, or tokens in a document. default is 13
+        :param bands(int): number of bands, The LSH parameters. default is 9.
+        :param ranges(int): size of each bands, The LSH parameters. default is 13
+        """
         settings = {'text_key': text_key, 'num_perm': 256, 'ngram_size': 3, 'bands': 9, 'ranges': 13}
         super().__init__(settings)        
         self.support_spark = True
@@ -212,17 +228,6 @@ class FuzzyDeduplicateApplyDict(BaseLLMOperation):
         self.ngram_size = ngram_size
         self.bands = bands
         self.ranges = ranges
-
-    # def execute_spark(self, pipeline, rdp, child_ds=None, global_df=None):
-    #     child_output = []
-    #     if child_ds is not None:
-    #         self.cache = self.process_spark(rdp.spark, child_ds, global_df)
-    #     else:
-    #         children = self.op.children if self.op.children is not None else []
-    #         for op in children:
-    #             child_output.append(pipeline[op].cache)
-    #         self.cache = self.process_spark(rdp.spark, *child_output)
-    #     return self.cache
 
     def process_spark(self, spark, spark_df: DataFrame, global_df: DataFrame) -> DataFrame:
         if self.inplace:
@@ -285,7 +290,11 @@ def index_based_reduction_spk(src_df, dup_df, enable_hash):
     return dest_df
 
 class GlobalDeduplicate(BaseLLMOperation):
-    def __init__(self, text_key = 'text'):        
+    def __init__(self, text_key = 'text'):
+        """
+        GlobalDeduplicate
+        :param text_key: the name of field which will be apply language_idenfity.
+        """
         settings = {'text_key': text_key}
         super().__init__(settings)
         self.text_key = text_key
@@ -322,7 +331,11 @@ class GlobalDeduplicate(BaseLLMOperation):
 LLMOPERATORS.register(GlobalDeduplicate)
 
 class GlobalDeduplicateGenDict(BaseLLMOperation):
-    def __init__(self, text_key = 'text'):        
+    def __init__(self, text_key = 'text'):
+        """
+        GlobalDeduplicate
+        :param text_key: the name of field which will be apply language_idenfity.
+        """
         settings = {'text_key': text_key}
         super().__init__(settings)
         self.text_key = text_key
@@ -368,23 +381,11 @@ class GlobalDeduplicateApplyDict(BaseLLMOperation):
         self.support_ray = False
 
 
-    # def execute_spark(self, pipeline, rdp, child_ds=None, global_df=None):
-    #     child_output = []
-    #     if child_ds is not None:
-    #         self.cache = self.process_spark(rdp.spark, child_ds, global_df)
-    #     else:
-    #         children = self.op.children if self.op.children is not None else []
-    #         for op in children:
-    #             child_output.append(pipeline[op].cache)
-    #         self.cache = self.process_spark(rdp.spark, *child_output)
-    #     return self.cache
-
     def process_spark(self, spark, spark_df: DataFrame, global_df: DataFrame) -> DataFrame:
         if self.inplace:
             # 1. deduplicate input
             with Timer(f"reduce input file based on global duplication rows"):
                 ret = spark_df.join(global_df, 'global_id', 'left_anti')
-                #ret_num = ret.count()
             return ret
         else:
             raise NotImplementedError("We only support inplace modification for FuzzyDeduplicate.")
