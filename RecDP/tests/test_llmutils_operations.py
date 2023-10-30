@@ -343,3 +343,8 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         op = TextCustomerFilter(func=cond, text_key='text')
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
+    def test_rouge_score_dedup_spark(self):
+        op = RougeScoreDedup()
+        with SparkContext("tests/data/llm_data/github_sample_50.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark, ctx.ds))
