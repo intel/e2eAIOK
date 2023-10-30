@@ -69,6 +69,9 @@ def get_domain(x):
 
 class URLFilter(BaseFilter):
     def __init__(self):
+        """
+            Keeps samples according to URLs based on blacklists https://dsi.ut-capitole.fr/blacklists/
+        """
         super().__init__()
         self.text_key = "meta"
         self.blacklist = load_blacklist_set()
@@ -87,13 +90,15 @@ class URLFilter(BaseFilter):
         else:
             raise NotImplementedError("We only support inplace modification for URLFilter.")
 
-    def compute(self, sample) -> bool:
-        url = get_url_from_meta(sample)
-        domain = get_domain(url)
-        if domain in self.blacklist:
-            return False
-        else:
-            return True
+    def get_compute_func(self, *args, **kwargs):
+        def compute(sample) -> bool:
+            url = get_url_from_meta(sample)
+            domain = get_domain(url)
+            if domain in self.blacklist:
+                return False
+            else:
+                return True
+        return compute
 
 
 LLMOPERATORS.register(URLFilter)

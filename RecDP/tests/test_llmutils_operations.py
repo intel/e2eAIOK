@@ -144,14 +144,12 @@ class Test_LLMUtils_Operations(unittest.TestCase):
 
 
     def test_filter_by_token_num_ray(self):
-        pass
         # Ray version not supported yet
         op = TokenNumFilter(model_key=os.path.join(RECDP_MODELS_CACHE, "pythia-6.9b-deduped"))
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds(ctx.ds))
 
     def test_filter_by_word_num_ray(self):
-        pass
         # Ray version not supported yet
         op = WordNumFilter()
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:

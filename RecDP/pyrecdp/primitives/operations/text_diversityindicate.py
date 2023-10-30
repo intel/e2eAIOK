@@ -68,14 +68,16 @@ def find_root_verb_and_its_dobj_in_string(nlp, s, first_sent=True):
 
 
 class DiversityAnalysis:
-    """Apply diversity analysis for each sample and get an overall analysis
-    result."""
 
     def __init__(self, dataset, text_key="text", lang_or_model='en', first_sent=True):
-        """Initialization method :param dataset: the dataset to be analysed
-        :param output_path: path to store the analysis results :param
-        lang_or_model: the diversity model or a specific language used to load
-        the diversity model."""
+        """
+            Apply diversity analysis for each sample and get an overall analysis result.
+
+            :param dataset: the dataset to be analysed
+            :param text_key: the name of column to be analysed
+            :param lang_or_model: the diversity model or a specific language used to load the diversity model(spacy model).
+            :param first_sent: whether to analyse the first sentence in the input string only.
+        """
 
         self.dataset = dataset
         self.text_key = text_key
@@ -88,7 +90,6 @@ class DiversityAnalysis:
 
         :param lang_or_model: the diversity model or a specific language
             used to load the diversity model
-        :param column_name: the name of column to be analysed
         :return: the analysis result.
         """
 

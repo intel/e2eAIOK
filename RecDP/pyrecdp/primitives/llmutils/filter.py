@@ -62,14 +62,14 @@ def filter_by_bad_words(data_dir, out_dir, data_file_type="jsonl", language="en"
     pipeline.execute()
 
 
-def filter_by_length_spark(spark_df, minimum_length=100, maximum_length=-1):
+def filter_by_length_spark(spark_df, min_len=100, max_len=-1):
     from pyrecdp.primitives.operations import LengthFilter
-    op = LengthFilter(minimum_length=minimum_length, maximum_length=maximum_length)
+    op = LengthFilter(min_len=min_len, max_len=max_len)
     ret = op.process_spark(spark_df.sparkSession, spark_df)
     return ret
 
 
-def filter_by_length(data_dir, out_dir, data_file_type="jsonl", minimum_length=100, maximum_length=-1):
+def filter_by_length(data_dir, out_dir, data_file_type="jsonl", min_len=100, max_len=-1):
     from pyrecdp.primitives.operations import LengthFilter
     from pyrecdp.LLM import ResumableTextPipeline
 
@@ -83,7 +83,7 @@ def filter_by_length(data_dir, out_dir, data_file_type="jsonl", minimum_length=1
     pipeline = ResumableTextPipeline()
     ops = [
         reader,
-        LengthFilter(minimum_length=minimum_length, maximum_length=maximum_length),
+        LengthFilter(min_len=min_len, max_len=max_len),
         PerfileParquetWriter(out_dir)
     ]
     pipeline.add_operations(ops)

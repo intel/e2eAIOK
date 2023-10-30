@@ -19,8 +19,8 @@
         ],
         "op": "LengthFilter",
         "config": {
-            "minimum_length": 100,
-            "maximum_length": -1
+            "min_len": 100,
+            "max_len": -1
         }
     },
     "3": {

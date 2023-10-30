@@ -235,6 +235,12 @@ def get_fixer_by_type(text_type):
 
 class TextFix(BaseLLMOperation):
     def __init__(self, text_key='text', inplace=True, text_type='html'):
+        """
+            Clean up text of the specified type
+
+            :param text_type: Supported text type. Default: html. (html, latex, codes)
+
+        """
         settings = {'text_key': text_key, 'inplace': inplace, 'text_type': text_type}
         super().__init__(settings)
         self.text_key = text_key
