@@ -1,0 +1,11 @@
+---
+pipeline:
+  - PerfileSourcedJsonlReader:
+      input_dir: "tests/data/llm_data"
+  - LengthFilter:
+      minimum_length: 100
+      maximum_length: -1
+  - ProfanityFilter:
+
+  - PerfileParquetWriter:
+      output_dir: "ResumableTextPipeline_output"
