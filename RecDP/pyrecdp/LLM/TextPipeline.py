@@ -193,6 +193,11 @@ class TextPipeline(BasePipeline):
         # TODO: print analysis and log for each component.
         pass
 
+    def evaluate(self) -> dict:
+        self.execute()
+        import random
+        return {"metric_1": random.uniform(0, 1), "metric_2": random.uniform(0, 1)}
+
 
 class ResumableTextPipeline(TextPipeline):
     # Provide a pipeline for large dir. We will handle files one by one and resume when pipeline broken.
