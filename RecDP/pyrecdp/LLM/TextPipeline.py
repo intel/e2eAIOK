@@ -305,6 +305,7 @@ class ResumableTextPipeline(TextPipeline):
 
             for op in executable_sequence:
                 if isinstance(op, PerfileReader):
+                    op.statistics_flag = self.statistics_flag
                     op.execute_ray(executable_pipeline)
                     sub_pipelines = op.cache
                 elif len(sub_pipelines) > 0:
@@ -321,7 +322,6 @@ class ResumableTextPipeline(TextPipeline):
                 pbar.set_description(f"ResumableTextPipeline, current on {source_id}")
                 start = time.time()
                 for idx, op in enumerate(op_chain):
-                    op.statistics_flag = self.statistics_flag
                     if idx == 0:
                         op.execute_ray(executable_pipeline, ds_reader)
                     elif isinstance(op, PerfileParquetWriter) or isinstance(op, PerfileJsonlWriter):
@@ -332,6 +332,9 @@ class ResumableTextPipeline(TextPipeline):
                 status_tracker.write(f"{source_id}, {elapse} secs\n")
                 status_tracker.flush()
                 done_files.append(status_tracker)
+                if self.statistics_flag:
+                    for op in op_chain:
+                        logger.info(f"{op.__class__.__name__}: {op.summarize()}")
                 del ds_reader
         elif engine_name == 'spark':
             if not hasattr(self, 'rdp') or self.rdp is None:
@@ -343,7 +346,8 @@ class ResumableTextPipeline(TextPipeline):
                     if not isinstance(op, PerfileReader):
                         op.statistics_flag = self.statistics_flag
                         op.execute_spark(executable_pipeline, self.rdp)
-                        op_chain.append(op)
+                        if self.statistics_flag:
+                            op_chain.append(op)
                     else:
                         break
                 if self.statistics_flag:

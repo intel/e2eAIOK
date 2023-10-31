@@ -127,7 +127,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
 
     def test_ResumableTextPipeline_with_bothDedup(self):
         pipeline = ResumableTextPipeline()
-        pipeline.enable_statistics()
+        #pipeline.enable_statistics()
         ops = [
             JsonlReader("tests/data/llm_data/"),
             TextQualityScorer(),
