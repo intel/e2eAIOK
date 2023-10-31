@@ -33,7 +33,9 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
             dir_name_list = [i for i in os.listdir("ResumableTextPipeline_output") if i.endswith('jsonl')]
             for dir_name in dir_name_list:
                 print(dir_name)
-                display(pd.read_parquet(os.path.join("ResumableTextPipeline_output", dir_name)).head())
+                tmp_df = pd.read_parquet(os.path.join("ResumableTextPipeline_output", dir_name))
+                print(f"total num_samples is {len(tmp_df)}")
+                display(tmp_df.head())
             shutil.rmtree("ResumableTextPipeline_output")
         except Exception as e:
             print(e)
@@ -138,3 +140,18 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         pipeline.add_operations(ops)
         pipeline.execute()
         del pipeline
+        
+    def test_ResumableTextPipeline_with_bothDedup_withLog(self):
+        pipeline = ResumableTextPipeline()
+        pipeline.enable_statistics()
+        ops = [
+            JsonlReader("tests/data/llm_data/"),
+            TextQualityScorer(),
+            FuzzyDeduplicate(),
+            GlobalDeduplicate(),
+            PerfileParquetWriter("ResumableTextPipeline_output")
+        ]
+        pipeline.add_operations(ops)
+        pipeline.execute()
+        del pipeline
+

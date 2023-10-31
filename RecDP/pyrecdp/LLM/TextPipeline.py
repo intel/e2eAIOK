@@ -309,6 +309,7 @@ class ResumableTextPipeline(TextPipeline):
                     op.execute_ray(executable_pipeline)
                     sub_pipelines = op.cache
                 elif len(sub_pipelines) > 0:
+                    op.statistics_flag = self.statistics_flag
                     op_chain.append(op)
 
             for ds_reader, source_id in (pbar := tqdm(sub_pipelines, total=len(sub_pipelines))):
@@ -362,6 +363,7 @@ class ResumableTextPipeline(TextPipeline):
                     op.execute_spark(executable_pipeline, rdp = self.rdp)
                     sub_pipelines = op.cache
                 elif len(sub_pipelines) > 0:
+                    op.statistics_flag = self.statistics_flag
                     op_chain.append(op)
 
             # execute
