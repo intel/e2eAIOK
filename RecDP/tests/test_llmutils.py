@@ -355,3 +355,16 @@ class Test_LLMUtils(unittest.TestCase):
         input_dir = "tests/data/llm_data/document"
         out_file = "tests/data/llm_data/document/document.jsonl"
         document_to_text(input_dir, out_file, use_multithreading=True)
+
+    def test_text_pipeline_optimize_with_one_config_file(self):
+        from pyrecdp.primitives.llmutils.pipeline_hpo import text_pipeline_optimize
+        input_pipeline_hpo_file = "tests/config/llm/pipeline/pipeline_hpo.yaml.template"
+        output_pipeline_file = "tests/config/llm/pipeline/pipeline_hpo.yaml"
+        text_pipeline_optimize(input_pipeline_hpo_file, output_pipeline_file)
+
+    def test_text_pipeline_optimize_with_separate_config_file(self):
+        from pyrecdp.primitives.llmutils.pipeline_hpo import text_pipeline_optimize
+        input_pipeline_file = "tests/config/llm/pipeline/pipeline.yaml.template"
+        output_pipeline_file = "tests/config/llm/pipeline/pipeline.yaml"
+        input_hpo_file = "tests/config/llm/pipeline/hpo.yaml"
+        text_pipeline_optimize(input_pipeline_file, output_pipeline_file, input_hpo_file)

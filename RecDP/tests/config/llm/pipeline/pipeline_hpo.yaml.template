@@ -1,0 +1,36 @@
+---
+pipeline:
+  - PerfileSourcedJsonlReader:
+      input_dir: "tests/data/llm_data"
+  - LengthFilter:
+      min_len: 100
+      max_len: -1
+  - ProfanityFilter:
+  - WordRepetitionFilter:
+      rep_len: 10
+      min_ratio: {{ WordRepetitionFilter_min_ratio|default(0.0) }}
+      max_ratio: {{ WordRepetitionFilter_max_ratio|default(0.5) }}
+  - PerfileParquetWriter:
+      output_dir: "ResumableTextPipeline_output"
+
+hpo:
+  engine: "sigopt"
+  iteration: 1
+  parameters:
+    - name: WordRepetitionFilter_min_ratio
+      bounds:
+        min: 0.0
+        max: 0.2
+      type: double
+    - name: WordRepetitionFilter_max_ratio
+      bounds:
+        min: 0.2
+        max: 0.5
+      type: double
+  metrics:
+    - name: metric_1
+      objective: maximize
+      strategy: optimize
+    - name: metric_2
+      objective: maximize
+      strategy: optimize
