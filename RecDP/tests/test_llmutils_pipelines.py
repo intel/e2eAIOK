@@ -159,3 +159,28 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         pipeline = ResumableTextPipeline("tests/config/llm/pipeline/pipeline_example.yaml")
         pipeline.execute()
         del pipeline
+        
+    def test_pipeline_execute_pandasdf_ray(self):
+        import pandas as pd
+        pipeline = TextPipeline()
+        ops = [
+            LengthFilter(),
+            ProfanityFilter(),
+            LanguageIdentify(fasttext_model_dir = os.path.join(RECDP_MODELS_CACHE, "lid.bin"))
+        ]
+        pipeline.add_operations(ops)
+        df = pd.read_parquet("tests/data/PILE/NIH_sample.parquet")
+        ret = pipeline.execute(df)
+        display(ret.to_pandas())
+        
+    def test_pipeline_execute_pandasdf_spark(self):
+        import pandas as pd
+        pipeline = TextPipeline()
+        ops = [
+            FuzzyDeduplicate(),
+        ]
+        pipeline.add_operations(ops)
+        df = pd.read_parquet("tests/data/PILE/NIH_sample.parquet")
+        ret = pipeline.execute(df)
+        display(ret.toPandas())
+
