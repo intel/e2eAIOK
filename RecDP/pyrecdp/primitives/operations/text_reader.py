@@ -124,7 +124,7 @@ class GlobalJsonlReader(SourcedJsonlReader):
             df = spark.read.text(file_path)
             df = df.withColumn('jsonData', F.from_json(F.col('value'), schema)).select("jsonData.*")
             source_id = os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))
-            df = df.select(F.concat_ws("@", F.lit("global_id"), F.monotonically_increasing_id(), F.lit(source_id)).alias("global_id"), "*")
+            df = df.select(F.concat_ws("@", F.monotonically_increasing_id(), F.lit(source_id)).alias("global_id"), "*")
             self.cache = df if idx == 0 else self.cache.union(df)
         return self.cache
 LLMOPERATORS.register(GlobalJsonlReader)
@@ -191,7 +191,7 @@ class GlobalParquetReader(SourcedParquetReader):
             df = spark.read.parquet(file_path)
             source_id = os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))
             df = df.select(
-                F.concat_ws("@", F.lit("global_id"), F.monotonically_increasing_id(), F.lit(source_id)).alias(
+                F.concat_ws("@", F.monotonically_increasing_id(), F.lit(source_id)).alias(
                     "global_id"), "*")
             self.cache = df if idx == 0 else self.cache.union(df)
         return self.cache
@@ -246,7 +246,7 @@ class PerfileSourcedJsonlReader(SourcedReader, PerfileReader):
             df = df.withColumn('source_id', F.lit(source_id))
             # if spark_df is not None, we need to add global_id for dataframe which will help to filter data with global_id
             if spark_df:
-                df = df.select(F.concat_ws("@", F.lit("global_id"), F.monotonically_increasing_id(), F.lit(source_id)).alias("global_id"), "*")
+                df = df.select(F.concat_ws("@", F.monotonically_increasing_id(), F.lit(source_id)).alias("global_id"), "*")
             self.cache.append((df, source_id))
         return self.cache
 LLMOPERATORS.register(PerfileSourcedJsonlReader)
@@ -272,12 +272,16 @@ class PerfileSourcedParquetReader(SourcedReader, PerfileReader):
         return self.cache
     
     def process_spark(self, spark, spark_df: DataFrame = None):
+        import pyspark.sql.functions as F
         files_with_subtask, input_dir = self.get_files_with_subtask("jsonl")
         to_read_list = [(sub_task, os.path.join(input_dir, f)) for sub_task, file_list in files_with_subtask.items() for f in file_list]
         self.cache = []
         for sub_task, file_path in to_read_list:
             source_id = os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))
             df = spark.read.parquet(file_path)
+            # if spark_df is not None, we need to add global_id for dataframe which will help to filter data with global_id
+            if spark_df:
+                df = df.select(F.concat_ws("@", F.monotonically_increasing_id(), F.lit(source_id)).alias("global_id"), "*")
             self.cache.append((df, source_id))
         return self.cache
     

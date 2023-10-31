@@ -1,4 +1,4 @@
-from .base import BaseLLMOperation, LLMOPERATORS
+from .base import BaseLLMOperation, LLMOPERATORS, statistics_decorator
 from ray.data import Dataset
 from pyspark.sql import DataFrame
 import os
@@ -41,8 +41,12 @@ def global_unique_id(df, col_name):
     ret_df = df
     if 'filename_docid' in df.schema.names:
         ret_df = ret_df.withColumn(col_name, F.regexp_replace(F.col("filename_docid"), "/", "_"))
+        remains = [i for i in ret_df.columns if i != 'filename_docid'] 
+        ret_df = ret_df.select('filename_docid', *remains)
         return ret_df
     if col_name in df.schema.names:
+        remains = [i for i in ret_df.columns if i != col_name] 
+        ret_df = ret_df.select(col_name, *remains)
         return ret_df
     ret_df = ret_df.select(F.concat_ws("@", F.lit("global_id"), F.monotonically_increasing_id()).alias(col_name), "*")
     return ret_df
@@ -120,6 +124,7 @@ class FuzzyDeduplicate(BaseLLMOperation):
         self.bands = bands
         self.ranges = ranges
     
+    @statistics_decorator
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
         if self.inplace:
             column_names = spark_df.columns
@@ -179,6 +184,7 @@ class FuzzyDeduplicateGenDict(BaseLLMOperation):
         self.bands = bands
         self.ranges = ranges
     
+    @statistics_decorator
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
         if self.inplace:
             column_names = spark_df.columns
@@ -189,15 +195,15 @@ class FuzzyDeduplicateGenDict(BaseLLMOperation):
                 is_norm = True
                 spark_df = spark_df.select('text', *[n for n in column_names if n != 'text'])
             
-            df_with_id = global_unique_id(spark_df, 'filename_docid')
+            df_with_id = global_unique_id(spark_df, 'global_id')
             pipeline = minHashLSH_prepare(df_with_id, self.num_perm, self.ngram_size, self.bands, self.ranges, is_norm)
             with Timer("generate minHashLsh"):
                 results = pipeline.collect()
                 
             with Timer("generate_connected_components => duplicates"):
-                components = generate_connected_components.generate_connected_components_py(results)
+                components = generate_connected_components.generate_connected_components_py(results)                
                 duplicates = [c for c_list in components for c in c_list[1:]]
-                R = Row('filename_docid')
+                R = Row('global_id')
                 total_dup = len(duplicates)
                 if total_dup != 0:
                     duplicates_sdf = spark.createDataFrame([R(dup) for dup in duplicates]).cache()
@@ -207,12 +213,29 @@ class FuzzyDeduplicateGenDict(BaseLLMOperation):
                 from pyspark.sql.types import StructType, StructField, StringType
                 ret = spark.createDataFrame(spark.sparkContext.emptyRDD(), StructType([StructField('global_id', StringType(), False)]))
             else:
-                with Timer("Get global_id for duplicated data"):
-                    ret = df_with_id.join(duplicates_sdf, 'filename_docid', 'inner').select('global_id').cache()
+                ret = duplicates_sdf
+                
+            if self.statistics_flag:
+                # save detected duplications to file
+                for_dedup_all_duplicates = [[idx, c] for idx, c_list in enumerate(components) for c in c_list]
+                R = Row('dup_grpid', 'global_id')
+                total_dup = len(for_dedup_all_duplicates)
+                if total_dup != 0:
+                    for_dedup_duplicates_sdf = spark.createDataFrame([R(*dup) for dup in for_dedup_all_duplicates])
+                    self.statistics.example = df_with_id.join(for_dedup_duplicates_sdf, 'global_id', 'inner').sort('dup_grpid').select('global_id', self.text_key, 'dup_grpid').toPandas()
+                else:
+                    self.statistics.example = None
+                        
             return ret
             
         else:
             raise NotImplementedError("We only support inplace modification for FuzzyDeduplicate.")
+        
+    def summarize(self) -> str:
+        return (
+            f"A total of {self.statistics.total_in} rows of data were processed, using {self.statistics.used_time} seconds, "
+            f"A duplication list containing {self.statistics.total_out} found, "
+            f"Sampled, duplication preview: {self.statistics.example.head(50)}")
     
 LLMOPERATORS.register(FuzzyDeduplicateGenDict)
 
@@ -229,6 +252,7 @@ class FuzzyDeduplicateApplyDict(BaseLLMOperation):
         self.bands = bands
         self.ranges = ranges
 
+    @statistics_decorator
     def process_spark(self, spark, spark_df: DataFrame, global_df: DataFrame) -> DataFrame:
         if self.inplace:
             column_names = spark_df.columns
@@ -237,8 +261,7 @@ class FuzzyDeduplicateApplyDict(BaseLLMOperation):
             else:
                 spark_df = spark_df.select('text', *[n for n in column_names if n != 'text'])
 
-            with Timer("deduplicate input data"):
-                ret = spark_df.join(global_df, 'global_id', 'left_anti').cache()
+            ret = spark_df.join(global_df, 'global_id', 'left_anti')
             return ret
         else:
             raise NotImplementedError("We only support inplace modification for FuzzyDeduplicateApplyDict.")
@@ -254,13 +277,13 @@ def sha256str(s):
         h.update(s.encode("utf-8", "replace"))
     return h.hexdigest()
 
-def global_hash_spk(spark_df, text_key):
+def global_hash_spk(spark_df, text_key, global_id_name = 'global_id'):
     clean_str_udf = F.udf(clean_str, StringType())
     sha256str_udf = F.udf(sha256str, StringType())
     bytesize_udf = F.udf(lambda x: len(x.encode('utf-8')), IntegerType())
     columns = spark_df.columns
     ret_df = spark_df
-    ret_df = global_unique_id(ret_df, 'doc_id')
+    ret_df = global_unique_id(ret_df, global_id_name)
     key = text_key
     is_norm = key != 'norm_text'
     if is_norm:
@@ -269,24 +292,31 @@ def global_hash_spk(spark_df, text_key):
         ret_df = ret_df.withColumn('hash', sha256str_udf(F.col(key)))
     return ret_df
 
-def get_hash_indexing_spk(spark_df):
-    dict_df_all = spark_df
-    dict_df_all = dict_df_all.groupby('hash').agg(F.collect_list("doc_id").alias('doc_id_list'), F.count("hash").alias('hash_count'))
+def get_hash_indexing_spk(spark_df, global_id_name = 'global_id'):
+    dict_df_all = spark_df.groupby('hash').agg(F.collect_list(global_id_name).alias(f'{global_id_name}_list'), F.count("hash").alias('hash_count'))
     return dict_df_all
 
-def get_duplication_list_spk(spark_df):
-    dict_df_all = spark_df  
-    dict_df_all = dict_df_all.filter("hash_count > 1").cache()
-    dict_df_all = dict_df_all.withColumn("doc_id_list", F.slice(F.col("doc_id_list"), 2, F.size(F.col("doc_id_list"))))\
-                             .withColumn("doc_id_list", F.explode("doc_id_list"))\
-                             .select(F.col("hash"), F.col("doc_id_list").alias("doc_id"))
+def get_duplication_list_for_debug_spk(spark_df, global_id_name = 'global_id'):
+    dict_df_all = spark_df.filter("hash_count > 1")
+    global_list_name = f'{global_id_name}_list'
+    dict_df_all = dict_df_all.withColumn('dup_grpid', F.monotonically_increasing_id())
+    dict_df_all = dict_df_all.withColumn(global_list_name, F.explode(global_list_name))\
+                             .select(F.col("hash"), F.col(global_list_name).alias(global_id_name), 'dup_grpid')
     return dict_df_all
 
-def index_based_reduction_spk(src_df, dup_df, enable_hash):
+def get_duplication_list_spk(spark_df, global_id_name = 'global_id'):
+    dict_df_all = spark_df.filter("hash_count > 1")
+    global_list_name = f'{global_id_name}_list'
+    dict_df_all = dict_df_all.withColumn(global_list_name, F.slice(F.col(global_list_name), 2, F.size(F.col(global_list_name))))\
+                             .withColumn(global_list_name, F.explode(global_list_name))\
+                             .select(F.col("hash"), F.col(global_list_name).alias(global_id_name))
+    return dict_df_all
+
+def index_based_reduction_spk(src_df, dup_df, enable_hash, global_id_name = 'global_id'):
     if enable_hash:
-        dest_df = src_df.join(dup_df, ["doc_id", "hash"], "left_anti")
+        dest_df = src_df.join(dup_df, [global_id_name, "hash"], "left_anti")
     else:
-        dest_df = src_df.join(dup_df, "doc_id", "left_anti")
+        dest_df = src_df.join(dup_df, global_id_name, "left_anti")
     return dest_df
 
 class GlobalDeduplicate(BaseLLMOperation):
@@ -302,6 +332,7 @@ class GlobalDeduplicate(BaseLLMOperation):
         self.support_spark = True
         self.support_ray = False
     
+    @statistics_decorator
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
         if self.inplace:
             # 1. if input hasn't been processed by global hash
@@ -343,31 +374,32 @@ class GlobalDeduplicateGenDict(BaseLLMOperation):
         self.support_spark = True
         self.support_ray = False
     
+    @statistics_decorator
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
         if self.inplace:
             # 1. if input hasn't been processed by global hash
-            with Timer(f"Generate Global Hash"):
-                hash_df = global_hash_spk(spark_df, self.text_key).cache()
-                post_global_hash_count = hash_df.count()
-            
+            hash_df = global_hash_spk(spark_df, self.text_key, "global_id")
+
             # 2. get global hash indexing
-            with Timer(f"Generate Global indexing based on hash"):
-                ret_df = get_hash_indexing_spk(hash_df).cache()
-                index_count = ret_df.count()
+            ret_df = get_hash_indexing_spk(hash_df, "global_id")
 
             # 3. generate duplication indexing
-            with Timer(f"Generate global duplication list"):
-                ret_df = get_duplication_list_spk(ret_df).cache()
-                duplication_count = ret_df.count()
+            out_df = get_duplication_list_spk(ret_df, "global_id")
             
-            # 4. duplicate rows
-            with Timer(f"Generate global duplication rows"):
-                out_df = hash_df.join(ret_df, ["doc_id", "hash"], "inner").drop('doc_id').cache()
-                post_global_dedup_count = out_df.count()                
+            if self.statistics_flag:
+                debug_df = get_duplication_list_for_debug_spk(ret_df, 'global_id')
+                self.statistics.example = spark_df.join(debug_df, 'global_id', 'inner').sort('dup_grpid').select('global_id', self.text_key, 'dup_grpid').toPandas()
+
             return out_df
             
         else:
             raise NotImplementedError("We only support inplace modification for FuzzyDeduplicate.")
+        
+    def summarize(self) -> str:
+        return (
+            f"A total of {self.statistics.total_in} rows of data were processed, using {self.statistics.used_time} seconds, "
+            f"A duplication list containing {self.statistics.total_out} found."
+            f"Sampled, duplication preview: {self.statistics.example.head(50)}")
     
 LLMOPERATORS.register(GlobalDeduplicateGenDict)
 
@@ -380,12 +412,11 @@ class GlobalDeduplicateApplyDict(BaseLLMOperation):
         self.support_spark = True
         self.support_ray = False
 
-
+    @statistics_decorator
     def process_spark(self, spark, spark_df: DataFrame, global_df: DataFrame) -> DataFrame:
         if self.inplace:
             # 1. deduplicate input
-            with Timer(f"reduce input file based on global duplication rows"):
-                ret = spark_df.join(global_df, 'global_id', 'left_anti')
+            ret = spark_df.join(global_df, 'global_id', 'left_anti')
             return ret
         else:
             raise NotImplementedError("We only support inplace modification for FuzzyDeduplicate.")
