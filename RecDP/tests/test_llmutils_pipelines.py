@@ -155,3 +155,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         pipeline.execute()
         del pipeline
 
+    def test_load_pipeline_from_yaml_file(self):
+        pipeline = ResumableTextPipeline("tests/data/llm_data/pipeline/pipeline_example.yaml")
+        pipeline.execute()
+        del pipeline

@@ -21,7 +21,7 @@ class JsonlReader(BaseLLMOperation):
         self.support_spark = True
         self.input_dir = input_dir
         
-    def process_rayds(self, ds) -> Dataset:
+    def process_rayds(self, ds=None) -> Dataset:
         import ray.data as rd
         def convert_json(s):
             if isinstance(s, str):
@@ -71,7 +71,7 @@ class SourcedJsonlReader(SourcedReader):
     def __init__(self, input_dir = "", source_prefix = ""):
         super().__init__(input_dir = input_dir, source_prefix = source_prefix)
         
-    def process_rayds(self, ds) -> Dataset:
+    def process_rayds(self, ds=None) -> Dataset:
         import ray.data as rd
         files_with_subtask, input_dir = self.get_files_with_subtask("jsonl")
         
@@ -137,7 +137,7 @@ class ParquetReader(BaseLLMOperation):
         self.support_spark = True
         self.input_dir = input_dir
         
-    def process_rayds(self, ds) -> Dataset:
+    def process_rayds(self, ds=None) -> Dataset:
         import ray.data as rd
         self.cache = rd.read_parquet(self.input_dir)
         return self.cache
@@ -152,7 +152,7 @@ class SourcedParquetReader(SourcedReader):
     def __init__(self, input_dir = "", source_prefix = ""):
         super().__init__(input_dir = input_dir, source_prefix = source_prefix)
         
-    def process_rayds(self, ds) -> Dataset:
+    def process_rayds(self, ds=None) -> Dataset:
         import ray.data as rd
         def add_source(s, source_str):
             s['source_id'] = source_str  
@@ -207,7 +207,7 @@ class PerfileSourcedJsonlReader(SourcedReader, PerfileReader):
         self.support_spark = True
         self.support_ray = True
         
-    def process_rayds(self, ds):
+    def process_rayds(self, ds=None):
         import ray.data as rd
         files_with_subtask, input_dir = self.get_files_with_subtask("jsonl")
         
@@ -257,7 +257,7 @@ class PerfileSourcedParquetReader(SourcedReader, PerfileReader):
         self.support_spark = True
         self.support_ray = True
         
-    def process_rayds(self, ds) -> Dataset:
+    def process_rayds(self, ds=None) -> Dataset:
         import ray.data as rd
         def add_source(s, source_str):
             s['source_id'] = source_str  

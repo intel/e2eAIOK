@@ -49,12 +49,27 @@ class BasePipeline:
         
     def import_from_yaml(self, file_path):
         with open(file_path, "r") as infile:
-            yaml_object = yaml.safe_load(file)
-        
-        for idx, op_config in json_object.items():
-            idx = int(idx)
-            if idx in self.pipeline:
-                continue
+            yaml_object = yaml.safe_load(infile)
+
+        if 'pipeline' not in yaml_object:
+            raise ValueError(f"The text pipeline YAML file {file_path} does not have 'pipeline' property configured.")
+
+        for idx, op_config in enumerate(yaml_object['pipeline']):
+            idx = int(op_config['id']) if 'id' in op_config else int(idx)
+            if 'children' not in op_config:
+                op_config['children'] = [] if idx == 0 else [idx - 1]
+
+            for key, value in op_config.items():
+                if key not in ['id', 'children', 'config', 'op']:
+                    op_config['op'] = key
+                    op_config['config'] = value if value else {}
+                    break
+
+            if 'op' not in op_config:
+                raise ValueError(f"No operator name found for config {op_config}")
+
+            if 'config' not in op_config:
+                op_config['config'] = {}
             self.pipeline[idx] = Operation.load(idx, op_config)
         
     def create_executable_pipeline(self):
