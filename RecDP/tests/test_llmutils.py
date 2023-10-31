@@ -358,13 +358,13 @@ class Test_LLMUtils(unittest.TestCase):
 
     def test_text_pipeline_optimize_with_one_config_file(self):
         from pyrecdp.primitives.llmutils.pipeline_hpo import text_pipeline_optimize
-        input_pipeline_hpo_file = "tests/data/llm_data/pipeline/pipeline_hpo.yaml.template"
-        output_pipeline_file = "tests/data/llm_data/pipeline/pipeline_hpo.yaml"
+        input_pipeline_hpo_file = "tests/config/llm/pipeline/pipeline_hpo.yaml.template"
+        output_pipeline_file = "tests/config/llm/pipeline/pipeline_hpo.yaml"
         text_pipeline_optimize(input_pipeline_hpo_file, output_pipeline_file)
 
     def test_text_pipeline_optimize_with_separate_config_file(self):
         from pyrecdp.primitives.llmutils.pipeline_hpo import text_pipeline_optimize
-        input_pipeline_file = "tests/data/llm_data/pipeline/pipeline.yaml.template"
-        output_pipeline_file = "tests/data/llm_data/pipeline/pipeline.yaml"
-        input_hpo_file = "tests/data/llm_data/pipeline/hpo.yaml"
+        input_pipeline_file = "tests/config/llm/pipeline/pipeline.yaml.template"
+        output_pipeline_file = "tests/config/llm/pipeline/pipeline.yaml"
+        input_hpo_file = "tests/config/llm/pipeline/hpo.yaml"
         text_pipeline_optimize(input_pipeline_file, output_pipeline_file, input_hpo_file)

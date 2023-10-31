@@ -24,7 +24,7 @@ hpo:
       type: double
     - name: WordRepetitionFilter_max_ratio
       bounds:
-        min: 0.0
+        min: 0.2
         max: 0.5
       type: double
   metrics:

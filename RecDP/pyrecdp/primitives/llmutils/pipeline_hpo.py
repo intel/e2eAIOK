@@ -135,9 +135,7 @@ class SigoptExperiment(HpoExperiment):
             return HpoExperimentRun(id=self._experiment.id)
         else:
             best_assignments = best_assignments_resp.data[0]
-            metrics = {}
-            for item in best_assignments.values:
-                metrics[item.name] = item.value
+            metrics = {item.name: item.value for item in best_assignments.values}
             return HpoExperimentRun(self._experiment.id, best_assignments.assignments, metrics)
 
 
