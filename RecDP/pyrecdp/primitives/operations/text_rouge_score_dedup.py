@@ -4,33 +4,15 @@ from pyspark.sql import DataFrame
 
 import pyspark.sql.functions as F
 from pyspark.sql import types as T
+from pyspark.sql import Row
 from rouge_score import rouge_scorer
+from pyrecdp.primitives.llmutils.third_party import generate_connected_components
 
 from .logging_utils import logger
-
-
-def split2df(prod_df, limit_size, spark):
-    # Create a copy of original dataframe
-
-    row = prod_df.head(1)
-    first_id = row[0]["id_2"]
-    copy_df = prod_df
-
-    prod_df_len = prod_df.count()
-    if limit_size >= prod_df_len:
-        return prod_df, None
-
-    part_1_rdd = copy_df.limit(limit_size).collect()
-    part_1_df = spark.createDataFrame(part_1_rdd, prod_df.columns)
-
-    left_id = first_id - 1 + limit_size
-    part_2_df = copy_df.filter(F.column("id_2") > left_id)
-
-    return part_1_df, part_2_df
-
+from pyrecdp.core.utils import Timer
 
 class RougeScoreDedup(BaseLLMOperation):
-    def __init__(self, text_key='text', max_ratio=0.7, batch_size=1000, score_store_path='/root/qyao/gitspace/e2eAIOK/RecDP/tests/data/filter_out/filtered'):
+    def __init__(self, text_key='text', max_ratio=0.7, batch_size=1000, score_store_path='RougeScorefiltered'):
         settings = {'text_key': text_key, 'max_ratio': max_ratio, 'batch_size': batch_size, "score_store_path": score_store_path}
         super().__init__(settings)
         self.text_key = text_key
@@ -74,21 +56,22 @@ class RougeScoreDedup(BaseLLMOperation):
         rouge_score_column_name = "rouge_score"
         max_ratio = self.max_ratio
 
-        instruction_df_1 = (spark_df.select(self.text_key).rdd.zipWithIndex().toDF()
-                            .select("_1.*", "_2").withColumnRenamed("_2", "id_1"))
-        instruction_df_1 = instruction_df_1.withColumnRenamed(self.text_key, "instruction")
-        instruction_df_2 = (instruction_df_1.withColumnRenamed("id_1", "id_2")
-                            .withColumnRenamed("instruction", "instruction_2"))
+        spark_df = spark_df.withColumn('id_1', F.monotonically_increasing_id())
+        instruction_df_1 = spark_df.withColumnRenamed(self.text_key, "similarity_left")
+        instruction_df_2 = (spark_df.withColumnRenamed("id_1", "id_2")
+                            .withColumnRenamed(self.text_key, "similarity_right"))
 
+        monotonically_increasing_id_list = spark_df.rdd.map(lambda x: x.id_1).collect()
+        batches = [monotonically_increasing_id_list[i : i + self.batch_size] for i in range(0, len(monotonically_increasing_id_list), self.batch_size)]
         scorer = rouge_scorer.RougeScorer([rouge_type], use_stemmer=False)
 
         def gen_id(id_1, id_2):
             if id_1 == id_2:
                 return -1
             if id_1 < id_2:
-                return f"{id_1}_{id_2}"
+                return f"{id_1} :: {id_2}"
             else:
-                return f"{id_2}_{id_1}"
+                return f"{id_2} :: {id_1}"
 
         def compare_rouge_score(str_1, str_2):
             scores = scorer.score(str_1, str_2)
@@ -96,46 +79,58 @@ class RougeScoreDedup(BaseLLMOperation):
 
         compare_rouge_score_udf = F.udf(compare_rouge_score, T.FloatType())
 
-        batch_count = 0
-        while instruction_df_2 is not None:
-            logger.info(
-                f"Round {batch_count}: processing {batch_count * self.batch_size} - {(batch_count + 1) * self.batch_size}")
+        for batch_count, to_process_ids in enumerate(batches):
+            with Timer(f"Round {batch_count}"):
+                logger.info(f"Round {batch_count}: processing num_samples is {self.batch_size}")
 
-            batch_df, instruction_df_2 = split2df(instruction_df_2, self.batch_size, spark)
-            dupli_score_matrix = instruction_df_1.crossJoin(batch_df)
-            gen_id_udf = F.udf(gen_id, T.StringType())
-            dupli_score_matrix = dupli_score_matrix.withColumn("id_pair",
-                                                               gen_id_udf(F.column("id_1"), F.column("id_2")))
-            dupli_score_matrix = dupli_score_matrix.dropDuplicates(["id_pair"])
-            dupli_score_matrix = dupli_score_matrix.filter(F.column("id_1") != F.column("id_2"))
+                # prepare matrix for one batch calculation
+                # 1. cross join to get n*n pairs
+                # 2. use id_pair to reduce calculated pair, if we have dome i_j, then skip j_i
+                # 3. skip i_i
+                R = Row('id_2')
+                tmp_id_df = spark.createDataFrame([R(i) for i in to_process_ids])
+                batch_df = instruction_df_2.join(tmp_id_df, on = 'id_2', how = 'inner')
+                print(f"total batch_df size is {batch_df.count()}")
+                dupli_score_matrix = instruction_df_1.crossJoin(batch_df)
+                gen_id_udf = F.udf(gen_id, T.StringType())
+                dupli_score_matrix = dupli_score_matrix.withColumn("id_pair",
+                                                                gen_id_udf(F.column("id_1"), F.column("id_2")))
+                dupli_score_matrix = dupli_score_matrix.dropDuplicates(["id_pair"])
+                dupli_score_matrix = dupli_score_matrix.filter(F.column("id_1") != F.column("id_2"))
 
-            remove_df = dupli_score_matrix.withColumn(rouge_score_column_name,
-                                                      compare_rouge_score_udf(F.column("instruction"),
-                                                                              F.column("instruction_2")))
-            remove_df.show()
-            remove_df = remove_df.filter(F.column(rouge_score_column_name) > max_ratio)
-            if self.score_store_path:
-                if batch_count == 0:
-                    score_df = remove_df.select('id_pair', 'rouge_score')
-                else:
-                    score_df = score_df.union(remove_df.select('id_pair', 'rouge_score'))
-                
-            remove_df = remove_df.select(
-                "instruction",
-                "id_1")
-            remove_df = remove_df.dropDuplicates(["id_1"])
-            remove_count = remove_df.count()
+                # Now we have minimun pair, start to calculate rouge score
+                remove_df = dupli_score_matrix.withColumn(rouge_score_column_name,
+                                                        compare_rouge_score_udf(F.column("similarity_left"),
+                                                                                F.column("similarity_right")))
 
-            if remove_count > 0:
-                instruction_df_1 = instruction_df_1.subtract(remove_df)
-                instruction_df_1_rdd = instruction_df_1.collect()
-                instruction_df_1 = spark.createDataFrame(instruction_df_1_rdd, remove_df.columns)
-            batch_count += 1
-        instruction_df_1 = instruction_df_1.withColumnRenamed("instruction", self.text_key)
-        spark_df = spark_df.join(instruction_df_1,
-                                 on=self.text_key, how="inner").select(spark_df.columns)
+                # find out sample_pairs whose similarity > threshold
+                remove_df = remove_df.filter(F.column(rouge_score_column_name) > max_ratio).cache()
+                remove_count = remove_df.count()
+            # materialize one round
+
+            if batch_count == 0:
+                score_df = remove_df.select('id_1', 'id_2', 'id_pair', 'similarity_left', 'similarity_right', 'rouge_score')
+            else:
+                score_df = score_df.union(remove_df.select('id_1', 'id_2', 'id_pair', 'similarity_left', 'similarity_right', 'rouge_score'))
+
+        # Final join
+        with Timer("generate_connected_components => duplicates"):
+            results = score_df.rdd.map(lambda x: x.id_pair).collect()
+            print(results)
+            components = generate_connected_components.generate_connected_components_py(results)
+            duplicates = [c for c_list in components for c in c_list[1:]]
+            R = Row('id_1')
+            total_dup = len(duplicates)
+            if total_dup != 0:
+                duplicates_sdf = spark.createDataFrame([R(dup) for dup in duplicates]).cache()
+                total_dup = duplicates_sdf.count()
+                spark_df = spark_df.join(duplicates_sdf,
+                                        on='id_1', how="left_anti").drop("id_1")
+            else:
+                spark_df = spark_df.drop("id_1")
         if self.score_store_path:
             score_df.write.parquet(self.score_store_path, mode='overwrite')
+
         return spark_df
 
 
