@@ -83,7 +83,9 @@ class TextPipeline(BasePipeline):
             # execute
             with Timer(f"execute with ray"):
                 for op in executable_sequence:
-                    if ds != None and isinstance(op, DatasetReader):
+                    if ds is not None and isinstance(op, DatasetReader):
+                        if not isinstance(ds, Dataset):
+                            ds = ray.data.from_pandas(ds)
                         op.cache = ds
                     else:
                         op.execute_ray(executable_pipeline)
@@ -99,7 +101,9 @@ class TextPipeline(BasePipeline):
             # execute
             with Timer(f"execute with spark"):
                 for op in executable_sequence:
-                    if ds != None and isinstance(op, DatasetReader):
+                    if ds is not None and isinstance(op, DatasetReader):
+                        if not isinstance(ds, DataFrame):
+                            ds = self.rdp.spark.createDataFrame(ds)
                         op.cache = ds
                     else:
                         op.execute_spark(executable_pipeline, self.rdp)
