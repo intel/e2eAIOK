@@ -1,4 +1,4 @@
-from .base import BaseLLMOperation, LLMOPERATORS
+from .base import BaseLLMOperation, LLMOPERATORS, statistics_decorator
 from ray.data import Dataset
 from pyspark.sql import DataFrame
 
@@ -11,9 +11,10 @@ from pyrecdp.primitives.llmutils.third_party import generate_connected_component
 from .logging_utils import logger
 from pyrecdp.core.utils import Timer
 from tqdm import tqdm
+import pandas as pd
 
 class RougeScoreDedup(BaseLLMOperation):
-    def __init__(self, text_key='text', max_ratio=0.7, batch_size=100, score_store_path='RougeScorefiltered'):
+    def __init__(self, text_key='text', max_ratio=0.7, batch_size=100, score_store_path='RougeScorefiltered.parquet'):
         settings = {'text_key': text_key, 'max_ratio': max_ratio, 'batch_size': batch_size, "score_store_path": score_store_path}
         super().__init__(settings)
         self.text_key = text_key
@@ -52,6 +53,7 @@ class RougeScoreDedup(BaseLLMOperation):
 
         return filterd_ds
 
+    @statistics_decorator
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
         rouge_type = self.rouge_type
         rouge_score_column_name = "rouge_score"
@@ -82,6 +84,8 @@ class RougeScoreDedup(BaseLLMOperation):
         gen_id_udf = F.udf(gen_id, T.StringType())
         compare_rouge_score_udf = F.udf(compare_rouge_score, T.FloatType())
         history_pair_df = None
+        score_df_list = []
+        history_pair_list = []
 
         for batch_count, to_process_ids in tqdm(enumerate(batches), total = len(batches)):
             with Timer(f"Round {batch_count}"):
@@ -91,17 +95,16 @@ class RougeScoreDedup(BaseLLMOperation):
                 # 3. skip i_i
                 R = Row('id_2')
                 tmp_id_df = spark.createDataFrame([R(i) for i in to_process_ids])
-                batch_df = instruction_df_2.join(tmp_id_df, on = 'id_2', how = 'inner').cache()
-                print(f"total batch_df size is {batch_df.count()}") # cache batch_df
-                
+                batch_df = instruction_df_2.join(tmp_id_df, on = 'id_2', how = 'inner')                
                 dupli_score_matrix = instruction_df_1.crossJoin(batch_df)
                 dupli_score_matrix = dupli_score_matrix.withColumn("id_pair", gen_id_udf(F.column("id_1"), F.column("id_2")))
                 dupli_score_matrix = dupli_score_matrix.dropDuplicates(["id_pair"])
                 dupli_score_matrix = dupli_score_matrix.filter(F.column("id_1") != F.column("id_2"))
-                if history_pair_df is not None:
+                if len(history_pair_list) > 0:
+                    R = Row('id_pair')
+                    history_pair_df = spark.createDataFrame([R(i) for i in history_pair_list])
                     dupli_score_matrix = dupli_score_matrix.join(history_pair_df, on='id_pair', how='left_anti')
                 dupli_score_matrix = dupli_score_matrix.cache()
-                logger.info(f"Round {batch_count}: total processing num_samples is {dupli_score_matrix.count()}")
 
                 # Now we have minimun pair, start to calculate rouge score
                 remove_df = dupli_score_matrix.withColumn(rouge_score_column_name,
@@ -110,19 +113,17 @@ class RougeScoreDedup(BaseLLMOperation):
 
                 # find out sample_pairs whose similarity > threshold
                 remove_df = remove_df.filter(F.column(rouge_score_column_name) > max_ratio).cache()
-                logger.info(f"Round {batch_count}: detected high similarity num_samples is {remove_df.count()}")
-            # materialize one round
+                logger.info(f"Round {batch_count}: total processing num_samples is {dupli_score_matrix.count()}, detected high similarity num_samples is {remove_df.count()}")
+                # materialize one round
 
-            if batch_count == 0:
-                score_df = remove_df.select('id_1', 'id_2', 'id_pair', 'similarity_left', 'similarity_right', 'rouge_score')
-                history_pair_df = dupli_score_matrix.select('id_pair').cache()
-            else:
-                score_df = score_df.union(remove_df.select('id_1', 'id_2', 'id_pair', 'similarity_left', 'similarity_right', 'rouge_score'))
-                history_pair_df = history_pair_df.union(dupli_score_matrix.select('id_pair')).cache()
+                score_df = remove_df.select('id_1', 'id_2', 'id_pair', 'similarity_left', 'similarity_right', 'rouge_score').toPandas()
+                score_df_list.append(score_df)
+                history_pair_list += dupli_score_matrix.rdd.map(lambda x: x.id_pair).collect()
 
         # Final join
         with Timer("generate_connected_components => duplicates"):
-            results = score_df.rdd.map(lambda x: x.id_pair).collect()
+            results = []
+            [results.extend(df_['id_pair'].to_list()) for df_ in score_df_list]
             components = generate_connected_components.generate_connected_components_py(results)
             duplicates = [c for c_list in components for c in c_list[1:]]
             R = Row('id_1')
@@ -132,13 +133,25 @@ class RougeScoreDedup(BaseLLMOperation):
                 total_dup = duplicates_sdf.count()
                 spark_df = spark_df.join(duplicates_sdf,
                                         on='id_1', how="left_anti").drop("id_1")
+                logger.info(f"Finally detected duplicated num_samples is {total_dup}")
             else:
                 spark_df = spark_df.drop("id_1")
+        score_df = pd.concat(score_df_list, ignore_index=True).reset_index(drop=True)
         if self.score_store_path:
-            score_df.write.parquet(self.score_store_path, mode='overwrite')
+            import os, shutil
+            if os.path.exists(self.score_store_path):
+                os.remove(self.score_store_path)
+            score_df.to_parquet(self.score_store_path)
+        if self.statistics_flag:
+            self.statistics.example = score_df
 
-        spark_df.show()
         return spark_df
+    
+    def summarize(self) -> str:
+        return (
+            f"A total of {self.statistics.total_in} rows of data were processed, using {self.statistics.used_time} seconds, "
+            f"A duplication list containing {self.statistics.total_out} found, "
+            f"Sampled, duplication preview: {self.statistics.example.head(50)}")
 
 
 LLMOPERATORS.register(RougeScoreDedup)
