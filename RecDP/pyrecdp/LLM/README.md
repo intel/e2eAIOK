@@ -26,7 +26,6 @@ RecDP LLM is a set of python components that enables quick and easy establish of
 | [ Writer ](https://github.com/intel/e2eAIOK/blob/main/RecDP/pyrecdp/primitives/operations/text_writer.py#L7)                      | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/writer.ipynb)            | write data to directory                            | jsonl, parquet                               | RefinedWeb - 1.7 TB                   |
 | [ ClassifyWriter ](https://github.com/intel/e2eAIOK/blob/main/RecDP/pyrecdp/primitives/operations/text_writer.py#L47)                      | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/classify.ipynb)            | Classify and write data into sub buckets                            | meta fields, language                                | RefinedWeb - 1.7 TB                   |
 | [ Prompt Enhancement ](#)                                                                                                       | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/prompt_enhancement.ipynb)      | creates high-complexity instructions from existing instruct-tuned LLM models       | PromptSource, self-instruct, evol-instruct(wizardLM) | alpaca |
-| [ Pipeline HPO ](#)                                                                                                       | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/pipeline_hpo.ipynb)      |  improve the performance of llm data pipelines. It can help to find the best set of hyperparameters for data pipeline without having to manually evaluate every possible combination.  | Sigopt   | RefinedWeb - 1.7 TB |
 
 ## LLM Data Quality Analysis
 
@@ -35,6 +34,23 @@ RecDP LLM is a set of python components that enables quick and easy establish of
 | Visualize the diversity distribution of data | Leverage GPT-3 to scoring | Visualize Toxicity probability |
 | ![diversity](/RecDP/resources/diversity_analysis.png) | ![quality](/RecDP/resources/quality_scoring.png) | ![toxicity](/RecDP/resources/toxicity_analysis.png)|
 | [learn more](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/data_diversity_control.ipynb) | [learn more](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/text_quality_assessment.ipynb) | [learn more](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/toxicity_bias_control.ipynb) |
+
+## Data pipeline AutoHPO
+
+Low-Code configuration with automated operators parameter tuning, allowing user to transform their own raw data toward a high quality dataset with low-effort. We coupled data processing with Quality Analisys as evaluation metrics, which will estimate data's quality before actual model finetuning/inference.
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/pipeline_hpo.ipynb)
+![image](https://github.com/chaojun-zhang/e2eAIOK/assets/4355494/f20cbde4-7221-4459-93a9-7f16af23377a)
+
+```
+from pyrecdp.primitives.llmutils.pipeline_hpo import text_pipeline_optimize
+
+# input data path is configured in input_pipeline_file
+input_pipeline_file = "config/pipeline_hpo.yaml.template"
+input_hpo_file = 'config/hpo.yaml'
+output_pipeline_file = "config/pipeline.yaml"
+
+text_pipeline_optimize(input_pipeline_file, output_pipeline_file, input_hpo_file)
+```
 
 
 # Getting Start
@@ -64,7 +80,6 @@ ops = [
 ]
 pipeline.add_operations(ops)
 pipeline.execute()
-pipeline.export_to_yaml("custom_llm_data_pipeline.yaml")
 ```
 or
 ```
