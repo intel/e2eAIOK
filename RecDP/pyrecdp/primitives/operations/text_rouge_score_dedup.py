@@ -85,7 +85,6 @@ class RougeScoreDedup(BaseLLMOperation):
         compare_rouge_score_udf = F.udf(compare_rouge_score, T.FloatType())
         history_pair_df = None
         score_df_list = []
-        history_pair_list = []
 
         for batch_count, to_process_ids in tqdm(enumerate(batches), total = len(batches)):
             with Timer(f"Round {batch_count}"):
@@ -100,10 +99,6 @@ class RougeScoreDedup(BaseLLMOperation):
                 dupli_score_matrix = dupli_score_matrix.withColumn("id_pair", gen_id_udf(F.column("id_1"), F.column("id_2")))
                 dupli_score_matrix = dupli_score_matrix.dropDuplicates(["id_pair"])
                 dupli_score_matrix = dupli_score_matrix.filter(F.column("id_1") != F.column("id_2"))
-                if len(history_pair_list) > 0:
-                    R = Row('id_pair')
-                    history_pair_df = spark.createDataFrame([R(i) for i in history_pair_list])
-                    dupli_score_matrix = dupli_score_matrix.join(history_pair_df, on='id_pair', how='left_anti')
                 dupli_score_matrix = dupli_score_matrix.cache()
 
                 # Now we have minimun pair, start to calculate rouge score
@@ -118,7 +113,16 @@ class RougeScoreDedup(BaseLLMOperation):
 
                 score_df = remove_df.select('id_1', 'id_2', 'id_pair', 'similarity_left', 'similarity_right', 'rouge_score').toPandas()
                 score_df_list.append(score_df)
-                history_pair_list += dupli_score_matrix.rdd.map(lambda x: x.id_pair).collect()
+                # update instruction_df_1 to remove batch_df
+                # option 1 => not work:
+                #instruction_df_1 = instruction_df_1.join(tmp_id_df.withColumnRenamed('id_2', 'id_1'), on = 'id_1', how = 'anti').cache()
+                # option 2:
+                instruction_df_1.join(tmp_id_df.withColumnRenamed('id_2', 'id_1'), on = 'id_1', how = 'anti').write.parquet(f"f{self.score_store_path}.tmp_df", mode = 'overwrite')
+                instruction_df_1 = spark.read.parquet(f"f{self.score_store_path}.tmp_df")
+                # option 3:
+                # instruction_df_1 = instruction_df_1.join(tmp_id_df.withColumnRenamed('id_2', 'id_1'), on = 'id_1', how = 'anti')
+                # instruction_df_1 = spark.createDataFrame(instruction_df_1.collect(), instruction_df_1.columns)
+    
 
         # Final join
         with Timer("generate_connected_components => duplicates"):
