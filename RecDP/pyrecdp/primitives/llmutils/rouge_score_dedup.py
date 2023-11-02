@@ -1,5 +1,4 @@
 import argparse
-import os.path
 
 from pyrecdp.core.utils import Timer
 from pyrecdp.primitives.operations import JsonlReader, ParquetReader, PerfileParquetWriter
@@ -22,7 +21,6 @@ def rouge_score_dedup(data_dir, out_dir, data_file_type="jsonl", max_ratio=0.7, 
         reader = ParquetReader(data_dir)
     else:
         raise NotImplementedError(f"{data_file_type} is not supported in RecDP LLM ResumableTextPipeline yet.")
-
 
     pipeline = ResumableTextPipeline()
     ops = [
@@ -48,9 +46,6 @@ if __name__ == "__main__":
     output_dir = args.output_dir
     max_ratio = args.max_ratio
     batch_size = args.batch_size
-    if os.path.exists(output_dir):
-        import shutil
-        shutil.rmtree(output_dir)
 
     with Timer(f"Remove duplicate item by rouge score for {data_dir}"):
         rouge_score_dedup(data_dir, output_dir, data_file_type, max_ratio, batch_size)
