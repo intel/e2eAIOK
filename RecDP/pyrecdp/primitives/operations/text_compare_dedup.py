@@ -14,40 +14,39 @@ from tqdm import tqdm
 import pandas as pd
 
 
-class RougeScoreDedup(BaseLLMOperation):
-    def __init__(self, text_key='text', max_ratio=0.7, batch_size=100, score_store_path='RougeScorefiltered.parquet'):
+class BaseCompareDedup(BaseLLMOperation):
+    def __init__(self, text_key='text', max_ratio=0.7, batch_size=100, score_store_path='RougeScorefiltered.parquet',
+                 args_dict={}):
         settings = {'text_key': text_key, 'max_ratio': max_ratio, 'batch_size': batch_size,
-                    "score_store_path": score_store_path}
+                    'score_store_path': score_store_path}
+        settings.update(args_dict)
         super().__init__(settings)
         self.text_key = text_key
         self.max_ratio = max_ratio
         self.batch_size = batch_size
         self.score_store_path = score_store_path
-        self.rouge_type = 'rougeL'
         self.support_spark = True
         self.support_ray = False
+        self.new_column_name = "score"
 
     def process_rayds(self, ds=None):
         total_rows = ds.count()
         line_num = []
-        scorer = rouge_scorer.RougeScorer([self.rouge_type], use_stemmer=False)
         for i in range(1, total_rows):
 
             d1, d2, d3 = ds.split_at_indices([i, i + 1])
             target_sample = d2.take(1)[0]
             instruction = target_sample[self.text_key]
-            instruction_token = scorer._tokenizer.tokenize(instruction)
 
-            def process_row(sample, target_token):
-                sample['rouge_score'] = rouge_scorer._score_lcs(target_token,
-                                                                scorer._tokenizer.tokenize(
-                                                                    sample[self.text_key])).fmeasure
-                return sample
+            compute_func = self.get_compute_func()
 
             # ds = d2.filter(lambda x: True if rouge_scorer._score_lcs(new_instruction_token, scorer._tokenizer.tokenize(
             #     x["instruction"])).fmeasure < 0.7 else False)
+            def process_row(sample):
+                sample[self.new_column_name] = compute_func(instruction, sample[self.text_key])
+                return sample
 
-            ds_score: Dataset = d1.map(lambda x: process_row(x, instruction_token))
+            ds_score: Dataset = d1.map(lambda x: process_row(x))
             if i == 1:
                 filterd_ds = d1
             if ds_score.max("rouge_score") < self.max_ratio:
@@ -57,10 +56,7 @@ class RougeScoreDedup(BaseLLMOperation):
 
     @statistics_decorator
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
-        rouge_type = self.rouge_type
-        rouge_score_column_name = "rouge_score"
         max_ratio = self.max_ratio
-
         spark_df = spark_df.withColumn('id_1', F.monotonically_increasing_id())
         instruction_df_1 = spark_df.withColumnRenamed(self.text_key, "similarity_left")
         instruction_df_2 = (spark_df.withColumnRenamed("id_1", "id_2")
@@ -69,7 +65,6 @@ class RougeScoreDedup(BaseLLMOperation):
         monotonically_increasing_id_list = spark_df.rdd.map(lambda x: x.id_1).collect()
         batches = [monotonically_increasing_id_list[i: i + self.batch_size] for i in
                    range(0, len(monotonically_increasing_id_list), self.batch_size)]
-        scorer = rouge_scorer.RougeScorer([rouge_type], use_stemmer=False)
 
         def gen_id(id_1, id_2):
             if id_1 == id_2:
@@ -79,12 +74,8 @@ class RougeScoreDedup(BaseLLMOperation):
             else:
                 return f"{id_2} :: {id_1}"
 
-        def compare_rouge_score(str_1, str_2):
-            scores = scorer.score(str_1, str_2)
-            return scores[rouge_type].fmeasure
-
         gen_id_udf = F.udf(gen_id, T.StringType())
-        compare_rouge_score_udf = F.udf(compare_rouge_score, T.FloatType())
+        compare_rouge_score_udf = F.udf(self.get_compute_func(), T.FloatType())
         history_pair_df = None
         score_df_list = []
 
@@ -105,18 +96,19 @@ class RougeScoreDedup(BaseLLMOperation):
                 dupli_score_matrix = dupli_score_matrix.cache()
 
                 # Now we have minimun pair, start to calculate rouge score
-                remove_df = dupli_score_matrix.withColumn(rouge_score_column_name,
+                remove_df = dupli_score_matrix.withColumn(self.new_column_name,
                                                           compare_rouge_score_udf(F.column("similarity_left"),
                                                                                   F.column("similarity_right")))
 
                 # find out sample_pairs whose similarity > threshold
-                remove_df = remove_df.filter(F.column(rouge_score_column_name) > max_ratio).cache()
+                remove_df = remove_df.filter(F.column(self.new_column_name) > max_ratio).cache()
+                remove_df.show()
                 logger.info(
-                    f"Round {batch_count}: total processing num_samples is {dupli_score_matrix.count()}, detected high similarity num_samples is {remove_df.count()}")
+                    f"Round {batch_count}: total processing num_samples is {dupli_score_matrix.count()}, detected high score num_samples is {remove_df.count()}")
                 # materialize one round
 
                 score_df = remove_df.select('id_1', 'id_2', 'id_pair', 'similarity_left', 'similarity_right',
-                                            'rouge_score').toPandas()
+                                            self.new_column_name).toPandas()
                 score_df_list.append(score_df)
 
                 instruction_df_1.join(tmp_id_df.withColumnRenamed('id_2', 'id_1'), on='id_1', how='anti').write.parquet(
@@ -150,11 +142,41 @@ class RougeScoreDedup(BaseLLMOperation):
 
         return spark_df
 
+    def get_compute_func(self, *args, **kwargs):
+        raise NotImplementedError("Abstract func")
+
     def summarize(self) -> str:
         return (
             f"A total of {self.statistics.total_in} rows of data were processed, using {self.statistics.used_time} seconds, "
             f"A duplication list containing {self.statistics.total_out} found, "
             f"Sampled, duplication preview: {self.statistics.example.head(50)}")
+
+
+LLMOPERATORS.register(BaseCompareDedup)
+
+
+class RougeScoreDedup(BaseCompareDedup):
+    def __init__(self, text_key='text', max_ratio=0.7, batch_size=100, score_store_path='RougeScorefiltered.parquet'):
+        settings = {'text_key': text_key, 'max_ratio': max_ratio, 'batch_size': batch_size,
+                    "score_store_path": score_store_path}
+        super().__init__(args_dict=settings)
+        self.text_key = text_key
+        self.max_ratio = max_ratio
+        self.batch_size = batch_size
+        self.score_store_path = score_store_path
+        self.rouge_type = 'rougeL'
+        self.support_spark = True
+        self.support_ray = False
+
+    def get_compute_func(self, *args, **kwargs):
+        from rouge_score import rouge_scorer
+        scorer = rouge_scorer.RougeScorer([self.rouge_type], use_stemmer=False)
+
+        def compare_rouge_score(str_1, str_2):
+            scores = scorer.score(str_1, str_2)
+            return scores['rougeL'].fmeasure
+
+        return compare_rouge_score
 
 
 LLMOPERATORS.register(RougeScoreDedup)
