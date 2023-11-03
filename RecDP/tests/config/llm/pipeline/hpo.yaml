@@ -1,0 +1,22 @@
+---
+hpo:
+  engine: "sigopt"
+  iteration: 2
+  parameters:
+    - name: WordRepetitionFilter_min_ratio
+      bounds:
+        min: 0.0
+        max: 0.2
+      type: double
+    - name: WordRepetitionFilter_max_ratio
+      bounds:
+        min: 0.0
+        max: 0.5
+      type: double
+  metrics:
+    - name: metric_1
+      objective: maximize
+      strategy: optimize
+    - name: metric_2
+      objective: maximize
+      strategy: optimize

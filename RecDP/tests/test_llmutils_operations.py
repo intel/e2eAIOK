@@ -144,32 +144,29 @@ class Test_LLMUtils_Operations(unittest.TestCase):
 
 
     def test_filter_by_token_num_ray(self):
-        pass
         # Ray version not supported yet
         op = TokenNumFilter(model_key=os.path.join(RECDP_MODELS_CACHE, "pythia-6.9b-deduped"))
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds(ctx.ds))
 
     def test_filter_by_word_num_ray(self):
-        pass
         # Ray version not supported yet
         op = WordNumFilter()
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds(ctx.ds))
 
-
     def test_filter_by_perplexity_ray(self):
-        pass
-        # Ray version not supported yet
         op = PerplexityFilter()
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds(ctx.ds))
 
-
     def test_filter_by_word_repetition_ray(self):
-        pass
-        # Ray version not supported yet
         op = WordRepetitionFilter()
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds(ctx.ds))
+
+    def test_perplexity_score_ray(self):
+        op = TextPerplexityScore(language='en')
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds(ctx.ds))
 
@@ -341,5 +338,15 @@ class Test_LLMUtils_Operations(unittest.TestCase):
             return len(text) < 200
         
         op = TextCustomerFilter(func=cond, text_key='text')
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
+    def test_rouge_score_dedup_spark(self):
+        op = RougeScoreDedup()
+        with SparkContext("tests/data/llm_data/github_sample_50.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
+    def test_perplexity_score_spark(self):
+        op = TextPerplexityScore(language='en')
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))

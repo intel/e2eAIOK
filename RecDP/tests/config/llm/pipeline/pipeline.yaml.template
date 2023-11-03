@@ -1,0 +1,14 @@
+---
+pipeline:
+  - PerfileSourcedJsonlReader:
+      input_dir: "tests/data/llm_data"
+  - LengthFilter:
+      min_len: 100
+      max_len: -1
+  - WordRepetitionFilter:
+      rep_len: 10
+      min_ratio: {{ WordRepetitionFilter_min_ratio|default(0.0) }}
+      max_ratio: {{ WordRepetitionFilter_max_ratio|default(0.5) }}
+  - PerfileParquetWriter:
+      output_dir: "ResumableTextPipeline_output"
+

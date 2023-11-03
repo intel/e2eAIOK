@@ -279,14 +279,16 @@ def statistics_decorator(func):
                 self.statistics.total_out += result.count()
                 elapse = time.time() - start
                 self.statistics.used_time += elapse
-            else:
+            elif isinstance(args[1], SparkDataFrame):
+                print("statistics_decorator spark")
                 df = args[1]
                 self.statistics.total_in += df.count()
                 start = time.time()
                 result = func(self, *args, **kwargs)
-                self.statistics.total_out += result.count()
+                self.statistics.total_out += result.cache().count()
                 elapse = time.time() - start
                 self.statistics.used_time += elapse
+
         else:
             result = func(self, *args, **kwargs)
         return result

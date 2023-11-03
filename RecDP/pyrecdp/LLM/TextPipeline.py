@@ -83,7 +83,9 @@ class TextPipeline(BasePipeline):
             # execute
             with Timer(f"execute with ray"):
                 for op in executable_sequence:
-                    if ds != None and isinstance(op, DatasetReader):
+                    if ds is not None and isinstance(op, DatasetReader):
+                        if not isinstance(ds, Dataset):
+                            ds = ray.data.from_pandas(ds)
                         op.cache = ds
                     else:
                         op.execute_ray(executable_pipeline)
@@ -99,7 +101,9 @@ class TextPipeline(BasePipeline):
             # execute
             with Timer(f"execute with spark"):
                 for op in executable_sequence:
-                    if ds != None and isinstance(op, DatasetReader):
+                    if ds is not None and isinstance(op, DatasetReader):
+                        if not isinstance(ds, DataFrame):
+                            ds = self.rdp.spark.createDataFrame(ds)
                         op.cache = ds
                     else:
                         op.execute_spark(executable_pipeline, self.rdp)
@@ -163,11 +167,16 @@ class TextPipeline(BasePipeline):
         # we need to find nexts
         if find_children_skip:
             return self.pipeline
+        # because we insert a new operation, replace next operator with new children
         for to_replace_child in children:
+            # iterate all children, and find next operators
             next = []
             for idx in pipeline_chain:
-                if self.pipeline[idx].children and to_replace_child in self.pipeline[idx].children:
+                if self.pipeline[idx].children and to_replace_child == self.pipeline[idx].children[0]:
+                    # we only replace next when its first child matches.
+                    # This is a fix for deduplication, because we don't want to replace dictDF operator.
                     next.append(idx)
+
             for idx in next:
                 # replace next's children with new added operator
                 children_in_next = self.pipeline[idx].children
@@ -187,6 +196,11 @@ class TextPipeline(BasePipeline):
     def profile(self):
         # TODO: print analysis and log for each component.
         pass
+
+    def evaluate(self) -> dict:
+        self.execute()
+        import random
+        return {"metric_1": random.uniform(0, 1), "metric_2": random.uniform(0, 1)}
 
 
 class ResumableTextPipeline(TextPipeline):
@@ -300,9 +314,11 @@ class ResumableTextPipeline(TextPipeline):
 
             for op in executable_sequence:
                 if isinstance(op, PerfileReader):
+                    op.statistics_flag = self.statistics_flag
                     op.execute_ray(executable_pipeline)
                     sub_pipelines = op.cache
                 elif len(sub_pipelines) > 0:
+                    op.statistics_flag = self.statistics_flag
                     op_chain.append(op)
 
             for ds_reader, source_id in (pbar := tqdm(sub_pipelines, total=len(sub_pipelines))):
@@ -316,7 +332,6 @@ class ResumableTextPipeline(TextPipeline):
                 pbar.set_description(f"ResumableTextPipeline, current on {source_id}")
                 start = time.time()
                 for idx, op in enumerate(op_chain):
-                    op.statistics_flag = self.statistics_flag
                     if idx == 0:
                         op.execute_ray(executable_pipeline, ds_reader)
                     elif isinstance(op, PerfileParquetWriter) or isinstance(op, PerfileJsonlWriter):
@@ -327,6 +342,9 @@ class ResumableTextPipeline(TextPipeline):
                 status_tracker.write(f"{source_id}, {elapse} secs\n")
                 status_tracker.flush()
                 done_files.append(status_tracker)
+                if self.statistics_flag:
+                    for op in op_chain:
+                        logger.info(f"{op.__class__.__name__}: {op.summarize()}")
                 del ds_reader
         elif engine_name == 'spark':
             if not hasattr(self, 'rdp') or self.rdp is None:
@@ -336,16 +354,25 @@ class ResumableTextPipeline(TextPipeline):
             with Timer(f"execute with spark for global tasks"):                
                 for op in executable_sequence:
                     if not isinstance(op, PerfileReader):
+                        op.statistics_flag = self.statistics_flag
                         op.execute_spark(executable_pipeline, self.rdp)
+                        if self.statistics_flag:
+                            op_chain.append(op)
                     else:
                         break
+                if self.statistics_flag:
+                    for op in op_chain:
+                        logger.info(f"{op.__class__.__name__}: {op.summarize()}")
+                    op_chain = []
             
             # To process since Perfile Reader
             for op in executable_sequence:
                 if isinstance(op, PerfileReader):
+                    op.statistics_flag = self.statistics_flag
                     op.execute_spark(executable_pipeline, rdp = self.rdp)
                     sub_pipelines = op.cache
                 elif len(sub_pipelines) > 0:
+                    op.statistics_flag = self.statistics_flag
                     op_chain.append(op)
 
             # execute
@@ -361,7 +388,6 @@ class ResumableTextPipeline(TextPipeline):
                 print(source_id)
                 start = time.time()
                 for idx, op in enumerate(op_chain):
-                    op.statistics_flag = self.statistics_flag
                     if idx == 0:
                         op.execute_spark(executable_pipeline, rdp = self.rdp, child_ds = ds_reader)
                     elif isinstance(op, PerfileParquetWriter) or isinstance(op, PerfileJsonlWriter):
@@ -373,14 +399,13 @@ class ResumableTextPipeline(TextPipeline):
                 status_tracker.write(f"{source_id}, {elapse} secs\n")
                 status_tracker.flush()
                 done_files.append(status_tracker)
+                if self.statistics_flag:
+                    for op in op_chain:
+                        logger.info(f"{op.__class__.__name__}: {op.summarize()}")
                 del ds_reader
         else:
             raise NotImplementedError(f"ResumableTextPipeline is not support {engine_name} yet")
         
-        if self.statistics_flag:
-            for op in op_chain:
-                logger.info(f"{op.__class__.__name__}: {op.summarize()}")
-
         logger.info(
             f"Completed! ResumableTextPipeline will not return dataset, please check {output_dir} for verification.")
         
