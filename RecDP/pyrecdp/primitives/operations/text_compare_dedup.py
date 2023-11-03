@@ -102,7 +102,6 @@ class BaseCompareDedup(BaseLLMOperation):
 
                 # find out sample_pairs whose similarity > threshold
                 remove_df = remove_df.filter(F.column(self.new_column_name) > max_ratio).cache()
-                remove_df.show()
                 logger.info(
                     f"Round {batch_count}: total processing num_samples is {dupli_score_matrix.count()}, detected high score num_samples is {remove_df.count()}")
                 # materialize one round
