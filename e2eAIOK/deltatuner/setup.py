@@ -24,7 +24,7 @@ setuptools.setup(
     download_url='https://github.com/intel/e2eAIOK/',
     packages=setuptools.find_packages(
         exclude=["example", "docker", ]),
-    package_data={'deltatuner': ['version']}, 
+    package_data={'deltatuner': ['version', '*/*/*', '*/*/*/*'], }, 
     python_requires=">=3.7",  # '>=3.4',  # !=3.4.*
     install_requires=REQUIRED_PACKAGES,
     extras_require={
