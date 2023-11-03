@@ -46,5 +46,6 @@ if __name__ == "__main__":
     output_dir = args.output_dir
     max_ratio = args.max_ratio
     batch_size = args.batch_size
+
     with Timer(f"Remove duplicate item by rouge score for {data_dir}"):
         rouge_score_dedup(data_dir, output_dir, data_file_type, max_ratio, batch_size)
