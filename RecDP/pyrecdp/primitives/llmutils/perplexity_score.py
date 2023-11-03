@@ -4,15 +4,15 @@ from pyrecdp.core.utils import Timer
 from pyrecdp.primitives.operations import JsonlReader, ParquetReader, PerfileParquetWriter
 
 
-def rouge_score_dedup_spark(spark_df, max_ratio=0.7, batch_size=1000):
-    from pyrecdp.primitives.operations import RougeScoreDedup
-    op = RougeScoreDedup(max_ratio=max_ratio, batch_size=batch_size)
+def perplexity_score_spark(spark_df, language: str = 'en'):
+    from pyrecdp.primitives.operations import TextPerplexityScore
+    op = TextPerplexityScore(language=language)
     ret = op.process_spark(spark_df.sparkSession, spark_df)
     return ret
 
 
-def rouge_score_dedup(data_dir, out_dir, data_file_type="jsonl", max_ratio=0.7, batch_size=1000):
-    from pyrecdp.primitives.operations import RougeScoreDedup
+def perplexity_score(data_dir, out_dir, data_file_type="jsonl", language: str = 'en'):
+    from pyrecdp.primitives.operations import TextPerplexityScore
     from pyrecdp.LLM import ResumableTextPipeline
 
     if data_file_type == 'jsonl':
@@ -25,7 +25,7 @@ def rouge_score_dedup(data_dir, out_dir, data_file_type="jsonl", max_ratio=0.7, 
     pipeline = ResumableTextPipeline()
     ops = [
         reader,
-        RougeScoreDedup(max_ratio=max_ratio, batch_size=batch_size),
+        TextPerplexityScore(language=language),
         PerfileParquetWriter(out_dir)
     ]
     pipeline.add_operations(ops)
@@ -37,15 +37,12 @@ if __name__ == "__main__":
     parser.add_argument("--data_dir", dest="data_dir", type=str)
     parser.add_argument("--data_file_type", dest="data_file_type", type=str, default="jsonl")
     parser.add_argument("--output_dir", dest="output_dir", type=str, default="")
-    parser.add_argument("--max_ratio", dest="max_ratio", type=float, default="0.7")
-    parser.add_argument("--batch_size", dest="batch_size", type=int, default="1000")
+    parser.add_argument("--language", dest="language", type=str, default="en")
     args = parser.parse_args()
 
     data_dir = args.data_dir
     data_file_type = args.data_file_type
     output_dir = args.output_dir
-    max_ratio = args.max_ratio
-    batch_size = args.batch_size
-
-    with Timer(f"Remove duplicate item by rouge score for {data_dir}"):
-        rouge_score_dedup(data_dir, output_dir, data_file_type, max_ratio, batch_size)
+    language = args.language
+    with Timer(f"Generate perplexity score for {data_dir}"):
+        perplexity_score(data_dir, output_dir, data_file_type, language)

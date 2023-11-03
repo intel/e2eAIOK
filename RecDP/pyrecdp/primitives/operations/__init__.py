@@ -17,4 +17,5 @@ from .text_diversityindicate import TextDiversityIndicate
 from .text_custom import TextCustomerMap, TextCustomerFilter
 from .text_toxicity import TextToxicity
 from .text_rouge_score_dedup import RougeScoreDedup
-from .text_prompt import TextPrompt
+from .text_compare_dedup import RougeScoreDedup
+from .text_perplexity_score import TextPerplexityScore

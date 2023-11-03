@@ -155,19 +155,18 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds(ctx.ds))
 
-
     def test_filter_by_perplexity_ray(self):
-        pass
-        # Ray version not supported yet
         op = PerplexityFilter()
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds(ctx.ds))
 
-
     def test_filter_by_word_repetition_ray(self):
-        pass
-        # Ray version not supported yet
         op = WordRepetitionFilter()
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds(ctx.ds))
+
+    def test_perplexity_score_ray(self):
+        op = TextPerplexityScore(language='en')
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds(ctx.ds))
 
@@ -355,4 +354,9 @@ class Test_LLMUtils_Operations(unittest.TestCase):
     def test_text_prompt_spark(self):
         op = TextPrompt(dataset_name="alpaca", prompt_name="causal_llm_1")
         with SparkContext("tests/data/llm_data/alpaca_data_50.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
+    def test_perplexity_score_spark(self):
+        op = TextPerplexityScore(language='en')
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
