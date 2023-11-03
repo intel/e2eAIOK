@@ -1,0 +1,29 @@
+dataset: opneorca
+templates:
+  b7551342-266b-40cf-95ed-480d2d6520f1: !Template
+    answer_choices: null
+    id: b7551342-266b-40cf-95ed-480d2d6520f1
+    jinja: "Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n ### Instruction:\n{{system_prompt}}\n\n ||| ### Response:{{response}}"
+    metadata: !TemplateMetadata
+      choices_in_prompt: false
+      languages:
+      - en
+      metrics:
+      - Accuracy
+      original_task: false
+    name: causal_llm_1
+    reference: ''
+
+  9f80a3f1-6455-44ff-bc67-25f9c5a5a69e: !Template
+    answer_choices: null
+    id: 9f80a3f1-6455-44ff-bc67-25f9c5a5a69e
+    jinja: "Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.\n\n ### Instruction:\n{{system_prompt}}\n\n### Input:\n{{question}}\n\n ||| ### Response:{{response}}"
+    metadata: !TemplateMetadata
+      choices_in_prompt: false
+      languages:
+      - en
+      metrics:
+      - Accuracy
+      original_task: false
+    name: causal_llm_2
+    reference: ''

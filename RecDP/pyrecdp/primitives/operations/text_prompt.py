@@ -1,6 +1,23 @@
+import os, shutil, subprocess, sys, inspect
+
 from .base import BaseLLMOperation, LLMOPERATORS
 from ray.data import Dataset
 from pyspark.sql import DataFrame
+
+try:
+    import promptsource
+except ImportError:
+    subprocess.check_call(
+        [sys.executable, "-m", "pip", "install", "git+https://github.com/bigscience-workshop/promptsource.git@main"])
+    import promptsource
+    import pyrecdp
+    promptsource_path = os.path.abspath(os.path.dirname(inspect.getfile(promptsource)))
+    promptsource_templates_path = os.path.join(promptsource_path, "templates")
+    recdp_promptsource = os.path.join(os.path.abspath(os.path.dirname(inspect.getfile(pyrecdp))), "promptsource")
+
+    for dataset in os.listdir(recdp_promptsource):
+        shutil.copytree(src=os.path.join(recdp_promptsource, dataset),
+                        dst=os.path.join(promptsource_templates_path, dataset), dirs_exist_ok=True)
 
 from promptsource.templates import DatasetTemplates
 
@@ -48,7 +65,7 @@ class TextPrompt(BaseLLMOperation):
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
         prompt_name_func = prepare_func_prompt(dataset_name=self.dataset_name,
                                                prompt_name=self.prompt_name, subset_name=self.subset_name)
-        return spark_df.rdd.map(lambda row: row + prompt_name_func(row.asDict())).toDF(spark_df.columns + [self.new_name])
+        return spark_df.rdd.map(lambda row: row + (prompt_name_func(row.asDict()),)).toDF(spark_df.columns + [self.new_name])
 
 
 LLMOPERATORS.register(TextPrompt)
