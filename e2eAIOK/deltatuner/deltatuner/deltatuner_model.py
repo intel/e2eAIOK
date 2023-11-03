@@ -29,7 +29,7 @@ from .deltatuner_args import DeltaTunerArguments
 from .tuner import DeltaLoraModel, DeltaLoraSearchSpace, DeltaSSFModel, DeltaSSFSearchSpace
 from .search import SearchEngineFactory, Timer
 from .search.utils import network_latency
-from .utils import DeltaTunerType, get_deltatuner_model_state_dict, set_deltatuner_model_state_dict, BEST_MODEL_STRUCTURE_NAME
+from .utils import DeltaTunerType, get_deltatuner_model_state_dict, set_deltatuner_model_state_dict, BEST_MODEL_STRUCTURE_DEFAULT_NAME
 from typing import Any, Dict, List, Optional, Union
 
 DELTATUNNER_TO_MODEL_MAPPING = {
@@ -203,7 +203,7 @@ class DeltaTunerModel(PeftModel, torch.nn.Module):
             peft_config.inference_mode = inference_mode
 
         if self.best_model_param is not None:
-            with open(os.path.join(save_directory, "best_model_structure.txt"), "w+") as fout:
+            with open(os.path.join(save_directory, BEST_MODEL_STRUCTURE_DEFAULT_NAME), "w+") as fout:
                 fout.write(json.dumps(self.best_model_param))
 
     @classmethod
@@ -265,12 +265,12 @@ class DeltaTunerModel(PeftModel, torch.nn.Module):
             else model_id
         )
 
-        if os.path.exists(os.path.join(path, BEST_MODEL_STRUCTURE_NAME)):
-            filename = os.path.join(path, BEST_MODEL_STRUCTURE_NAME)
+        if os.path.exists(os.path.join(path, BEST_MODEL_STRUCTURE_DEFAULT_NAME)):
+            filename = os.path.join(path, BEST_MODEL_STRUCTURE_DEFAULT_NAME)
         else:
             has_remote_structure_file = hub_file_exists(
                 model_id,
-                BEST_MODEL_STRUCTURE_NAME,
+                BEST_MODEL_STRUCTURE_DEFAULT_NAME,
                 revision=hf_hub_download_kwargs.get("revision", None),
                 repo_type=hf_hub_download_kwargs.get("repo_type", None),
             )
@@ -278,13 +278,13 @@ class DeltaTunerModel(PeftModel, torch.nn.Module):
             if has_remote_structure_file:
                 filename = hf_hub_download(
                     model_id,
-                    BEST_MODEL_STRUCTURE_NAME,
+                    BEST_MODEL_STRUCTURE_DEFAULT_NAME,
                     **hf_hub_download_kwargs,
                 )
             else:
                 raise ValueError(
                     f"Can't find structure for {model_id} in {model_id} or in the Hugging Face Hub. "
-                    f"Please check that the file {BEST_MODEL_STRUCTURE_NAME} is present at {model_id}."
+                    f"Please check that the file {BEST_MODEL_STRUCTURE_DEFAULT_NAME} is present at {model_id}."
                 )
 
         denas_config = DeltaTunerArguments()
