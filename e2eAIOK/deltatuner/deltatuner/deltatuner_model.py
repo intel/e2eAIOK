@@ -218,7 +218,7 @@ class DeltaTunerModel(PeftModel, torch.nn.Module):
     ):
         from peft.mapping import PEFT_TYPE_TO_CONFIG_MAPPING
         from .mapping import DELTATUNER_TYPE_TO_CONFIG_MAPPING, MODEL_TYPE_TO_DELTATUNER_MODEL_MAPPING
-        denas_config = self._get_denas_config(model_id, **kwargs)
+        denas_config = cls._get_denas_config(model_id, **kwargs)
 
         # load the config
         if config is None:
@@ -255,8 +255,9 @@ class DeltaTunerModel(PeftModel, torch.nn.Module):
         model.load_adapter(model_id, adapter_name, is_trainable=is_trainable, **kwargs)
         return model
 
-    def _get_denas_config(self, model_id: str, **kwargs: Any):
-        hf_hub_download_kwargs, kwargs = self._split_kwargs(kwargs)
+    @classmethod
+    def _get_denas_config(cls, model_id: str, **kwargs: Any):
+        hf_hub_download_kwargs, kwargs = cls._split_kwargs(kwargs)
 
         # load weights if any
         path = (
