@@ -12,4 +12,4 @@ TRANSFORMERS_MODELS_TO_SSF_TARGET_MODULES_MAPPING.update({
     "mpt": ["Wqkv","out_proj","up_proj","down_proj"]
 })
 
-BEST_MODEL_STRUCTURE_NAME = "best_model_structure.txt"
+BEST_MODEL_STRUCTURE_DEFAULT_NAME = "best_model_structure.txt"
