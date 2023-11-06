@@ -23,26 +23,28 @@ class JsonlReader(BaseLLMOperation):
         
     def process_rayds(self, ds=None) -> Dataset:
         import ray.data as rd
-        def convert_json(s):
-            if isinstance(s, str):
-                content = json.loads(s)
-            elif isinstance(s, dict):
-                content = json.loads(s['text'])
-            if 'meta' in content:
-                content['meta'] = str(content['meta'])
-            return content
-        self.cache = rd.read_text(self.input_dir).map(convert_json)
+        # def convert_json(s):
+        #     if isinstance(s, str):
+        #         content = json.loads(s)
+        #     elif isinstance(s, dict):
+        #         content = json.loads(s['text'])
+        #     if 'meta' in content:
+        #         content['meta'] = str(content['meta'])
+        #     return content
+        # self.cache = rd.read_text(self.input_dir).map(convert_json)
+        self.cache = rd.read_json(self.input_dir)
         return self.cache
     
     def process_spark(self, spark, spark_df: DataFrame = None) -> DataFrame:
-        from pyspark.sql.types import StructType, StructField, StringType
-        import pyspark.sql.functions as F
-        schema = StructType([ 
-            StructField("text",StringType(),True), 
-            StructField("meta",StringType(),True)
-        ])
-        df = spark.read.text(self.input_dir)
-        df = df.withColumn('jsonData', F.from_json(F.col('value'), schema)).select("jsonData.*")
+        # from pyspark.sql.types import StructType, StructField, StringType
+        # import pyspark.sql.functions as F
+        # schema = StructType([
+        #     StructField("text",StringType(),True),
+        #     StructField("meta",StringType(),True)
+        # ])
+        # df = spark.read.text(self.input_dir)
+        # df = df.withColumn('jsonData', F.from_json(F.col('value'), schema)).select("jsonData.*")
+        df = spark.read.json(self.input_dir)
         self.cache = df            
         return self.cache
 LLMOPERATORS.register(JsonlReader)
@@ -74,35 +76,40 @@ class SourcedJsonlReader(SourcedReader):
     def process_rayds(self, ds=None) -> Dataset:
         import ray.data as rd
         files_with_subtask, input_dir = self.get_files_with_subtask("jsonl")
-        
-        def convert_json(s, source_str):
-            if isinstance(s, str):
-                content = json.loads(s)
-            elif isinstance(s, dict):
-                content = json.loads(s['text'])
-            if 'meta' in content:
-                content['meta'] = str(content['meta'])
-            content['source_id'] = source_str  
+
+        # def convert_json(s, source_str):
+        #     if isinstance(s, str):
+        #         content = json.loads(s)
+        #     elif isinstance(s, dict):
+        #         content = json.loads(s['text'])
+        #     if 'meta' in content:
+        #         content['meta'] = str(content['meta'])
+        #     content['source_id'] = source_str
+        #     return content
+        def add_source_str(content, source_str):
+            content['source_id'] = source_str
             return content
         to_read_list = [(sub_task, os.path.join(input_dir, f)) for sub_task, file_list in files_with_subtask.items() for f in file_list]
         for idx, (sub_task, file_path) in enumerate(to_read_list):
-            ds = rd.read_text(file_path).map(lambda x: convert_json(x, os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))))
+            # ds = rd.read_text(file_path).map(lambda x: convert_json(x, os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))))
+            ds = rd.read_json(file_path).map(lambda x: add_source_str(x, os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))))
             self.cache = ds if idx == 0 else self.cache.union(ds)
         return self.cache
     
     def process_spark(self, spark, spark_df: DataFrame = None) -> DataFrame:
-        from pyspark.sql.types import StructType, StructField, StringType
-        import pyspark.sql.functions as F
-        schema = StructType([ 
-            StructField("text",StringType(),True), 
-            StructField("meta",StringType(),True)
-        ])
+        # from pyspark.sql.types import StructType, StructField, StringType
+        # import pyspark.sql.functions as F
+        # schema = StructType([
+        #     StructField("text",StringType(),True),
+        #     StructField("meta",StringType(),True)
+        # ])
         files_with_subtask, input_dir = self.get_files_with_subtask("jsonl")
         to_read_list = [(sub_task, os.path.join(input_dir, f)) for sub_task, file_list in files_with_subtask.items() for f in file_list]
         for idx, (sub_task, file_path) in enumerate(to_read_list):
-            df = spark.read.text(file_path)
-            df = df.withColumn('jsonData', F.from_json(F.col('value'), schema)).select("jsonData.*")
-            df = df.withColumn('source_id', F.lit(os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))))
+            # df = spark.read.text(file_path)
+            # df = df.withColumn('jsonData', F.from_json(F.col('value'), schema)).select("jsonData.*")
+            # df = df.withColumn('source_id', F.lit(os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))))
+            df = spark.read.json(file_path)
             self.cache = df if idx == 0 else self.cache.union(df)
         return self.cache
 LLMOPERATORS.register(SourcedJsonlReader)
@@ -112,17 +119,12 @@ class GlobalJsonlReader(SourcedJsonlReader):
         super().__init__(input_dir = input_dir, source_prefix = source_prefix)
 
     def process_spark(self, spark, spark_df: DataFrame = None) -> DataFrame:
-        from pyspark.sql.types import StructType, StructField, StringType
         import pyspark.sql.functions as F
-        schema = StructType([
-            StructField("text",StringType(),True),
-            StructField("meta",StringType(),True)
-        ])
         files_with_subtask, input_dir = self.get_files_with_subtask("jsonl")
         to_read_list = [(sub_task, os.path.join(input_dir, f)) for sub_task, file_list in files_with_subtask.items() for f in file_list]
         for idx, (sub_task, file_path) in enumerate(to_read_list):
-            df = spark.read.text(file_path)
-            df = df.withColumn('jsonData', F.from_json(F.col('value'), schema)).select("jsonData.*")
+            # df = spark.read.text(file_path)
+            df = spark.read.json(file_path)
             source_id = os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))
             df = df.select(F.concat_ws("@", F.monotonically_increasing_id(), F.lit(source_id)).alias("global_id"), "*")
             self.cache = df if idx == 0 else self.cache.union(df)
@@ -211,20 +213,24 @@ class PerfileSourcedJsonlReader(SourcedReader, PerfileReader):
         import ray.data as rd
         files_with_subtask, input_dir = self.get_files_with_subtask("jsonl")
         
-        def convert_json(s, source_str):
-            if isinstance(s, str):
-                content = json.loads(s)
-            elif isinstance(s, dict):
-                content = json.loads(s['text'])
+        # def convert_json(s, source_str):
+        #     if isinstance(s, str):
+        #         content = json.loads(s)
+        #     elif isinstance(s, dict):
+        #         content = json.loads(s['text'])
+        #     content['source_id'] = source_str
+        #     if 'meta' in content:
+        #         content['meta'] = str(content['meta'])
+        #     return content
+        def add_source_str(content, source_str):
             content['source_id'] = source_str
-            if 'meta' in content:
-                content['meta'] = str(content['meta'])
             return content
         to_read_list = [(sub_task, os.path.join(input_dir, f)) for sub_task, file_list in files_with_subtask.items() for f in file_list]
         self.cache = []
         for sub_task, file_path in to_read_list:
             source_id = os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))
-            ds = rd.read_text(file_path).map(lambda x: convert_json(x, source_id))
+            # ds = rd.read_text(file_path).map(lambda x: convert_json(x, source_id))
+            ds = rd.read_json(file_path).map(lambda x: add_source_str(x, source_id))
             self.cache.append((ds, source_id))
         return self.cache
     
@@ -232,17 +238,18 @@ class PerfileSourcedJsonlReader(SourcedReader, PerfileReader):
         files_with_subtask, input_dir = self.get_files_with_subtask("jsonl")
         to_read_list = [(sub_task, os.path.join(input_dir, f)) for sub_task, file_list in files_with_subtask.items() for f in file_list]
         self.cache = []
-        from pyspark.sql.types import StructType, StructField, StringType
+        # from pyspark.sql.types import StructType, StructField, StringType
         import pyspark.sql.functions as F
-        schema = StructType([ 
-            StructField("text",StringType(),True), 
-            StructField("meta",StringType(),True)
-        ])
+        # schema = StructType([
+        #     StructField("text",StringType(),True),
+        #     StructField("meta",StringType(),True)
+        # ])
 
         for sub_task, file_path in to_read_list:
             source_id = os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))
-            df = spark.read.text(file_path)
-            df = df.withColumn('jsonData', F.from_json(F.col('value'), schema)).select("jsonData.*")
+            # df = spark.read.text(file_path)
+            # df = df.withColumn('jsonData', F.from_json(F.col('value'), schema)).select("jsonData.*")
+            df = spark.read.json(file_path)
             df = df.withColumn('source_id', F.lit(source_id))
             # if spark_df is not None, we need to add global_id for dataframe which will help to filter data with global_id
             if spark_df:
