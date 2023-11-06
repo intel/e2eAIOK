@@ -66,7 +66,7 @@ class DeltaTunerModel(PeftModel, torch.nn.Module):
         logging.basicConfig(level=logging.INFO,
                 format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         self.logger = logging.getLogger('deltatuner')
-        if not isinstance(model, PeftModel):
+        if peft_config.peft_type in (DeltaTunerType.SSF):
             self.base_model = DELTATUNNER_TO_MODEL_MAPPING[peft_config.peft_type](
                 self.base_model, self.peft_config, adapter_name
             )
