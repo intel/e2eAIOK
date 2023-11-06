@@ -83,5 +83,6 @@ setuptools.setup(
         "emoji==2.2.0",
         "kenlm",
         "rouge-score",
+        "grpc",
         ],
 )
