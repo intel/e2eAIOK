@@ -30,11 +30,11 @@ RecDP LLM is a set of python components that enables quick and easy establish of
 
 ## LLM Data Quality Analysis
 
-| Diversity   |  GPT-3 Scoring | Toxicity | 
-| :-------- | :---------- | :------------|
-| Visualize the diversity distribution of data | Leverage GPT-3 to scoring | Visualize Toxicity probability |
-| ![diversity](/RecDP/resources/diversity_analysis.png) | ![quality](/RecDP/resources/quality_scoring.png) | ![toxicity](/RecDP/resources/toxicity_analysis.png)|
-| [learn more](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/data_diversity_control.ipynb) | [learn more](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/text_quality_assessment.ipynb) | [learn more](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/toxicity_bias_control.ipynb) |
+| Diversity   |  GPT-3 Scoring | Toxicity | Perplexity |
+| :-------- | :---------- | :------------|:------------|
+| Visualize the diversity distribution of data | Leverage GPT-3 to scoring | Visualize Toxicity probability |  Visualize Perplexity Distribution |
+| ![diversity](/RecDP/resources/diversity_analysis.png) | ![quality](/RecDP/resources/quality_scoring.png) | ![toxicity](/RecDP/resources/toxicity_analysis.png)| ![perxicity](/RecDP/resources/perplexity.png) |
+| [learn more](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/data_diversity_control.ipynb) | [learn more](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/text_quality_assessment.ipynb) | [learn more](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/toxicity_bias_control.ipynb) | [learn more](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/text_perplexity.ipynb) |
 
 ## Data pipeline AutoHPO
 
