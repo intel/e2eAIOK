@@ -78,7 +78,7 @@ setuptools.setup(
         "spacy",
         "torch",
         "Faker",
-        "ray",
+        "ray==2.7.1",
         "loguru",
         "detoxify",
         "emoji==2.2.0",
