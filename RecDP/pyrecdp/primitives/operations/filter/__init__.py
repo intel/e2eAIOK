@@ -11,3 +11,4 @@ from .token_num_filter import TokenNumFilter
 from .word_num_filter import WordNumFilter
 from .perplexity_filter import PerplexityFilter
 from .word_repetition_filter import WordRepetitionFilter
+from .text_gopherqualityfilter import GopherQualityFilter

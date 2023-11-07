@@ -1,8 +1,9 @@
-from .base import BaseLLMOperation, LLMOPERATORS, statistics_decorator
+from pyrecdp.primitives.operations.filter.base import BaseFilter
+from pyrecdp.primitives.operations.base import LLMOPERATORS, statistics_decorator
 import re
 import string
 
-class GopherQualityFilter(BaseLLMOperation):
+class GopherQualityFilter(BaseFilter):
 
     def __init__(self, text_key = 'text'):
         settings = {'text_key': text_key}

@@ -18,4 +18,3 @@ from .text_custom import TextCustomerMap, TextCustomerFilter
 from .text_toxicity import TextToxicity
 from .text_compare_dedup import RougeScoreDedup
 from .text_perplexity_score import TextPerplexityScore
-from .text_gopherqualityfilter import GopherQualityFilter
