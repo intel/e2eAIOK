@@ -213,7 +213,7 @@ class Test_LLMUtils_Operations(unittest.TestCase):
 
     def test_text_prompt_ray(self):
         op = TextPrompt(dataset_name="alpaca", prompt_name="causal_llm_1")
-        with RayContext("tests/data/llm_data/alpaca_data_50.jsonl") as ctx:
+        with RayContext("tests/data/alpaca/alpaca_data_50.jsonl") as ctx:
             ctx.show(op.process_rayds(ctx.ds))
 
     ### ======  Spark ====== ###
@@ -353,7 +353,7 @@ class Test_LLMUtils_Operations(unittest.TestCase):
 
     def test_text_prompt_spark(self):
         op = TextPrompt(dataset_name="alpaca", prompt_name="causal_llm_1")
-        with SparkContext("tests/data/llm_data/alpaca_data_50.jsonl") as ctx:
+        with SparkContext("tests/data/alpaca/alpaca_data_50.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
 
     def test_perplexity_score_spark(self):
