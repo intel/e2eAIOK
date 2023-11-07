@@ -158,6 +158,14 @@ class RougeScoreDedup(BaseCompareDedup):
     def __init__(self, text_key='text', max_ratio=0.7, batch_size=100, score_store_path='RougeScorefiltered.parquet'):
         settings = {'text_key': text_key, 'max_ratio': max_ratio, 'batch_size': batch_size,
                     "score_store_path": score_store_path}
+        """
+            Remove similar data by calculating the rough score
+
+            :param max_ratio: The max acceptable ratio, if the rouge score of a sample and other samples exceeds this 
+            value, this sample will be removed Default: 0.7
+            :param batch_size: How many samples can be used at most per round to calculate rouge score
+            :param score_store_path: Samples' rouge score exceeding max_ratio will be saved in this path
+        """
         super().__init__(args_dict=settings)
         self.text_key = text_key
         self.max_ratio = max_ratio
