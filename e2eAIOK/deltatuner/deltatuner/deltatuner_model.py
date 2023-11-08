@@ -295,9 +295,6 @@ class DeltaTunerModel(PeftModel, torch.nn.Module):
         return denas_config
 
 
-    def merge_and_unload(self):
-        return self.base_model.merge_and_unload()
-
     def load_adapter(self, model_id: str, adapter_name: str, is_trainable: bool = False, **kwargs: Any):
         from peft.mapping import PEFT_TYPE_TO_CONFIG_MAPPING
         from .mapping import DELTATUNER_TYPE_TO_CONFIG_MAPPING
