@@ -240,6 +240,47 @@ class BaseLLMOperation(BaseOperation):
             f"A total of {self.statistics.total_in} rows of data were processed, using {self.statistics.used_time} seconds, "
             f"with {self.statistics.total_changed} rows modified or removed, {self.statistics.total_out} rows of data remaining.")
 
+    def union_ray_ds(self, ds1, ds2):
+        def add_new_empty_column(content, column_name):
+            content[column_name] = None
+            return content
+        def convert_to_string(content, column_name):
+            content[column_name] = str(content[column_name])
+            return content
+        for column in [column for column in ds2.columns() if column not in ds1.columns()]:
+            ds1 = ds1.map(lambda x: add_new_empty_column(x, column))
+        for column in [column for column in ds1.columns() if column not in ds2.columns()]:
+            ds2 = ds2.map(lambda x: add_new_empty_column(x, column))
+        ds1_fields_dict  =dict(zip(ds1.schema().names, ds1.schema().types))
+        ds2_fields_dict = dict(zip(ds2.schema().names, ds2.schema().types))
+        for column_name in ds1_fields_dict.keys():
+            if ds2_fields_dict[column_name] != ds1_fields_dict[column_name] and not (
+                    str(ds2_fields_dict[column_name]) == "null" or str(ds1_fields_dict[column_name]) == "null"):
+                ds1 = ds1.map(lambda x: convert_to_string(x, column_name))
+                ds2 = ds2.map(lambda x: convert_to_string(x, column_name))
+        return ds1.union(ds2)
+
+    def union_spark_df(self, df1, df2):
+        from pyspark.sql.functions import lit
+        import pyspark.sql.functions as F
+        from pyspark.sql.types import NullType, StringType
+        for column in [column for column in df2.columns if column not in df1.columns]:
+            df1 = df1.withColumn(column, lit(None))
+        for column in [column for column in df1.columns if column not in df2.columns]:
+            df2 = df2.withColumn(column, lit(None))
+        df1_fields, df2_fields = df1.schema.fields, df2.schema.fields
+        df1_fields_dict, df2_fields_dict = {}, {}
+        for df1_field in df1_fields:
+            df1_fields_dict[df1_field.name] = df1_field.dataType
+        for df2_field in df2_fields:
+            df2_fields_dict[df2_field.name] = df2_field.dataType
+        for column_name in df1_fields_dict.keys():
+            if df2_fields_dict[column_name] != df1_fields_dict[column_name] and not (
+                    df2_fields_dict[column_name] == NullType() or df1_fields_dict[column_name] == NullType()):
+                df1 = df1.withColumn(column_name, F.col(column_name).cast(StringType()))
+                df2 = df2.withColumn(column_name, F.col(column_name).cast(StringType()))
+        return df1.union(df2)
+
 
 class DummyOperation(BaseOperation):
     def __init__(self, op_base):
