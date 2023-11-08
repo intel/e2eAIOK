@@ -87,7 +87,7 @@ class SourcedJsonlReader(SourcedReader):
             self.statistics.total_out += ds_count
             self.cache = ds if idx == 0 else self.cache.union(ds)
         return self.cache
-    
+
     def process_spark(self, spark, spark_df: DataFrame = None) -> DataFrame:
         import pyspark.sql.functions as F
         files_with_subtask, input_dir = self.get_files_with_subtask("jsonl")
@@ -100,7 +100,7 @@ class SourcedJsonlReader(SourcedReader):
                 df = df.filter("_corrupt_record is NULL").drop("_corrupt_record")
             self.statistics.total_out += df.count()
             self.statistics.total_changed = self.statistics.total_in - self.statistics.total_out
-            self.cache = df if idx == 0 else self.cache.union(df)
+            self.cache = df if idx == 0 else self.union_spark_df(self.cache, df)
         return self.cache
 
     def summarize(self) -> str:
@@ -128,7 +128,7 @@ class GlobalJsonlReader(SourcedJsonlReader):
             self.statistics.total_changed = self.statistics.total_in - self.statistics.total_out
             source_id = os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))
             df = df.select(F.concat_ws("@", F.monotonically_increasing_id(), F.lit(source_id)).alias("global_id"), "*")
-            self.cache = df if idx == 0 else self.cache.union(df)
+            self.cache = df if idx == 0 else self.union_spark_df(self.cache, df)
         return self.cache
 LLMOPERATORS.register(GlobalJsonlReader)
 
@@ -174,7 +174,7 @@ class SourcedParquetReader(SourcedReader):
         for idx, (sub_task, file_path) in enumerate(to_read_list):
             df = spark.read.parquet(file_path)
             df = df.withColumn('source_id', F.lit(os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))))
-            self.cache = df if idx == 0 else self.cache.union(df)
+            self.cache = df if idx == 0 else self.union_spark_df(self.cache, df)
         return self.cache
 LLMOPERATORS.register(SourcedParquetReader)
 
@@ -196,7 +196,7 @@ class GlobalParquetReader(SourcedParquetReader):
             df = df.select(
                 F.concat_ws("@", F.monotonically_increasing_id(), F.lit(source_id)).alias(
                     "global_id"), "*")
-            self.cache = df if idx == 0 else self.cache.union(df)
+            self.cache = df if idx == 0 else self.union_spark_df(self.cache, df)
         return self.cache
 LLMOPERATORS.register(GlobalParquetReader)
 

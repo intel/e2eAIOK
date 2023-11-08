@@ -240,6 +240,32 @@ class BaseLLMOperation(BaseOperation):
             f"A total of {self.statistics.total_in} rows of data were processed, using {self.statistics.used_time} seconds, "
             f"with {self.statistics.total_changed} rows modified or removed, {self.statistics.total_out} rows of data remaining.")
 
+    def union_spark_df(self, df1, df2):
+        from pyspark.sql.functions import lit
+        import pyspark.sql.functions as F
+        from pyspark.sql.types import NullType, StringType
+
+        for column in [column for column in df2.columns if column not in df1.columns]:
+            df1 = df1.withColumn(column, lit(None))
+        for column in [column for column in df1.columns if column not in df2.columns]:
+            df2 = df2.withColumn(column, lit(None))
+
+        df1_fields, df2_fields = df1.schema.fields, df2.schema.fields
+        df1_fields_dict, df2_fields_dict = {}, {}
+        for df1_field in df1_fields:
+            df1_fields_dict[df1_field.name] = df1_field.dataType
+
+        for df2_field in df2_fields:
+            df2_fields_dict[df2_field.name] = df2_field.dataType
+
+        for name in df1_fields_dict.keys():
+            if df2_fields_dict[name] != df1_fields_dict[name] and not (
+                    df2_fields_dict[name] == NullType() or df1_fields_dict[name] == NullType()):
+                df1 = df1.withColumn(name, F.col(name).cast(StringType()))
+                df2 = df2.withColumn(name, F.col(name).cast(StringType()))
+
+        return df1.union(df2)
+
 
 class DummyOperation(BaseOperation):
     def __init__(self, op_base):
