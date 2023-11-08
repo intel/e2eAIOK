@@ -29,7 +29,7 @@ from .deltatuner_args import DeltaTunerArguments
 from .tuner import DeltaLoraModel, DeltaLoraSearchSpace, DeltaSSFModel, DeltaSSFSearchSpace
 from .search import SearchEngineFactory, Timer
 from .search.utils import network_latency
-from .utils import DeltaTunerType, get_deltatuner_model_state_dict, set_deltatuner_model_state_dict
+from .utils import DeltaTunerType, get_deltatuner_model_state_dict, set_deltatuner_model_state_dict, BEST_MODEL_STRUCTURE_DEFAULT_NAME
 from typing import Any, Dict, List, Optional, Union
 
 DELTATUNNER_TO_MODEL_MAPPING = {
@@ -66,7 +66,7 @@ class DeltaTunerModel(PeftModel, torch.nn.Module):
         logging.basicConfig(level=logging.INFO,
                 format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         self.logger = logging.getLogger('deltatuner')
-        if not isinstance(model, PeftModel):
+        if peft_config.peft_type in (DeltaTunerType.SSF):
             self.base_model = DELTATUNNER_TO_MODEL_MAPPING[peft_config.peft_type](
                 self.base_model, self.peft_config, adapter_name
             )
@@ -203,7 +203,7 @@ class DeltaTunerModel(PeftModel, torch.nn.Module):
             peft_config.inference_mode = inference_mode
 
         if self.best_model_param is not None:
-            with open(os.path.join(save_directory, "best_model_structure.txt"), "w+") as fout:
+            with open(os.path.join(save_directory, BEST_MODEL_STRUCTURE_DEFAULT_NAME), "w+") as fout:
                 fout.write(json.dumps(self.best_model_param))
 
     @classmethod
@@ -218,14 +218,7 @@ class DeltaTunerModel(PeftModel, torch.nn.Module):
     ):
         from peft.mapping import PEFT_TYPE_TO_CONFIG_MAPPING
         from .mapping import DELTATUNER_TYPE_TO_CONFIG_MAPPING, MODEL_TYPE_TO_DELTATUNER_MODEL_MAPPING
-        denas_config = kwargs.pop("denas_config", None)
-
-        best_structure_file = os.path.join(model_id, "best_model_structure.txt")
-        if os.path.isfile(best_structure_file):
-            denas_config.denas = True
-            denas_config.best_model_structure = best_structure_file
-        else:
-            denas_config.denas = False
+        denas_config = cls._get_denas_config(model_id, **kwargs)
 
         # load the config
         if config is None:
@@ -261,6 +254,46 @@ class DeltaTunerModel(PeftModel, torch.nn.Module):
             model = MODEL_TYPE_TO_DELTATUNER_MODEL_MAPPING[config.task_type](model, config, adapter_name, denas_config)
         model.load_adapter(model_id, adapter_name, is_trainable=is_trainable, **kwargs)
         return model
+
+    @classmethod
+    def _get_denas_config(cls, model_id: str, **kwargs: Any):
+        hf_hub_download_kwargs, kwargs = cls._split_kwargs(kwargs)
+
+        # load weights if any
+        path = (
+            os.path.join(model_id, hf_hub_download_kwargs["subfolder"])
+            if hf_hub_download_kwargs.get("subfolder", None) is not None
+            else model_id
+        )
+
+        if os.path.exists(os.path.join(path, BEST_MODEL_STRUCTURE_DEFAULT_NAME)):
+            filename = os.path.join(path, BEST_MODEL_STRUCTURE_DEFAULT_NAME)
+        else:
+            has_remote_structure_file = hub_file_exists(
+                model_id,
+                BEST_MODEL_STRUCTURE_DEFAULT_NAME,
+                revision=hf_hub_download_kwargs.get("revision", None),
+                repo_type=hf_hub_download_kwargs.get("repo_type", None),
+            )
+
+            if has_remote_structure_file:
+                filename = hf_hub_download(
+                    model_id,
+                    BEST_MODEL_STRUCTURE_DEFAULT_NAME,
+                    **hf_hub_download_kwargs,
+                )
+            else:
+                raise ValueError(
+                    f"Can't find structure for {model_id} in {model_id} or in the Hugging Face Hub. "
+                    f"Please check that the file {BEST_MODEL_STRUCTURE_DEFAULT_NAME} is present at {model_id}."
+                )
+
+        denas_config = DeltaTunerArguments()
+        denas_config.denas = True
+        denas_config.best_model_structure = filename
+        
+        return denas_config
+
 
     def load_adapter(self, model_id: str, adapter_name: str, is_trainable: bool = False, **kwargs: Any):
         from peft.mapping import PEFT_TYPE_TO_CONFIG_MAPPING

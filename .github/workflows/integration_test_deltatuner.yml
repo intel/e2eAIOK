@@ -13,6 +13,9 @@ on:
 jobs:
   integration_test:
     name: Integration Test Deltatuner
+    strategy:
+      matrix:
+        algo: [ lora, denas-lora, ssf, denas-ssf ]
     runs-on: self-hosted
     steps:
     - name: Checkout
@@ -26,24 +29,24 @@ jobs:
 
     - name : Test Lora
       run: |
-        if [[ $(docker ps -q --filter "name=test-deltatuner" | wc -l) -ne 0 ]]; then docker ps -q --filter "name=test-deltatuner" | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi
-        docker run --rm --name test-deltatuner --shm-size=100g --privileged --network host --device=/dev/dri -v /mnt/DP_disk2/dataset:/home/vmagent/app/data  -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ chatbot_finetune \
+        if [[ $(docker ps -q --filter "name=${{ matrix.algo }}" | wc -l) -ne 0 ]]; then docker ps -q --filter "name=${{ matrix.algo }}" | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi
+        docker run --rm --name ${{ matrix.algo }} --shm-size=100g --privileged --network host --device=/dev/dri -v /mnt/DP_disk2/dataset:/home/vmagent/app/data  -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ chatbot_finetune \
         /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/deltatuner/cicd/run_lora.sh"
-
-    - name : Test SSF
-      run: |
-        if [[ $(docker ps -q --filter "name=test-deltatuner" | wc -l) -ne 0 ]]; then docker ps -q --filter "name=test-deltatuner" | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi
-        docker run --rm --name test-deltatuner --shm-size=100g --privileged --network host --device=/dev/dri -v /mnt/DP_disk2/dataset:/home/vmagent/app/data  -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ chatbot_finetune \
-        /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/deltatuner/cicd/run_ssf.sh"
 
     - name : Test DENAS Lora
       run: |
-        if [[ $(docker ps -q --filter "name=test-deltatuner" | wc -l) -ne 0 ]]; then docker ps -q --filter "name=test-deltatuner" | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi
-        docker run --rm --name test-deltatuner --shm-size=100g --privileged --network host --device=/dev/dri -v /mnt/DP_disk2/dataset:/home/vmagent/app/data  -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ chatbot_finetune \
+        if [[ $(docker ps -q --filter "name=${{ matrix.algo }}" | wc -l) -ne 0 ]]; then docker ps -q --filter "name=${{ matrix.algo }}" | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi
+        docker run --rm --name ${{ matrix.algo }} --shm-size=100g --privileged --network host --device=/dev/dri -v /mnt/DP_disk2/dataset:/home/vmagent/app/data  -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ chatbot_finetune \
         /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/deltatuner/cicd/run_denas_lora.sh"
+
+    - name : Test SSF
+      run: |
+        if [[ $(docker ps -q --filter "name=${{ matrix.algo }}" | wc -l) -ne 0 ]]; then docker ps -q --filter "name=${{ matrix.algo }}" | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi
+        docker run --rm --name ${{ matrix.algo }} --shm-size=100g --privileged --network host --device=/dev/dri -v /mnt/DP_disk2/dataset:/home/vmagent/app/data  -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ chatbot_finetune \
+        /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/deltatuner/cicd/run_ssf.sh"
 
     - name : Test DENAS SSF
       run: |
-        if [[ $(docker ps -q --filter "name=test-deltatuner" | wc -l) -ne 0 ]]; then docker ps -q --filter "name=test-deltatuner" | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi
-        docker run --rm --name test-deltatuner --shm-size=100g --privileged --network host --device=/dev/dri -v /mnt/DP_disk2/dataset:/home/vmagent/app/data  -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ chatbot_finetune \
+        if [[ $(docker ps -q --filter "name=${{ matrix.algo }}" | wc -l) -ne 0 ]]; then docker ps -q --filter "name=${{ matrix.algo }}" | grep -q . && docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); fi
+        docker run --rm --name ${{ matrix.algo }} --shm-size=100g --privileged --network host --device=/dev/dri -v /mnt/DP_disk2/dataset:/home/vmagent/app/data  -v `pwd`:/home/vmagent/app/e2eaiok -w /home/vmagent/app/ chatbot_finetune \
         /bin/bash -c ". /home/vmagent/app/e2eaiok/tests/deltatuner/cicd/run_denas_ssf.sh"
