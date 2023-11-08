@@ -85,7 +85,7 @@ class SourcedJsonlReader(SourcedReader):
             ds_count = ds.count()
             self.statistics.total_in += ds_count
             self.statistics.total_out += ds_count
-            self.cache = ds if idx == 0 else self.cache.union(ds)
+            self.cache = ds if idx == 0 else self.union_ray_ds(self.cache, ds)
         return self.cache
 
     def process_spark(self, spark, spark_df: DataFrame = None) -> DataFrame:
@@ -164,7 +164,7 @@ class SourcedParquetReader(SourcedReader):
         to_read_list = [(sub_task, os.path.join(input_dir, f)) for sub_task, file_list in files_with_subtask.items() for f in file_list]
         for idx, (sub_task, file_path) in enumerate(to_read_list):
             ds = rd.read_parquet(file_path).map(lambda x: add_source(x, os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))))
-            self.cache = ds if idx == 0 else self.cache.union(ds)
+            self.cache = ds if idx == 0 else self.union_ray_ds(self.cache, ds)
         return self.cache
     
     def process_spark(self, spark, spark_df: DataFrame = None) -> DataFrame:
