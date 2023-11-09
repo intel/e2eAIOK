@@ -11,7 +11,7 @@ from pyspark.sql import functions as F
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType
 from pyspark.sql.functions import udf
 
-from .base import BaseLLMOperation, LLMOPERATORS
+from .base import BaseLLMOperation, LLMOPERATORS, statistics_decorator
 from ray.data import Dataset
 from pyspark.sql import DataFrame
 
@@ -204,21 +204,48 @@ class TextDiversityIndicate(BaseLLMOperation):
         self.support_ray = False
         self.first_sent = first_sent
 
+    @statistics_decorator
     def process_rayds(self, ds: Dataset) -> Dataset:
         diversity_analysis = DiversityAnalysis(ds, text_key=self.text_key, lang_or_model=self.language,
                                                first_sent=self.first_sent)
         analyse_df = diversity_analysis.analyse(lang_or_model=self.language)
         analyse_df.to_csv(os.path.join(self.output_path, 'diversity.csv'))
         analyse_df.to_markdown(os.path.join(self.output_path, 'diversity.md'))
+        if self.statistics_flag:
+            diversity_result = pd.read_csv(os.path.join(self.output_path, 'diversity.csv'))
+            self.statistics.max = diversity_result["count"].max()
+            self.statistics.mean = diversity_result["count"].mean()
+            self.statistics.std = diversity_result["count"].std()
+        else:
+            self.statistics.max = 0
+            self.statistics.mean = 0
+            self.statistics.std = 0
         return ds
 
+    @statistics_decorator
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
         diversity_analysis = DiversityAnalysis(spark_df, text_key=self.text_key, lang_or_model=self.language,
                                                first_sent=self.first_sent)
         analyse_df = diversity_analysis.analyse(lang_or_model=self.language)
         analyse_df.to_csv(os.path.join(self.output_path, 'diversity.csv'))
         analyse_df.to_markdown(os.path.join(self.output_path, 'diversity.md'))
+        if self.statistics_flag:
+            diversity_result = pd.read_csv(os.path.join(self.output_path, 'diversity.csv'))
+            self.statistics.max = diversity_result["count"].max()
+            self.statistics.mean = diversity_result["count"].mean()
+            self.statistics.std = diversity_result["count"].std()
+        else:
+            self.statistics.max = 0
+            self.statistics.mean = 0
+            self.statistics.std = 0
         return spark_df
+
+    def summarize(self) -> str:
+        return (
+            f"A total of {self.statistics.total_in} rows of data were processed, using {self.statistics.used_time} seconds, "
+            f"Get max diversity types {self.statistics.max}"
+            f"Get average diversity types {self.statistics.mean},"
+            f"Get the std of diversity types {self.statistics.std}")
 
 
 LLMOPERATORS.register(TextDiversityIndicate)
