@@ -243,7 +243,7 @@ class TextDiversityIndicate(BaseLLMOperation):
     def summarize(self) -> str:
         return (
             f"A total of {self.statistics.total_in} rows of data were processed, using {self.statistics.used_time} seconds, "
-            f"Get max diversity types {self.statistics.max}"
+            f"Get max diversity types {self.statistics.max}, "
             f"Get average diversity types {self.statistics.mean},"
             f"Get the std of diversity types {self.statistics.std}")
 
