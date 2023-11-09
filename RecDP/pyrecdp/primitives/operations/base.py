@@ -178,9 +178,9 @@ LLMOPERATORS = Registry('BaseLLMOperation')
 
 
 class BaseLLMOperation(BaseOperation):
-    def __init__(self, args_dict={}, column_rename_dict = {}):
+    def __init__(self, args_dict={}):
         self.op = Operation(-1, None, [], f'{self.__class__.__name__}', args_dict)
-        self.column_rename_dict = column_rename_dict
+        self.column_rename_dict = {}
         self.cache = None
         self.support_spark = False
         self.support_ray = True

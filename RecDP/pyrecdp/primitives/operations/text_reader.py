@@ -20,6 +20,7 @@ class JsonlReader(BaseLLMOperation):
         self.support_ray = True
         self.support_spark = True
         self.input_dir = input_dir
+        self.column_rename_dict = column_rename_dict
 
     def process_rayds(self, ds=None) -> Dataset:
         import ray.data as rd
@@ -50,12 +51,13 @@ LLMOPERATORS.register(JsonlReader)
 
 class SourcedReader(BaseLLMOperation):
     def __init__(self, input_dir = "", source_prefix = "", column_rename_dict = {}):
-        settings = {'input_dir': input_dir, "source_prefix": source_prefix, "column_rename_dict": column_rename_dict}
+        settings = {'input_dir': input_dir, "source_prefix": source_prefix}
         super().__init__(settings)
         self.support_ray = True
         self.support_spark = True
         self.input_dir = input_dir
         self.source_prefix = source_prefix
+        self.column_rename_dict = column_rename_dict
         
     def get_files_with_subtask(self, file_type):
         from pyrecdp.primitives.llmutils.utils import get_target_file_list_from_local, sub_task_per_folder
@@ -134,11 +136,12 @@ LLMOPERATORS.register(GlobalJsonlReader)
 
 class ParquetReader(BaseLLMOperation):
     def __init__(self, input_dir = "", column_rename_dict = {}):
-        settings = {'input_dir': input_dir, 'column_rename_dict': column_rename_dict}
+        settings = {'input_dir': input_dir}
         super().__init__(settings)
         self.support_ray = True
         self.support_spark = True
         self.input_dir = input_dir
+        self.column_rename_dict = column_rename_dict
         
     def process_rayds(self, ds=None) -> Dataset:
         import ray.data as rd
