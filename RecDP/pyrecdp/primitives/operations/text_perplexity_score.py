@@ -1,4 +1,4 @@
-from .base import BaseLLMOperation
+from .base import BaseLLMOperation, statistics_decorator
 from ray.data import Dataset
 from pyspark.sql import DataFrame
 from pyrecdp.core.model_utils import get_model, prepare_model
@@ -28,19 +28,43 @@ class TextPerplexityScore(BaseLLMOperation):
         self.tokenizer = get_model(self.sp_model_key, self.language, 'sentencepiece')
         self.kenlm_model = get_model(self.kl_model_key, self.language, 'kenlm')
 
+    @statistics_decorator
     def process_rayds(self, ds: Dataset) -> Dataset:
         if self.inplace:
             raise NotImplementedError("We don't inplace modify text with normalization")
         else:
             new_name = 'perplexity'
         compute_func = self.get_compute_func()
-        return ds.map(lambda x: self.process_row(x, self.text_key, new_name, compute_func))
+        ret = ds.map(lambda x: self.process_row(x, self.text_key, new_name, compute_func))
+        if self.statistics_flag:
+            self.statistics.max = ret.max(new_name)
+            self.statistics.min = ret.min(new_name)
+            self.statistics.mean = ret.mean(new_name)
+            self.statistics.std = ret.std(new_name)
+        else:
+            self.statistics.max =  0
+            self.statistics.min =  0
+            self.statistics.mean =  0
+            self.statistics.std =  0
+        return ret
 
+    @statistics_decorator
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
         import pyspark.sql.functions as F
         from pyspark.sql import types as T
         bytesize_udf = F.udf(self.get_compute_func(), T.FloatType())
-        return spark_df.withColumn("perplexity", bytesize_udf(F.col(self.text_key)))
+        ret = spark_df.withColumn("perplexity", bytesize_udf(F.col(self.text_key)))
+        if self.statistics_flag:
+            self.statistics.max = ret.select(F.max("perplexity")).collect()[0][0]
+            self.statistics.min = ret.select(F.min("perplexity")).collect()[0][0]
+            self.statistics.mean = ret.select(F.mean("perplexity")).collect()[0][0]
+            self.statistics.std = ret.select(F.std("perplexity")).collect()[0][0]
+        else:
+            self.statistics.max =  0
+            self.statistics.min =  0
+            self.statistics.mean =  0
+            self.statistics.std =  0
+        return ret
 
     def get_compute_func(self, *args, **kwargs):
         tokenizer = self.tokenizer
@@ -61,6 +85,14 @@ class TextPerplexityScore(BaseLLMOperation):
             return perplexity
 
         return compute
+
+    def summarize(self) -> str:
+        return (
+            f"A total of {self.statistics.total_in} rows of data were processed, using {self.statistics.used_time} seconds, "
+            f"Get max perplexity {self.statistics.max}, "
+            f"Get min perplexity {self.statistics.min}, "
+            f"Get average perplexity {self.statistics.mean},"
+            f"Get the std of perplexity {self.statistics.std}")
 
 
 LLMOPERATORS.register(TextPerplexityScore)
