@@ -178,8 +178,9 @@ LLMOPERATORS = Registry('BaseLLMOperation')
 
 
 class BaseLLMOperation(BaseOperation):
-    def __init__(self, args_dict={}):
+    def __init__(self, args_dict={}, column_rename_dict = {}):
         self.op = Operation(-1, None, [], f'{self.__class__.__name__}', args_dict)
+        self.column_rename_dict = column_rename_dict
         self.cache = None
         self.support_spark = False
         self.support_ray = True
@@ -280,6 +281,25 @@ class BaseLLMOperation(BaseOperation):
                 df1 = df1.withColumn(column_name, F.col(column_name).cast(StringType()))
                 df2 = df2.withColumn(column_name, F.col(column_name).cast(StringType()))
         return df1.union(df2)
+
+    def rename_ray_ds_columns(self, ds):
+        def add_column_with_new_name(content, rename_dict):
+            for pre_name, new_name in rename_dict.items():
+                content[new_name] = content[pre_name]
+            return content
+        pre_columns = [column for column in self.column_rename_dict.keys() if column in ds.columns()]
+        rename_dict = {}
+        for pre_column in pre_columns:
+            rename_dict[pre_column] = self.column_rename_dict[pre_column]
+        ds = ds.map(lambda x: add_column_with_new_name(x, rename_dict))
+        ds = ds.drop_columns(pre_columns)
+        return ds
+
+    def rename_spark_df_columns(self, df):
+        for pre_column, new_column in self.column_rename_dict.items():
+            if pre_column in df.columns:
+                df = df.withColumnRenamed(pre_column, new_column)
+        return df
 
 
 class DummyOperation(BaseOperation):

@@ -14,22 +14,22 @@ class DatasetReader(BaseLLMOperation):
 LLMOPERATORS.register(DatasetReader)
 
 class JsonlReader(BaseLLMOperation):
-    def __init__(self, input_dir = ""):
-        settings = {'input_dir': input_dir}
+    def __init__(self, input_dir = "", column_rename_dict = {}):
+        settings = {'input_dir': input_dir, 'column_rename_dict': column_rename_dict}
         super().__init__(settings)
         self.support_ray = True
         self.support_spark = True
         self.input_dir = input_dir
-        
+
     def process_rayds(self, ds=None) -> Dataset:
         import ray.data as rd
-        self.cache = rd.read_json(self.input_dir)
+        self.cache = self.rename_ray_ds_columns(rd.read_json(self.input_dir))
         self.statistics.total_in = self.cache.count()
         self.statistics.total_out = self.statistics.total_in
         return self.cache
     
     def process_spark(self, spark, spark_df: DataFrame = None) -> DataFrame:
-        df = spark.read.json(self.input_dir).cache()
+        df = self.rename_spark_df_columns(spark.read.json(self.input_dir).cache())
         self.statistics.total_in = df.count()
         if '_corrupt_record' in df.columns:
             df = df.filter("_corrupt_record is NULL").drop("_corrupt_record")
@@ -49,8 +49,8 @@ class JsonlReader(BaseLLMOperation):
 LLMOPERATORS.register(JsonlReader)
 
 class SourcedReader(BaseLLMOperation):
-    def __init__(self, input_dir = "", source_prefix = ""):
-        settings = {'input_dir': input_dir, "source_prefix": source_prefix}
+    def __init__(self, input_dir = "", source_prefix = "", column_rename_dict = {}):
+        settings = {'input_dir': input_dir, "source_prefix": source_prefix, "column_rename_dict": column_rename_dict}
         super().__init__(settings)
         self.support_ray = True
         self.support_spark = True
@@ -69,8 +69,8 @@ class SourcedReader(BaseLLMOperation):
         return files_with_subtask, input_dir
     
 class SourcedJsonlReader(SourcedReader):
-    def __init__(self, input_dir = "", source_prefix = ""):
-        super().__init__(input_dir = input_dir, source_prefix = source_prefix)
+    def __init__(self, input_dir = "", source_prefix = "", column_rename_dict = {}):
+        super().__init__(input_dir = input_dir, source_prefix = source_prefix, column_rename_dict = column_rename_dict)
         
     def process_rayds(self, ds=None) -> Dataset:
         import ray.data as rd
@@ -81,7 +81,7 @@ class SourcedJsonlReader(SourcedReader):
 
         to_read_list = [(sub_task, os.path.join(input_dir, f)) for sub_task, file_list in files_with_subtask.items() for f in file_list]
         for idx, (sub_task, file_path) in enumerate(to_read_list):
-            ds = rd.read_json(file_path).map(lambda x: add_source_str(x, os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))))
+            ds = self.rename_ray_ds_columns(rd.read_json(file_path).map(lambda x: add_source_str(x, os.path.join(self.source_prefix, sub_task, os.path.basename(file_path)))))
             ds_count = ds.count()
             self.statistics.total_in += ds_count
             self.statistics.total_out += ds_count
@@ -93,7 +93,7 @@ class SourcedJsonlReader(SourcedReader):
         files_with_subtask, input_dir = self.get_files_with_subtask("jsonl")
         to_read_list = [(sub_task, os.path.join(input_dir, f)) for sub_task, file_list in files_with_subtask.items() for f in file_list]
         for idx, (sub_task, file_path) in enumerate(to_read_list):
-            df = spark.read.json(file_path)
+            df = self.rename_spark_df_columns(spark.read.json(file_path))
             df = df.withColumn('source_id', F.lit(os.path.join(self.source_prefix, sub_task, os.path.basename(file_path)))).cache()
             self.statistics.total_in += df.count()
             if '_corrupt_record' in df.columns:
@@ -112,15 +112,15 @@ class SourcedJsonlReader(SourcedReader):
 LLMOPERATORS.register(SourcedJsonlReader)
 
 class GlobalJsonlReader(SourcedJsonlReader):
-    def __init__(self, input_dir = "", source_prefix = ""):
-        super().__init__(input_dir = input_dir, source_prefix = source_prefix)
+    def __init__(self, input_dir = "", source_prefix = "", column_rename_dict = {}):
+        super().__init__(input_dir = input_dir, source_prefix = source_prefix, column_rename_dict = column_rename_dict)
 
     def process_spark(self, spark, spark_df: DataFrame = None) -> DataFrame:
         import pyspark.sql.functions as F
         files_with_subtask, input_dir = self.get_files_with_subtask("jsonl")
         to_read_list = [(sub_task, os.path.join(input_dir, f)) for sub_task, file_list in files_with_subtask.items() for f in file_list]
         for idx, (sub_task, file_path) in enumerate(to_read_list):
-            df = spark.read.json(file_path).cache()
+            df = self.rename_spark_df_columns(spark.read.json(file_path).cache())
             self.statistics.total_in += df.count()
             if '_corrupt_record' in df.columns:
                 df = df.filter("_corrupt_record is NULL").drop("_corrupt_record")
@@ -133,8 +133,8 @@ class GlobalJsonlReader(SourcedJsonlReader):
 LLMOPERATORS.register(GlobalJsonlReader)
 
 class ParquetReader(BaseLLMOperation):
-    def __init__(self, input_dir = ""):        
-        settings = {'input_dir': input_dir}
+    def __init__(self, input_dir = "", column_rename_dict = {}):
+        settings = {'input_dir': input_dir, 'column_rename_dict': column_rename_dict}
         super().__init__(settings)
         self.support_ray = True
         self.support_spark = True
@@ -142,18 +142,17 @@ class ParquetReader(BaseLLMOperation):
         
     def process_rayds(self, ds=None) -> Dataset:
         import ray.data as rd
-        self.cache = rd.read_parquet(self.input_dir)
+        self.cache = self.rename_ray_ds_columns(rd.read_parquet(self.input_dir))
         return self.cache
     
     def process_spark(self, spark, spark_df: DataFrame = None) -> DataFrame:
-        df = spark.read.parquet(self.input_dir)
-        self.cache = df            
+        self.cache = self.rename_spark_df_columns(spark.read.parquet(self.input_dir))
         return self.cache
 LLMOPERATORS.register(ParquetReader)
 
 class SourcedParquetReader(SourcedReader):
-    def __init__(self, input_dir = "", source_prefix = ""):
-        super().__init__(input_dir = input_dir, source_prefix = source_prefix)
+    def __init__(self, input_dir = "", source_prefix = "", column_rename_dict = {}):
+        super().__init__(input_dir = input_dir, source_prefix = source_prefix, column_rename_dict = column_rename_dict)
         
     def process_rayds(self, ds=None) -> Dataset:
         import ray.data as rd
@@ -163,7 +162,7 @@ class SourcedParquetReader(SourcedReader):
         files_with_subtask, input_dir = self.get_files_with_subtask("parquet")
         to_read_list = [(sub_task, os.path.join(input_dir, f)) for sub_task, file_list in files_with_subtask.items() for f in file_list]
         for idx, (sub_task, file_path) in enumerate(to_read_list):
-            ds = rd.read_parquet(file_path).map(lambda x: add_source(x, os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))))
+            ds = self.rename_ray_ds_columns(rd.read_parquet(file_path).map(lambda x: add_source(x, os.path.join(self.source_prefix, sub_task, os.path.basename(file_path)))))
             self.cache = ds if idx == 0 else self.union_ray_ds(self.cache, ds)
         return self.cache
     
@@ -172,15 +171,15 @@ class SourcedParquetReader(SourcedReader):
         files_with_subtask, input_dir = self.get_files_with_subtask("parquet")
         to_read_list = [(sub_task, os.path.join(input_dir, f)) for sub_task, file_list in files_with_subtask.items() for f in file_list]
         for idx, (sub_task, file_path) in enumerate(to_read_list):
-            df = spark.read.parquet(file_path)
+            df = self.rename_spark_df_columns(spark.read.parquet(file_path))
             df = df.withColumn('source_id', F.lit(os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))))
             self.cache = df if idx == 0 else self.union_spark_df(self.cache, df)
         return self.cache
 LLMOPERATORS.register(SourcedParquetReader)
 
 class GlobalParquetReader(SourcedParquetReader):
-    def __init__(self, input_dir = "", source_prefix = ""):
-        super().__init__(input_dir = input_dir, source_prefix = source_prefix)
+    def __init__(self, input_dir = "", source_prefix = "", column_rename_dict = {}):
+        super().__init__(input_dir = input_dir, source_prefix = source_prefix, column_rename_dict = column_rename_dict)
 
     def process_spark(self, spark, spark_df: DataFrame = None) -> DataFrame:
         if spark_df:
@@ -191,7 +190,7 @@ class GlobalParquetReader(SourcedParquetReader):
         files_with_subtask, input_dir = self.get_files_with_subtask("parquet")
         to_read_list = [(sub_task, os.path.join(input_dir, f)) for sub_task, file_list in files_with_subtask.items() for f in file_list]
         for idx, (sub_task, file_path) in enumerate(to_read_list):
-            df = spark.read.parquet(file_path)
+            df = self.rename_spark_df_columns(spark.read.parquet(file_path))
             source_id = os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))
             df = df.select(
                 F.concat_ws("@", F.monotonically_increasing_id(), F.lit(source_id)).alias(
@@ -205,8 +204,8 @@ class PerfileReader:
     pass
 
 class PerfileSourcedJsonlReader(SourcedReader, PerfileReader):
-    def __init__(self, input_dir = "", source_prefix = ""):
-        super().__init__(input_dir = input_dir, source_prefix = source_prefix)
+    def __init__(self, input_dir = "", source_prefix = "", column_rename_dict = {}):
+        super().__init__(input_dir = input_dir, source_prefix = source_prefix, column_rename_dict = column_rename_dict)
         self.support_spark = True
         self.support_ray = True
         
@@ -222,7 +221,7 @@ class PerfileSourcedJsonlReader(SourcedReader, PerfileReader):
         for sub_task, file_path in to_read_list:
             source_id = os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))
             # ds = rd.read_text(file_path).map(lambda x: convert_json(x, source_id))
-            ds = rd.read_json(file_path).map(lambda x: add_source_str(x, source_id))
+            ds = self.rename_ray_ds_columns(rd.read_json(file_path).map(lambda x: add_source_str(x, source_id)))
             ds_count = ds.count()
             self.statistics.total_in += ds_count
             self.statistics.total_out += ds_count
@@ -237,7 +236,7 @@ class PerfileSourcedJsonlReader(SourcedReader, PerfileReader):
 
         for sub_task, file_path in to_read_list:
             source_id = os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))
-            df = spark.read.json(file_path)
+            df = self.rename_spark_df_columns(spark.read.json(file_path))
             df = df.withColumn('source_id', F.lit(source_id)).cache()
             self.statistics.total_in += df.count()
             if '_corrupt_record' in df.columns:
@@ -259,8 +258,8 @@ class PerfileSourcedJsonlReader(SourcedReader, PerfileReader):
 LLMOPERATORS.register(PerfileSourcedJsonlReader)
     
 class PerfileSourcedParquetReader(SourcedReader, PerfileReader):
-    def __init__(self, input_dir = "", source_prefix = ""):
-        super().__init__(input_dir = input_dir, source_prefix = source_prefix)
+    def __init__(self, input_dir = "", source_prefix = "", column_rename_dict = {}):
+        super().__init__(input_dir = input_dir, source_prefix = source_prefix, column_rename_dict = column_rename_dict)
         self.support_spark = True
         self.support_ray = True
         
@@ -274,7 +273,7 @@ class PerfileSourcedParquetReader(SourcedReader, PerfileReader):
         self.cache = []
         for sub_task, file_path in to_read_list:
             source_id = os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))
-            ds = rd.read_parquet(file_path).map(lambda x: add_source(x, source_id))
+            ds = self.rename_ray_ds_columns(rd.read_parquet(file_path).map(lambda x: add_source(x, source_id)))
             self.cache.append((ds, source_id))
         return self.cache
     
@@ -285,7 +284,7 @@ class PerfileSourcedParquetReader(SourcedReader, PerfileReader):
         self.cache = []
         for sub_task, file_path in to_read_list:
             source_id = os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))
-            df = spark.read.parquet(file_path)
+            df = self.rename_spark_df_columns(spark.read.parquet(file_path))
             # if spark_df is not None, we need to add global_id for dataframe which will help to filter data with global_id
             if spark_df:
                 df = df.select(F.concat_ws("@", F.monotonically_increasing_id(), F.lit(source_id)).alias("global_id"), "*")
