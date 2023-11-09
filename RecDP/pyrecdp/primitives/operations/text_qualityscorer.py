@@ -1,4 +1,4 @@
-from .base import BaseLLMOperation, LLMOPERATORS
+from .base import BaseLLMOperation, LLMOPERATORS, statistics_decorator
 from ray.data import Dataset
 from pyspark.sql import DataFrame
 
@@ -297,6 +297,7 @@ class TextQualityScorer(BaseLLMOperation):
     def process_rayds(self, ds: Dataset) -> Dataset:
         raise NotImplementedError("Not implemented yet")
     
+    @statistics_decorator
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
         import pyspark.sql.functions as F
         from pyspark.sql import types as T
@@ -318,6 +319,15 @@ class TextQualityScorer(BaseLLMOperation):
             df_spark = df_spark.withColumnRenamed(text_key, 'text')
         # start to predict
         pred = predict(model, spark_df, tokenizer=tokenizer, keep_method=keep_method).cache()
+        if self.statistics_flag:
+            self.statistics.mean = pred.select(F.mean("doc_score")).collect()[0][0]
+        else:
+            self.statistics.mean = 0
         return pred
+    
+    def summarize(self) -> str:
+        return (
+            f"A total of {self.statistics.total_in} rows of data were processed, using {self.statistics.used_time} seconds, "
+            f"We get average quality score {self.statistics.mean}")
     
 LLMOPERATORS.register(TextQualityScorer)
