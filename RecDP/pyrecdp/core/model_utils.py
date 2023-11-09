@@ -2,6 +2,7 @@
 https://github.com/alibaba/data-juicer/blob/main/data_juicer/utils/model_utils.py
 """
 import os
+from typing import Callable, Any
 
 import wget
 from loguru import logger
@@ -15,23 +16,23 @@ MODEL_PATH = RECDP_MODELS_CACHE
 BACKUP_MODEL_LINKS = {
     # language identification model from fasttext
     'lid.176.bin':
-    'https://dl.fbaipublicfiles.com/fasttext/supervised-models/',
+        'https://dl.fbaipublicfiles.com/fasttext/supervised-models/',
 
     # tokenizer and language model for English from sentencepiece and KenLM
     '%s.sp.model':
-    'https://huggingface.co/edugp/kenlm/resolve/main/wikipedia/',
+        'https://huggingface.co/edugp/kenlm/resolve/main/wikipedia/',
     '%s.arpa.bin':
-    'https://huggingface.co/edugp/kenlm/resolve/main/wikipedia/',
+        'https://huggingface.co/edugp/kenlm/resolve/main/wikipedia/',
 
     # sentence split model from nltk punkt
     'punkt.%s.pickle':
-    'https://dail-wlcb.oss-cn-wulanchabu.aliyuncs.com/'
-    'data_juicer/models/'
+        'https://dail-wlcb.oss-cn-wulanchabu.aliyuncs.com/'
+        'data_juicer/models/'
 }
 
 # Default cached models links for downloading
 MODEL_LINKS = 'https://dail-wlcb.oss-cn-wulanchabu.aliyuncs.com/' \
-               'data_juicer/models/'
+              'data_juicer/models/'
 
 MODEL_ZOO = {}
 
@@ -172,6 +173,7 @@ def prepare_huggingface_tokenizer(tokenizer_name):
                                               trust_remote_code=True)
     return tokenizer
 
+
 def prepare_diversity_model(model_name, lang):
     """
     Prepare diversity model for specific language.
@@ -207,10 +209,11 @@ def prepare_diversity_model(model_name, lang):
     return diversity_model
 
 
-def prepare_model(lang='en', model_type='sentencepiece', model_key=None):
+def prepare_model(lang='en', model_type='sentencepiece', model_key=None,
+                  prepare_model_func: Callable[[str, str], Any] = None):
     """
     Prepare and load a model or a tokenizer from MODEL_ZOO.
-
+    :param prepare_model_func: a Callable function to prepare model
     :param lang: which lang model to load
     :param model_type: model or tokenizer type
     :param model_key: tokenizer name, only used when prepare HuggingFace
@@ -239,7 +242,10 @@ def prepare_model(lang='en', model_type='sentencepiece', model_key=None):
         elif model_type == 'huggingface':
             MODEL_ZOO[model_key] = model_func(model_key)
         else:
-            MODEL_ZOO[model_key] = model_func(model_name, lang)
+            if prepare_model_func is not None:
+                MODEL_ZOO[model_key] = prepare_model_func(model_name, lang)
+            else:
+                MODEL_ZOO[model_key] = model_func(model_name, lang)
     return model_key
 
 

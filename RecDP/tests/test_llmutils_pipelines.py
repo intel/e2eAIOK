@@ -17,12 +17,12 @@ from pyrecdp.LLM import TextPipeline, ResumableTextPipeline
 from pyrecdp.core.cache_utils import RECDP_MODELS_CACHE
 from pyrecdp.core import SparkDataProcessor
 
-     
+
 class Test_LLMUtils_Pipeline(unittest.TestCase):
-    
+
     def setUp(self) -> None:
         print(f"\n******\nTesting Method Name: {self._testMethodName}\n******")
-        
+
     def tearDown(self) -> None:
         print("Test completed, view results and delete output")
         import pandas as pd
@@ -47,7 +47,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
             JsonlReader("tests/data/llm_data/"),
             LengthFilter(),
             ProfanityFilter(),
-            LanguageIdentify(fasttext_model_dir = os.path.join(RECDP_MODELS_CACHE, "lid.bin")),
+            LanguageIdentify(fasttext_model_dir=os.path.join(RECDP_MODELS_CACHE, "lid.bin")),
             PerfileParquetWriter("ResumableTextPipeline_output")
         ]
         pipeline.add_operations(ops)
@@ -55,14 +55,14 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         del pipeline
 
     def test_ResumableTextPipeline_import(self):
-        pipeline = ResumableTextPipeline(pipeline_file = 'tests/data/import_test_pipeline.json')
+        pipeline = ResumableTextPipeline(pipeline_file='tests/data/import_test_pipeline.json')
         pipeline.execute()
         del pipeline
 
     def test_ResumableTextPipeline_customerfilter_op(self):
         def cond(text):
             return text > 0.9
-        
+
         pipeline = ResumableTextPipeline()
         ops = [
             JsonlReader("tests/data/llm_data/"),
@@ -78,7 +78,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
     def test_ResumableTextPipeline_customermap_op(self):
         def classify(text):
             return 1 if text > 0.8 else 0
-        
+
         pipeline = ResumableTextPipeline()
         ops = [
             JsonlReader("tests/data/llm_data/"),
@@ -90,11 +90,11 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         pipeline.plot()
         pipeline.execute()
         del pipeline
-        
+
     def test_ResumableTextPipeline_customer_function(self):
         def proc(text):
             return f'processed_{text}'
-        
+
         pipeline = ResumableTextPipeline()
         pipeline.add_operation(JsonlReader("tests/data/llm_data/"))
         pipeline.add_operation(proc, text_key='text')
@@ -129,7 +129,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
 
     def test_ResumableTextPipeline_with_bothDedup(self):
         pipeline = ResumableTextPipeline()
-        #pipeline.enable_statistics()
+        # pipeline.enable_statistics()
         ops = [
             JsonlReader("tests/data/llm_data/"),
             TextQualityScorer(),
@@ -140,7 +140,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         pipeline.add_operations(ops)
         pipeline.execute()
         del pipeline
-        
+
     def test_ResumableTextPipeline_with_bothDedup_withLog(self):
         pipeline = ResumableTextPipeline()
         pipeline.enable_statistics()
@@ -159,20 +159,20 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         pipeline = ResumableTextPipeline("tests/config/llm/pipeline/pipeline_example.yaml")
         pipeline.execute()
         del pipeline
-        
+
     def test_pipeline_execute_pandasdf_ray(self):
         import pandas as pd
         pipeline = TextPipeline()
         ops = [
             LengthFilter(),
             ProfanityFilter(),
-            LanguageIdentify(fasttext_model_dir = os.path.join(RECDP_MODELS_CACHE, "lid.bin"))
+            LanguageIdentify(fasttext_model_dir=os.path.join(RECDP_MODELS_CACHE, "lid.bin"))
         ]
         pipeline.add_operations(ops)
         df = pd.read_parquet("tests/data/PILE/NIH_sample.parquet")
         ret = pipeline.execute(df)
         display(ret.to_pandas())
-        
+
     def test_pipeline_execute_pandasdf_spark(self):
         import pandas as pd
         pipeline = TextPipeline()
@@ -184,3 +184,23 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         ret = pipeline.execute(df)
         display(ret.toPandas())
 
+    def test_llm_rag_pipeline(self):
+        model_root_path = os.path.join(RECDP_MODELS_CACHE, "huggingface")
+        pipeline = TextPipeline()
+        ops = [
+            DirectoryLoader("tests/data/llm_data/document", glob="**/*.pdf"),
+            DocumentSplit(),
+            DocumentIngestion(
+                vector_store='FAISS',
+                vector_store_args={
+                    "output_dir": "ResumableTextPipeline_output",
+                    "index": "test_index"
+                },
+                embeddings='HuggingFaceEmbeddings',
+                embeddings_args={
+                    'model_name': f"{model_root_path}/sentence-transformers/all-mpnet-base-v2"
+                }
+            ),
+        ]
+        pipeline.add_operations(ops)
+        pipeline.execute()
