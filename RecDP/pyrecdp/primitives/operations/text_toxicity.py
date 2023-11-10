@@ -47,10 +47,7 @@ class TextToxicity(BaseLLMOperation):
             self.statistics.mean = ret.mean("text_toxicity")
             self.statistics.std = ret.std("text_toxicity")
         else:
-            self.statistics.max =  0
-            self.statistics.min =  0
-            self.statistics.mean =  0
-            self.statistics.std =  0
+            self.statistics.max, self.statistics.min, self.statistics.mean, self.statistics.std =  0, 0, 0, 0
         return ret
 
     @statistics_decorator
@@ -67,10 +64,7 @@ class TextToxicity(BaseLLMOperation):
             self.statistics.mean = ret.select(F.mean("text_toxicity")).collect()[0][0]
             self.statistics.std = ret.select(F.std("text_toxicity")).collect()[0][0]
         else:
-            self.statistics.max =  0
-            self.statistics.min =  0
-            self.statistics.mean =  0
-            self.statistics.std =  0
+            self.statistics.max, self.statistics.min, self.statistics.mean, self.statistics.std =  0, 0, 0, 0
         return ret
     
     def summarize(self) -> str:

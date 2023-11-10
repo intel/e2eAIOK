@@ -42,10 +42,7 @@ class TextPerplexityScore(BaseLLMOperation):
             self.statistics.mean = ret.mean(new_name)
             self.statistics.std = ret.std(new_name)
         else:
-            self.statistics.max =  0
-            self.statistics.min =  0
-            self.statistics.mean =  0
-            self.statistics.std =  0
+            self.statistics.max, self.statistics.min, self.statistics.mean, self.statistics.std =  0, 0, 0, 0
         return ret
 
     @statistics_decorator
@@ -60,10 +57,7 @@ class TextPerplexityScore(BaseLLMOperation):
             self.statistics.mean = ret.select(F.mean("perplexity")).collect()[0][0]
             self.statistics.std = ret.select(F.std("perplexity")).collect()[0][0]
         else:
-            self.statistics.max =  0
-            self.statistics.min =  0
-            self.statistics.mean =  0
-            self.statistics.std =  0
+            self.statistics.max, self.statistics.min, self.statistics.mean, self.statistics.std =  0, 0, 0, 0
         return ret
 
     def get_compute_func(self, *args, **kwargs):

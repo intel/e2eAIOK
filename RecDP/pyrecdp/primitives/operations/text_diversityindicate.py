@@ -211,15 +211,6 @@ class TextDiversityIndicate(BaseLLMOperation):
         analyse_df = diversity_analysis.analyse(lang_or_model=self.language)
         analyse_df.to_csv(os.path.join(self.output_path, 'diversity.csv'))
         analyse_df.to_markdown(os.path.join(self.output_path, 'diversity.md'))
-        if self.statistics_flag:
-            diversity_result = pd.read_csv(os.path.join(self.output_path, 'diversity.csv'))
-            self.statistics.max = diversity_result["count"].max()
-            self.statistics.mean = diversity_result["count"].mean()
-            self.statistics.std = diversity_result["count"].std()
-        else:
-            self.statistics.max = 0
-            self.statistics.mean = 0
-            self.statistics.std = 0
         return ds
 
     @statistics_decorator
@@ -229,18 +220,13 @@ class TextDiversityIndicate(BaseLLMOperation):
         analyse_df = diversity_analysis.analyse(lang_or_model=self.language)
         analyse_df.to_csv(os.path.join(self.output_path, 'diversity.csv'))
         analyse_df.to_markdown(os.path.join(self.output_path, 'diversity.md'))
-        if self.statistics_flag:
-            diversity_result = pd.read_csv(os.path.join(self.output_path, 'diversity.csv'))
-            self.statistics.max = diversity_result["count"].max()
-            self.statistics.mean = diversity_result["count"].mean()
-            self.statistics.std = diversity_result["count"].std()
-        else:
-            self.statistics.max = 0
-            self.statistics.mean = 0
-            self.statistics.std = 0
         return spark_df
 
     def summarize(self) -> str:
+        diversity_result = pd.read_csv(os.path.join(self.output_path, 'diversity.csv'))
+        self.statistics.max = diversity_result["count"].max()
+        self.statistics.mean = diversity_result["count"].mean()
+        self.statistics.std = diversity_result["count"].std()
         return (
             f"A total of {self.statistics.total_in} rows of data were processed, using {self.statistics.used_time} seconds, "
             f"Get max diversity types {self.statistics.max}, "
