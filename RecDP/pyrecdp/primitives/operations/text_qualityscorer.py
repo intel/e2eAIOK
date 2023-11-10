@@ -326,7 +326,10 @@ class TextQualityScorer(BaseLLMOperation):
         return pred
     
     def summarize(self) -> str:
-        return (
+        statistics_save = {
+            "mean": self.statistics.mean
+        }
+        return (statistics_save, 
             f"A total of {self.statistics.total_in} rows of data were processed, using {self.statistics.used_time} seconds, "
             f"Get average quality score {self.statistics.mean}")
     

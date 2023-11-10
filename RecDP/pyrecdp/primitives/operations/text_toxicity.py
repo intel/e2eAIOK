@@ -68,7 +68,13 @@ class TextToxicity(BaseLLMOperation):
         return ret
     
     def summarize(self) -> str:
-        return (
+        statistics_save = {
+            "min": self.statistics.min,
+            "max": self.statistics.max,
+            "mean": self.statistics.mean,
+            "std": self.statistics.std,
+        }
+        return (statistics_save, 
             f"A total of {self.statistics.total_in} rows of data were processed, using {self.statistics.used_time} seconds, "
             f"Get max toxicity {self.statistics.max}, "
             f"Get min toxicity {self.statistics.min}, "

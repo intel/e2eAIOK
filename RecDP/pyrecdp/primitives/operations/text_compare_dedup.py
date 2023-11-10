@@ -146,7 +146,11 @@ class BaseCompareDedup(BaseLLMOperation):
 
     def summarize(self) -> str:
         self.statistics.dup_ratio = self.statistics.total_out / self.statistics.total_in
-        return (
+        statistics_save = {
+            "dup_num": self.statistics.total_out,
+            "dup_ratio": self.statistics.dup_ratio
+        }
+        return (statistics_save, 
             f"A total of {self.statistics.total_in} rows of data were processed, using {self.statistics.used_time} seconds, "
             f"A duplication list containing {self.statistics.total_out} found, around {self.statistics.dup_ratio * 100}% of total data, "
             f"Sampled, duplication preview: {self.statistics.example.head(50)}")

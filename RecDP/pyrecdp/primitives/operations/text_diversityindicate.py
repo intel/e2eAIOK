@@ -227,7 +227,12 @@ class TextDiversityIndicate(BaseLLMOperation):
         self.statistics.max = diversity_result["count"].max()
         self.statistics.mean = diversity_result["count"].mean()
         self.statistics.std = diversity_result["count"].std()
-        return (
+        statistics_save = {
+            "max": self.statistics.max,
+            "mean": self.statistics.mean,
+            "std": self.statistics.std
+        }
+        return (statistics_save, 
             f"A total of {self.statistics.total_in} rows of data were processed, using {self.statistics.used_time} seconds, "
             f"Get max diversity types {self.statistics.max}, "
             f"Get average diversity types {self.statistics.mean},"
