@@ -13,9 +13,74 @@ class DatasetReader(BaseLLMOperation):
 
 LLMOPERATORS.register(DatasetReader)
 
-class JsonlReader(BaseLLMOperation):
+class TextReader(BaseLLMOperation):
+    def __init__(self, args_dict={}):
+        super().__init__(args_dict)
+        self.column_rename_dict = {}
+
+    def rename_ray_ds_columns(self, ds):
+        def add_column_with_new_name(content, rename_dict):
+            for pre_name, new_name in rename_dict.items():
+                content[new_name] = content[pre_name]
+            return content
+        pre_columns = [column for column in self.column_rename_dict.keys() if column in ds.columns()]
+        rename_dict = {}
+        for pre_column in pre_columns:
+            rename_dict[pre_column] = self.column_rename_dict[pre_column]
+        ds = ds.map(lambda x: add_column_with_new_name(x, rename_dict))
+        ds = ds.drop_columns(pre_columns)
+        return ds
+
+    def rename_spark_df_columns(self, df):
+        for pre_column, new_column in self.column_rename_dict.items():
+            if pre_column in df.columns:
+                df = df.withColumnRenamed(pre_column, new_column)
+        return df
+
+    def union_ray_ds(self, ds1, ds2):
+        def add_new_empty_column(content, column_name):
+            content[column_name] = None
+            return content
+        def convert_to_string(content, column_name):
+            content[column_name] = str(content[column_name])
+            return content
+        for column in [column for column in ds2.columns() if column not in ds1.columns()]:
+            ds1 = ds1.map(lambda x: add_new_empty_column(x, column))
+        for column in [column for column in ds1.columns() if column not in ds2.columns()]:
+            ds2 = ds2.map(lambda x: add_new_empty_column(x, column))
+        ds1_fields_dict  =dict(zip(ds1.schema().names, ds1.schema().types))
+        ds2_fields_dict = dict(zip(ds2.schema().names, ds2.schema().types))
+        for column_name in ds1_fields_dict.keys():
+            if ds2_fields_dict[column_name] != ds1_fields_dict[column_name] and not (
+                    str(ds2_fields_dict[column_name]) == "null" or str(ds1_fields_dict[column_name]) == "null"):
+                ds1 = ds1.map(lambda x: convert_to_string(x, column_name))
+                ds2 = ds2.map(lambda x: convert_to_string(x, column_name))
+        return ds1.union(ds2)
+
+    def union_spark_df(self, df1, df2):
+        from pyspark.sql.functions import lit
+        import pyspark.sql.functions as F
+        from pyspark.sql.types import NullType, StringType
+        for column in [column for column in df2.columns if column not in df1.columns]:
+            df1 = df1.withColumn(column, lit(None))
+        for column in [column for column in df1.columns if column not in df2.columns]:
+            df2 = df2.withColumn(column, lit(None))
+        df1_fields, df2_fields = df1.schema.fields, df2.schema.fields
+        df1_fields_dict, df2_fields_dict = {}, {}
+        for df1_field in df1_fields:
+            df1_fields_dict[df1_field.name] = df1_field.dataType
+        for df2_field in df2_fields:
+            df2_fields_dict[df2_field.name] = df2_field.dataType
+        for column_name in df1_fields_dict.keys():
+            if df2_fields_dict[column_name] != df1_fields_dict[column_name] and not (
+                    df2_fields_dict[column_name] == NullType() or df1_fields_dict[column_name] == NullType()):
+                df1 = df1.withColumn(column_name, F.col(column_name).cast(StringType()))
+                df2 = df2.withColumn(column_name, F.col(column_name).cast(StringType()))
+        return df1.union(df2)
+
+class JsonlReader(TextReader):
     def __init__(self, input_dir = "", column_rename_dict = {}):
-        settings = {'input_dir': input_dir, 'column_rename_dict': column_rename_dict}
+        settings = {'input_dir': input_dir}
         super().__init__(settings)
         self.support_ray = True
         self.support_spark = True
@@ -49,7 +114,7 @@ class JsonlReader(BaseLLMOperation):
 
 LLMOPERATORS.register(JsonlReader)
 
-class SourcedReader(BaseLLMOperation):
+class SourcedReader(TextReader):
     def __init__(self, input_dir = "", source_prefix = "", column_rename_dict = {}):
         settings = {'input_dir': input_dir, "source_prefix": source_prefix}
         super().__init__(settings)
@@ -134,7 +199,7 @@ class GlobalJsonlReader(SourcedJsonlReader):
         return self.cache
 LLMOPERATORS.register(GlobalJsonlReader)
 
-class ParquetReader(BaseLLMOperation):
+class ParquetReader(TextReader):
     def __init__(self, input_dir = "", column_rename_dict = {}):
         settings = {'input_dir': input_dir}
         super().__init__(settings)
