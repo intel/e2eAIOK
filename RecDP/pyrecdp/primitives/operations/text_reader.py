@@ -80,7 +80,7 @@ class TextReader(BaseLLMOperation):
 
 class JsonlReader(TextReader):
     def __init__(self, input_dir = "", column_rename_dict = {}):
-        settings = {'input_dir': input_dir}
+        settings = {'input_dir': input_dir, 'column_rename_dict': column_rename_dict}
         super().__init__(settings)
         self.support_ray = True
         self.support_spark = True
@@ -116,7 +116,7 @@ LLMOPERATORS.register(JsonlReader)
 
 class SourcedReader(TextReader):
     def __init__(self, input_dir = "", source_prefix = "", column_rename_dict = {}):
-        settings = {'input_dir': input_dir, "source_prefix": source_prefix}
+        settings = {'input_dir': input_dir, "source_prefix": source_prefix, 'column_rename_dict': column_rename_dict}
         super().__init__(settings)
         self.support_ray = True
         self.support_spark = True
@@ -201,7 +201,7 @@ LLMOPERATORS.register(GlobalJsonlReader)
 
 class ParquetReader(TextReader):
     def __init__(self, input_dir = "", column_rename_dict = {}):
-        settings = {'input_dir': input_dir}
+        settings = {'input_dir': input_dir, 'column_rename_dict': column_rename_dict}
         super().__init__(settings)
         self.support_ray = True
         self.support_spark = True
