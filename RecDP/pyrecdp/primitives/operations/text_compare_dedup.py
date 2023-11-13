@@ -145,9 +145,15 @@ class BaseCompareDedup(BaseLLMOperation):
         raise NotImplementedError("Abstract func")
 
     def summarize(self) -> str:
-        return (
+        self.statistics.dup_ratio = 1 - self.statistics.total_out / self.statistics.total_in
+        self.statistics.dup_num = self.statistics.total_in - self.statistics.total_out
+        statistics_save = {
+            "dup_num": self.statistics.dup_num,
+            "dup_ratio": self.statistics.dup_ratio
+        }
+        return (statistics_save, 
             f"A total of {self.statistics.total_in} rows of data were processed, using {self.statistics.used_time} seconds, "
-            f"A duplication list containing {self.statistics.total_out} found, "
+            f"A duplication list containing {self.statistics.dup_num} found, around {self.statistics.dup_ratio * 100}% of total data, "
             f"Sampled, duplication preview: {self.statistics.example.head(50)}")
 
 

@@ -19,3 +19,4 @@ from .text_toxicity import TextToxicity
 from .text_prompt import TextPrompt
 from .text_compare_dedup import RougeScoreDedup
 from .text_perplexity_score import TextPerplexityScore
+from .random_select import RandomSelect

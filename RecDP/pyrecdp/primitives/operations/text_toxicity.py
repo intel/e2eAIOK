@@ -1,6 +1,6 @@
 import os
 
-from .base import BaseLLMOperation, LLMOPERATORS
+from .base import BaseLLMOperation, LLMOPERATORS, statistics_decorator
 from ray.data import Dataset
 from pyspark.sql import DataFrame
 from detoxify import Detoxify
@@ -35,20 +35,50 @@ class TextToxicity(BaseLLMOperation):
         self.model_type = model_type
         self.huggingface_config_path = huggingface_config_path
 
+    @statistics_decorator
     def process_rayds(self, ds: Dataset) -> Dataset:
         if self.actual_func is None:
             self.actual_func = prepare_func_text_toxicity(model_type=self.model_type,
                                                           huggingface_config_path=self.huggingface_config_path)
         ret = ds.map(lambda x: self.process_row(x, self.text_key, self.new_key, self.actual_func)).filter(lambda row: row[self.new_key] > self.threshold)
+        if self.statistics_flag:
+            self.statistics.max = ret.max("text_toxicity")
+            self.statistics.min = ret.min("text_toxicity")
+            self.statistics.mean = ret.mean("text_toxicity")
+            self.statistics.std = ret.std("text_toxicity")
+        else:
+            self.statistics.max, self.statistics.min, self.statistics.mean, self.statistics.std =  0, 0, 0, 0
         return ret
 
+    @statistics_decorator
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
         import pyspark.sql.functions as F
         from pyspark.sql.types import FloatType
         if self.actual_func is None:
             self.actual_func = F.udf(prepare_func_text_toxicity(model_type=self.model_type,
                                                                 huggingface_config_path=self.huggingface_config_path), FloatType())
-        return spark_df.withColumn(self.new_key, self.actual_func(F.col(self.text_key))).filter(f"{self.new_key} > {self.threshold}")
-
+        ret = spark_df.withColumn(self.new_key, self.actual_func(F.col(self.text_key))).filter(f"{self.new_key} > {self.threshold}")
+        if self.statistics_flag:
+            self.statistics.max = ret.select(F.max("text_toxicity")).collect()[0][0]
+            self.statistics.min = ret.select(F.min("text_toxicity")).collect()[0][0]
+            self.statistics.mean = ret.select(F.mean("text_toxicity")).collect()[0][0]
+            self.statistics.std = ret.select(F.std("text_toxicity")).collect()[0][0]
+        else:
+            self.statistics.max, self.statistics.min, self.statistics.mean, self.statistics.std =  0, 0, 0, 0
+        return ret
+    
+    def summarize(self) -> str:
+        statistics_save = {
+            "min": self.statistics.min,
+            "max": self.statistics.max,
+            "mean": self.statistics.mean,
+            "std": self.statistics.std,
+        }
+        return (statistics_save, 
+            f"A total of {self.statistics.total_in} rows of data were processed, using {self.statistics.used_time} seconds, "
+            f"Get max toxicity {self.statistics.max}, "
+            f"Get min toxicity {self.statistics.min}, "
+            f"Get average toxicity {self.statistics.mean},"
+            f"Get the std of toxicity {self.statistics.std}")
 
 LLMOPERATORS.register(TextToxicity)

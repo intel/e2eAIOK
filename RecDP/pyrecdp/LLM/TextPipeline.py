@@ -16,6 +16,7 @@ import time
 import os
 import psutil
 from pyrecdp.primitives.operations.logging_utils import logger
+import json
 
 total_mem = int(psutil.virtual_memory().total * 0.6)
 total_cores = psutil.cpu_count(logical=False)
@@ -270,6 +271,15 @@ class ResumableTextPipeline(TextPipeline):
 
         return output_dir
 
+    def op_summary(self, op, output_dir):
+        summarize_result = op.summarize()
+        if isinstance(summarize_result, tuple):
+            logger.info(f"{op.__class__.__name__}: {summarize_result[1]}")
+            with open(os.path.join(output_dir, f"{op.__class__.__name__}-statistics"), "w+") as fout:
+                fout.write(json.dumps(summarize_result[0]))
+        else:
+            logger.info(f"{op.__class__.__name__}: {summarize_result}")
+
     def execute(self):
         # Fix pipeline
         output_dir = self.optimize_execute_plan()
@@ -344,7 +354,7 @@ class ResumableTextPipeline(TextPipeline):
                 done_files.append(status_tracker)
                 if self.statistics_flag:
                     for op in op_chain:
-                        logger.info(f"{op.__class__.__name__}: {op.summarize()}")
+                        self.op_summary(op, output_dir)
                 del ds_reader
         elif engine_name == 'spark':
             if not hasattr(self, 'rdp') or self.rdp is None:
@@ -362,7 +372,7 @@ class ResumableTextPipeline(TextPipeline):
                         break
                 if self.statistics_flag:
                     for op in op_chain:
-                        logger.info(f"{op.__class__.__name__}: {op.summarize()}")
+                        self.op_summary(op, output_dir)
                     op_chain = []
             
             # To process since Perfile Reader
@@ -401,7 +411,9 @@ class ResumableTextPipeline(TextPipeline):
                 done_files.append(status_tracker)
                 if self.statistics_flag:
                     for op in op_chain:
-                        logger.info(f"{op.__class__.__name__}: {op.summarize()}")
+                        self.op_summary(op, output_dir)
+                            
+
                 del ds_reader
         else:
             raise NotImplementedError(f"ResumableTextPipeline is not support {engine_name} yet")
