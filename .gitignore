@@ -6,3 +6,4 @@
 **/core.*
 **/__pycache__
 **/.ipynb_checkpoints
+**/dist

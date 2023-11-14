@@ -1,0 +1,29 @@
+dataset: dolly
+templates:
+  341f4bb7-988a-4637-bef1-989d9fe3e71b: !Template
+    answer_choices: null
+    id: 341f4bb7-988a-4637-bef1-989d9fe3e71b
+    jinja: "Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n ### Instruction:\n{{instruction}}\n\n ||| ### Response:{{response}}"
+    metadata: !TemplateMetadata
+      choices_in_prompt: false
+      languages:
+      - en
+      metrics:
+      - Accuracy
+      original_task: false
+    name: causal_llm_1
+    reference: ''
+
+  326b805f-64ca-4e0d-bfea-8342ad00b05c: !Template
+    answer_choices: null
+    id: 326b805f-64ca-4e0d-bfea-8342ad00b05c
+    jinja: "Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.\n\n ### Instruction:\n{{instruction}}\n\n### Input:\n{{context}}\n\n ||| ### Response:{{response}}"
+    metadata: !TemplateMetadata
+      choices_in_prompt: false
+      languages:
+      - en
+      metrics:
+      - Accuracy
+      original_task: false
+    name: causal_llm_2
+    reference: ''

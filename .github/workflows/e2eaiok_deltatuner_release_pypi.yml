@@ -1,4 +1,4 @@
-name: Publish E2EAIOK Deltatuner nightly to PyPI
+name: Publish E2EAIOK Deltatuner Release to PyPI
 
 on:
   workflow_dispatch:

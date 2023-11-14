@@ -699,7 +699,7 @@ def main():
 
     if deltatuner_args.algo:
         if finetune_args.resume_peft != "":
-            model = DeltaTunerModel.from_pretrained(model, finetune_args.resume_peft, denas_config=deltatuner_args)
+            model = DeltaTunerModel.from_pretrained(model, finetune_args.resume_peft)
         else:
             model = deltatuner.optimize(model, tokenizer, deltatuning_args=deltatuner_args)
         logger.info("***deltatuner optimized model parameter***")

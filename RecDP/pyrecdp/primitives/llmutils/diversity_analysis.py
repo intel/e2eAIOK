@@ -11,7 +11,7 @@ def diversity_indicate_spark(spark_df):
     return ret
 
 
-def diversity_indicate(data_dir, data_file_type, out_dir, language="en", first_sent=True):
+def diversity_indicate(data_dir, data_file_type, out_dir, language="en", first_sent=True, statistics_flag=False):
     from pyrecdp.primitives.operations import TextDiversityIndicate
     from pyrecdp.LLM import ResumableTextPipeline
 
@@ -23,6 +23,8 @@ def diversity_indicate(data_dir, data_file_type, out_dir, language="en", first_s
         raise NotImplementedError(f"{data_file_type} is not supported in RecDP LLM ResumableTextPipeline yet.")
 
     pipeline = ResumableTextPipeline()
+    if statistics_flag:
+        pipeline.enable_statistics()
     ops = [
         reader,
         TextDiversityIndicate(language=language, out_dir=out_dir, first_sent=first_sent),

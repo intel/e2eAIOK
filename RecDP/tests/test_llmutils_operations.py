@@ -211,6 +211,11 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds(ctx.ds))
 
+    def test_text_prompt_ray(self):
+        op = TextPrompt(dataset_name="alpaca", prompt_name="causal_llm_1")
+        with RayContext("tests/data/alpaca/alpaca_data_50.jsonl") as ctx:
+            ctx.show(op.process_rayds(ctx.ds))
+
     def test_gopherqualityfilter_ray(self):
         op = GopherQualityFilter()
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
@@ -349,6 +354,11 @@ class Test_LLMUtils_Operations(unittest.TestCase):
     def test_rouge_score_dedup_spark(self):
         op = RougeScoreDedup()
         with SparkContext("tests/data/llm_data/github_sample_50.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
+    def test_text_prompt_spark(self):
+        op = TextPrompt(dataset_name="alpaca", prompt_name="causal_llm_1")
+        with SparkContext("tests/data/alpaca/alpaca_data_50.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
 
     def test_perplexity_score_spark(self):

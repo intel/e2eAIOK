@@ -1,6 +1,5 @@
 import setuptools
 from setuptools import find_packages
-from setuptools.command.install import install
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
@@ -70,7 +69,7 @@ setuptools.setup(
         "fasttext==0.9.2",
         "wget==3.2",
         "alt-profanity-check==1.3.0",
-        "huggingface-hub==0.16.4",
+        "huggingface-hub",
         "loguru==0.7.2",
         "tabulate==0.9.0",
         "sentencepiece",
@@ -84,4 +83,5 @@ setuptools.setup(
         "emoji==2.2.0",
         "kenlm",
         "rouge-score",
-        ])
+        ],
+)

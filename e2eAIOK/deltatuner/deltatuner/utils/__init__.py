@@ -1,2 +1,2 @@
-from .config import DeltaTunerType, TRANSFORMERS_MODELS_TO_SSF_TARGET_MODULES_MAPPING
+from .config import DeltaTunerType, TRANSFORMERS_MODELS_TO_SSF_TARGET_MODULES_MAPPING, BEST_MODEL_STRUCTURE_DEFAULT_NAME
 from .save_and_load import get_deltatuner_model_state_dict, set_deltatuner_model_state_dict

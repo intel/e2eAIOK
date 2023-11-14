@@ -240,7 +240,6 @@ class BaseLLMOperation(BaseOperation):
             f"A total of {self.statistics.total_in} rows of data were processed, using {self.statistics.used_time} seconds, "
             f"with {self.statistics.total_changed} rows modified or removed, {self.statistics.total_out} rows of data remaining.")
 
-
 class DummyOperation(BaseOperation):
     def __init__(self, op_base):
         super().__init__(op_base)

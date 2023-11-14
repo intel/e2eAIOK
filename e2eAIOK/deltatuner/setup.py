@@ -7,7 +7,7 @@ with open("deltatuner/version", "r") as fh:
     VERSION = fh.read().strip()
 
 REQUIRED_PACKAGES = [
-    'torch>=1.13.0', 'transformers', 'datasets', 'sentencepiece', 
+    'torch>=1.13.1', 'transformers', 'datasets', 'sentencepiece', 
     'peft==0.4.0', 'evaluate', 'nltk', 'rouge_score', 'einops', 
     'sigopt', 'torchsummary'
 ]
@@ -24,7 +24,7 @@ setuptools.setup(
     download_url='https://github.com/intel/e2eAIOK/',
     packages=setuptools.find_packages(
         exclude=["example", "docker", ]),
-    package_data={'deltatuner': ['version']}, 
+    package_data={'deltatuner': ['version', '*/*/*', '*/*/*/*'], }, 
     python_requires=">=3.7",  # '>=3.4',  # !=3.4.*
     install_requires=REQUIRED_PACKAGES,
     extras_require={
