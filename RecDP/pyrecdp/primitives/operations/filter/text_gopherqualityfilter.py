@@ -69,7 +69,7 @@ class GopherQualityFilter(BaseFilter):
                 results['num_desired_stop_words_found'] < 2
             ]
             prediction = any(criterion)
-            return prediction
+            return not prediction
         return compute
 
 LLMOPERATORS.register(GopherQualityFilter)
