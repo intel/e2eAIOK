@@ -24,8 +24,7 @@ class DocumentLoader(BaseLLMOperation):
 
         if loader_args is not None and not isinstance(loader_args, dict):
             raise ValueError(f"loader_args must be a dictionary arguments")
-        self.support_ray = True
-        self.support_spark = True
+        
         self.loader_args = loader_args or {}
         self.loader = loader
         settings = {
@@ -36,6 +35,9 @@ class DocumentLoader(BaseLLMOperation):
 
         super().__init__(settings)
         self.doc_loader_func = self._get_loader()
+
+        self.support_ray = True
+        self.support_spark = True
 
     def _get_loader(self) -> Callable[[], List[Document]]:
         import_langchain()
