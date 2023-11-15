@@ -87,7 +87,8 @@ class Test_LLMUtils(unittest.TestCase):
         spark = rdp.spark
         spark_df = spark.read.json(data_file)
         toxicity_score_df = toxicity_score_spark(spark_df, text_key='text',
-                                                 threshold=0, model_type="multilingual", huggingface_config_path=huggingface_config_path)
+                                                 threshold=0, model_type="multilingual",
+                                                 huggingface_config_path=huggingface_config_path)
         toxicity_score_df.show()
 
     def test_diversity_analysis(self):
@@ -96,8 +97,8 @@ class Test_LLMUtils(unittest.TestCase):
         output_path = "tests/data/diversity_out"
         in_type = "jsonl"
         diversity_indicate(data_dir, in_type, output_path)
-        
-# ***** This test is to provide an example for EasyData ***** #
+
+    # ***** This test is to provide an example for EasyData ***** #
 
     def test_near_dedup_spark(self):
         from pyrecdp.primitives.llmutils import near_dedup_spk
@@ -159,7 +160,7 @@ class Test_LLMUtils(unittest.TestCase):
                 'South Dakota. The plant slaughters 19,500 pigs a day — 5 '
                 'percent of U.S. pork.',
                 'Smithfield employs 3,700 people at its plant in Sioux Falls, '
-                'South Dakota.\nThe plant slaughters 19,500 pigs a day — 5 '
+                'South Dakota.\n\nThe plant slaughters 19,500 pigs a day — 5 '
                 'percent of U.S. pork.')]
             spark_df = ctx.spark.createDataFrame(pd.DataFrame(samples, columns=["text", "target"]))
             ret_df = sentence_split(spark_df)
@@ -330,7 +331,6 @@ class Test_LLMUtils(unittest.TestCase):
         global_dedup(data_dir, out_dir, "PILE", in_type)
         pdf = pd.read_parquet(out_dir + 'deduplicated')
         display(pdf)
-        
 
     def test_pdf_to_json(self):
         from pyrecdp.primitives.llmutils.document_extractor import pdf_to_text

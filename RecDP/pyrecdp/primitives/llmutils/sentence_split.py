@@ -1,16 +1,21 @@
-from pyspark.sql import DataFrame
 import argparse
+
+from pyspark.sql import DataFrame
+
 from pyrecdp.core.utils import Timer
 
-def sentence_split(spark_df: DataFrame, language = 'en', text_column='text', new_text_column='text') -> DataFrame:
+
+def sentence_split(spark_df: DataFrame, language='english', text_column='text', new_text_column='text') -> DataFrame:
     from pyrecdp.primitives.operations import DocumentSplit
     if new_text_column != text_column:
         inplace = False
     else:
         inplace = True
-    op = DocumentSplit(text_key=text_column, inplace=inplace, language=language)
+    text_splitter_args = {'language': language}
+    op = DocumentSplit(text_key=text_column, inplace=inplace, text_splitter_args=text_splitter_args)
     ret = op.process_spark(spark_df.sparkSession, spark_df)
     return ret
+
 
 def run(text_key, data_dir, out_dir, data_file_type, language):
     from pyrecdp.LLM import ResumableTextPipeline
@@ -22,15 +27,18 @@ def run(text_key, data_dir, out_dir, data_file_type, language):
         reader = ParquetReader(data_dir)
     else:
         raise NotImplementedError(f"{data_file_type} is not supported in RecDP LLM ResumableTextPipeline yet.")
-    
+
+    text_splitter_args = {'language': language}
+    doc_split = DocumentSplit(text_key=text_key, inplace=True, text_splitter_args=text_splitter_args)
     pipeline = ResumableTextPipeline()
     ops = [
         reader,
-        DocumentSplit(text_key=text_key, language=language),
+        doc_split,
         PerfileParquetWriter(out_dir)
     ]
     pipeline.add_operations(ops)
     pipeline.execute()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
