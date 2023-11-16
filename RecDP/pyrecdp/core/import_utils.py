@@ -118,3 +118,15 @@ def import_openai(install_if_missing: bool = True):
                 "openai package not found, please install it with "
                 "`pip install openai`"
             )
+
+def import_pysbd(install_if_missing: bool = True):
+    try:
+        import openai
+    except ImportError:
+        if install_if_missing:
+            os.system("pip install -q pysbd")
+        else:
+            raise ValueError(
+                "pysbd package not found, please install it with "
+                "`pip install pysbd`"
+            )

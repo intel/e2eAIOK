@@ -24,7 +24,7 @@ class DocumentLoader(BaseLLMOperation):
 
         if loader_args is not None and not isinstance(loader_args, dict):
             raise ValueError(f"loader_args must be a dictionary arguments")
-
+        
         self.loader_args = loader_args or {}
         self.loader = loader
         settings = {
@@ -44,7 +44,7 @@ class DocumentLoader(BaseLLMOperation):
         from pyrecdp.core.class_utils import new_instance
         from langchain.document_loaders.base import BaseLoader
         langchain_loader: BaseLoader = new_instance("langchain.document_loaders", self.loader, **self.loader_args)
-        return lambda: [Document(text=doc.text, metadata=doc.metadata) for doc in langchain_loader.load()]
+        return lambda: [Document(text=doc.page_content, metadata=doc.metadata) for doc in langchain_loader.load()]
 
     def load_documents(self):
         return [{'text': doc.text, 'metadata': doc.metadata} for doc in self.doc_loader_func()]
@@ -68,7 +68,26 @@ class DirectoryLoader(DocumentLoader):
                  input_files: Optional[List] = None, single_text_per_document: bool = True,
                  exclude: Optional[List] = None, exclude_hidden: bool = True, silent_errors: bool = False,
                  encoding: str = "utf-8", required_exts: Optional[List[str]] = None,
-                 loader: Optional[str] = None, loader_args: Optional[dict] = None):
+                 page_separator: Optional[str] = '\n',
+                 **kwargs):
+        """
+        Loads documents from a directory or a list of files.
+
+        Args:
+            input_dir: The input directory.
+            glob: A glob pattern to match files.
+            recursive: Whether to recursively search the input directory.
+            use_multithreading: Whether to use multithreading to load documents.
+            max_concurrency: The maximum number of concurrent threads to use.
+            input_files: A list of input files.
+            single_text_per_document: Whether to load each file as a single document.
+            exclude: A list of file patterns to exclude from loading.
+            exclude_hidden: Whether to exclude hidden files from loading.
+            silent_errors: Whether to silently ignore errors when loading documents.
+            encoding: The encoding to use when loading documents.
+            required_exts: A list of file extensions that are required for documents.
+                           default extensions are [.pdf, .docx, .jpeg, .jpg, .png]
+        """
         settings = {
             'input_dir': input_dir,
             'glob': glob,
@@ -82,8 +101,10 @@ class DirectoryLoader(DocumentLoader):
             'silent_errors': silent_errors,
             'encoding': encoding,
             'required_exts': required_exts,
+            'page_separator': page_separator,
         }
         from pyrecdp.primitives.llmutils.document.reader import DirectoryReader
+
         self.directory_loader = DirectoryReader(
             input_dir=input_dir,
             glob=glob,
@@ -97,6 +118,7 @@ class DirectoryLoader(DocumentLoader):
             silent_errors=silent_errors,
             encoding=encoding,
             required_exts=required_exts,
+            page_separator=page_separator,
         )
         super().__init__(loader='DirectoryLoader', args_dict=settings)
 
@@ -169,5 +191,6 @@ class Url_Loader(BaseLLMOperation):
     def process_spark(self, spark, spark_df=None):
         self.cache = spark.createDataFrame(self.load_documents())
         return self.cache
+
 
 LLMOPERATORS.register(Url_Loader)

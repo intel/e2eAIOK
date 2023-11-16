@@ -1,11 +1,9 @@
 import os
 from abc import abstractmethod, ABC
 from pathlib import Path
-from typing import Any, List, Optional, Dict, Type
+from typing import List, Optional, Dict, Type
 
-from loguru import logger
-
-from .schema import Document
+from pyrecdp.primitives.llmutils.document.schema import Document
 
 
 class DocumentReader(ABC):
@@ -19,18 +17,35 @@ class DocumentReader(ABC):
 class FileBaseReader(DocumentReader, ABC):
     """interface for loading document from a file."""
 
-    def __init__(self, file: Path, single_text_per_document: bool = True):
+    def __init__(self, file: Path, single_text_per_document: bool = True, page_separator: str = '\n'):
         self.single_text_per_document = single_text_per_document
+        self.page_separator = page_separator or '\n'
         self.file = file
 
     def get_metadata(self):
         return {"source": str(self.file)}
 
     def load(self) -> List[Document]:
-        docs = self.load_file(self.file)
-        docs = list(filter(lambda d: (d.text.strip() != ""), docs))
+        docs: List[Document] = self.load_file(self.file)
+        docs: List[Document] = list(filter(lambda d: (d.text.strip() != ""), docs))
+
+        def firstAlphaIsUppercase(word: str) -> bool:
+            i: int = 0
+            while i < len(word):
+                char = doc.text[i]
+                if char.isalpha():
+                    return char.isupper()
+                i += 1
+            return False
+
         if self.single_text_per_document:
-            text = "\n".join([doc.text for doc in docs])
+            text = ''
+            for doc in docs:
+                if firstAlphaIsUppercase(doc.text):
+                    text += f"\n\n {doc.text}"
+                else:
+                    text += f" {doc.text}"
+
             return [Document(text=text, metadata=self.get_metadata())]
         else:
             return docs
@@ -43,8 +58,9 @@ class FileBaseReader(DocumentReader, ABC):
 class PDFReader(FileBaseReader):
     """PDF parser."""
 
-    def __init__(self, file: Path, single_text_per_document: bool = True, **load_kwargs):
-        super().__init__(file, single_text_per_document)
+    def __init__(self, file: Path, single_text_per_document: bool = True, page_separator: str = '\n',
+                 **load_kwargs):
+        super().__init__(file, single_text_per_document, page_separator)
         self.load_kwargs = load_kwargs
         try:
             import pypdf
@@ -75,8 +91,8 @@ class PDFReader(FileBaseReader):
 class DocxReader(FileBaseReader):
     """Docx parser."""
 
-    def __init__(self, file: Path, single_text_per_document: bool = True):
-        super().__init__(file, single_text_per_document)
+    def __init__(self, file: Path, single_text_per_document: bool = True, page_separator: str = '\n'):
+        super().__init__(file, single_text_per_document, page_separator)
         try:
             import docx
         except ImportError:
@@ -102,9 +118,10 @@ class ImageReader(FileBaseReader):
             self,
             file: Path,
             single_text_per_document: bool = True,
+            page_separator: str = '\n',
             keep_image: bool = False,
     ):
-        super().__init__(file, single_text_per_document)
+        super().__init__(file, single_text_per_document, page_separator)
         self._keep_image = keep_image
         try:
             from PIL import Image
@@ -136,19 +153,6 @@ class ImageReader(FileBaseReader):
         ]
 
 
-DEFAULT_SUPPORTED_SUFFIX = [
-    ".pdf",
-    ".jpg",
-    ".png",
-    ".jpeg",
-    ".doc",
-    ".docx",
-    ".ppt",
-    ".pptx",
-    ".xls",
-    ".xlsx",
-]
-
 CUSTOMIZE_SUPPORTED_SUFFIX: Dict[str, Type[FileBaseReader]] = {
     ".pdf": PDFReader,
     ".docx": DocxReader,
@@ -156,6 +160,7 @@ CUSTOMIZE_SUPPORTED_SUFFIX: Dict[str, Type[FileBaseReader]] = {
     ".jpeg": ImageReader,
     ".png": ImageReader,
 }
+
 
 class DirectoryReader(DocumentReader):
     def __init__(
@@ -171,8 +176,27 @@ class DirectoryReader(DocumentReader):
             silent_errors: bool = False,
             recursive: bool = False,
             encoding: str = "utf-8",
-            required_exts: Optional[List[str]] = None
+            required_exts: Optional[List[str]] = CUSTOMIZE_SUPPORTED_SUFFIX.keys(),
+            page_separator: Optional[str] = '\n',
     ) -> None:
+        """
+       Loads documents from a directory or a list of files.
+
+       Args:
+           input_dir: The input directory.
+           glob: A glob pattern to match files.
+           recursive: Whether to recursively search the input directory.
+           use_multithreading: Whether to use multithreading to load documents.
+           max_concurrency: The maximum number of concurrent threads to use.
+           input_files: A list of input files.
+           single_text_per_document: Whether to load each file as a single document.
+           exclude: A list of file patterns to exclude from loading.
+           exclude_hidden: Whether to exclude hidden files from loading.
+           silent_errors: Whether to silently ignore errors when loading documents.
+           encoding: The encoding to use when loading documents.
+           required_exts: A list of file extensions that are required for documents.
+                          default extensions are [.pdf, .docx, .jpeg, .jpg, .png]
+       """
         if not input_dir and not input_files:
             raise ValueError("Must provide either `path` or `input_files`.")
         self.glob = glob
@@ -184,6 +208,7 @@ class DirectoryReader(DocumentReader):
         self.recursive = recursive
         self.exclude_hidden = exclude_hidden
         self.required_exts = required_exts
+        self.page_separator = page_separator
         self.file_extractor = {}
         if input_files:
             self.input_files = []
@@ -202,11 +227,9 @@ class DirectoryReader(DocumentReader):
         if len(self.input_files) == 1:
             self.use_multithreading = False
 
-        self.supported_suffix = DEFAULT_SUPPORTED_SUFFIX
         self.single_text_per_document = single_text_per_document
 
     def _add_files(self, input_dir: Path) -> List[Path]:
-        """Add files."""
         all_files = set()
         rejected_files = set()
 
@@ -254,31 +277,28 @@ class DirectoryReader(DocumentReader):
     def _load_file(self, input_file: Path, pbar):
         try:
             file_suffix = input_file.suffix.lower()
-            if file_suffix in self.supported_suffix:
-                if file_suffix in CUSTOMIZE_SUPPORTED_SUFFIX:
-                    if file_suffix not in self.file_extractor:
-                        file_base_reader_cls: Type[FileBaseReader] = CUSTOMIZE_SUPPORTED_SUFFIX[file_suffix]
-                        self.file_extractor[file_suffix] = file_base_reader_cls(
-                            input_file,
-                            single_text_per_document=self.single_text_per_document
-                        )
-                    loader = self.file_extractor[file_suffix]
-                    return loader.load()
-                else:
-                    from pyrecdp.core.import_utils import import_langchain
-                    import_langchain()
-                    from langchain.document_loaders import UnstructuredFileLoader
-                    loader = UnstructuredFileLoader(str(input_file))
-                    docs = [Document(text=doc.text, metadata=doc.metadata) for doc in loader.load()]
-                    docs = list(filter(lambda d: (d.pa.strip() != ""), docs))
-                    if self.single_text_per_document:
-                        text = "\n".join([doc.text for doc in docs])
-                        return [Document(text=text, metadata={"source": str(input_file)})]
-                    else:
-                        return docs
+            if file_suffix in CUSTOMIZE_SUPPORTED_SUFFIX:
+                if file_suffix not in self.file_extractor:
+                    file_base_reader_cls: Type[FileBaseReader] = CUSTOMIZE_SUPPORTED_SUFFIX[file_suffix]
+                    self.file_extractor[file_suffix] = file_base_reader_cls(
+                        input_file,
+                        single_text_per_document=self.single_text_per_document,
+                        page_separator=self.page_separator,
+                    )
+                loader = self.file_extractor[file_suffix]
+                return loader.load()
             else:
-                logger.info(f"Skip loading file {input_file!s}: file suffix {file_suffix} is not supported")
-                return []
+                from pyrecdp.core.import_utils import import_langchain
+                import_langchain()
+                from langchain.document_loaders import UnstructuredFileLoader
+                loader = UnstructuredFileLoader(str(input_file))
+                docs = [Document(text=doc.text, metadata=doc.metadata) for doc in loader.load()]
+                docs = list(filter(lambda d: (d.pa.strip() != ""), docs))
+                if self.single_text_per_document:
+                    text = self.page_separator.join([doc.text for doc in docs])
+                    return [Document(text=text, metadata={"source": str(input_file)})]
+                else:
+                    return docs
         finally:
             if pbar:
                 pbar.update(1)
@@ -296,7 +316,7 @@ class DirectoryReader(DocumentReader):
             else:
                 for file in self.input_files:
                     docs = self._load_file(file, pbar)
-                    if len(docs) >0:
+                    if len(docs) > 0:
                         docs_result.extend(docs)
             return docs_result
         finally:

@@ -429,3 +429,18 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         )
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
+
+    def test_document_paragraphs_split_ray(self):
+        model_root_path = os.path.join(RECDP_MODELS_CACHE, "huggingface")
+        model_name = f"{model_root_path}/sentence-transformers/all-mpnet-base-v2"
+        op = ParagraphsTextSplitter(model_name=model_name)
+        with RayContext("tests/data/llm_data/arxiv_sample_100.jsonl") as ctx:
+            ctx.show(op.process_rayds(ctx.ds))
+
+    def test_document_paragraphs_split_spark(self):
+        model_root_path = os.path.join(RECDP_MODELS_CACHE, "huggingface")
+        model_name = f"{model_root_path}/sentence-transformers/all-mpnet-base-v2"
+        op = ParagraphsTextSplitter(model_name=model_name)
+        with SparkContext("tests/data/llm_data/arxiv_sample_100.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark, ctx.ds))
