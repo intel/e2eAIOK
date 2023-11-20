@@ -24,7 +24,7 @@ class DocumentLoader(BaseLLMOperation):
 
         if loader_args is not None and not isinstance(loader_args, dict):
             raise ValueError(f"loader_args must be a dictionary arguments")
-        
+
         self.loader_args = loader_args or {}
         self.loader = loader
         settings = {
@@ -105,3 +105,69 @@ class DirectoryLoader(DocumentLoader):
 
 
 LLMOPERATORS.register(DirectoryLoader)
+
+
+def load_html_to_md(page_url, target_tag: str = None, target_attrs: dict = None):
+    try:
+        import markdownify
+    except ImportError:
+        raise ImportError(
+            "Could not import markdownify python package. "
+            "Please install it with `pip install markdownify`"
+        )
+    import requests
+    res = requests.get(page_url)
+    html_text = res.text
+    if target_tag:
+        try:
+            from bs4 import BeautifulSoup
+        except ImportError:
+            raise ImportError(
+                "Could not import bs4 python package. "
+                "Please install it with `pip install bs4`"
+            )
+        soup = BeautifulSoup(res.text, "lxml")
+        found_tag = soup.find(target_tag, target_attrs)
+        html_text = str(found_tag)
+    markdown_text = markdownify.markdownify(html_text)
+    return Document(
+        text=markdown_text,
+        metadata={"source": page_url},
+    )
+
+
+class Html2md_Loader(BaseLLMOperation):
+    def __init__(self, urls: list = None, target_tag: str = None, target_attrs: dict = None,
+                 args_dict: Optional[dict] = None):
+        settings = {
+            'urls': urls,
+            'target_tag': target_tag,
+            'target_attrs': target_attrs
+        }
+        settings.update(args_dict or {})
+        super().__init__(settings)
+        self.urls = urls
+        self.target_tag = target_tag
+        self.target_attrs = target_attrs
+        self.support_ray = True
+        self.support_spark = True
+
+    def load_html_data(self):
+        docs = []
+        for url in self.urls:
+            docs.append(load_html_to_md(page_url=url, target_tag=self.target_tag, target_attrs=self.target_attrs))
+        return docs
+
+    def load_documents(self):
+        return [{'text': doc.text, 'metadata': doc.metadata} for doc in self.load_html_data()]
+
+    def process_rayds(self, ds=None):
+        import ray
+        self.cache = ray.data.from_items(self.load_documents())
+        return self.cache
+
+    def process_spark(self, spark, spark_df=None):
+        self.cache = spark.createDataFrame(self.load_documents())
+        return self.cache
+
+LLMOPERATORS.register(Html2md_Loader)
