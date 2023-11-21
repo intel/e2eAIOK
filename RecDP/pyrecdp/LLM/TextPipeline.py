@@ -23,8 +23,9 @@ total_cores = psutil.cpu_count(logical=False)
 
 
 class TextPipeline(BasePipeline):
-    def __init__(self, pipeline_file=None):
+    def __init__(self, engine_name='ray', pipeline_file=None):
         super().__init__()
+        self.engine_name = engine_name
         if pipeline_file != None:
             self.import_from_json(pipeline_file) if pipeline_file.endswith(
                 '.json') else self.import_from_yaml(pipeline_file)
@@ -52,7 +53,10 @@ class TextPipeline(BasePipeline):
             if op.support_spark:
                 spark_list.append(str(op))
         if is_ray:
-            return 'ray'
+            if self.engine_name == 'spark' and is_spark:
+                return 'spark'
+            else:
+                return 'ray'
         elif is_spark:
             return 'spark'
         else:
@@ -206,8 +210,8 @@ class TextPipeline(BasePipeline):
 
 class ResumableTextPipeline(TextPipeline):
     # Provide a pipeline for large dir. We will handle files one by one and resume when pipeline broken.
-    def __init__(self, pipeline_file=None):
-        super().__init__(pipeline_file)
+    def __init__(self, engine_name='ray', pipeline_file=None):
+        super().__init__(engine_name, pipeline_file)
         # Enabling this option will result in a decrease in execution speed
         self.statistics_flag = False
 
