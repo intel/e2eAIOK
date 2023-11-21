@@ -161,8 +161,8 @@ class TypeInferFeatureGenerator():
                     config['is_timeseries'] = True
                 if isinstance(ts, list) and feature_name in ts:
                     config['is_timeseries'] = True
-                if pa_field.is_text and is_encoded(df[feature_name]):
-                    config['is_encoded'] = True
+                # if pa_field.is_text and is_encoded(df[feature_name]):
+                #     config['is_encoded'] = True
                 if try_datetime(df[feature_name]):
                     config['is_datetime'] = True
                     config['datetime_ft'] = get_datetime_potential_features(df[feature_name])
