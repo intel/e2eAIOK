@@ -6,11 +6,6 @@ import os
 import timeit
 import pickle
 
-import pip
-import importlib
-import pathlib
-import pkg_resources
-
 # `def pretty(d, indent=0):
 #     from pyrecdp.primitives.operations import Operation
 #     for key, value in d.items():
@@ -22,36 +17,6 @@ import pkg_resources
 #                 pretty(a)
 #         elif isinstance(value, Operation):
 #             print('\t' * (indent+1) + str(value))
-
-def list_requirements(requirements_path):
-    with pathlib.Path(requirements_path).open() as requirements_txt:
-        install_requires = [
-            str(requirement)
-            for requirement
-            in pkg_resources.parse_requirements(requirements_txt)
-        ]
-    return install_requires
-
-def fix_package_name(package):
-    a = package.split('>')[0]
-    a = a.split('<')[0]
-    b = a.split('=')[0]
-    
-    package_name_map = {
-        'scikit-learn' : 'sklearn',
-        'pyyaml' : 'yaml'
-    }
-    
-    if b in package_name_map:
-        b = package_name_map[b]
-    #print(b)
-    return b
-    
-def import_with_auto_install(package):
-    try:
-        return importlib.import_module(fix_package_name(package))
-    except ImportError:
-        pip.main(['install', package])
 
 def callable_string_fix(func_str):
     func_str_lines = func_str.split('\n')

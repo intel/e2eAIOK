@@ -1,4 +1,4 @@
-from pyrecdp.core.utils import import_with_auto_install, list_requirements
+from pyrecdp.core.import_utils import import_with_auto_install, list_requirements
 
 import os, pathlib
 cur_path = pathlib.Path(__file__).parent.resolve()

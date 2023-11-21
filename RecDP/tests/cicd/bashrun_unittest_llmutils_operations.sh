@@ -2,7 +2,7 @@
 
 failed_tests=""
 echo "Setup pyrecdp latest package"
-python setup.py sdist && pip install dist/pyrecdp-*.*.*.tar.gz
+pip install -e .[LLM]
 
 python -m unittest tests.test_llmutils_operations.Test_LLMUtils_Operations
 

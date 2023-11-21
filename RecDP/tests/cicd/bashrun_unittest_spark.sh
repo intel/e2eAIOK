@@ -2,7 +2,7 @@
 
 failed_tests=""
 echo "Setup pyrecdp latest package"
-python setup.py sdist && pip install dist/pyrecdp-*.*.*.tar.gz
+pip install -e .[autofe]
 
 echo "test_spark_dataprocessor.TestSparkDataProcessor.test_local"
 python -m unittest tests.test_spark_dataprocessor.TestSparkDataProcessor.test_local
