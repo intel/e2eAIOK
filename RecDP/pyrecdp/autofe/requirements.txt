@@ -15,6 +15,7 @@ graphviz
 requests
 distro
 pyspark==3.4.0
+ray==2.7.1
 lightgbm<4.0.0
 matplotlib
 category_encoders
