@@ -1,6 +1,7 @@
 from .base import BaseEstimator
 import pandas as pd
 import lightgbm as lgbm
+from pyrecdp.primitives.operations.base import AUTOFEOPERATORS
 
 class LightGBM(BaseEstimator):
     def __init__(self, op_base):
@@ -66,3 +67,4 @@ class LightGBM(BaseEstimator):
             return test_df
     
         return predict
+AUTOFEOPERATORS.register(LightGBM)

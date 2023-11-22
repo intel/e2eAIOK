@@ -2,7 +2,7 @@
 
 echo "Performance Test will be setup later"
 echo "Setup pyrecdp latest package"
-python setup.py sdist && pip install dist/pyrecdp-*.*.*.tar.gz
+pip install -e .[autofe]
 
 echo "test_feature_wrangler.TestFeatureWranglerSparkBased.test_nyc_taxi_perf"
 nyc_result=`python -m unittest tests.test_feature_wrangler.TestFeatureWranglerSparkBased.test_nyc_taxi_perf | grep "NYC taxi performance test took"`

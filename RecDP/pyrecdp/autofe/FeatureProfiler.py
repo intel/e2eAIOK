@@ -3,7 +3,7 @@ from pyrecdp.primitives.profilers import *
 from pyrecdp.primitives.generators import *
 from pyrecdp.autofe.TabularPipeline import TabularPipeline
 from pyrecdp.core.dataframe import DataFrameAPI
-from pyrecdp.core import SeriesSchema
+from pyrecdp.core.schema import SeriesSchema
 import pandas as pd
 import copy
 from IPython.display import display

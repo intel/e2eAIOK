@@ -1,6 +1,39 @@
 import os
 from typing import Optional
+import pip
+import importlib
+import pathlib
+import pkg_resources
 
+def list_requirements(requirements_path):
+    with pathlib.Path(requirements_path).open() as requirements_txt:
+        install_requires = [
+            str(requirement)
+            for requirement
+            in pkg_resources.parse_requirements(requirements_txt)
+        ]
+    return install_requires
+
+def fix_package_name(package):
+    a = package.split('>')[0]
+    a = a.split('<')[0]
+    b = a.split('=')[0]
+    
+    package_name_map = {
+        'scikit-learn' : 'sklearn',
+        'pyyaml' : 'yaml'
+    }
+    
+    if b in package_name_map:
+        b = package_name_map[b]
+    #print(b)
+    return b
+    
+def import_with_auto_install(package):
+    try:
+        return importlib.import_module(fix_package_name(package))
+    except ImportError:
+        pip.main(['install', package])
 
 def import_faiss(no_avx2: Optional[bool] = None, install_if_miss: bool = True):
     """

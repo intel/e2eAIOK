@@ -1,6 +1,6 @@
 from .base import BaseFeatureGenerator as super_class
 from .featuretools_adaptor import FeaturetoolsBasedFeatureGenerator
-from pyrecdp.core import SeriesSchema
+from pyrecdp.core.schema import SeriesSchema
 from pyrecdp.primitives.operations import Operation
 from featuretools.primitives import Haversine
 import copy

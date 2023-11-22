@@ -7,7 +7,8 @@ class Registry(object):
     def modules(self):
         return self._modules
     
-    def register(self, cls):
+    def register(self, cls, name = None):
         if cls is not None:
-            name = cls.__name__
+            if name is None:
+                name = cls.__name__
             self._modules[name] = cls

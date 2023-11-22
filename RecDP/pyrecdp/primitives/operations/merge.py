@@ -1,4 +1,4 @@
-from .base import BaseOperation
+from .base import BaseOperation, AUTOFEOPERATORS
 import pandas as pd
 from .dataframe import *
 from pyspark import RDD as SparkRDD
@@ -47,3 +47,5 @@ class MergeOperation(BaseOperation):
         if _convert:
             df = _convert(df)
             op.cache = df
+
+AUTOFEOPERATORS.register(MergeOperation, "merge")

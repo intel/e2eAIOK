@@ -1,16 +1,57 @@
 import setuptools
-from setuptools import find_packages
+import pkg_resources
+import pathlib
+from itertools import chain
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
-with open("version", "r") as fh:
-    VERSION = fh.read().strip()
+def find_version():
+    with open("version", "r") as fh:
+        VERSION = fh.read().strip()
+    return VERSION
+
+def list_requirements(requirements_path):
+    with pathlib.Path(requirements_path).open() as requirements_txt:
+        install_requires = [
+            str(requirement)
+            for requirement
+            in pkg_resources.parse_requirements(requirements_txt)
+        ]
+    return install_requires
+
+class SetupSpec:
+    def __init__(self):
+        self.version = find_version()
+        self.files_to_include: list = []
+        self.install_requires: list = [
+            "scikit-learn",
+            "psutil",
+            "tqdm",
+            "pyyaml",
+            "pandas",
+            "numpy",
+            "pyarrow",
+            "pandas_flavor",
+            "ipywidgets",
+            "graphviz",
+            "requests",
+        ]
+        self.extras: dict = {}
+        self.extras['autofe'] = list_requirements("pyrecdp/autofe/requirements.txt")
+        self.extras['LLM'] = list_requirements("pyrecdp/LLM/requirements.txt")
+        self.extras["all"] = list(set(chain.from_iterable(self.extras.values()))
+    )
+
+    def get_packages(self):
+        return setuptools.find_packages()
+
+setup_spec = SetupSpec()
 
 setuptools.setup(
     name="pyrecdp",
-    version=VERSION,
-    author="INTEL AIA",
+    version=setup_spec.version,
+    author="INTEL BDF AIOK",
     author_email="bdf.aiok@intel.com",
     description=
     "A data processing bundle for spark based recommender system operations",
@@ -20,6 +61,9 @@ setuptools.setup(
     project_urls={
         "Bug Tracker": "https://github.com/intel/e2eAIOK/",
     },
+    keywords=(
+        "pyrecdp recdp distributed parallel auto-feature-engineering autofe LLM python"
+    ),
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
@@ -27,61 +71,11 @@ setuptools.setup(
     ],
     include_package_data=True,
     package_dir={},
-    packages=find_packages(),
+    packages=setup_spec.get_packages(),
     package_data={"": ["*.jar"], "pyrecdp": ["version"]},
     python_requires=">=3.6",
     #cmdclass={'install': post_install},
     zip_safe=False,
-    install_requires=[
-        "scikit-learn",
-        "psutil",
-        "tqdm",
-        "pyyaml",
-        "pandas",
-        "numpy",
-        "pyarrow",
-        "pandas_flavor",
-        "featuretools",
-        "bokeh>=2.4.2",
-        "transformers",
-        "ipywidgets",
-        "shapely",
-        "graphviz",
-        "requests",
-        "distro",
-        "pyspark==3.4.0",
-        "lightgbm<4.0.0",
-        "matplotlib",
-        "category_encoders",
-        "seaborn",
-        "numba",
-        "missingno",
-        "datasketch==1.5.9",
-        "ftfy==6.1.1",
-        "jsonlines==3.1.0",
-        "networkit==10.1",
-        "nltk==3.8.1",
-        "regex==2023.6.3",
-        "scipy==1.10.1",
-        "datasets>=2.7.0",
-        "typer>=0.6.1",
-        "phonenumbers",
-        "fasttext==0.9.2",
-        "wget==3.2",
-        "alt-profanity-check==1.3.0",
-        "huggingface-hub",
-        "loguru==0.7.2",
-        "tabulate==0.9.0",
-        "sentencepiece",
-        "selectolax",
-        "spacy",
-        "torch",
-        "Faker",
-        "ray==2.7.1",
-        "loguru",
-        "detoxify",
-        "emoji==2.2.0",
-        "kenlm",
-        "rouge-score",
-        ],
+    install_requires=setup_spec.install_requires,
+    extras_require=setup_spec.extras,
 )

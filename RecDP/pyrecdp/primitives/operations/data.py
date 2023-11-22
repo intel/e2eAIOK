@@ -1,4 +1,4 @@
-from .base import BaseOperation
+from .base import BaseOperation, AUTOFEOPERATORS
 import pandas as pd
 
 class DataFrameOperation(BaseOperation):
@@ -21,6 +21,8 @@ class DataFrameOperation(BaseOperation):
             else:
                 return cache
         return get_dataframe
+
+AUTOFEOPERATORS.register(DataFrameOperation, "DataFrame")
     
 class DataLoader(BaseOperation):
     def __init__(self, op_base):
@@ -59,3 +61,5 @@ class DataLoader(BaseOperation):
         assert not self.op.children or len(self.op.children) == 0
         _proc = self.get_function_spark(rdp, trans_type)
         self.cache = _proc()
+
+AUTOFEOPERATORS.register(DataLoader, "DataLoader")

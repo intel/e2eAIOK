@@ -10,7 +10,8 @@ except:
     print("Not detect system installed pyrecdp, using local one")
     sys.path.append(pathlib)
 from IPython.display import display
-from pyrecdp.core import DataFrameSchema, DiGraph
+from pyrecdp.core.schema import DataFrameSchema
+from pyrecdp.core.di_graph import DiGraph
 from pyrecdp.primitives.operations import Operation
 
 

@@ -1,4 +1,4 @@
-from pyrecdp.core import SeriesSchema
+from pyrecdp.core.schema import SeriesSchema
 from typing import List
 
 class BaseFeatureGenerator:

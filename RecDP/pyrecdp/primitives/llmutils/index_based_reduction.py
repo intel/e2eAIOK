@@ -1,7 +1,7 @@
 import argparse
 import os
 from pyrecdp.core.utils import Timer
-from pyrecdp.core import SparkDataProcessor
+from pyrecdp.data_processor import DataProcessor as SparkDataProcessor
 from pyrecdp.primitives.llmutils.utils import get_target_file_list, read_parquet_pandas_to_spark
 import pyspark.sql.functions as F
 

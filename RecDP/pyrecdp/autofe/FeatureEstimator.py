@@ -2,9 +2,9 @@ from pyrecdp.primitives.generators import *
 from pyrecdp.autofe.TabularPipeline import TabularPipeline
 import logging
 from pyrecdp.primitives.operations import Operation
-from pyrecdp.core import DiGraph
+from pyrecdp.core.di_graph import DiGraph
 import copy
-from pyrecdp.core import SparkDataProcessor
+from pyrecdp.data_processor import DataProcessor as SparkDataProcessor
 
 logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', level=logging.ERROR, datefmt='%I:%M:%S')
 logger = logging.getLogger(__name__)
