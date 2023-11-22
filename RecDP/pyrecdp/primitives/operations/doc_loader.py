@@ -136,7 +136,7 @@ def load_html_to_md(page_url, target_tag: str = None, target_attrs: dict = None)
     )
 
 
-class Html2md_Loader(BaseLLMOperation):
+class Url_Loader(BaseLLMOperation):
     def __init__(self, urls: list = None, target_tag: str = None, target_attrs: dict = None,
                  args_dict: Optional[dict] = None):
         settings = {
@@ -170,4 +170,4 @@ class Html2md_Loader(BaseLLMOperation):
         self.cache = spark.createDataFrame(self.load_documents())
         return self.cache
 
-LLMOPERATORS.register(Html2md_Loader)
+LLMOPERATORS.register(Url_Loader)
