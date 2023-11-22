@@ -1,4 +1,4 @@
-from .base import BaseOperation
+from .base import BaseOperation, AUTOFEOPERATORS
 
 class TupleOperation(BaseOperation):        
     def __init__(self, op_base):
@@ -18,3 +18,4 @@ class TupleOperation(BaseOperation):
 
     def get_function_spark(self, rdp, trans_type = 'fit_transform'):
         raise NotImplementedError(f"CoordinatesOperation spark dataframe is not supported yet.")
+AUTOFEOPERATORS.register(TupleOperation, "tuple")

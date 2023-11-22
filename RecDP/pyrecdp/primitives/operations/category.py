@@ -1,4 +1,4 @@
-from .base import BaseOperation
+from .base import BaseOperation, AUTOFEOPERATORS
 import pandas as pd
 from pyspark.sql import DataFrame as SparkDataFrame
 from pyrecdp.core.utils import *
@@ -60,6 +60,7 @@ class CategorifyOperation(BaseOperation):
                 return df
 
         return categorify
+AUTOFEOPERATORS.register(CategorifyOperation, "categorify")
 
 class GroupCategorifyOperation(BaseOperation):
     def __init__(self, op_base):
@@ -124,3 +125,4 @@ class GroupCategorifyOperation(BaseOperation):
                 df = pd.concat([df, to_concat_df], axis=1)
                 return df
         return group_categorify
+AUTOFEOPERATORS.register(GroupCategorifyOperation, "group_categorify")

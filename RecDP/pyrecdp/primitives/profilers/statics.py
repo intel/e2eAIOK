@@ -1,4 +1,4 @@
-from pyrecdp.core import SeriesSchema
+from pyrecdp.core.schema import SeriesSchema
 from pyrecdp.core.utils import is_text_series
 from pyrecdp.core.utils import Timer
 import pandas as pd

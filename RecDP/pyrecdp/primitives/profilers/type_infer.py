@@ -1,4 +1,4 @@
-from pyrecdp.core import SeriesSchema
+from pyrecdp.core.schema import SeriesSchema
 from pyrecdp.core.utils import is_unique 
 from pyrecdp.primitives.operations import Operation
 import pandas as pd

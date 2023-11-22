@@ -1,4 +1,4 @@
-from pyrecdp.core import DiGraph
+from pyrecdp.core.di_graph import DiGraph
 from pyrecdp.primitives.operations import Operation
 import logging
 from pyrecdp.core.utils import Timer, sample_read, deepcopy

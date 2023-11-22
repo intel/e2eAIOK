@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 from featuretools.primitives.base import TransformPrimitive
 from pyrecdp.primitives.operations import Operation
-from pyrecdp.core import SeriesSchema
+from pyrecdp.core.schema import SeriesSchema
 
 class DatetimeTransformer(TransformPrimitive):
     name = "astype_datetime"

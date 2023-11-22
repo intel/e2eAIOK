@@ -7,7 +7,7 @@ import hashlib
 import pandas as pd
 import pyspark.sql.functions as F
 from pyspark.sql import types as T
-from pyrecdp.core import SparkDataProcessor
+from pyrecdp.data_processor import DataProcessor as SparkDataProcessor
          
 
 def text_normalization_spk(spark_df):

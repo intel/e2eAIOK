@@ -1,4 +1,4 @@
-from .base import BaseOperation
+from .base import BaseOperation, AUTOFEOPERATORS
 import pandas as pd
 from pyspark.sql import DataFrame as SparkDataFrame
 from pyspark import RDD
@@ -28,3 +28,4 @@ class DropOperation(BaseOperation):
         def drop_feature(df):
             return df.drop(*self.feature_in)
         return drop_feature
+AUTOFEOPERATORS.register(DropOperation, "drop")

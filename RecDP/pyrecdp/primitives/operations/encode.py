@@ -1,4 +1,4 @@
-from .base import BaseOperation
+from .base import BaseOperation, AUTOFEOPERATORS
 import pandas as pd
 from pyspark.sql import DataFrame as SparkDataFrame
 import copy
@@ -38,6 +38,7 @@ class OnehotEncodeOperation(BaseOperation):
             df = pd.concat([df] + results, axis=1)
             return df
         return encode
+AUTOFEOPERATORS.register(OnehotEncodeOperation, "onehot_encode")
     
 class ListOnehotEncodeOperation(BaseOperation):
     def __init__(self, op_base):
@@ -66,6 +67,7 @@ class ListOnehotEncodeOperation(BaseOperation):
             df = pd.concat([df] + results, axis=1)
             return df
         return encode
+AUTOFEOPERATORS.register(ListOnehotEncodeOperation, "list_onehot_encode")
 
 class TargetEncodeOperation(BaseOperation):
     def __init__(self, op_base):
@@ -131,6 +133,7 @@ class TargetEncodeOperation(BaseOperation):
             df = rdp.apply(df)
             return df
         return encode
+AUTOFEOPERATORS.register(TargetEncodeOperation, "target_encode")
 
 class CountEncodeOperation(BaseOperation):
     def __init__(self, op_base):
@@ -204,3 +207,4 @@ class CountEncodeOperation(BaseOperation):
             df = rdp.apply(df)
             return df
         return encode
+AUTOFEOPERATORS.register(CountEncodeOperation, "count_encode")
