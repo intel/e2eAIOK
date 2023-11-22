@@ -1,4 +1,4 @@
-from .base import BaseOperation
+from .base import BaseOperation, AUTOFEOPERATORS
 import copy
 
 class FillNaOperation(BaseOperation):
@@ -19,3 +19,4 @@ class FillNaOperation(BaseOperation):
         def fill_na(df):
             return df.na.fill(self._fillna_feature_map)
         return fill_na
+AUTOFEOPERATORS.register(FillNaOperation, "fillna")

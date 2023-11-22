@@ -4,7 +4,7 @@ from pyrecdp.core.utils import Timer
 from pyrecdp.primitives.llmutils.utils import get_target_file_list, read_json, read_parquet, sub_task_per_folder
 from pyrecdp.primitives.llmutils import global_hash_mp, global_hash_spk, index_based_reduction, index_based_reduction_spk
 import pyspark.sql.functions as F
-from pyrecdp.core import SparkDataProcessor
+from pyrecdp.data_processor import DataProcessor as SparkDataProcessor
 
 # ****** Functions used in LLM-Ray ****** #
 # Don't remove

@@ -5,4 +5,4 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y openjdk-8-jre
 RUN pip install --upgrade pip
 RUN pip install pyspark
 RUN pip install graphviz jupyterlab
-RUN pip install featuretools
+RUN apt-get install -y tesseract-ocr

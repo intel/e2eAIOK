@@ -37,7 +37,49 @@ RecDP LLM is a set of python components that enables quick and easy establish of
 | ![diversity](/RecDP/resources/diversity_analysis.png) | ![quality](/RecDP/resources/quality_scoring.png) | ![toxicity](/RecDP/resources/toxicity_analysis.png)| ![perxicity](/RecDP/resources/perplexity.png) |
 | [learn more](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/data_diversity_control.ipynb) | [learn more](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/text_quality_assessment.ipynb) | [learn more](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/toxicity_bias_control.ipynb) | [learn more](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/text_perplexity.ipynb) |
 
-## Data pipeline AutoHPO
+## Getting Start
+
+### Deploy
+```
+DEBIAN_FRONTEND=noninteractive apt-get install -y openjdk-8-jre graphviz
+pip install pyrecdp[LLM] --pre
+```
+
+### Data pipeline
+
+#### 1. RAG Data Pipeline - Build from public HTML
+
+```
+from pyrecdp.primitives.operations import *
+from pyrecdp.LLM import TextPipeline
+
+pipeline = TextPipeline()
+ops = [
+    DirectoryLoader("document", glob="**/*.html"),
+    DocumentSplit(),
+    DocumentIngestion(
+        vector_store='FAISS',
+        vector_store_args={
+            "output_dir": "ResumableTextPipeline_output",
+            "index": "test_index"
+        },
+        embeddings='HuggingFaceEmbeddings',
+        embeddings_args={
+            'model_name': f"{model_root_path}/sentence-transformers/all-mpnet-base-v2"
+        }
+    ),
+]
+pipeline.add_operations(ops)
+pipeline.execute()
+```
+
+#### 2. Finetune Data Pipeline - Downsize public finetune dataset
+
+#### 3. Finetune Data Pipeline - Build finetune dataset from Plain Text
+
+#### 4. Finetune Data Pipeline - Build finetune dataset from Existing QA
+
+#### 5. AutoHPO
 
 Low-Code configuration with automated operators parameter tuning, allowing user to transform their own raw data toward a high quality dataset with low-effort. We coupled data processing with Quality Analisys as evaluation metrics, which will estimate data's quality before actual model finetuning/inference.
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/pipeline_hpo.ipynb)
@@ -52,42 +94,6 @@ input_hpo_file = 'config/hpo.yaml'
 output_pipeline_file = "config/pipeline.yaml"
 
 text_pipeline_optimize(input_pipeline_file, output_pipeline_file, input_hpo_file)
-```
-
-
-# Getting Start
-
-## Deploy
-```
-DEBIAN_FRONTEND=noninteractive apt-get install -y openjdk-8-jre
-pip install pyrecdp --pre
-```
-
-## * run with pipeline
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/resumable_pipeline.ipynb) 
-```
-from pyrecdp.primitives.operations import *
-from pyrecdp.LLM import ResumableTextPipeline
-
-pipeline = ResumableTextPipeline()
-ops = [
-    JsonlReader("data/"),
-    URLFilter(),
-    LengthFilter(),
-    ProfanityFilter(),
-    TextFix(),
-    LanguageIdentify(),
-    PIIRemoval(),
-    PerfileParquetWriter("ResumableTextPipeline_output")
-]
-pipeline.add_operations(ops)
-pipeline.execute()
-```
-or
-```
-from pyrecdp.LLM import ResumableTextPipeline
-pipeline = ResumableTextPipeline("custom_llm_data_pipeline.yaml")
-ret = pipeline.execute()
 ```
 
 ## * run with individual component

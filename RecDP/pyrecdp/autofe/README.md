@@ -10,6 +10,21 @@ Steps explained:
 3. Feature transformation: Convert Data Pipeline to executable operations and transform original features to candidate features with selected engine, currently Pandas and Spark were supported.
 4. Feature Importance Estimator: perform feature importance analysis on candidate features to remove un-important features, generate the transfomred dataset that includes all finalize features that will be used for training. 
 
+## Getting Started
+
+```
+DEBIAN_FRONTEND=noninteractive apt-get install -y openjdk-8-jre graphviz
+pip install pyrecdp[autofe] --pre
+```
+
+Only **3** lines of codes to generate new features for your tabular data. Usually 5x new features can be found with up to 1.2x accuracy boost
+```
+from pyrecdp.autofe import AutoFE
+
+pipeline = AutoFE(dataset=train_data, label=target_label, time_series = 'Day')
+transformed_train_df = pipeline.fit_transform()
+```
+
 ### Built-In Use Cases
 
 | Workflow Name | Description |
@@ -21,3 +36,7 @@ Steps explained:
 | [Outbrain](https://colab.research.google.com/github/intel/auto-feature-engineering/blob/main/applications/outbrain_ctr/interactive_notebook.ipynb) | Click prediction for recommendation system |
 | [Covid19 TabUtils](https://colab.research.google.com/github/intel/auto-feature-engineering/blob/main/applications/covid19_tabutils/interactive_notebook.ipynb) | integration example with Tabular Utils |
 | [PredictiveAssetsMaintenance](https://colab.research.google.com/github/intel/auto-feature-engineering/blob/main/applications/predictive_assets_maintenance/interactive_notebook.ipynb) | integration example with predictive assets maintenance use case |
+
+
+### High Performance on Terabyte Tabular data processing
+![Performance](/RecDP/resources/recdp_performance.jpg)

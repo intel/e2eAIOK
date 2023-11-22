@@ -1,4 +1,4 @@
-from .base import BaseOperation
+from .base import BaseOperation, AUTOFEOPERATORS
 import copy
 
 class CustomOperation(BaseOperation):
@@ -10,3 +10,4 @@ class CustomOperation(BaseOperation):
     
     def get_function_pd(self, trans_type = 'fit_transform'):
         return self.custom_op
+AUTOFEOPERATORS.register(CustomOperation, "custom_operator")

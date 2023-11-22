@@ -1,4 +1,4 @@
-from .base import BaseOperation
+from .base import BaseOperation, AUTOFEOPERATORS
 from .featuretools_adaptor import FeaturetoolsOperation
 import copy
 from pyrecdp.core.utils import class_name_fix
@@ -16,4 +16,4 @@ class HaversineOperation(FeaturetoolsOperation):
                 df[op[0]] = op_object(df[inputs[0]], df[inputs[1]])
             return df
         return generate_ft_feature
-
+AUTOFEOPERATORS.register(HaversineOperation, "haversine")
