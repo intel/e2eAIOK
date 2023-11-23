@@ -37,6 +37,7 @@ try:
     from .text_perplexity_score import TextPerplexityScore
     from .random_select import RandomSelect
     from .text_ingestion import DocumentIngestion
-    from .doc_loader import DirectoryLoader, DocumentLoader
+    from .doc_loader import DirectoryLoader, DocumentLoader, Url_Loader
+    from .text_specific_chars_remove import TextSpecificCharsRemove
 except:
     pass

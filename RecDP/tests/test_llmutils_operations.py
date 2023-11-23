@@ -218,6 +218,11 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds(ctx.ds))
 
+    def test_text_specific_chars_remove(self):
+        op = TextSpecificCharsRemove(chars_to_remove="abcdedfhijklmn")
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds(ctx.ds))
+
     ### ======  Spark ====== ###
 
     def test_bytesize_spark(self):
@@ -385,6 +390,11 @@ class Test_LLMUtils_Operations(unittest.TestCase):
 
     def test_document_split_spark(self):
         op = DocumentSplit()
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
+    def test_text_specific_chars_remove_spark(self):
+        op = TextSpecificCharsRemove(chars_to_remove="abcdedfhijklmn")
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
 
