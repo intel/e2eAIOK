@@ -47,7 +47,7 @@ pip install pyrecdp[LLM] --pre
 
 ### Data pipeline
 
-#### 1. RAG Data Pipeline - Build from public HTML
+#### 1. RAG Data Pipeline - Build from public HTML [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/rag_pipeline.ipynb)
 
 ```
 from pyrecdp.primitives.operations import *
@@ -55,7 +55,7 @@ from pyrecdp.LLM import TextPipeline
 
 pipeline = TextPipeline()
 ops = [
-    DirectoryLoader("document", glob="**/*.html"),
+    Url_Loader(urls=["https://www.intc.com/news-events/press-releases/detail/1655/intel-reports-third-quarter-2023-financial-results"], target_tag='div', target_attrs={'class': 'main-content'}),
     DocumentSplit(),
     DocumentIngestion(
         vector_store='FAISS',
