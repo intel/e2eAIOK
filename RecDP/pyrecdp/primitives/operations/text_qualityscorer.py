@@ -316,7 +316,7 @@ class TextQualityScorer(BaseLLMOperation):
         model = prepare_model(model_name=model)
         # rename predicted column
         if text_key != 'text':
-            df_spark = df_spark.withColumnRenamed(text_key, 'text')
+            spark_df = spark_df.withColumnRenamed(text_key, 'text')
         # start to predict
         pred = predict(model, spark_df, tokenizer=tokenizer, keep_method=keep_method).cache()
         if self.statistics_flag:

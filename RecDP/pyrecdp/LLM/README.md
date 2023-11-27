@@ -75,6 +75,41 @@ pipeline.execute()
 
 #### 2. Finetune Data Pipeline - Downsize public finetune dataset
 
+```
+from pyrecdp.LLM import TextPipeline, ResumableTextPipeline
+from pyrecdp.primitives.operations import *
+
+import os
+spark_pipeline = ResumableTextPipeline()
+spark_pipeline.enable_statistics()
+out_dir = "ResumableTextPipeline_output-spark"
+ops = [
+    JsonlReader("/content/test_data/alpaca_data_50.jsonl"),
+    TextPrompt(dataset_name="alpaca", prompt_name="causal_llm_1"),
+    RandomSelect(fraction=0.3),
+    TextToxicity(huggingface_config_path="/root/.cache/huggingface/hub/models--xlm-roberta-base"),
+    TextDiversityIndicate(out_dir=out_dir, language="en", first_sent=False),
+    TextQualityScorer(model="gpt3"),
+    RougeScoreDedup(max_ratio=0.7, batch_size=10,score_store_path=os.path.join(out_dir,'RougeScorefiltered.parquet')),
+    ParquetWriter(out_dir)
+]
+spark_pipeline.add_operations(ops)
+ret = spark_pipeline.execute()
+
+ray_pipeline = ResumableTextPipeline()
+ray_pipeline.enable_statistics()
+out_dir = "ResumableTextPipeline_output-ray"
+ops = [
+    JsonlReader("/content/test_data/alpaca_data_50.jsonl"),
+    TextPrompt(dataset_name="alpaca", prompt_name="causal_llm_1"),
+    RandomSelect(fraction=0.3),
+    TextPerplexityScore(),
+    ParquetWriter(out_dir)
+]
+ray_pipeline.add_operations(ops)
+ret = ray_pipeline.execute()
+```
+
 #### 3. Finetune Data Pipeline - Build finetune dataset from Plain Text
 
 #### 4. Finetune Data Pipeline - Build finetune dataset from Existing QA

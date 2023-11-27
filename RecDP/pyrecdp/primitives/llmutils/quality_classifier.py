@@ -7,7 +7,7 @@ def quality_classifier_spark(spark_df,
                        text_key='text'):
     """
     Use specific quality classifier to predict document scores on your dataset
-    :param df_spark: spark dataframe
+    :param spark_df: spark dataframe
     :param model: quality classifier name to apply. It's "gpt3" in default. You
         can use one of ["gpt3", "chinese", "code"] we provided
     :param text_key: the field key name to hold texts to be classified. It's
