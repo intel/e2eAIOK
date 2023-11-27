@@ -39,5 +39,6 @@ try:
     from .text_ingestion import DocumentIngestion
     from .doc_loader import DirectoryLoader, DocumentLoader, Url_Loader
     from .text_specific_chars_remove import TextSpecificCharsRemove
+    from .text_to_qa import TextToQA
 except:
     pass
