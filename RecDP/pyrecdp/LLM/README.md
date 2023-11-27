@@ -78,6 +78,19 @@ pipeline.execute()
 #### 3. Finetune Data Pipeline - Build finetune dataset from Plain Text
 
 #### 4. Finetune Data Pipeline - Build finetune dataset from Existing QA
+```
+from pyrecdp.LLM import TextPipeline
+from pyrecdp.primitives.operations import ParquetReader, TextToQA, ParquetWriter
+
+pipeline = TextPipeline()
+ops = [
+    ParquetReader(dataset_path),
+    TextToQA(model_name="neural_chat",max_new_tokens=500),
+    ParquetWriter(result_path)
+]
+pipeline.add_operations(ops)
+pipeline.execute()
+```
 
 #### 5. AutoHPO
 
