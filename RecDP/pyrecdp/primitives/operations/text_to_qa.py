@@ -20,7 +20,7 @@ class TextToQA(BaseLLMOperation):
         tokenizer = self.tokenizer
         model = self.model
 
-        def generate(input_str)
+        def generate(input_str):
             inputs = tokenizer(input_str, return_tensors="pt")
             outputs = model.generate(**inputs, max_new_tokens=max_new_tokens, return_dict_in_generate=True)
             input_length = inputs.input_ids.shape[1]

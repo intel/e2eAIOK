@@ -19,9 +19,11 @@ def get_text_to_qa_spark(spark_df, model_name="neural_chat", text_key="text", ma
 
 def get_text_to_qa(dataset_path, 
                     result_path, 
+                    data_file_type,
                     model_name="neural_chat", 
                     text_key="text",
-                    max_new_tokens=500):
+                    max_new_tokens=500,
+                    engine_name="ray"):
     """
     generate QA dataset from given text
     :param dataset_path: the path of dataset folder
@@ -34,7 +36,7 @@ def get_text_to_qa(dataset_path,
     from pyrecdp.LLM import TextPipeline
     from pyrecdp.primitives.operations import JsonlReader, ParquetReader, TextToQA, ParquetWriter
 
-    pipeline = TextPipeline()
+    pipeline = TextPipeline(engine_name=engine_name)
     if data_file_type == 'jsonl':
         reader = JsonlReader(dataset_path)
     elif data_file_type == 'parquet':
@@ -52,12 +54,13 @@ def get_text_to_qa(dataset_path,
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    model_name="neural_chat",text_key="text",max_new_tokens
     parser.add_argument("--dataset_path", dest="dataset_path", type=str)
     parser.add_argument("--result_path", dest="result_path", type=str)
     parser.add_argument("--max_new_tokens", dest="max_new_tokens", type=int, default=500)
     parser.add_argument("--text_key", dest="text_key", type=str, default="text")
     parser.add_argument("--model_name", dest="model_name", type=str, default="neural_chat")
+    parser.add_argument("--data_file_type", dest="data_file_type", type=str, default="jsonl")
+    parser.add_argument("--engine_name", dest="engine_name", type=str, default="ray")
     args = parser.parse_args()
 
     dataset_path = args.dataset_path
@@ -65,6 +68,8 @@ if __name__ == '__main__':
     max_new_tokens = args.max_new_tokens
     text_key = args.text_key
     model_name = args.model_name
+    data_file_type = args.data_file_type
+    engine_name = args.engine_name
 
     with Timer(f"Generate QA dataset for {dataset_path}"):
-        get_text_to_qa(dataset_path, result_path, model_name=model_name, text_key=text_key,max_new_tokens=max_new_tokens)
+        get_text_to_qa(dataset_path, result_path, data_file_type, model_name=model_name, text_key=text_key,max_new_tokens=max_new_tokens,engine_name=engine_name)
