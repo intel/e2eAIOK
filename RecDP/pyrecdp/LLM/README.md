@@ -84,10 +84,10 @@ spark_pipeline = ResumableTextPipeline()
 spark_pipeline.enable_statistics()
 out_dir = "ResumableTextPipeline_output-spark"
 ops = [
-    JsonlReader("/content/test_data/alpaca_data_50.jsonl"),
+    JsonlReader("{path-to-e2eAIOK}/RecDP/tests/data/alpaca/alpaca_data_50.jsonl"),
     TextPrompt(dataset_name="alpaca", prompt_name="causal_llm_1"),
     RandomSelect(fraction=0.3),
-    TextToxicity(huggingface_config_path="/root/.cache/huggingface/hub/models--xlm-roberta-base"),
+    TextToxicity(),
     TextDiversityIndicate(out_dir=out_dir, language="en", first_sent=False),
     TextQualityScorer(model="gpt3"),
     RougeScoreDedup(max_ratio=0.7, batch_size=10,score_store_path=os.path.join(out_dir,'RougeScorefiltered.parquet')),
@@ -100,7 +100,7 @@ ray_pipeline = ResumableTextPipeline()
 ray_pipeline.enable_statistics()
 out_dir = "ResumableTextPipeline_output-ray"
 ops = [
-    JsonlReader("/content/test_data/alpaca_data_50.jsonl"),
+    JsonlReader("{path-to-e2eAIOK}/RecDP/tests/data/alpaca/alpaca_data_50.jsonl"),
     TextPrompt(dataset_name="alpaca", prompt_name="causal_llm_1"),
     RandomSelect(fraction=0.3),
     TextPerplexityScore(),
