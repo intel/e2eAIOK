@@ -224,7 +224,7 @@ class TextDiversityIndicate(BaseLLMOperation):
 
     def summarize(self) -> str:
         diversity_result = pd.read_csv(os.path.join(self.output_path, 'diversity.csv'))
-        self.statistics.max = diversity_result["count"].max()
+        self.statistics.max = int(diversity_result["count"].max())
         self.statistics.mean = diversity_result["count"].mean()
         self.statistics.std = diversity_result["count"].std()
         statistics_save = {

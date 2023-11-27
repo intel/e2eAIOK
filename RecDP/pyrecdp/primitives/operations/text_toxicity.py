@@ -42,10 +42,10 @@ class TextToxicity(BaseLLMOperation):
                                                           huggingface_config_path=self.huggingface_config_path)
         ret = ds.map(lambda x: self.process_row(x, self.text_key, self.new_key, self.actual_func)).filter(lambda row: row[self.new_key] > self.threshold)
         if self.statistics_flag:
-            self.statistics.max = ret.max("text_toxicity")
-            self.statistics.min = ret.min("text_toxicity")
-            self.statistics.mean = ret.mean("text_toxicity")
-            self.statistics.std = ret.std("text_toxicity")
+            self.statistics.max = ret.max(self.new_key)
+            self.statistics.min = ret.min(self.new_key)
+            self.statistics.mean = ret.mean(self.new_key)
+            self.statistics.std = ret.std(self.new_key)
         else:
             self.statistics.max, self.statistics.min, self.statistics.mean, self.statistics.std =  0, 0, 0, 0
         return ret
@@ -59,10 +59,10 @@ class TextToxicity(BaseLLMOperation):
                                                                 huggingface_config_path=self.huggingface_config_path), FloatType())
         ret = spark_df.withColumn(self.new_key, self.actual_func(F.col(self.text_key))).filter(f"{self.new_key} > {self.threshold}")
         if self.statistics_flag:
-            self.statistics.max = ret.select(F.max("text_toxicity")).collect()[0][0]
-            self.statistics.min = ret.select(F.min("text_toxicity")).collect()[0][0]
-            self.statistics.mean = ret.select(F.mean("text_toxicity")).collect()[0][0]
-            self.statistics.std = ret.select(F.std("text_toxicity")).collect()[0][0]
+            self.statistics.max = ret.select(F.max(self.new_key)).collect()[0][0]
+            self.statistics.min = ret.select(F.min(self.new_key)).collect()[0][0]
+            self.statistics.mean = ret.select(F.mean(self.new_key)).collect()[0][0]
+            self.statistics.std = ret.select(F.stddev(self.new_key)).collect()[0][0]
         else:
             self.statistics.max, self.statistics.min, self.statistics.mean, self.statistics.std =  0, 0, 0, 0
         return ret
