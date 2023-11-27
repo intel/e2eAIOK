@@ -223,6 +223,21 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds(ctx.ds))
 
+    def test_text_unicode_fixer_remove(self):
+        op = TextUnicodeFixer()
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds(ctx.ds))
+
+    def test_text_whitespace_normalization_remove(self):
+        op = TextWhitespaceNormalization()
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds(ctx.ds))
+
+    def test_sentence_resplit_remove(self):
+        op = TextSentenceResplit()
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds(ctx.ds))
+
     ### ======  Spark ====== ###
 
     def test_bytesize_spark(self):
@@ -395,6 +410,21 @@ class Test_LLMUtils_Operations(unittest.TestCase):
 
     def test_text_specific_chars_remove_spark(self):
         op = TextSpecificCharsRemove(chars_to_remove="abcdedfhijklmn")
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
+    def test_unicode_fixer_spark(self):
+        op = TextUnicodeFixer()
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
+    def test_whitespace_normalization_spark(self):
+        op = TextWhitespaceNormalization()
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
+    def test_sentence_resplit_spark(self):
+        op = TextSentenceResplit()
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
 
