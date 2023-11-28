@@ -6,6 +6,7 @@ from pyspark.sql import DataFrame
 
 
 def prepare_func_prompt(dataset_name, prompt_name, subset_name=None):
+    from promptsource.templates import DatasetTemplates
     if subset_name:
         prompts = DatasetTemplates(f"{dataset_name}/{subset_name}")
     else:
@@ -53,7 +54,6 @@ class TextPrompt(BaseLLMOperation):
             for dataset in os.listdir(recdp_promptsource):
                 shutil.copytree(src=os.path.join(recdp_promptsource, dataset),
                                 dst=os.path.join(promptsource_templates_path, dataset), dirs_exist_ok=True)
-            from promptsource.templates import DatasetTemplates
 
     def process_row(self, sample: dict, new_name, actual_func, *actual_func_args) -> dict:
         sample[new_name] = actual_func(sample, *actual_func_args)
