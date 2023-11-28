@@ -118,3 +118,27 @@ def import_openai(install_if_missing: bool = True):
                 "openai package not found, please install it with "
                 "`pip install openai`"
             )
+
+def import_pysbd(install_if_missing: bool = True):
+    try:
+        import openai
+    except ImportError:
+        if install_if_missing:
+            os.system("pip install -q pysbd")
+        else:
+            raise ValueError(
+                "pysbd package not found, please install it with "
+                "`pip install pysbd`"
+            )
+
+def import_markdownify():
+    try:
+        import markdownify
+    except ImportError:
+        pip.main(['install', 'markdownify'])
+
+def import_beautiful_soup():
+    try:
+        from bs4 import BeautifulSoup
+    except ImportError:
+        pip.main(['install', 'bs4'])

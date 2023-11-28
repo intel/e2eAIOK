@@ -75,9 +75,57 @@ pipeline.execute()
 
 #### 2. Finetune Data Pipeline - Downsize public finetune dataset
 
+```
+from pyrecdp.LLM import TextPipeline, ResumableTextPipeline
+from pyrecdp.primitives.operations import *
+
+import os
+spark_pipeline = ResumableTextPipeline()
+spark_pipeline.enable_statistics()
+out_dir = "ResumableTextPipeline_output-spark"
+ops = [
+    JsonlReader("{path-to-e2eAIOK}/RecDP/tests/data/alpaca/alpaca_data_50.jsonl"),
+    TextPrompt(dataset_name="alpaca", prompt_name="causal_llm_1"),
+    RandomSelect(fraction=0.3),
+    TextToxicity(),
+    TextDiversityIndicate(out_dir=out_dir, language="en", first_sent=False),
+    TextQualityScorer(model="gpt3"),
+    RougeScoreDedup(max_ratio=0.7, batch_size=10,score_store_path=os.path.join(out_dir,'RougeScorefiltered.parquet')),
+    ParquetWriter(out_dir)
+]
+spark_pipeline.add_operations(ops)
+ret = spark_pipeline.execute()
+
+ray_pipeline = ResumableTextPipeline()
+ray_pipeline.enable_statistics()
+out_dir = "ResumableTextPipeline_output-ray"
+ops = [
+    JsonlReader("{path-to-e2eAIOK}/RecDP/tests/data/alpaca/alpaca_data_50.jsonl"),
+    TextPrompt(dataset_name="alpaca", prompt_name="causal_llm_1"),
+    RandomSelect(fraction=0.3),
+    TextPerplexityScore(),
+    ParquetWriter(out_dir)
+]
+ray_pipeline.add_operations(ops)
+ret = ray_pipeline.execute()
+```
+
 #### 3. Finetune Data Pipeline - Build finetune dataset from Plain Text
 
 #### 4. Finetune Data Pipeline - Build finetune dataset from Existing QA
+```
+from pyrecdp.LLM import TextPipeline
+from pyrecdp.primitives.operations import ParquetReader, TextToQA, ParquetWriter
+
+pipeline = TextPipeline()
+ops = [
+    ParquetReader(dataset_path),
+    TextToQA(model_name="neural_chat",max_new_tokens=500),
+    ParquetWriter(result_path)
+]
+pipeline.add_operations(ops)
+pipeline.execute()
+```
 
 #### 5. AutoHPO
 

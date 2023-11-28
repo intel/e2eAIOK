@@ -5,7 +5,7 @@ from pyrecdp.core.utils import Timer
 def toxicity_score_spark(spark_df, text_key='text', threshold=0, model_type="multilingual", huggingface_config_path=None):
     """
     Use specific toxicity_score to predict document oxicity scores on your dataset
-    :param df_spark: spark dataframe
+    :param spark_df: spark dataframe
     :param text_key: the field key name to be applied toxicity_score operation. It's "text" in default
     :param model_type: we can use one of ["multilingual", "unbiased", "original"] type of detoxify lib.
     :param huggingface_config_path: the local model config for detoxify model.
