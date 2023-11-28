@@ -130,3 +130,15 @@ def import_pysbd(install_if_missing: bool = True):
                 "pysbd package not found, please install it with "
                 "`pip install pysbd`"
             )
+
+def import_markdownify():
+    try:
+        import markdownify
+    except ImportError:
+        pip.main(['install', 'markdownify'])
+
+def import_beautiful_soup():
+    try:
+        from bs4 import BeautifulSoup
+    except ImportError:
+        pip.main(['install', 'bs4'])

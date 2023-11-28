@@ -1,6 +1,6 @@
 from typing import Optional, List, Callable
 
-from pyrecdp.core.import_utils import import_langchain
+from pyrecdp.core.import_utils import import_langchain, import_markdownify, import_beautiful_soup
 from pyrecdp.primitives.llmutils.document.schema import Document
 from pyrecdp.primitives.operations.base import BaseLLMOperation, LLMOPERATORS
 
@@ -130,27 +130,17 @@ LLMOPERATORS.register(DirectoryLoader)
 
 
 def load_html_to_md(page_url, target_tag: str = None, target_attrs: dict = None):
-    try:
-        import markdownify
-    except ImportError:
-        raise ImportError(
-            "Could not import markdownify python package. "
-            "Please install it with `pip install markdownify`"
-        )
+    import_markdownify()
     import requests
     res = requests.get(page_url)
     html_text = res.text
     if target_tag:
-        try:
-            from bs4 import BeautifulSoup
-        except ImportError:
-            raise ImportError(
-                "Could not import bs4 python package. "
-                "Please install it with `pip install bs4`"
-            )
+        import_beautiful_soup()
+        from bs4 import BeautifulSoup
         soup = BeautifulSoup(res.text, "lxml")
         found_tag = soup.find(target_tag, target_attrs)
         html_text = str(found_tag)
+    import markdownify
     markdown_text = markdownify.markdownify(html_text)
     return Document(
         text=markdown_text,
