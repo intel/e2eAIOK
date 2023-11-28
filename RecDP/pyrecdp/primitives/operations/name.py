@@ -1,4 +1,4 @@
-from .base import BaseOperation
+from .base import BaseOperation, AUTOFEOPERATORS
 import copy
 
 class RenameOperation(BaseOperation):
@@ -22,3 +22,4 @@ class RenameOperation(BaseOperation):
             
             return df
         return rename
+AUTOFEOPERATORS.register(RenameOperation, "rename")

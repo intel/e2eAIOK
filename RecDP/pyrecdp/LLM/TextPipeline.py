@@ -1,4 +1,4 @@
-from pyrecdp.core import DiGraph
+from pyrecdp.core.di_graph import DiGraph
 from pyrecdp.core.pipeline import BasePipeline
 from pyrecdp.primitives.operations import Operation, BaseOperation
 from pyrecdp.primitives.operations.text_reader import DatasetReader, PerfileReader
@@ -11,7 +11,7 @@ import types
 from ray.data import Dataset
 from pyspark.sql import DataFrame
 import ray
-from pyrecdp.core import SparkDataProcessor
+from pyrecdp.data_processor import DataProcessor as SparkDataProcessor
 import time
 import os
 import psutil

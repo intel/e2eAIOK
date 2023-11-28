@@ -1,5 +1,5 @@
-from .base import BaseOperation
-from pyrecdp.core import SeriesSchema
+from .base import BaseOperation, AUTOFEOPERATORS
+from pyrecdp.core.schema import SeriesSchema
 import pandas as pd
 import copy
 
@@ -24,3 +24,4 @@ class TypeInferOperation(BaseOperation):
     
     def get_function_spark(self, rdp, trans_type = 'fit_transform'):
         raise NotImplementedError(f"TypeInferOperation spark dataframe is not supported yet.")
+AUTOFEOPERATORS.register(TypeInferOperation, "type_infer")

@@ -12,7 +12,7 @@ from pyrecdp.core.utils import dump_fix
 from IPython.display import display
 from pyrecdp.core.registry import Registry
 
-
+AUTOFEOPERATORS = Registry('BaseAutoFEOperation')
 class Operation:
     def __init__(self, idx, children, output, op, config):
         self.idx = idx
@@ -35,48 +35,15 @@ class Operation:
         return dump_dict
 
     def instantiate(self):
-        from .data import DataFrameOperation, DataLoader
-        from .merge import MergeOperation
-        from .name import RenameOperation
-        from .category import CategorifyOperation, GroupCategorifyOperation
-        from .drop import DropOperation
-        from .fillna import FillNaOperation
-        from .featuretools_adaptor import FeaturetoolsOperation
-        from .geograph import HaversineOperation
-        from .type import TypeInferOperation
-        from .tuple import TupleOperation
-        from .custom import CustomOperation
-        from .encode import OnehotEncodeOperation, ListOnehotEncodeOperation, TargetEncodeOperation, \
-            CountEncodeOperation
-        from pyrecdp.primitives.estimators.lightgbm import LightGBM
-
-        operations_ = {
-            'DataFrame': DataFrameOperation,
-            'DataLoader': DataLoader,
-            'merge': MergeOperation,
-            'rename': RenameOperation,
-            'categorify': CategorifyOperation,
-            'group_categorify': GroupCategorifyOperation,
-            'drop': DropOperation,
-            'fillna': FillNaOperation,
-            'haversine': HaversineOperation,
-            'tuple': TupleOperation,
-            'type_infer': TypeInferOperation,
-            'lightgbm': LightGBM,
-            'onehot_encode': OnehotEncodeOperation,
-            'list_onehot_encode': ListOnehotEncodeOperation,
-            'target_encode': TargetEncodeOperation,
-            'count_encode': CountEncodeOperation,
-            'custom_operator': CustomOperation,
-            'time_series_infer': DummyOperation,
-        }
-
-        if self.op in operations_:
-            return operations_[self.op](self)
+        if self.op in AUTOFEOPERATORS.modules:
+            return AUTOFEOPERATORS.modules[self.op](self)
         elif self.op in LLMOPERATORS.modules:
             return LLMOPERATORS.modules[self.op].instantiate(self, self.config)
         else:
+            #print(self.op)
+            #print(AUTOFEOPERATORS.modules.keys())
             try:
+                from pyrecdp.primitives.operations.featuretools_adaptor import FeaturetoolsOperation
                 return FeaturetoolsOperation(self)
             except:
                 raise NotImplementedError(f"operation {self.op} is not implemented.")
@@ -257,6 +224,7 @@ class DummyOperation(BaseOperation):
             return df
 
         return dummy_op
+AUTOFEOPERATORS.register(DummyOperation, "time_series_infer")
 
 
 @dataclass

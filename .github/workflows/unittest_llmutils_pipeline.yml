@@ -11,7 +11,7 @@ on:
 
 jobs:
   unittest:
-    name: Unittest LLM
+    name: Unittest LLM Pipeline
     runs-on: self-hosted
     steps:
     - name: Checkout

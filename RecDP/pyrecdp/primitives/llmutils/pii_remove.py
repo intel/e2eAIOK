@@ -21,7 +21,7 @@ def main(config):
     else:
         pii_entity_types = [PIIEntityType.parse(entity) for entity in config.entity_types]
 
-    from pyrecdp.core import SparkDataProcessor
+    from pyrecdp.data_processor import DataProcessor as SparkDataProcessor
     sparkDP = SparkDataProcessor()
     spark = sparkDP.spark
     input_dataset = spark.read.load(path=config.in_dir, format=config.input_format)

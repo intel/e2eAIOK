@@ -116,7 +116,7 @@ class ImageReader(FileBaseReader):
             from pytesseract import pytesseract
         except ImportError:
             import os
-            os.system("apt-get -qq  install tesseract-ocr")
+            os.system("apt-get -qq -y install tesseract-ocr")
             os.system("pip install -q pytesseract")
 
     def load_file(self, file: Path) -> List[Document]:

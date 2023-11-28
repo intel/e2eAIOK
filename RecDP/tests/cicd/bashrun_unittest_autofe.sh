@@ -2,7 +2,7 @@
 
 failed_tests=""
 echo "Setup pyrecdp latest package"
-python setup.py sdist && pip install dist/pyrecdp-*.*.*.tar.gz
+pip install -e .[autofe]
 
 echo "test_autofe.TestFE.test_nyc_taxi_pandas"
 python -m unittest tests.test_autofe.TestFE.test_nyc_taxi_pandas

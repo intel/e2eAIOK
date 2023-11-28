@@ -1,5 +1,7 @@
 from pyrecdp.primitives.generators import *
-from pyrecdp.core import DataFrameSchema, SparkDataProcessor, DiGraph
+from pyrecdp.core.schema import DataFrameSchema
+from pyrecdp.core.di_graph import DiGraph
+from pyrecdp.data_processor import DataProcessor as SparkDataProcessor
 from pyrecdp.core.pipeline import BasePipeline
 from pyrecdp.primitives.operations import Operation, DataFrameOperation, RDDToDataFrameConverter, SparkDataFrameToDataFrameConverter, TargetEncodeOperation
 import pandas as pd

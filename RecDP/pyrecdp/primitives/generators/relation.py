@@ -1,6 +1,6 @@
 from .base import BaseFeatureGenerator as super_class
 import pandas as pd
-from pyrecdp.core import SeriesSchema, DataFrameSchema
+from pyrecdp.core.schema import SeriesSchema, DataFrameSchema
 from pyrecdp.primitives.operations import Operation
 from typing import List
 from pyrecdp.core.utils import Timer, update_linklist

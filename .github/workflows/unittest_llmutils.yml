@@ -10,7 +10,7 @@ on:
 
 jobs:
   unittest:
-    name: Unittest AutoFE
+    name: Unittest LLMUtils
     runs-on: self-hosted
     steps:
     - name: Checkout

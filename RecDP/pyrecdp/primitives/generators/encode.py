@@ -1,6 +1,6 @@
 from .base import BaseFeatureGenerator as super_class
 import pandas as pd
-from pyrecdp.core import SeriesSchema
+from pyrecdp.core.schema import SeriesSchema
 from pyrecdp.primitives.operations import Operation
 import copy
 
