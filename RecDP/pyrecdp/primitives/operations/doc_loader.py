@@ -137,7 +137,7 @@ def load_html_to_md(page_url, target_tag: str = None, target_attrs: dict = None)
     if target_tag:
         import_beautiful_soup()
         from bs4 import BeautifulSoup
-        soup = BeautifulSoup(res.text, "lxml")
+        soup = BeautifulSoup(res.text, "html.parser")
         found_tag = soup.find(target_tag, target_attrs)
         html_text = str(found_tag)
     import markdownify
