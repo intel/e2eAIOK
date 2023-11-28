@@ -44,6 +44,7 @@ class TextPrompt(BaseLLMOperation):
                 [sys.executable, "-m", "pip", "install",
                  "git+https://github.com/bigscience-workshop/promptsource.git@main"])
             import promptsource
+        finally:
             import pyrecdp
             promptsource_path = os.path.abspath(os.path.dirname(inspect.getfile(promptsource)))
             promptsource_templates_path = os.path.join(promptsource_path, "templates")
@@ -52,7 +53,6 @@ class TextPrompt(BaseLLMOperation):
             for dataset in os.listdir(recdp_promptsource):
                 shutil.copytree(src=os.path.join(recdp_promptsource, dataset),
                                 dst=os.path.join(promptsource_templates_path, dataset), dirs_exist_ok=True)
-        finally:
             from promptsource.templates import DatasetTemplates
 
     def process_row(self, sample: dict, new_name, actual_func, *actual_func_args) -> dict:
