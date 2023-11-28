@@ -28,12 +28,14 @@ class VectorStore(ABC):
                  vector_store: str,
                  text_embeddings: TextEmbeddings,
                  embeddings_column: str,
-                 vector_store_args: Optional[Dict] = None):
+                 vector_store_args: Optional[Dict] = None,
+                 update: bool = False):
         self.text_column = text_column
         self.embeddings_column = embeddings_column
         self.vector_store = vector_store
         self.text_embeddings = text_embeddings
         self.vector_store_args = vector_store_args
+        self.update = update
 
     @abstractmethod
     def persist(self, ds: Union[Dataset, DataFrame]):
@@ -53,11 +55,15 @@ class LangchainVectorStore(VectorStore):
                 text_embeddings.append((row[self.text_column], row[self.embeddings_column]))
 
         from langchain.vectorstores.faiss import FAISS
-        db = FAISS.from_embeddings(text_embeddings, embedding=self.text_embeddings.underlying_embeddings())
+        index_name = self.vector_store_args.get("index", "index")
+        if self.update:
+            db = FAISS.load_local(self.vector_store_args["output_dir"], self.text_embeddings.underlying_embeddings(),index_name )
+            db.add_embeddings(text_embeddings)
+        else:
+            db = FAISS.from_embeddings(text_embeddings, embedding=self.text_embeddings.underlying_embeddings())
         if "output_dir" not in self.vector_store_args:
             raise ValueError(f"You must have `output_dir` option specify for vector store {self.vector_store}")
 
-        index_name = self.vector_store_args.get("index", "index")
         db.save_local(self.vector_store_args["output_dir"], index_name)
 
     def persist(self, ds):
@@ -99,6 +105,7 @@ class BaseDocumentIngestion(BaseLLMOperation, ABC):
     def __init__(self,
                  text_column: str = 'text',
                  embeddings_column: str = 'embedding',
+                 update: bool = False,
                  compute_min_size: Optional[int] = None,
                  compute_max_size: Optional[int] = None,
                  batch_size: Optional[int] = None,
@@ -125,6 +132,7 @@ class BaseDocumentIngestion(BaseLLMOperation, ABC):
             'batch_size': batch_size,
             'num_gpus': num_gpus,
             'num_cpus': num_cpus,
+            'update': update
         })
         super().__init__(settings)
         self.support_ray = True
@@ -135,6 +143,7 @@ class BaseDocumentIngestion(BaseLLMOperation, ABC):
         self.batch_size = batch_size
         self.num_cpus = num_cpus
         self.num_gpus = num_gpus
+        self.update = update
         self.embeddings_column = embeddings_column
         self.text_embeddings = self._get_text_embeddings()
         self.vector_store = self._get_vector_store()
@@ -189,6 +198,7 @@ class DocumentIngestion(BaseDocumentIngestion, TextEmbeddings):
                  text_column: str = 'text',
                  embeddings_column: str = 'embedding',
                  vector_store: str = 'FAISS',
+                 update: bool = False,
                  vector_store_args: Optional[dict] = None,
                  embeddings: str = 'HuggingFaceEmbeddings',
                  embeddings_args: Optional[dict] = None,
@@ -242,6 +252,7 @@ class DocumentIngestion(BaseDocumentIngestion, TextEmbeddings):
             embeddings_column=embeddings_column,
             compute_min_size=compute_min_size,
             compute_max_size=compute_max_size,
+            update=update,
             batch_size=batch_size,
             num_gpus=num_gpus,
             num_cpus=num_cpus,
@@ -262,7 +273,8 @@ class DocumentIngestion(BaseDocumentIngestion, TextEmbeddings):
             embeddings_column=self.embeddings_column,
             text_embeddings=self.text_embeddings,
             vector_store=self.vector_store,
-            vector_store_args=self.vector_store_args
+            vector_store_args=self.vector_store_args,
+            update=self.update
         )
 
     def _get_text_embeddings(self) -> TextEmbeddings:
