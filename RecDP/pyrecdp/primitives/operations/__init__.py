@@ -67,6 +67,9 @@ try:
     from .text_ingestion import DocumentIngestion
     from .doc_loader import DirectoryLoader, DocumentLoader, Url_Loader
     from .text_specific_chars_remove import TextSpecificCharsRemove
+    from .text_unicode_fixer import TextUnicodeFixer
+    from .text_whitespace_normalization import TextWhitespaceNormalization
+    from .text_sentence_resplit import TextSentenceResplit
     from .text_to_qa import TextToQA
 except:
     pass

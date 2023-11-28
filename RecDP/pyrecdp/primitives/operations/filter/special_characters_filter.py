@@ -1,8 +1,6 @@
-import sys
-
 from pyrecdp.primitives.operations.base import LLMOPERATORS
 from pyrecdp.primitives.operations.filter.base import BaseFilter
-from pyrecdp.primitives.operations.filter.constant import SPECIAL_CHARACTERS
+from pyrecdp.primitives.operations.constant import SPECIAL_CHARACTERS
 
 
 # This filter is referred from alibaba data juicer project
