@@ -65,7 +65,7 @@ try:
     from .text_perplexity_score import TextPerplexityScore
     from .random_select import RandomSelect
     from .text_ingestion import DocumentIngestion
-    from .doc_loader import DirectoryLoader, DocumentLoader, Url_Loader
+    from .doc_loader import DirectoryLoader, DocumentLoader, UrlLoader
     from .text_to_qa import TextToQA
 except:
     pass

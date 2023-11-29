@@ -190,9 +190,9 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         faiss_output_dir = 'tests/data/faiss'
         pipeline = TextPipeline()
         ops = [
-            Url_Loader(["https://www.intc.com/news-events/press-releases/detail/"
+            UrlLoader(["https://www.intc.com/news-events/press-releases/detail/"
                             "1655/intel-reports-third-quarter-2023-financial-results"],
-                           target_tag='div', target_attrs={'class': 'main-content'}),
+                      target_tag='div', target_attrs={'class': 'main-content'}),
             DocumentSplit(text_splitter='RecursiveCharacterTextSplitter'),
             DocumentIngestion(
                 vector_store='FAISS',

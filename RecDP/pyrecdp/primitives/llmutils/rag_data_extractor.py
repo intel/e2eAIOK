@@ -5,7 +5,7 @@ from pyrecdp.core.utils import Timer
 from pyrecdp.primitives.operations.logging_utils import logger
 
 from pyrecdp.LLM import TextPipeline
-from pyrecdp.primitives.operations import Url_Loader, DocumentSplit, DocumentIngestion, RAGTextFix, DirectoryLoader
+from pyrecdp.primitives.operations import UrlLoader, DocumentSplit, DocumentIngestion, RAGTextFix, DirectoryLoader
 
 
 def rag_data_prepare(
@@ -22,7 +22,7 @@ def rag_data_prepare(
     if bool(files_path):
         loader = DirectoryLoader(files_path, glob="**/*.pdf")
     elif bool(target_urls):
-        loader = Url_Loader(urls=target_urls, target_tag='div')
+        loader = UrlLoader(urls=target_urls, target_tag='div')
     else:
         logger.error("You must specify at least one parameter in files_path and target_urls")
         exit(1)
