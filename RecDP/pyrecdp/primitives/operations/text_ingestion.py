@@ -1,3 +1,4 @@
+import os.path
 from abc import ABC, abstractmethod
 from typing import Optional, List, Dict, Tuple, Union, Iterable
 
@@ -29,13 +30,13 @@ class VectorStore(ABC):
                  text_embeddings: TextEmbeddings,
                  embeddings_column: str,
                  vector_store_args: Optional[Dict] = None,
-                 update: bool = False):
+                 override: bool = False):
         self.text_column = text_column
         self.embeddings_column = embeddings_column
         self.vector_store = vector_store
         self.text_embeddings = text_embeddings
         self.vector_store_args = vector_store_args
-        self.update = update
+        self.override = override
 
     @abstractmethod
     def persist(self, ds: Union[Dataset, DataFrame]):
@@ -56,8 +57,8 @@ class LangchainVectorStore(VectorStore):
 
         from langchain.vectorstores.faiss import FAISS
         index_name = self.vector_store_args.get("index", "index")
-        if self.update:
-            db = FAISS.load_local(self.vector_store_args["output_dir"], self.text_embeddings.underlying_embeddings(),index_name )
+        if not self.override and os.path.exists(os.path.join(self.vector_store_args["output_dir"], index_name+".faiss")):
+            db = FAISS.load_local(self.vector_store_args["output_dir"], self.text_embeddings.underlying_embeddings(), index_name)
             db.add_embeddings(text_embeddings)
         else:
             db = FAISS.from_embeddings(text_embeddings, embedding=self.text_embeddings.underlying_embeddings())
@@ -105,7 +106,7 @@ class BaseDocumentIngestion(BaseLLMOperation, ABC):
     def __init__(self,
                  text_column: str = 'text',
                  embeddings_column: str = 'embedding',
-                 update: bool = False,
+                 override: bool = False,
                  compute_min_size: Optional[int] = None,
                  compute_max_size: Optional[int] = None,
                  batch_size: Optional[int] = None,
@@ -123,6 +124,8 @@ class BaseDocumentIngestion(BaseLLMOperation, ABC):
                 batch_size: The batch size to use when computing the document embeddings(If embedding with Ray).
                 num_cpus: The number of CPUs to use when computing the document embeddings(If embedding with Ray).
                 num_gpus: The number of GPUs to use when computing the document embeddings(If embedding with Ray).
+                override: Whether to force override the previous vector store data. Default: False,
+
             """
         settings = settings or {}
         settings.update({
@@ -132,7 +135,7 @@ class BaseDocumentIngestion(BaseLLMOperation, ABC):
             'batch_size': batch_size,
             'num_gpus': num_gpus,
             'num_cpus': num_cpus,
-            'update': update
+            'override': override
         })
         super().__init__(settings)
         self.support_ray = True
@@ -143,7 +146,7 @@ class BaseDocumentIngestion(BaseLLMOperation, ABC):
         self.batch_size = batch_size
         self.num_cpus = num_cpus
         self.num_gpus = num_gpus
-        self.update = update
+        self.override = override
         self.embeddings_column = embeddings_column
         self.text_embeddings = self._get_text_embeddings()
         self.vector_store = self._get_vector_store()
@@ -198,7 +201,7 @@ class DocumentIngestion(BaseDocumentIngestion, TextEmbeddings):
                  text_column: str = 'text',
                  embeddings_column: str = 'embedding',
                  vector_store: str = 'FAISS',
-                 update: bool = False,
+                 override: bool = False,
                  vector_store_args: Optional[dict] = None,
                  embeddings: str = 'HuggingFaceEmbeddings',
                  embeddings_args: Optional[dict] = None,
@@ -252,7 +255,7 @@ class DocumentIngestion(BaseDocumentIngestion, TextEmbeddings):
             embeddings_column=embeddings_column,
             compute_min_size=compute_min_size,
             compute_max_size=compute_max_size,
-            update=update,
+            override=override,
             batch_size=batch_size,
             num_gpus=num_gpus,
             num_cpus=num_cpus,
@@ -274,7 +277,7 @@ class DocumentIngestion(BaseDocumentIngestion, TextEmbeddings):
             text_embeddings=self.text_embeddings,
             vector_store=self.vector_store,
             vector_store_args=self.vector_store_args,
-            update=self.update
+            override=self.override
         )
 
     def _get_text_embeddings(self) -> TextEmbeddings:

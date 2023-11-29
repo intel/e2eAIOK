@@ -296,10 +296,12 @@ class RAGTextFix(BaseLLMOperation):
         self.text_key = text_key
         self.inplace = True
         self.chars_to_remove = chars_to_remove
+        self.language = language
 
     def process_rayds(self, ds: Dataset) -> Dataset:
         remover = self.get_compute_func()
-        return ds.map(lambda x: self.process_row(x, self.text_key, self.text_key, remover))
+        new_ds = ds.map(lambda x: self.process_row(x, self.text_key, self.text_key, remover))
+        return new_ds
 
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
         import pyspark.sql.functions as F
