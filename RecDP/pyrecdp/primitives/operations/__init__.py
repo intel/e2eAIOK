@@ -44,7 +44,7 @@ try:
     from .text_normalize import TextNormalize
     from .text_bytesize import TextBytesize
     from .filter import *
-    from .text_fixer import TextFix
+    from .text_fixer import TextFix, RAGTextFix
     from .text_language_identify import LanguageIdentify
     from .text_split import DocumentSplit, ParagraphsTextSplitter
     from .text_pii_remove import PIIRemoval
@@ -66,10 +66,6 @@ try:
     from .random_select import RandomSelect
     from .text_ingestion import DocumentIngestion
     from .doc_loader import DirectoryLoader, DocumentLoader, Url_Loader
-    from .text_specific_chars_remove import TextSpecificCharsRemove
-    from .text_unicode_fixer import TextUnicodeFixer
-    from .text_whitespace_normalization import TextWhitespaceNormalization
-    from .text_sentence_resplit import TextSentenceResplit
     from .text_to_qa import TextToQA
 except:
     pass

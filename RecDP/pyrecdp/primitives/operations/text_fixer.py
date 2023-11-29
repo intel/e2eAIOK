@@ -2,10 +2,13 @@ from .base import BaseLLMOperation, LLMOPERATORS
 from ray.data import Dataset
 from pyspark.sql import DataFrame
 
-import os
+from typing import List, Union
 import re
 from typing import Dict
 from selectolax.parser import HTMLParser
+
+from .constant import VARIOUS_WHITESPACES
+from pyrecdp.core.model_utils import prepare_model, get_model
 
 CPAT = re.compile("copyright", re.IGNORECASE)
 PAT = re.compile("/\\*[^*]*\\*+(?:[^/*][^*]*\\*+)*/")
@@ -258,7 +261,7 @@ class TextFix(BaseLLMOperation):
         if self.actual_func is None:
             self.actual_func = get_fixer_by_type(self.text_type)
         return ds.map(lambda x: self.process_row(x, self.text_key, new_name, self.actual_func))
-    
+
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
         import pyspark.sql.functions as F
         fix_by_type_udf = F.udf(get_fixer_by_type(self.text_type))
@@ -270,3 +273,68 @@ class TextFix(BaseLLMOperation):
 
 
 LLMOPERATORS.register(TextFix)
+
+
+class RAGTextFix(BaseLLMOperation):
+    def __init__(self, text_key='text', chars_to_remove: Union[str, List[str]] = '◆●■►▼▲▴∆▻▷❖♡□', language: str = 'en'):
+        """
+            Clean up text for LLM RAG to use.
+            Step 1: Fix unicode errors in text using ftfy
+            Step 2: Normalize different kinds of whitespaces to whitespace ' ' (0x20) in text
+            Different kinds of whitespaces can be found here:
+                https://en.wikipedia.org/wiki/Whitespace_character
+            Step 3: Clean specific chars in text.
+            Step 4: Re segment sentences in the text to avoid sentence segmentation errors caused by unnecessary line breaks
+            :param language: Supported language. Default: en. (en)
+            :param chars_to_remove: Chars to remove. Default: '◆●■►▼▲▴∆▻▷❖♡□'
+
+        """
+        settings = {'chars_to_remove': chars_to_remove, 'text_key': text_key, 'language': language}
+        super().__init__(settings)
+        self.support_spark = True
+        self.support_ray = True
+        self.text_key = text_key
+        self.inplace = True
+        self.chars_to_remove = chars_to_remove
+
+    def process_rayds(self, ds: Dataset) -> Dataset:
+        remover = self.get_compute_func()
+        return ds.map(lambda x: self.process_row(x, self.text_key, self.text_key, remover))
+
+    def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
+        import pyspark.sql.functions as F
+        custom_udf = F.udf(self.get_compute_func())
+        return spark_df.withColumn(self.text_key, custom_udf(F.col(self.text_key)))
+
+    def get_compute_func(self):
+        import ftfy
+        pattern = '[' + '|'.join(self.chars_to_remove) + ']'
+        model_key = prepare_model(lang=self.language, model_type='nltk')
+        nltk_model = get_model(model_key, lang=self.language, model_type='nltk')
+
+        def compute(text):
+            # fix unicode errors
+            text = ftfy.fix_text(text)
+            # normalize different kinds of whitespaces
+            text = ''.join([
+                char if char not in VARIOUS_WHITESPACES else ' ' for char in text
+            ])
+            # clean specific chars in text.
+            text = re.sub(pattern=pattern, repl=r'',
+                          string=text, flags=re.DOTALL)
+            # Re segment sentences
+            paragraph_break_pattern = "\\n\s*\\n"
+            replace_str = '*^*^*'
+            text = re.sub(pattern=paragraph_break_pattern, repl=replace_str,
+                          string=text, flags=re.DOTALL)
+            sentences = nltk_model.tokenize(text)
+            new_sentences = []
+            for sentence in sentences:
+                new_sentences.append(sentence.replace("\n", " "))
+            new_text = ' '.join(new_sentences).replace(replace_str, "\n\n")
+            return new_text
+
+        return compute
+
+
+LLMOPERATORS.register(RAGTextFix)

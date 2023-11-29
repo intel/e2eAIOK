@@ -217,23 +217,19 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         op = GopherQualityFilter()
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds(ctx.ds))
-    def test_text_specific_chars_remove_ray(self):
-        op = TextSpecificCharsRemove(chars_to_remove="abcdedfhijklmn")
+
+    def test_document_load_ray(self):
+        op = DirectoryLoader("tests/data/llm_data/document", glob="**/*.pdf")
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds())
+
+    def test_document_split_ray(self):
+        op = DocumentSplit()
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds(ctx.ds))
 
-    def test_text_unicode_fixer_ray(self):
-        op = TextUnicodeFixer()
-        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
-            ctx.show(op.process_rayds(ctx.ds))
-
-    def test_text_whitespace_normalization_ray(self):
-        op = TextWhitespaceNormalization()
-        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
-            ctx.show(op.process_rayds(ctx.ds))
-
-    def test_sentence_resplit_ray(self):
-        op = TextSentenceResplit()
+    def test_rag_text_fix_ray(self):
+        op = RAGTextFix(chars_to_remove="abcdedfhijklmn")
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds(ctx.ds))
 
@@ -387,43 +383,18 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
 
-    def test_document_load_ray(self):
-        op = DirectoryLoader("tests/data/llm_data/document", glob="**/*.pdf")
-        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
-            ctx.show(op.process_rayds())
-
     def test_document_load_spark(self):
         op = DirectoryLoader("tests/data/llm_data/document", glob="**/*.pdf")
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark))
-
-    def test_document_split_ray(self):
-        op = DocumentSplit()
-        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
-            ctx.show(op.process_rayds(ctx.ds))
 
     def test_document_split_spark(self):
         op = DocumentSplit()
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
 
-    def test_text_specific_chars_remove_spark(self):
-        op = TextSpecificCharsRemove(chars_to_remove="abcdedfhijklmn")
-        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
-            ctx.show(op.process_spark(ctx.spark, ctx.ds))
-
-    def test_unicode_fixer_spark(self):
-        op = TextUnicodeFixer()
-        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
-            ctx.show(op.process_spark(ctx.spark, ctx.ds))
-
-    def test_whitespace_normalization_spark(self):
-        op = TextWhitespaceNormalization()
-        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
-            ctx.show(op.process_spark(ctx.spark, ctx.ds))
-
-    def test_sentence_resplit_spark(self):
-        op = TextSentenceResplit()
+    def test_rag_text_fix_spark(self):
+        op = RAGTextFix(chars_to_remove="abcdedfhijklmn")
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
 
@@ -458,7 +429,6 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         )
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
-
 
     def test_document_paragraphs_split_ray(self):
         model_root_path = os.path.join(RECDP_MODELS_CACHE, "huggingface")
