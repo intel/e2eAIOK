@@ -217,9 +217,23 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         op = GopherQualityFilter()
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds(ctx.ds))
-
-    def test_text_specific_chars_remove(self):
+    def test_text_specific_chars_remove_ray(self):
         op = TextSpecificCharsRemove(chars_to_remove="abcdedfhijklmn")
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds(ctx.ds))
+
+    def test_text_unicode_fixer_ray(self):
+        op = TextUnicodeFixer()
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds(ctx.ds))
+
+    def test_text_whitespace_normalization_ray(self):
+        op = TextWhitespaceNormalization()
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds(ctx.ds))
+
+    def test_sentence_resplit_ray(self):
+        op = TextSentenceResplit()
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds(ctx.ds))
 
@@ -398,6 +412,21 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
 
+    def test_unicode_fixer_spark(self):
+        op = TextUnicodeFixer()
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
+    def test_whitespace_normalization_spark(self):
+        op = TextWhitespaceNormalization()
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
+    def test_sentence_resplit_spark(self):
+        op = TextSentenceResplit()
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
     def test_document_embed_ray(self):
         model_root_path = os.path.join(RECDP_MODELS_CACHE, "huggingface")
         op = DocumentIngestion(
@@ -428,4 +457,19 @@ class Test_LLMUtils_Operations(unittest.TestCase):
             }
         )
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
+
+    def test_document_paragraphs_split_ray(self):
+        model_root_path = os.path.join(RECDP_MODELS_CACHE, "huggingface")
+        model_name = f"{model_root_path}/sentence-transformers/all-mpnet-base-v2"
+        op = ParagraphsTextSplitter(model_name=model_name)
+        with RayContext("tests/data/llm_data/arxiv_sample_100.jsonl") as ctx:
+            ctx.show(op.process_rayds(ctx.ds))
+
+    def test_document_paragraphs_split_spark(self):
+        model_root_path = os.path.join(RECDP_MODELS_CACHE, "huggingface")
+        model_name = f"{model_root_path}/sentence-transformers/all-mpnet-base-v2"
+        op = ParagraphsTextSplitter(model_name=model_name)
+        with SparkContext("tests/data/llm_data/arxiv_sample_100.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))

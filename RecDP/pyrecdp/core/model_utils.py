@@ -54,30 +54,36 @@ def check_model(model_name, args=(), force=False):
     # check if the specified model exists. If it does not exist, download it
     true_model_name = model_name % args
     mdp = os.path.join(MODEL_PATH, true_model_name)
-    if force:
-        if os.path.exists(mdp):
+    if os.path.exists(mdp):
+        if force:
             os.remove(mdp)
             logger.info(
-                f'Model [{true_model_name}] invalid, force to downloading...')
+                f'Model [{true_model_name}] removed, force to downloading...')
+            download_nltk_model(mdp, model_name, true_model_name)
         else:
-            logger.info(
-                f'Model [{true_model_name}] not found . Downloading...')
-
-        try:
-            model_link = os.path.join(MODEL_LINKS, true_model_name)
-            wget.download(model_link, mdp, bar=None)
-        except:  # noqa: E722
-            try:
-                backup_model_link = os.path.join(
-                    BACKUP_MODEL_LINKS[model_name], true_model_name)
-                wget.download(backup_model_link, mdp, bar=None)
-            except:  # noqa: E722
-                logger.error(
-                    f'Downloading model [{true_model_name}] error. '
-                    f'Please retry later or download it into {MODEL_PATH} '
-                    f'manually from {model_link} or {backup_model_link} ')
-                exit(1)
+            return mdp
+    else:
+        logger.info(
+            f'Model [{true_model_name}] not found . Downloading...')
+        download_nltk_model(mdp, model_name, true_model_name)
     return mdp
+
+
+def download_nltk_model(mdp, model_name, true_model_name):
+    try:
+        model_link = os.path.join(MODEL_LINKS, true_model_name)
+        wget.download(model_link, mdp, bar=None)
+    except:  # noqa: E722
+        try:
+            backup_model_link = os.path.join(
+                BACKUP_MODEL_LINKS[model_name], true_model_name)
+            wget.download(backup_model_link, mdp, bar=None)
+        except:  # noqa: E722
+            logger.error(
+                f'Downloading model [{true_model_name}] error. '
+                f'Please retry later or download it into {MODEL_PATH} '
+                f'manually from {model_link} or {backup_model_link} ')
+            exit(1)
 
 
 def prepare_fasttext_model(model_name):

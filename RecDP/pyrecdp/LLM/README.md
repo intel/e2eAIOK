@@ -47,7 +47,7 @@ pip install pyrecdp[LLM] --pre
 
 ### Data pipeline
 
-#### 1. RAG Data Pipeline - Build from public HTML
+#### 1. RAG Data Pipeline - Build from public HTML [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/rag_pipeline.ipynb)
 
 ```
 from pyrecdp.primitives.operations import *
@@ -55,7 +55,7 @@ from pyrecdp.LLM import TextPipeline
 
 pipeline = TextPipeline()
 ops = [
-    DirectoryLoader("document", glob="**/*.html"),
+    Url_Loader(urls=["https://www.intc.com/news-events/press-releases/detail/1655/intel-reports-third-quarter-2023-financial-results"], target_tag='div', target_attrs={'class': 'main-content'}),
     DocumentSplit(),
     DocumentIngestion(
         vector_store='FAISS',
@@ -73,49 +73,11 @@ pipeline.add_operations(ops)
 pipeline.execute()
 ```
 
-#### 2. Finetune Data Pipeline - Downsize public finetune dataset
+#### 2. Finetune Data Pipeline - Build finetune dataset from Plain Text to QA
 
-```
-from pyrecdp.LLM import TextPipeline, ResumableTextPipeline
-from pyrecdp.primitives.operations import *
-
-import os
-spark_pipeline = ResumableTextPipeline()
-spark_pipeline.enable_statistics()
-out_dir = "ResumableTextPipeline_output-spark"
-ops = [
-    JsonlReader("{path-to-e2eAIOK}/RecDP/tests/data/alpaca/alpaca_data_50.jsonl"),
-    TextPrompt(dataset_name="alpaca", prompt_name="causal_llm_1"),
-    RandomSelect(fraction=0.3),
-    TextToxicity(),
-    TextDiversityIndicate(out_dir=out_dir, language="en", first_sent=False),
-    TextQualityScorer(model="gpt3"),
-    RougeScoreDedup(max_ratio=0.7, batch_size=10,score_store_path=os.path.join(out_dir,'RougeScorefiltered.parquet')),
-    ParquetWriter(out_dir)
-]
-spark_pipeline.add_operations(ops)
-ret = spark_pipeline.execute()
-
-ray_pipeline = ResumableTextPipeline()
-ray_pipeline.enable_statistics()
-out_dir = "ResumableTextPipeline_output-ray"
-ops = [
-    JsonlReader("{path-to-e2eAIOK}/RecDP/tests/data/alpaca/alpaca_data_50.jsonl"),
-    TextPrompt(dataset_name="alpaca", prompt_name="causal_llm_1"),
-    RandomSelect(fraction=0.3),
-    TextPerplexityScore(),
-    ParquetWriter(out_dir)
-]
-ray_pipeline.add_operations(ops)
-ret = ray_pipeline.execute()
-```
-
-#### 3. Finetune Data Pipeline - Build finetune dataset from Plain Text
-
-#### 4. Finetune Data Pipeline - Build finetune dataset from Existing QA
 ```
 from pyrecdp.LLM import TextPipeline
-from pyrecdp.primitives.operations import ParquetReader, TextToQA, ParquetWriter
+from pyrecdp.primitives.operations import *
 
 pipeline = TextPipeline()
 ops = [
@@ -127,7 +89,30 @@ pipeline.add_operations(ops)
 pipeline.execute()
 ```
 
-#### 5. AutoHPO
+#### 3. Finetune Data Pipeline - Downsize public finetune dataset
+
+```
+from pyrecdp.LLM import TextPipeline, ResumableTextPipeline
+from pyrecdp.primitives.operations import *
+
+import os
+pipeline = ResumableTextPipeline()
+pipeline.enable_statistics()
+ops = [
+    JsonlReader("{path-to-e2eAIOK}/RecDP/tests/data/alpaca/alpaca_data_50.jsonl"),
+    TextPrompt(dataset_name="alpaca", prompt_name="causal_llm_1"),
+    RandomSelect(fraction=0.3),
+    TextToxicity(),
+    TextDiversityIndicate(out_dir=out_dir, language="en", first_sent=False),
+    TextQualityScorer(model="gpt3"),
+    RougeScoreDedup(max_ratio=0.7, batch_size=10,score_store_path=os.path.join(out_dir,'RougeScorefiltered.parquet')),
+    ParquetWriter("ResumableTextPipeline_output")
+]
+pipeline.add_operations(ops)
+pipeline.execute()
+```
+
+#### 4. AutoHPO
 
 Low-Code configuration with automated operators parameter tuning, allowing user to transform their own raw data toward a high quality dataset with low-effort. We coupled data processing with Quality Analisys as evaluation metrics, which will estimate data's quality before actual model finetuning/inference.
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/pipeline_hpo.ipynb)
