@@ -28,7 +28,7 @@ Intel® End-to-End AI Optimization Kit is a composable toolkits for E2E AI optim
 
 ## The key components are
 
-* [RecDP](RecDP/README.md):  A parallel data processing and feature engineering lib on top of Spark, and extensible to other data processing tools. It provides abstraction API to hide Spark programming complexity, delivers optimized performance through adaptive query plan & strategy, supports critical feature engineering functions on Tabular dataset, and can be easily integrated to third party solutions.  
+* [RecDP](RecDP/README.md):  An one stop toolkit for AI data process. Providing two intel optimized solutions - [Auto Feature Engineering](RecDP/pyrecdp/autofe/README.md) and [LLM Data Preparation](RecDP/pyrecdp/LLM/README.md). Leverage Ray and Spark for distributed data processing.
 
 * [Smart Democratization Advisor (SDA)](e2eAIOK/SDA/README.md): A user-guided tool to facilitate automation of built-in model democratization via parameterized models, it generates yaml files based on user choice, provided build-in intelligence through parameterized models and leverage SigOpt for HPO. SDA converts the manual model tuning and optimization to assisted autoML and autoHPO. SDA provides a list of build-in optimized models ranging from RecSys, CV, NLP, ASR and RL.
 

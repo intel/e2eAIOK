@@ -2,14 +2,16 @@
 
 We provide intel optimized solution for
 
-* [**Tabular**](pyrecdp/autofe/README.md) - Auto Feature Engineering Pipeline, 50+ essential primitives for feature engineering.
-* [**LLM Text**](pyrecdp/LLM/README.md) - 10+ essential primitives for text clean, fixing, deduplication, 4 quality control module, 2 built-in high quality data pipelines.
+* [**Auto Feature Engineering**](pyrecdp/autofe/README.md) - Automatical Feature Engineering for Tabular input including 50+ essential primitives. Supporting numerical features, categorical features, text features, time series features, distributed process based on Spark. Feature Importance Analysis based on LightGBM.
+* [**LLM Data Preparation**](pyrecdp/LLM/README.md) - 50+ essential operators for RAG data preparation, Finetune Data preparation, Foundation Model text prepration. Supporting text from PDF, words, crawl from URLs, distributed text process based on Ray or Spark, Quality Evaluation based on GPT-3, Divesity, Toxicity, Rouge-similarity, Perplexity.
 
-## Getting Started
+## How it works
+
+Install this tool through pip. 
 
 ```
 DEBIAN_FRONTEND=noninteractive apt-get install -y openjdk-8-jre graphviz
-pip install pyrecdp --pre
+pip install pyrecdp[all] --pre
 ```
 
 ## RecDP - Tabular
@@ -35,26 +37,17 @@ transformed_train_df = pipeline.fit_transform()
 * Low-code Fault-tolerant Auto-scaling Parallel Pipeline
 ![LLM Pipeline](resources/llm_pipeline.jpg)
 
-Low Code to build your own pipeline
-```
-from pyrecdp.LLM import ResumableTextPipeline
-pipeline = ResumableTextPipeline("usecase/finetune_pipeline.yaml")
-ret = pipeline.execute()
-```
-or
 ```
 from pyrecdp.primitives.operations import *
 from pyrecdp.LLM import ResumableTextPipeline
 
 pipeline = ResumableTextPipeline()
 ops = [
-    JsonlReader("data/"),
-    URLFilter(),
-    LengthFilter(),
+    Url_Loader(urls="your_url"),
+    DocumentSplit(),
     ProfanityFilter(),
-    TextFix(),
-    LanguageIdentify(),
     PIIRemoval(),
+    ...
     PerfileParquetWriter("ResumableTextPipeline_output")
 ]
 pipeline.add_operations(ops)
