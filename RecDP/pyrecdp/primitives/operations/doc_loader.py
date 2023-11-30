@@ -148,7 +148,7 @@ def load_html_to_md(page_url, target_tag: str = None, target_attrs: dict = None)
     )
 
 
-class Url_Loader(BaseLLMOperation):
+class UrlLoader(BaseLLMOperation):
     def __init__(self, urls: list = None, target_tag: str = None, target_attrs: dict = None,
                  args_dict: Optional[dict] = None):
         settings = {
@@ -183,4 +183,4 @@ class Url_Loader(BaseLLMOperation):
         return self.cache
 
 
-LLMOPERATORS.register(Url_Loader)
+LLMOPERATORS.register(UrlLoader)

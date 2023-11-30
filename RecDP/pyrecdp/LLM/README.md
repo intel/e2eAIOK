@@ -48,14 +48,23 @@ pip install pyrecdp[LLM] --pre
 ### Data pipeline
 
 #### 1. RAG Data Pipeline - Build from public HTML [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/rag_pipeline.ipynb)
+Retrieval-augmented generation (RAG) for large language models (LLMs) aims to improve prediction quality by using an external datastore at inference time to build a richer prompt that includes some combination of context, history, and recent/relevant knowledge (RAG LLMs).
+Recdp LLM can provide a pipeline for ingesting data from a source and indexing it. We mainly provide the following capabilities.
+- **Load Data**: Load your data from source. You can use `UrlLoader` or `DirectoryLoader` for this.
+- **Improve Data Quality**: Clean up text for LLM RAG to use. It mainly solves the problem of sentences being split by incorrect line breaks after parsing the file, removing special characters, fixing unicode errors,  and so on.
+- **Split Text**: `DocumentSplit` helps break large Documents into smaller chunks. This is useful for indexing data and make it better used by the model.
+- **Vector Store**: In order to retrieve your data, We provide `DocumentIngestion` use a VectorStore and Embeddings model to store and index your data.
 
-```
+Here is a basic RAG Data Pipeline example:
+```python
 from pyrecdp.primitives.operations import *
 from pyrecdp.LLM import TextPipeline
 
 pipeline = TextPipeline()
 ops = [
     Url_Loader(urls=["https://www.intc.com/news-events/press-releases/detail/1655/intel-reports-third-quarter-2023-financial-results"], target_tag='div', target_attrs={'class': 'main-content'}),
+    # DirectoryLoader(files_path, glob="**/*.pdf"),
+    RAGTextFix(),
     DocumentSplit(),
     DocumentIngestion(
         vector_store='FAISS',
