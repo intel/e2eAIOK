@@ -21,7 +21,7 @@ def prepare_text_split(text_splitter: Optional[str] = None, **text_splitter_args
             import nltk
             nltk.download('punkt')
 
-        prepare_model(model_type="nltk", prepare_model_func=prepare_nltk_model)
+        prepare_model(model_type="nltk", model_key="nltk_langchain", prepare_model_func=prepare_nltk_model)
 
     from pyrecdp.core.class_utils import new_instance
     splitter = new_instance("langchain.text_splitter", text_splitter, **text_splitter_args)
