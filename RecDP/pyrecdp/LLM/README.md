@@ -62,7 +62,7 @@ from pyrecdp.LLM import TextPipeline
 
 pipeline = TextPipeline()
 ops = [
-    Url_Loader(urls=["https://www.intc.com/news-events/press-releases/detail/1655/intel-reports-third-quarter-2023-financial-results"], target_tag='div', target_attrs={'class': 'main-content'}),
+    UrlLoader(urls=["https://www.intc.com/news-events/press-releases/detail/1655/intel-reports-third-quarter-2023-financial-results"], target_tag='div', target_attrs={'class': 'main-content'}),
     # DirectoryLoader(files_path, glob="**/*.pdf"),
     RAGTextFix(),
     DocumentSplit(),
