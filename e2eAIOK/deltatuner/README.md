@@ -29,17 +29,17 @@ Deltatuner is an extension for [Peft](https://github.com/huggingface/peft) to im
 ### Installation
 - install the python package
 ```shell
-pip install deltatuner
+pip install e2eAIOK-deltatuner
 ```
 
 ### Fast Fine-tuning on Base models
 Below is an example of optimizing [MPT](https://huggingface.co/mosaicml/mpt-7b) model by adding the following few-lines to use the delatuner optimizations. It use the DE-NAS in delatuner to optimize a LLM with LoRA layers to a LLM with compact LoRA layers, so as to efficiently improve the LLM fine-tuning process in peak memory reduction and time speedup. 
 
-```python
-from delta import deltatuner, deltatuner_args
+```diff
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import LoraConfig, get_peft_model
-from deltatuner import deltatuner, deltatuner_args
++ from deltatuner import deltatuner, deltatuner_args
++ from delta import deltatuner, deltatuner_args
 
 # import model from huggingface
 model_id =  "mosaicml/mpt-7b"
@@ -49,8 +49,8 @@ tokenizer = AutoTokenizer.from_pretrained(model_id)
 config = LoraConfig()
 lora_model = get_peft_model(model, config) 
 # delatuner optimize the model with best lora layer configuration
-deltatuning_args = deltatuner_args.DeltaTunerArguments()
-deltatuner_model = deltatuner.optimize(model=lora_model, tokenizer=tokenizer, deltatuning_args=deltatuning_args)
++ deltatuning_args = deltatuner_args.DeltaTunerArguments()
++ deltatuner_model = deltatuner.optimize(model=lora_model, tokenizer=tokenizer, deltatuning_args=deltatuning_args)
 ...
 ```
 
