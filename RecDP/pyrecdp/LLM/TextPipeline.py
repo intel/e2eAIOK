@@ -26,6 +26,7 @@ class TextPipeline(BasePipeline):
     def __init__(self, engine_name='ray', pipeline_file=None):
         super().__init__()
         self.engine_name = engine_name
+        self.ray_start_by_us = False
         if pipeline_file != None:
             self.import_from_json(pipeline_file) if pipeline_file.endswith(
                 '.json') else self.import_from_yaml(pipeline_file)
@@ -36,9 +37,10 @@ class TextPipeline(BasePipeline):
             self.add_operation(op)
 
     def __del__(self):
-        if hasattr(self, 'engine_name') and self.engine_name == 'ray':
-            if ray.is_initialized():
-                ray.shutdown()
+        if self.ray_start_by_us:
+            if hasattr(self, 'engine_name') and self.engine_name == 'ray':
+                if ray.is_initialized():
+                    ray.shutdown()
 
     def check_platform(self, executable_sequence):
         is_spark = True
@@ -84,6 +86,7 @@ class TextPipeline(BasePipeline):
                     ray.init(object_store_memory=total_mem, num_cpus=total_cores)
                 except:
                     ray.init()
+                self.ray_start_by_us = True
 
             # execute
             with Timer(f"execute with ray"):
@@ -325,6 +328,7 @@ class ResumableTextPipeline(TextPipeline):
                     ray.init(object_store_memory=total_mem, num_cpus=total_cores)
                 except:
                     ray.init()
+                self.ray_start_by_us = True
 
             for op in executable_sequence:
                 if isinstance(op, PerfileReader):
