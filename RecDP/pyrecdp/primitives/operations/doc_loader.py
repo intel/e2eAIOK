@@ -151,6 +151,14 @@ def load_html_to_md(page_url, target_tag: str = None, target_attrs: dict = None)
 class UrlLoader(BaseLLMOperation):
     def __init__(self, urls: list = None, target_tag: str = None, target_attrs: dict = None,
                  args_dict: Optional[dict] = None):
+        """
+            Loads documents from a directory or a list of files.
+
+            Args:
+                urls: A list of urls need to be loaded.
+                target_tag: A filter on tag name. Default: None
+                target_attrs: A dictionary of filters on attribute values. Default: None
+        """
         settings = {
             'urls': urls,
             'target_tag': target_tag,

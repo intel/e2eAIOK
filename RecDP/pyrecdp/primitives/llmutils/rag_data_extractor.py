@@ -19,6 +19,19 @@ def rag_data_prepare(
         embeddings_type: str = 'HuggingFaceEmbeddings',
         embeddings_args: Optional[dict] = None,
 ):
+    """
+    Use a pipeline for ingesting data from a source and indexing it.Including: load data,improve data quality, split text, store in database
+    :param files_path: The input directory, load documents from this directory
+    :param target_urls: A list of urls need to be loaded. You must specify at least one parameter in files_path and target_urls
+    :param text_splitter: The class name of langchain text splitter. Default: RecursiveCharacterTextSplitter
+    :param text_splitter_args: A dictionary of arguments to pass to the langchain text splitter. Default: {"chunk_size": 500, "chunk_overlap": 0}
+    :param vector_store_type: The vector store database to use for storing the document embeddings. Default:FAISS
+    :param vs_output_dir: The path to store vector database. Default: recdp_vs
+    :param index_name: The index name of vector store database. Default: recdp_index
+    :param embeddings_type: The class name of langchain embedding under module 'langchain.embeddings' to use for embed documents. Default: HuggingFaceEmbeddings
+    :param embeddings_args: A dictionary of arguments to pass to the langchain embedding constructor. Default: None
+    :return:
+    """
     if bool(files_path):
         loader = DirectoryLoader(files_path, glob="**/*.pdf")
     elif bool(target_urls):
