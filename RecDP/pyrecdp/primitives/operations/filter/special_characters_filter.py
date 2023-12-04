@@ -24,7 +24,7 @@ class SpecialCharactersFilter(BaseFilter):
         def compute(text) -> bool:
             special_char_ratio = (
                     len([c
-                         for c in text if c in SPECIAL_CHARACTERS]) /
+                         for c in text if c in SPECIAL_CHARACTERS.value]) /
                     len(text)) if len(text) != 0 else 0.0
             if min_ratio <= special_char_ratio <= max_ratio:
                 return True

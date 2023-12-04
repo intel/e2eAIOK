@@ -35,7 +35,7 @@ class WordNumFilter(BaseFilter):
             words = get_words_from_document(
                 text, token_func=tokenizer.encode_as_pieces if tokenizer else None)
 
-            words = words_refinement(words, strip_chars=SPECIAL_CHARACTERS)
+            words = words_refinement(words, strip_chars=SPECIAL_CHARACTERS.value)
             num_words = len(words)
             if min_num <= num_words <= max_num:
                 return True

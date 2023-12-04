@@ -67,5 +67,5 @@ try:
     from .text_ingestion import DocumentIngestion
     from .doc_loader import DirectoryLoader, DocumentLoader, UrlLoader
     from .text_to_qa import TextToQA
-except:
-    pass
+except Exception as e:
+    raise e

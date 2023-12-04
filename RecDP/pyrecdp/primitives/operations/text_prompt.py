@@ -30,7 +30,8 @@ class TextPrompt(BaseLLMOperation):
         :param new_name: the name of output column
         """
         settings = {'dataset_name': dataset_name, 'prompt_name': prompt_name, 'subset_name': subset_name, 'new_name': new_name}
-        super().__init__(settings)
+        requirements = []
+        super().__init__(settings, requirements)
         self.support_spark = True
         self.support_ray = True
         self.dataset_name = dataset_name

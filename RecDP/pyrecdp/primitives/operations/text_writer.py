@@ -7,7 +7,8 @@ import shutil
 class ParquetWriter(BaseLLMOperation):
     def __init__(self, output_dir):
         settings = {'output_dir': output_dir}
-        super().__init__(settings)
+        requirements = []
+        super().__init__(settings, requirements)
         self.support_ray = True
         self.support_spark = True
         self.output_dir = output_dir
@@ -27,7 +28,8 @@ LLMOPERATORS.register(ParquetWriter)
 class JsonlWriter(BaseLLMOperation):
     def __init__(self, output_dir):
         settings = {'output_dir': output_dir}
-        super().__init__(settings)
+        requirements = []
+        super().__init__(settings, requirements)
         self.support_ray = True
         self.support_spark = True
         self.output_dir = output_dir
@@ -47,7 +49,8 @@ LLMOPERATORS.register(JsonlWriter)
 class ClassifyParquetWriter(BaseLLMOperation):
     def __init__(self, output_dir, key):
         settings = {'output_dir': output_dir, 'key': key}
-        super().__init__(settings)
+        requirements = []
+        super().__init__(settings, requirements)
         self.support_ray = False
         self.support_spark = True
         self.output_dir = output_dir
@@ -62,7 +65,8 @@ LLMOPERATORS.register(ClassifyParquetWriter)
 class ClassifyJsonlWriter(BaseLLMOperation):
     def __init__(self, output_dir, key):
         settings = {'output_dir': output_dir, 'key': key}
-        super().__init__(settings)
+        requirements = []
+        super().__init__(settings, requirements)
         self.support_ray = False
         self.support_spark = True
         self.output_dir = output_dir
@@ -77,7 +81,8 @@ LLMOPERATORS.register(ClassifyJsonlWriter)
 class PerfileParquetWriter(BaseLLMOperation):
     def __init__(self, output_dir):
         settings = {'output_dir': output_dir}
-        super().__init__(settings)
+        requirements = []
+        super().__init__(settings, requirements)
         self.support_ray = True
         self.support_spark = True
         self.output_dir = output_dir
@@ -115,7 +120,8 @@ LLMOPERATORS.register(PerfileParquetWriter)
 class PerfileJsonlWriter(BaseLLMOperation):
     def __init__(self, output_dir):
         settings = {'output_dir': output_dir}
-        super().__init__(settings)
+        requirements = []
+        super().__init__(settings, requirements)
         self.support_ray = True
         self.support_spark = True
         self.output_dir = output_dir

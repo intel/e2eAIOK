@@ -14,8 +14,9 @@ class DatasetReader(BaseLLMOperation):
 LLMOPERATORS.register(DatasetReader)
 
 class TextReader(BaseLLMOperation):
-    def __init__(self, args_dict={}):
-        super().__init__(args_dict)
+    def __init__(self, args_dict={}, requirements=[]):
+        requirements = []
+        super().__init__(args_dict, requirements)
         self.column_rename_dict = {}
 
     def rename_ray_ds_columns(self, ds):

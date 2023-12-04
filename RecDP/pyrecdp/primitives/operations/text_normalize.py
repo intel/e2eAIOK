@@ -19,7 +19,8 @@ def text_normalization(s):
 class TextNormalize(BaseLLMOperation):
     def __init__(self, text_key = 'text'):
         settings = {'text_key': text_key}
-        super().__init__(settings)
+        requirements = []
+        super().__init__(settings, requirements)
         self.text_key = text_key
         self.inplace = False
         self.support_spark = True

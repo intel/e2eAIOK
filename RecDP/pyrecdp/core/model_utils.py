@@ -4,10 +4,10 @@ https://github.com/alibaba/data-juicer/blob/main/data_juicer/utils/model_utils.p
 import os
 from typing import Callable, Any
 
-import wget
 from loguru import logger
 
 from .cache_utils import RECDP_MODELS_CACHE
+from .import_utils import check_availability_and_install
 
 # Default directory to store models
 MODEL_PATH = RECDP_MODELS_CACHE
@@ -70,6 +70,7 @@ def check_model(model_name, args=(), force=False):
 
 
 def download_nltk_model(mdp, model_name, true_model_name):
+    import wget
     try:
         model_link = os.path.join(MODEL_LINKS, true_model_name)
         wget.download(model_link, mdp, bar=None)
@@ -93,6 +94,7 @@ def prepare_fasttext_model(model_name):
     :param model_name: input model name
     :return: model instance.
     """
+    check_availability_and_install("fasttext==0.9.2")
     import fasttext
     logger.info('Loading fasttext language identification model...')
     try:
@@ -110,6 +112,7 @@ def prepare_sentencepiece_model(model_name, lang):
     :param lang: language to render model name
     :return: model instance.
     """
+    check_availability_and_install("sentencepiece")
     import sentencepiece
     logger.info('Loading sentencepiece model...')
     sentencepiece_model = sentencepiece.SentencePieceProcessor()
@@ -128,6 +131,7 @@ def prepare_kenlm_model(model_name, lang):
     :param lang: language to render model name
     :return: model instance.
     """
+    check_availability_and_install("kenlm")
     import kenlm
     logger.info('Loading kenlm language model...')
     try:
@@ -145,7 +149,7 @@ def prepare_nltk_model(model_name, lang):
     :param lang: language to render model name
     :return: model instance.
     """
-
+    check_availability_and_install("nltk")
     nltk_to_punkt = {
         'en': 'english',
         'fr': 'french',
@@ -189,7 +193,6 @@ def prepare_diversity_model(model_name, lang):
         "en"]
     :return: corresponding diversity model
     """
-    import spacy
     assert lang in ['zh', 'en'], 'Diversity only support zh and en'
     model_name = model_name % lang
     logger.info(f'Loading spacy model [{model_name}]...')
@@ -207,9 +210,11 @@ def prepare_diversity_model(model_name, lang):
         return decompressed_model_path
 
     try:
+        import spacy
         diversity_model = spacy.load(
             decompress_model(check_model(compressed_model)))
     except:  # noqa: E722
+        import spacy
         diversity_model = spacy.load(
             decompress_model(check_model(compressed_model, force=True)))
     return diversity_model

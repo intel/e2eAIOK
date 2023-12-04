@@ -50,7 +50,8 @@ class PIIRemoval(BaseLLMOperation):
                  entity_types: List[PIIEntityType] = None):
         settings = {'text_key': text_key, 'inplace': inplace, 'model_root_path': model_root_path,
                     'debug_mode': debug_mode, 'entity_types': entity_types}
-        super().__init__(settings)
+        requirements = []
+        super().__init__(settings, requirements)
         self.text_key = text_key
         self.inplace = inplace
         self.model_root_path = model_root_path

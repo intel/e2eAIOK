@@ -4,7 +4,7 @@ from typing import List, Dict, Any, Optional, Callable, cast
 import numpy as np
 from pyspark.sql import DataFrame
 from ray.data import Dataset
-from sklearn.metrics.pairwise import cosine_similarity
+
 
 from pyrecdp.core.import_utils import import_langchain, import_sentence_transformers, import_pysbd
 from pyrecdp.core.model_utils import prepare_model
@@ -44,7 +44,8 @@ class BaseDocumentSplit(BaseLLMOperation):
             'inplace': inplace,
         }
         settings.update(args_dict or {})
-        super().__init__(settings)
+        requirements = []
+        super().__init__(settings, requirements)
         self.support_spark = True
         self.support_ray = True
         self.text_key = text_key
@@ -123,6 +124,7 @@ def split_text_by_paragraphs(sentence_transformer, seg, paragraph_size: Optional
     from sentence_transformers import SentenceTransformer
     from pysbd import Segmenter
     from scipy.signal import argrelextrema
+    from sklearn.metrics.pairwise import cosine_similarity
     sentence_transformer = cast(SentenceTransformer, sentence_transformer)
     seg = cast(Segmenter, seg)
 

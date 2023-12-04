@@ -137,7 +137,8 @@ class BaseDocumentIngestion(BaseLLMOperation, ABC):
             'num_cpus': num_cpus,
             'override': override
         })
-        super().__init__(settings)
+        requirements = []
+        super().__init__(settings, requirements)
         self.support_ray = True
         self.support_spark = True
         self.compute_min_size = compute_min_size

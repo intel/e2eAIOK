@@ -45,7 +45,7 @@ class WordRepetitionFilter(BaseFilter):
             words = words_refinement(
                 words,
                 lower_case=True,
-                strip_chars=SPECIAL_CHARACTERS)
+                strip_chars=SPECIAL_CHARACTERS.value)
             word_ngrams = [
                 ' '.join(words[i:i + rep_len])
                 for i in range(len(words) - rep_len + 1)

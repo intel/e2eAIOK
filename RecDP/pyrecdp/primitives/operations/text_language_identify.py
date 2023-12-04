@@ -1,8 +1,8 @@
 from .base import BaseLLMOperation, LLMOPERATORS
 from ray.data import Dataset
 from pyspark.sql import DataFrame
-from huggingface_hub import hf_hub_download
-import fasttext
+
+
 import os
 from pathlib import Path
 from typing import Dict, Iterable, Iterator, List, Optional, Tuple
@@ -112,6 +112,7 @@ class Classifier(Transformer):
         language: str = None,
         rounding: int = 2,
     ):
+        import fasttext
         super().__init__()
         self.model = model
         assert model.exists(), f"Model {model} doesn't exist."
@@ -127,6 +128,7 @@ class Classifier(Transformer):
         self.cnt: Dict[str, int] = {}
 
     def _prepare(self):
+        import fasttext
         self.fasttext_model = fasttext.load_model(str(self.model))
 
     def predict(self, text):
@@ -173,6 +175,7 @@ def predict(model, text: str, k: int = 1):
     return labels, scores
 
 def construct_classifier(fasttext_model_dir, language_identify_field, language_identify_output_field, threshold):
+    from huggingface_hub import hf_hub_download
     print(fasttext_model_dir)
     if os.path.isfile(fasttext_model_dir):
         model_path = fasttext_model_dir
@@ -201,7 +204,8 @@ class LanguageIdentify(BaseLLMOperation):
         :param threshold: the threshold to return identified language. the value range is [0, 1).
         """
         settings = {'text_key': text_key, 'inplace': inplace, 'fasttext_model_dir': fasttext_model_dir, 'threshold': threshold}
-        super().__init__(settings)
+        requirements = ['fasttext==0.9.2', "huggingface-hub"]
+        super().__init__(settings, requirements)
         self.text_key = text_key
         self.inplace = False
         self.fasttext_model_dir = fasttext_model_dir

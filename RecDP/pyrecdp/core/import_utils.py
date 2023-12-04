@@ -21,19 +21,32 @@ def fix_package_name(package):
     
     package_name_map = {
         'scikit-learn' : 'sklearn',
-        'pyyaml' : 'yaml'
+        'pyyaml' : 'yaml',
+        'Faker' : 'faker'
     }
     
     if b in package_name_map:
         b = package_name_map[b]
     #print(b)
     return b
-    
-def import_with_auto_install(package):
-    try:
-        return importlib.import_module(fix_package_name(package))
-    except ImportError:
-        pip.main(['install', package])
+
+def check_availability_and_install(package_or_list):
+    def actual_func(package):
+        pip_name = fix_package_name(package)
+        try:
+            return importlib.import_module(pip_name)
+        except ImportError:
+            pip.main(['install', package])
+            #importlib.import_module(pip_name)
+            
+    if isinstance(package_or_list, list):
+        for pkg in package_or_list:
+            actual_func(pkg)
+    elif isinstance(package_or_list, str):
+        actual_func(package_or_list)
+    else:
+        raise ValueError(f"{package_or_list} with type of {type(package_or_list)} is not supported.")
+        
 
 def import_faiss(no_avx2: Optional[bool] = None, install_if_miss: bool = True):
     """
