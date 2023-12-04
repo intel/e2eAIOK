@@ -36,6 +36,7 @@ class SetupSpec:
             "ipywidgets",
             "graphviz",
             "requests",
+            "loguru"
         ]
         self.extras: dict = {}
         self.extras['autofe'] = list_requirements("pyrecdp/autofe/requirements.txt")
