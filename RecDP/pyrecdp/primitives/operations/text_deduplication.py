@@ -327,7 +327,7 @@ class GlobalDeduplicate(BaseLLMOperation):
         :param text_key: the name of field which will be apply language_idenfity.
         """
         settings = {'text_key': text_key}
-        requirements = []
+        requirements = ['ftfy']
         super().__init__(settings, requirements)
         self.text_key = text_key
         self.inplace = True
@@ -370,7 +370,7 @@ class GlobalDeduplicateGenDict(BaseLLMOperation):
         :param text_key: the name of field which will be apply language_idenfity.
         """
         settings = {'text_key': text_key}
-        requirements = []
+        requirements = ['ftfy']
         super().__init__(settings, requirements)
         self.text_key = text_key
         self.inplace = True
