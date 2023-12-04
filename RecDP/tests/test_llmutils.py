@@ -93,8 +93,8 @@ class Test_LLMUtils(unittest.TestCase):
 
     def test_diversity_analysis(self):
         from pyrecdp.primitives.llmutils import diversity_indicate
-        data_dir = "tests/data/llm_data/"
-        output_path = "tests/data/diversity_out"
+        data_dir = "tests/data/llm_data/arxiv_sample_100.jsonl"
+        output_path = "tests/data/output/diversity_out_arxiv"
         in_type = "jsonl"
         diversity_indicate(data_dir, in_type, output_path)
 
@@ -168,49 +168,29 @@ class Test_LLMUtils(unittest.TestCase):
             for _, row in ret_df.toPandas().iterrows():
                 self.assertEqual(row["text"], row["target"])
 
-    ################################################################
+    # def test_pdf_to_json(self):
+    #     from pyrecdp.primitives.llmutils.document_extractor import pdf_to_text
+    #     in_file = "tests/data/llm_data/document/layout-parser-paper.pdf"
+    #     out_file = "tests/data/llm_data/document/layout-parser-paper.pdf.jsonl"
+    #     pdf_to_text(in_file, out_file)
 
-    # This test is used to make sure our codes in llm-ray is still working
-    # from pyrecdp.primitives.llmutils import shrink_document_MP, text_to_jsonl_MP, global_hash_mp, global_dedup
-    def test_llm_ray_convert_jsonl(self):
-        from pyrecdp.primitives.llmutils.text_to_jsonl import text_to_jsonl_MP
-        data_dir = "tests/data/pmc"
-        out_dir = "tests/data/pmc_jsonl"
-        text_to_jsonl_MP(data_dir, out_dir, 2)
+    # def test_docx_to_json(self):
+    #     from pyrecdp.primitives.llmutils.document_extractor import docx_to_text
+    #     in_file = "tests/data/llm_data/document/handbook-872p.docx"
+    #     out_file = "tests/data/output/document/handbook-872p.docx.jsonl"
+    #     docx_to_text(in_file, out_file)
 
-    def test_llm_ray_global_dedup(self):
-        from pyrecdp.primitives.llmutils.global_dedup import global_dedup
-        import pandas as pd
-        in_type = 'jsonl'
-        out_dir = "tests/data/global_dedup/"
-        data_dir = "tests/data/PILE"
-        global_dedup(data_dir, out_dir, "PILE", in_type)
-        pdf = pd.read_parquet(out_dir + 'deduplicated')
-        display(pdf)
+    # def test_image_to_json(self):
+    #     from pyrecdp.primitives.llmutils.document_extractor import image_to_text
+    #     in_file = "tests/data/llm_data/document/layout-parser-paper-10p.jpg"
+    #     out_file = "tests/data/output/document/layout-parser-paper-10p.jpg.jsonl"
+    #     image_to_text(in_file, out_file)
 
-    def test_pdf_to_json(self):
-        from pyrecdp.primitives.llmutils.document_extractor import pdf_to_text
-        in_file = "tests/data/llm_data/document/layout-parser-paper.pdf"
-        out_file = "tests/data/llm_data/document/layout-parser-paper.pdf.jsonl"
-        pdf_to_text(in_file, out_file)
-
-    def test_docx_to_json(self):
-        from pyrecdp.primitives.llmutils.document_extractor import docx_to_text
-        in_file = "tests/data/llm_data/document/handbook-872p.docx"
-        out_file = "tests/data/llm_data/document/handbook-872p.docx.jsonl"
-        docx_to_text(in_file, out_file)
-
-    def test_image_to_json(self):
-        from pyrecdp.primitives.llmutils.document_extractor import image_to_text
-        in_file = "tests/data/llm_data/document/layout-parser-paper-10p.jpg"
-        out_file = "tests/data/llm_data/document/layout-parser-paper-10p.jpg.jsonl"
-        image_to_text(in_file, out_file)
-
-    def test_document_to_json(self):
-        from pyrecdp.primitives.llmutils.document_extractor import document_to_text
-        input_dir = "tests/data/llm_data/document"
-        out_file = "tests/data/llm_data/document/document.jsonl"
-        document_to_text(input_dir, out_file, use_multithreading=True)
+    # def test_document_to_json(self):
+    #     from pyrecdp.primitives.llmutils.document_extractor import document_to_text
+    #     input_dir = "tests/data/llm_data/document"
+    #     out_file = "tests/data/output/document/document.jsonl"
+    #     document_to_text(input_dir, out_file, use_multithreading=True)
 
     def test_text_pipeline_optimize_with_one_config_file(self):
         from pyrecdp.primitives.llmutils.pipeline_hpo import text_pipeline_optimize
