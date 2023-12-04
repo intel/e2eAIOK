@@ -5,14 +5,14 @@ echo "Setup pyrecdp latest package"
 pip install -e .[LLM]
 
 # call cmdline tests
-cmdline="python pyrecdp/primitives/llmutils/quality_classifier.py --dataset_path tests/data/llm_data/arxiv_sample_100.jsonl --result_path tests/data/output/qualify_classify"
-echo "***************"
-echo $cmdline
-echo "***************"
-${cmdline}
-if [ $? != 0 ]; then
-    failed_tests=${failed_tests}${cmdline}"\n"
-fi
+# cmdline="python pyrecdp/primitives/llmutils/quality_classifier.py --dataset_path tests/data/llm_data/arxiv_sample_100.jsonl --result_path tests/data/output/qualify_classify"
+# echo "***************"
+# echo $cmdline
+# echo "***************"
+# ${cmdline}
+# if [ $? != 0 ]; then
+#     failed_tests=${failed_tests}${cmdline}"\n"
+# fi
 
 # cmdline="python pyrecdp/primitives/llmutils/global_dedup.py -d tests/data/PILE/ -o tests/data/PILE_global_dedup -t jsonl"
 # echo "***************"

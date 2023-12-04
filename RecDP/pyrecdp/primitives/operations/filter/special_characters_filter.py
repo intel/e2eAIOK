@@ -1,6 +1,5 @@
 from pyrecdp.primitives.operations.base import LLMOPERATORS
 from pyrecdp.primitives.operations.filter.base import BaseFilter
-from pyrecdp.primitives.operations.constant import SPECIAL_CHARACTERS
 
 
 # This filter is referred from alibaba data juicer project
@@ -18,6 +17,7 @@ class SpecialCharactersFilter(BaseFilter):
         self.max_ratio = max_ratio
 
     def get_compute_func(self, *args, **kwargs):
+        from pyrecdp.primitives.operations.constant import SPECIAL_CHARACTERS
         min_ratio = self.min_ratio
         max_ratio = self.max_ratio
 

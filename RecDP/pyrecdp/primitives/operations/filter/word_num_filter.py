@@ -4,7 +4,6 @@ from pyrecdp.core.model_utils import get_model
 from pyrecdp.primitives.operations.utils import get_words_from_document, words_refinement
 from pyrecdp.primitives.operations.base import LLMOPERATORS
 from pyrecdp.primitives.operations.filter.base import BaseFilter
-from pyrecdp.primitives.operations.constant import SPECIAL_CHARACTERS
 
 
 # This filter is referred from alibaba data juicer project
@@ -25,6 +24,7 @@ class WordNumFilter(BaseFilter):
         self.model_key = None
 
     def get_compute_func(self, *args, **kwargs):
+        from pyrecdp.primitives.operations.constant import SPECIAL_CHARACTERS
         tokenizer = get_model(self.model_key, lang=self.language,
                               model_type='sentencepiece')
         min_num = self.min_num

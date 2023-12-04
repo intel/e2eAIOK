@@ -1,5 +1,6 @@
 import os, sys
 import time
+from pyrecdp.core.import_utils import check_availability_and_install
 
 def convert_listoflist_to_spk(components, spark):
     from pyspark.sql import Row
@@ -185,6 +186,7 @@ def launch_mp(n_proc, args, callable):
                 continue
          
 def normalize_str(s):
+    check_availability_and_install('ftfy')
     import ftfy
     s = ftfy.fix_text(s, normalization="NFC")
     return s

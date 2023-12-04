@@ -4,6 +4,7 @@ import pip
 import importlib
 import pathlib
 import pkg_resources
+from loguru import logger
 
 def list_requirements(requirements_path):
     with pathlib.Path(requirements_path).open() as requirements_txt:
@@ -30,19 +31,23 @@ def fix_package_name(package):
     #print(b)
     return b
 
-def check_availability_and_install(package_or_list):
+def check_availability_and_install(package_or_list, verbose=1):
     def actual_func(package):
         pip_name = fix_package_name(package)
         try:
             return importlib.import_module(pip_name)
         except ImportError:
-            pip.main(['install', package])
+            pip.main(['install', '-q', package])
             #importlib.import_module(pip_name)
             
     if isinstance(package_or_list, list):
+        if verbose == 1 and len(package_or_list) > 0:        
+            logger.info(f"check_availability_and_install {package_or_list}")
         for pkg in package_or_list:
             actual_func(pkg)
     elif isinstance(package_or_list, str):
+        if verbose == 1 and package_or_list != "":        
+            logger.info(f"check_availability_and_install {package_or_list}")
         actual_func(package_or_list)
     else:
         raise ValueError(f"{package_or_list} with type of {type(package_or_list)} is not supported.")

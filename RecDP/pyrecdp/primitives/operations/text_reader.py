@@ -1,9 +1,8 @@
 from .base import BaseLLMOperation, LLMOPERATORS
-import copy
 from ray.data import Dataset
 from pyspark.sql import DataFrame
-import json
 import os
+from loguru import logger
 
 class DatasetReader(BaseLLMOperation):
     def __init__(self):
@@ -134,6 +133,7 @@ class SourcedReader(TextReader):
         else:
             input_dir = self.input_dir
         files_with_subtask = sub_task_per_folder(get_target_file_list_from_local(self.input_dir, file_name if file_name is not None else file_type))
+        logger.info(f"Load {files_with_subtask} as subtasks from {self.input_dir}")
         return files_with_subtask, input_dir
     
 class SourcedJsonlReader(SourcedReader):

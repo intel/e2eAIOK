@@ -4,7 +4,6 @@ from pyspark.sql import DataFrame
 
 from pyrecdp.core.cache_utils import RECDP_MODELS_CACHE
 from pyrecdp.core.utils import Timer
-from pyrecdp.primitives.llmutils.third_party import generate_connected_components
 
 def normalize_str(s):
     import ftfy
@@ -117,6 +116,7 @@ class FuzzyDeduplicate(BaseLLMOperation):
     @statistics_decorator
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
         from pyspark.sql import Row
+        from pyrecdp.primitives.llmutils.third_party import generate_connected_components
         if self.inplace:
             column_names = spark_df.columns
             if 'norm_text' in column_names:
@@ -179,6 +179,7 @@ class FuzzyDeduplicateGenDict(BaseLLMOperation):
     @statistics_decorator
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
         from pyspark.sql import Row
+        from pyrecdp.primitives.llmutils.third_party import generate_connected_components
         if self.inplace:
             column_names = spark_df.columns
             if 'norm_text' in column_names:

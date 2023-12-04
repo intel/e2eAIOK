@@ -1,7 +1,6 @@
 from .base import BaseLLMOperation, LLMOPERATORS, statistics_decorator
 from ray.data import Dataset
 from pyspark.sql import DataFrame
-from pyrecdp.primitives.llmutils.third_party import generate_connected_components
 from .logging_utils import logger
 from pyrecdp.core.utils import Timer
 from tqdm import tqdm
@@ -12,6 +11,7 @@ class BaseCompareDedup(BaseLLMOperation):
         settings = {'text_key': text_key, 'max_ratio': max_ratio, 'batch_size': batch_size,
                     'score_store_path': score_store_path}
         settings.update(args_dict)
+        requirements += ["networkit==10.1"]
         super().__init__(settings, requirements)
         self.text_key = text_key
         self.max_ratio = max_ratio
@@ -52,6 +52,7 @@ class BaseCompareDedup(BaseLLMOperation):
         from pyspark.sql import types as T
         from pyspark.sql import Row
         import pandas as pd
+        from pyrecdp.primitives.llmutils.third_party import generate_connected_components
 
         max_ratio = self.max_ratio
         spark_df = spark_df.withColumn('id_1', F.monotonically_increasing_id())

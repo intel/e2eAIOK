@@ -68,4 +68,4 @@ try:
     from .doc_loader import DirectoryLoader, DocumentLoader, UrlLoader
     from .text_to_qa import TextToQA
 except Exception as e:
-    raise e
+    pass

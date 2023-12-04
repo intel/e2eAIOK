@@ -33,6 +33,7 @@ class WordRepetitionFilter(BaseFilter):
                                    model_type='sentencepiece')
 
     def get_compute_func(self, *args, **kwargs):
+        from pyrecdp.primitives.operations.constant import SPECIAL_CHARACTERS
         rep_len = self.n
         min_ratio = self.min_ratio
         max_ratio = self.max_ratio
