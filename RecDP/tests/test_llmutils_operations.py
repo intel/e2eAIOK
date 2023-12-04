@@ -223,6 +223,11 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds())
 
+    def test_url_load_ray(self):
+        op = UrlLoader(["https://www.intc.com/news-events/press-releases?year=2023&category=all"], max_depth=1)
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds())
+
     def test_document_split_ray(self):
         op = DocumentSplit()
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
@@ -387,6 +392,12 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         op = DirectoryLoader("tests/data/llm_data/document", glob="**/*.pdf")
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark))
+
+    def test_url_load_spark(self):
+        op = UrlLoader(["https://www.intc.com/news-events/press-releases?year=2023&category=all"], max_depth=1)
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark))
+
 
     def test_document_split_spark(self):
         op = DocumentSplit()
