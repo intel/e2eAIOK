@@ -1,8 +1,8 @@
 from .base import BaseLLMOperation, LLMOPERATORS
 from ray.data import Dataset
 from pyspark.sql import DataFrame
-from huggingface_hub import hf_hub_download
-import fasttext
+
+
 import os
 from pathlib import Path
 from typing import Dict, Iterable, Iterator, List, Optional, Tuple
@@ -112,6 +112,7 @@ class Classifier(Transformer):
         language: str = None,
         rounding: int = 2,
     ):
+        import fasttext
         super().__init__()
         self.model = model
         assert model.exists(), f"Model {model} doesn't exist."
@@ -127,6 +128,7 @@ class Classifier(Transformer):
         self.cnt: Dict[str, int] = {}
 
     def _prepare(self):
+        import fasttext
         self.fasttext_model = fasttext.load_model(str(self.model))
 
     def predict(self, text):
@@ -173,6 +175,7 @@ def predict(model, text: str, k: int = 1):
     return labels, scores
 
 def construct_classifier(fasttext_model_dir, language_identify_field, language_identify_output_field, threshold):
+    from huggingface_hub import hf_hub_download
     print(fasttext_model_dir)
     if os.path.isfile(fasttext_model_dir):
         model_path = fasttext_model_dir
@@ -181,8 +184,7 @@ def construct_classifier(fasttext_model_dir, language_identify_field, language_i
     model = Path(model_path)
     return Classifier(model, language_identify_field, language_identify_output_field, threshold=threshold)
 
-def prepare_func_language_id(fasttext_model_dir, language_identify_field, language_identify_output_field, threshold):
-    classifier = construct_classifier(fasttext_model_dir, language_identify_field, language_identify_output_field, threshold)
+def prepare_func_language_id(classifier):
     def generate_lang_label(content):
         # 0. apply normalization to content
         content = {classifier.field: content}
@@ -201,7 +203,8 @@ class LanguageIdentify(BaseLLMOperation):
         :param threshold: the threshold to return identified language. the value range is [0, 1).
         """
         settings = {'text_key': text_key, 'inplace': inplace, 'fasttext_model_dir': fasttext_model_dir, 'threshold': threshold}
-        super().__init__(settings)
+        requirements = ['fasttext==0.9.2', "huggingface-hub"]
+        super().__init__(settings, requirements)
         self.text_key = text_key
         self.inplace = False
         self.fasttext_model_dir = fasttext_model_dir
@@ -209,23 +212,21 @@ class LanguageIdentify(BaseLLMOperation):
         self.actual_func = None
         self.support_spark = True
         self.support_ray = True
+        self.new_name = 'language'
+        self.classifier = construct_classifier(fasttext_model_dir, text_key, self.new_name, threshold)
+
+    def __del__(self):
+        del self.classifier
         
     def process_rayds(self, ds: Dataset) -> Dataset:
-        if self.inplace:
-            raise NotImplementedError("We only support non-inplace modification for LanguageIdentify.")
-        else:
-            new_name = 'language'
         if self.actual_func is None:
-            self.actual_func = prepare_func_language_id(fasttext_model_dir = self.fasttext_model_dir,
-                                                        language_identify_field = self.text_key, language_identify_output_field = new_name, threshold = self.threshold)
-        return ds.map(lambda x: self.process_row(x, self.text_key, new_name, self.actual_func))
+            self.actual_func = prepare_func_language_id(self.classifier)
+        return ds.map(lambda x: self.process_row(x, self.text_key, self.new_name, self.actual_func))
     
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
         import pyspark.sql.functions as F
         from pyspark.sql import types as T
-        new_name = "language"
-        language_id_udf = F.udf(prepare_func_language_id(fasttext_model_dir = self.fasttext_model_dir,
-                                                         language_identify_field = self.text_key, language_identify_output_field = new_name, threshold = self.threshold))
-        return spark_df.withColumn(new_name, language_id_udf(F.col(self.text_key)))
+        language_id_udf = F.udf(prepare_func_language_id(self.classifier))
+        return spark_df.withColumn(self.new_name, language_id_udf(F.col(self.text_key)))
     
 LLMOPERATORS.register(LanguageIdentify)

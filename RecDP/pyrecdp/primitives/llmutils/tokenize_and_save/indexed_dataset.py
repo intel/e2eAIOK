@@ -20,6 +20,8 @@ from functools import lru_cache
 from itertools import accumulate
 
 import numpy as np
+from pyrecdp.core.import_utils import check_availability_and_install
+check_availability_and_install("torch")
 import torch
 
 

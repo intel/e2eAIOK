@@ -58,7 +58,7 @@ class SparkContext:
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        pass
+        del self.rdp
 
     def show(self, ds):
         pd = ds.toPandas()

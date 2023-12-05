@@ -1,18 +1,20 @@
 from .base import BaseLLMOperation, LLMOPERATORS
 from ray.data import Dataset
 from pyspark.sql import DataFrame
-from transformers import AutoTokenizer, AutoModelForCausalLM
+
 
 class TextToQA(BaseLLMOperation):
     def __init__(self, model_name="neural_chat",text_key="text",max_new_tokens=500):
         settings = {'model_name': model_name,'text_key': text_key,'max_new_tokens': max_new_tokens}
-        super().__init__(settings)
+        requirements = ['transformers']
+        super().__init__(settings, requirements)
         self.model_name=model_name
         self.text_key=text_key
         self.max_new_tokens=max_new_tokens
         self.support_spark = True
         self.support_ray = True
-        
+       
+        from transformers import AutoTokenizer, AutoModelForCausalLM 
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, trust_remote_code=True)
         self.model = AutoModelForCausalLM.from_pretrained(self.model_name, trust_remote_code=True)
 

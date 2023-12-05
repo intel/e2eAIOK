@@ -8,13 +8,14 @@ def text_bytesize(s):
 class TextBytesize(BaseLLMOperation):
     def __init__(self, text_key = 'text'):
         settings = {'text_key': text_key}
-        super().__init__(settings)
+        requirements = []
+        super().__init__(settings, requirements)
         self.text_key = text_key
         self.inplace = False
         self.support_spark = True
-        self.support_ray = True
+        self.support_ray = True        
         
-    def process_rayds(self, ds: Dataset) -> Dataset:
+    def process_rayds(self, ds):
         if self.inplace:
             raise NotImplementedError("We don't inplace modify text with normalization")
         else:

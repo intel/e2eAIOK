@@ -1,30 +1,12 @@
 from .base import BaseLLMOperation, LLMOPERATORS, statistics_decorator
 from ray.data import Dataset
 from pyspark.sql import DataFrame
-import os
+
 from pyrecdp.core.cache_utils import RECDP_MODELS_CACHE
-
-import argparse
-import os
-import sys
-
-import re
-from nltk import ngrams
-import pyspark.sql.functions as F
 from pyrecdp.core.utils import Timer
-from pyspark.sql import Row
-
-NON_ALPHA = re.compile("[^A-Za-z_0-9]")
-THRESHOLD = 200
-
-from pyrecdp.primitives.llmutils.third_party import generate_connected_components, generate_duplicates_dict
-from datasketch import MinHash
-from pyspark.sql.types import StringType, IntegerType
-import hashlib
-
-import ftfy, re, string
 
 def normalize_str(s):
+    import ftfy
     if s:
         s = ftfy.fix_text(s, normalization="NFC")
     else:
@@ -32,12 +14,14 @@ def normalize_str(s):
     return s
 
 def clean_str(s):
+    import re, string
     s = normalize_str(s)
     s = s.lower().translate(str.maketrans("", "", string.punctuation))
     s = re.sub(r"\s+", " ", s.strip())
     return s
 
 def global_unique_id(df, col_name):
+    import pyspark.sql.functions as F
     ret_df = df
     if 'filename_docid' in df.schema.names:
         ret_df = ret_df.withColumn(col_name, F.regexp_replace(F.col("filename_docid"), "/", "_"))
@@ -52,6 +36,10 @@ def global_unique_id(df, col_name):
     return ret_df
 
 def generate_hash_values(content, idx, num_perm, ngram_size, hashranges, permutations, is_norm):
+    import re
+    from nltk import ngrams
+    from datasketch import MinHash
+    NON_ALPHA = re.compile("[^A-Za-z_0-9]")
     # 0. apply normalization to content
     if is_norm:
         content = clean_str(content)    
@@ -114,7 +102,8 @@ class FuzzyDeduplicate(BaseLLMOperation):
         :param ranges(int): size of each bands, The LSH parameters. default is 13
         """
         settings = {'text_key': text_key, 'num_perm': 256, 'ngram_size': 3, 'bands': 9, 'ranges': 13}
-        super().__init__(settings)        
+        requirements = ["ftfy==6.1.1", "networkit==10.1", "nltk==3.8.1", "datasketch==1.5.9"]
+        super().__init__(settings, requirements)
         self.support_spark = True
         self.support_ray = False
         self.text_key = text_key
@@ -126,6 +115,8 @@ class FuzzyDeduplicate(BaseLLMOperation):
     
     @statistics_decorator
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
+        from pyspark.sql import Row
+        from pyrecdp.primitives.llmutils.third_party import generate_connected_components
         if self.inplace:
             column_names = spark_df.columns
             if 'norm_text' in column_names:
@@ -174,7 +165,8 @@ class FuzzyDeduplicateGenDict(BaseLLMOperation):
         :param ranges(int): size of each bands, The LSH parameters. default is 13
         """
         settings = {'text_key': text_key, 'num_perm': 256, 'ngram_size': 3, 'bands': 9, 'ranges': 13}
-        super().__init__(settings)        
+        requirements = ["ftfy==6.1.1", "networkit==10.1", "nltk==3.8.1", "datasketch==1.5.9"]
+        super().__init__(settings, requirements)
         self.support_spark = True
         self.support_ray = False
         self.text_key = text_key
@@ -186,6 +178,8 @@ class FuzzyDeduplicateGenDict(BaseLLMOperation):
     
     @statistics_decorator
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
+        from pyspark.sql import Row
+        from pyrecdp.primitives.llmutils.third_party import generate_connected_components
         if self.inplace:
             column_names = spark_df.columns
             if 'norm_text' in column_names:
@@ -242,7 +236,8 @@ LLMOPERATORS.register(FuzzyDeduplicateGenDict)
 class FuzzyDeduplicateApplyDict(BaseLLMOperation):
     def __init__(self, text_key = 'text', num_perm = 256, ngram_size = 13, bands = 9, ranges = 13):
         settings = {'text_key': text_key, 'num_perm': 256, 'ngram_size': 3, 'bands': 9, 'ranges': 13}
-        super().__init__(settings)        
+        requirements = []
+        super().__init__(settings, requirements)
         self.support_spark = True
         self.support_ray = False
         self.text_key = text_key
@@ -269,6 +264,7 @@ class FuzzyDeduplicateApplyDict(BaseLLMOperation):
 LLMOPERATORS.register(FuzzyDeduplicateApplyDict)
 
 def sha256str(s):
+    import hashlib
     h = hashlib.sha256()
     try:
         h.update(s.encode("utf-8"))
@@ -278,6 +274,8 @@ def sha256str(s):
     return h.hexdigest()
 
 def global_hash_spk(spark_df, text_key, global_id_name = 'global_id'):
+    import pyspark.sql.functions as F
+    from pyspark.sql.types import StringType, IntegerType
     clean_str_udf = F.udf(clean_str, StringType())
     sha256str_udf = F.udf(sha256str, StringType())
     bytesize_udf = F.udf(lambda x: len(x.encode('utf-8')), IntegerType())
@@ -293,10 +291,12 @@ def global_hash_spk(spark_df, text_key, global_id_name = 'global_id'):
     return ret_df
 
 def get_hash_indexing_spk(spark_df, global_id_name = 'global_id'):
+    import pyspark.sql.functions as F
     dict_df_all = spark_df.groupby('hash').agg(F.collect_list(global_id_name).alias(f'{global_id_name}_list'), F.count("hash").alias('hash_count'))
     return dict_df_all
 
 def get_duplication_list_for_debug_spk(spark_df, global_id_name = 'global_id'):
+    import pyspark.sql.functions as F
     dict_df_all = spark_df.filter("hash_count > 1")
     global_list_name = f'{global_id_name}_list'
     dict_df_all = dict_df_all.withColumn('dup_grpid', F.monotonically_increasing_id())
@@ -305,6 +305,7 @@ def get_duplication_list_for_debug_spk(spark_df, global_id_name = 'global_id'):
     return dict_df_all
 
 def get_duplication_list_spk(spark_df, global_id_name = 'global_id'):
+    import pyspark.sql.functions as F
     dict_df_all = spark_df.filter("hash_count > 1")
     global_list_name = f'{global_id_name}_list'
     dict_df_all = dict_df_all.withColumn(global_list_name, F.slice(F.col(global_list_name), 2, F.size(F.col(global_list_name))))\
@@ -326,7 +327,8 @@ class GlobalDeduplicate(BaseLLMOperation):
         :param text_key: the name of field which will be apply language_idenfity.
         """
         settings = {'text_key': text_key}
-        super().__init__(settings)
+        requirements = ['ftfy']
+        super().__init__(settings, requirements)
         self.text_key = text_key
         self.inplace = True
         self.support_spark = True
@@ -368,7 +370,8 @@ class GlobalDeduplicateGenDict(BaseLLMOperation):
         :param text_key: the name of field which will be apply language_idenfity.
         """
         settings = {'text_key': text_key}
-        super().__init__(settings)
+        requirements = ['ftfy']
+        super().__init__(settings, requirements)
         self.text_key = text_key
         self.inplace = True
         self.support_spark = True
@@ -406,7 +409,8 @@ LLMOPERATORS.register(GlobalDeduplicateGenDict)
 class GlobalDeduplicateApplyDict(BaseLLMOperation):
     def __init__(self, text_key = 'text'):        
         settings = {'text_key': text_key}
-        super().__init__(settings)
+        requirements = []
+        super().__init__(settings, requirements)
         self.text_key = text_key
         self.inplace = True
         self.support_spark = True

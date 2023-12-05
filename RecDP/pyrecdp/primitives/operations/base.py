@@ -11,6 +11,7 @@ from pyspark import RDD as SparkRDD
 from pyrecdp.core.utils import dump_fix
 from IPython.display import display
 from pyrecdp.core.registry import Registry
+from pyrecdp.core.import_utils import check_availability_and_install
 
 AUTOFEOPERATORS = Registry('BaseAutoFEOperation')
 class Operation:
@@ -145,13 +146,14 @@ LLMOPERATORS = Registry('BaseLLMOperation')
 
 
 class BaseLLMOperation(BaseOperation):
-    def __init__(self, args_dict={}):
+    def __init__(self, args_dict={}, requirements=[]):
         self.op = Operation(-1, None, [], f'{self.__class__.__name__}', args_dict)
         self.cache = None
         self.support_spark = False
         self.support_ray = True
         self.statistics = OperationStatistics(0, 0, 0, 0)
         self.statistics_flag = False
+        check_availability_and_install(requirements)
 
     @classmethod
     def instantiate(cls, op_obj, config):

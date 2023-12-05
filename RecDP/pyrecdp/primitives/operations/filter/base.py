@@ -6,8 +6,8 @@ import pyspark.sql.functions as F
 
 
 class BaseFilter(BaseLLMOperation):
-    def __init__(self, args_dict={}):
-        super().__init__(args_dict=args_dict)
+    def __init__(self, args_dict={}, requirements=[]):
+        super().__init__(args_dict=args_dict, requirements=requirements)
         self.text_key = 'text'
         self.inplace = True
         self.support_ray = True
