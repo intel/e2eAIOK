@@ -347,7 +347,7 @@ class PerfileSourcedParquetReader(SourcedReader, PerfileReader):
     
     def process_spark(self, spark, spark_df: DataFrame = None):
         import pyspark.sql.functions as F
-        files_with_subtask, input_dir = self.get_files_with_subtask("jsonl")
+        files_with_subtask, input_dir = self.get_files_with_subtask("parquet")
         to_read_list = [(sub_task, os.path.join(input_dir, f)) for sub_task, file_list in files_with_subtask.items() for f in file_list]
         self.cache = []
         for sub_task, file_path in to_read_list:

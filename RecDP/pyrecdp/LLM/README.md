@@ -47,15 +47,24 @@ pip install pyrecdp[LLM] --pre
 
 ### Data pipeline
 
-#### 1. RAG Data Pipeline - Build from public HTML
+#### 1. RAG Data Pipeline - Build from public HTML [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/rag_pipeline.ipynb)
+Retrieval-augmented generation (RAG) for large language models (LLMs) aims to improve prediction quality by using an external datastore at inference time to build a richer prompt that includes some combination of context, history, and recent/relevant knowledge (RAG LLMs).
+Recdp LLM can provide a pipeline for ingesting data from a source and indexing it. We mainly provide the following capabilities.
+- **Load Data**: Load your data from source. You can use `UrlLoader` or `DirectoryLoader` for this.
+- **Improve Data Quality**: Clean up text for LLM RAG to use. It mainly solves the problem of sentences being split by incorrect line breaks after parsing the file, removing special characters, fixing unicode errors,  and so on.
+- **Split Text**: `DocumentSplit` helps break large Documents into smaller chunks. This is useful for indexing data and make it better used by the model.
+- **Vector Store**: In order to retrieve your data, We provide `DocumentIngestion` use a VectorStore and Embeddings model to store and index your data.
 
-```
+Here is a basic RAG Data Pipeline example:
+```python
 from pyrecdp.primitives.operations import *
 from pyrecdp.LLM import TextPipeline
 
 pipeline = TextPipeline()
 ops = [
-    DirectoryLoader("document", glob="**/*.html"),
+    UrlLoader(urls=["https://www.intc.com/news-events/press-releases/detail/1655/intel-reports-third-quarter-2023-financial-results"], target_tag='div', target_attrs={'class': 'main-content'}),
+    # DirectoryLoader(files_path, glob="**/*.pdf"),
+    RAGTextFix(),
     DocumentSplit(),
     DocumentIngestion(
         vector_store='FAISS',
@@ -73,16 +82,31 @@ pipeline.add_operations(ops)
 pipeline.execute()
 ```
 
-#### 2. Finetune Data Pipeline - Downsize public finetune dataset
+#### 2. Finetune Data Pipeline - Build finetune dataset from Plain Text to QA
+
+```
+from pyrecdp.LLM import TextPipeline
+from pyrecdp.primitives.operations import *
+
+pipeline = TextPipeline()
+ops = [
+    ParquetReader(dataset_path),
+    TextToQA(model_name="neural_chat",max_new_tokens=500),
+    ParquetWriter(result_path)
+]
+pipeline.add_operations(ops)
+pipeline.execute()
+```
+
+#### 3. Finetune Data Pipeline - Downsize public finetune dataset
 
 ```
 from pyrecdp.LLM import TextPipeline, ResumableTextPipeline
 from pyrecdp.primitives.operations import *
 
 import os
-spark_pipeline = ResumableTextPipeline()
-spark_pipeline.enable_statistics()
-out_dir = "ResumableTextPipeline_output-spark"
+pipeline = ResumableTextPipeline()
+pipeline.enable_statistics()
 ops = [
     JsonlReader("{path-to-e2eAIOK}/RecDP/tests/data/alpaca/alpaca_data_50.jsonl"),
     TextPrompt(dataset_name="alpaca", prompt_name="causal_llm_1"),
@@ -91,30 +115,13 @@ ops = [
     TextDiversityIndicate(out_dir=out_dir, language="en", first_sent=False),
     TextQualityScorer(model="gpt3"),
     RougeScoreDedup(max_ratio=0.7, batch_size=10,score_store_path=os.path.join(out_dir,'RougeScorefiltered.parquet')),
-    ParquetWriter(out_dir)
+    ParquetWriter("ResumableTextPipeline_output")
 ]
-spark_pipeline.add_operations(ops)
-ret = spark_pipeline.execute()
-
-ray_pipeline = ResumableTextPipeline()
-ray_pipeline.enable_statistics()
-out_dir = "ResumableTextPipeline_output-ray"
-ops = [
-    JsonlReader("{path-to-e2eAIOK}/RecDP/tests/data/alpaca/alpaca_data_50.jsonl"),
-    TextPrompt(dataset_name="alpaca", prompt_name="causal_llm_1"),
-    RandomSelect(fraction=0.3),
-    TextPerplexityScore(),
-    ParquetWriter(out_dir)
-]
-ray_pipeline.add_operations(ops)
-ret = ray_pipeline.execute()
+pipeline.add_operations(ops)
+pipeline.execute()
 ```
 
-#### 3. Finetune Data Pipeline - Build finetune dataset from Plain Text
-
-#### 4. Finetune Data Pipeline - Build finetune dataset from Existing QA
-
-#### 5. AutoHPO
+#### 4. AutoHPO
 
 Low-Code configuration with automated operators parameter tuning, allowing user to transform their own raw data toward a high quality dataset with low-effort. We coupled data processing with Quality Analisys as evaluation metrics, which will estimate data's quality before actual model finetuning/inference.
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/pipeline_hpo.ipynb)

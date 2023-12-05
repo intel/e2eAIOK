@@ -130,13 +130,13 @@ class BaseCompareDedup(BaseLLMOperation):
                 logger.info(f"Finally detected duplicated num_samples is {total_dup}")
             else:
                 spark_df = spark_df.drop("id_1")
-        score_df = pd.concat(score_df_list, ignore_index=True).reset_index(drop=True)
-        if self.score_store_path:
+        score_df = pd.concat(score_df_list, ignore_index=True).reset_index(drop=True) if len(score_df_list) != 0 else None
+        if self.score_store_path and score_df is not None:
             import os, shutil
             if os.path.exists(self.score_store_path):
                 os.remove(self.score_store_path)
             score_df.to_parquet(self.score_store_path)
-        if self.statistics_flag:
+        if self.statistics_flag and score_df is not None:
             self.statistics.example = score_df
 
         return spark_df
@@ -145,16 +145,22 @@ class BaseCompareDedup(BaseLLMOperation):
         raise NotImplementedError("Abstract func")
 
     def summarize(self) -> str:
-        self.statistics.dup_ratio = 1 - self.statistics.total_out / self.statistics.total_in
+        self.statistics.dup_ratio = 1 - self.statistics.total_out / self.statistics.total_in if self.statistics.total_in != 0 else 0
         self.statistics.dup_num = self.statistics.total_in - self.statistics.total_out
         statistics_save = {
             "dup_num": self.statistics.dup_num,
             "dup_ratio": self.statistics.dup_ratio
         }
-        return (statistics_save, 
+        
+        # Construct the summary string
+        summary_str = (
             f"A total of {self.statistics.total_in} rows of data were processed, using {self.statistics.used_time} seconds, "
             f"A duplication list containing {self.statistics.dup_num} found, around {self.statistics.dup_ratio * 100}% of total data, "
-            f"Sampled, duplication preview: {self.statistics.example.head(50)}")
+        )
+        if hasattr(self.statistics, 'example'):
+            summary_str += f"Sampled, duplication preview: {self.statistics.example.head(50)}"
+            
+        return (statistics_save, summary_str)
 
 
 LLMOPERATORS.register(BaseCompareDedup)

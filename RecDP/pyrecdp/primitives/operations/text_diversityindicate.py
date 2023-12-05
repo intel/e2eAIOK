@@ -126,10 +126,12 @@ class DiversityAnalysis:
             spark_df = self.dataset.withColumn('diversity', operator(F.col(self.text_key)))
             pd_df = spark_df.select("diversity").toPandas()
             df_explode = pd_df.explode('diversity').reset_index(drop=True)
-            df_explode = df_explode.dropna()
-            dataset = df_explode.apply(lambda x: [x['diversity']['verb'], x['diversity']['noun']], axis=1,
-                                       result_type='expand')
-            dataset.columns = ['verb', 'noun']
+            if not df_explode.empty:
+                dataset = df_explode.apply(lambda x: [x['diversity']['verb'], x['diversity']['noun']], axis=1,
+                                        result_type='expand')
+                dataset.columns = ['verb', 'noun']
+            else:
+                dataset = pd.DataFrame(columns=['verb', 'noun'])
         else:
             import copy
 
@@ -224,7 +226,8 @@ class TextDiversityIndicate(BaseLLMOperation):
 
     def summarize(self) -> str:
         diversity_result = pd.read_csv(os.path.join(self.output_path, 'diversity.csv'))
-        self.statistics.max = int(diversity_result["count"].max())
+        import numpy as np
+        self.statistics.max = int(diversity_result["count"].max()) if len(diversity_result) != 0 else np.nan
         self.statistics.mean = diversity_result["count"].mean()
         self.statistics.std = diversity_result["count"].std()
         statistics_save = {
