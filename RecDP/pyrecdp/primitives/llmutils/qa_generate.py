@@ -2,7 +2,7 @@ import argparse
 from pyrecdp.core.utils import Timer
 
 
-def get_text_to_qa_spark(spark_df, model_name="neural_chat", text_key="text", max_new_tokens=500):
+def get_text_to_qa_spark(spark_df, result_path, model_name="Intel/neural-chat-7b-v3-1", text_key="text", max_new_tokens=2000):
     """
     generate QA dataset from given text
     :param df_spark: spark dataframe
@@ -12,7 +12,7 @@ def get_text_to_qa_spark(spark_df, model_name="neural_chat", text_key="text", ma
     :return:
     """
     from pyrecdp.primitives.operations import TextToQA
-    op = TextToQA(model_name=model_name,text_key=text_key,max_new_tokens=max_new_tokens)
+    op = TextToQA(outdir=result_path,model_name=model_name,text_key=text_key,max_new_tokens=max_new_tokens)
     qa_df = op.process_spark(spark_df.sparkSession, spark_df)
     return qa_df
 
@@ -20,9 +20,9 @@ def get_text_to_qa_spark(spark_df, model_name="neural_chat", text_key="text", ma
 def get_text_to_qa(dataset_path, 
                     result_path, 
                     data_file_type,
-                    model_name="neural_chat", 
+                    model_name="Intel/neural-chat-7b-v3-1", 
                     text_key="text",
-                    max_new_tokens=500,
+                    max_new_tokens=2000,
                     engine_name="ray"):
     """
     generate QA dataset from given text
@@ -45,7 +45,7 @@ def get_text_to_qa(dataset_path,
         raise NotImplementedError(f"{data_file_type} is not supported in RecDP LLM ResumableTextPipeline yet.")
     ops = [
         reader,
-        TextToQA(model_name=model_name,text_key=text_key,max_new_tokens=max_new_tokens),
+        TextToQA(outdir=result_path,model_name=model_name,text_key=text_key,max_new_tokens=max_new_tokens),
         ParquetWriter(result_path)
     ]
     pipeline.add_operations(ops)
