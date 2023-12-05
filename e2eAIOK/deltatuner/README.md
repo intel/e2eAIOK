@@ -61,7 +61,7 @@ def optimize(model, tokenizer, deltatuning_args=None, **kwargs) -> DeltaTunerMod
     '''
     Parameters:
         - model - a HuggingFace PreTrainedModel or LoraModel. Specifies the model to be optimized
-        - tokenizer - a corresponding tokenizer for text preprocessing
+        - tokenizer - a corresponding tokenizer for text preprocessing, it is optional, and default set to None, if not specify the deltatuning_args.best_model_structure, then tokenizer cannot be ommitted
         - deltatuning_args (optional) – the deltatuner configuration. 
           - deltatuning_args.denas is to use the denas in the optimization (default: True)
           - deltatuning_args.algo Specifies what type of parameter efficient tuning algorithm (default: auto)
