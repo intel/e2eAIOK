@@ -66,7 +66,7 @@ class TextToQA(BaseLLMOperation):
                 qa_num_list.append(0)
         
         pd_df[self.qa_num] = qa_num_list
-        pd_df.to_parquet(os.path.join(self.outdir,"origin_qa.parquet"))
+        # pd_df.to_parquet(os.path.join(self.outdir,"origin_qa.parquet"))
 
         output_data = pd.DataFrame()
         output_data[self.text_key] = source_list_all

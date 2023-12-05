@@ -29,6 +29,8 @@ class TableSummary(BaseLLMOperation):
             input_length = inputs.input_ids.shape[1]
             generated_tokens = outputs.sequences[:, input_length:]
             output = tokenizer.decode(generated_tokens[0])
+            if "###Summary###" in output:
+                output = output.split("###Summary###")[1]
             out_list.append(output)
         pd_df[self.out_col] = out_list
         return pd_df
