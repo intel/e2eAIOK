@@ -186,7 +186,6 @@ def launch_mp(n_proc, args, callable):
                 continue
          
 def normalize_str(s):
-    check_availability_and_install('ftfy')
     import ftfy
     s = ftfy.fix_text(s, normalization="NFC")
     return s

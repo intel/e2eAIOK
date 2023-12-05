@@ -53,7 +53,6 @@ def random_replacements(n=10):
 
     TODO: add IPv6 and IPv4 separation
     """
-    check_availability_and_install("Faker")
     import faker
     FAKER = faker.Faker()
     letters = string.ascii_lowercase

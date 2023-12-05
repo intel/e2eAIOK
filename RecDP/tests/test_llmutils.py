@@ -30,7 +30,7 @@ class SparkContext:
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        pass
+        del self.rdp
 
     def show(self, ds):
         pd = ds.toPandas()
@@ -114,13 +114,13 @@ class Test_LLMUtils(unittest.TestCase):
             ret_df = global_dedup_spk(spark_df)
             ctx.show(ret_df)
 
+    #TODO: Failed after using add-on requirement, fix later
     def test_pii_remove_spark(self):
         pii_remove_help("tests/data/llm_data/tiny_c4_sample_for_pii.jsonl")
 
-    #TODO: Failed after using add-on requirement, fix later
-    # def test_pii_remove_email_spark(self):
-    #     from pyrecdp.primitives.llmutils.pii.detect.utils import PIIEntityType
-    #     pii_remove_help("tests/data/llm_data/tiny_c4_sample_for_pii.jsonl", entity_types=[PIIEntityType.EMAIL])
+    def test_pii_remove_email_spark(self):
+        from pyrecdp.primitives.llmutils.pii.detect.utils import PIIEntityType
+        pii_remove_help("tests/data/llm_data/tiny_c4_sample_for_pii.jsonl", entity_types=[PIIEntityType.EMAIL])
 
     def test_pii_remove_phone_spark(self):
         from pyrecdp.primitives.llmutils.pii.detect.utils import PIIEntityType
