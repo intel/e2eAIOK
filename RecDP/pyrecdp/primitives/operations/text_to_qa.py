@@ -8,8 +8,7 @@ class TextToQA(BaseLLMOperation):
     def __init__(self, outdir="", model_name="Intel/neural-chat-7b-v3-1",text_key="text",max_new_tokens=2000):
         settings = {'outdir': outdir,'model_name': model_name,'text_key': text_key,'max_new_tokens': max_new_tokens}
         requirements = ['transformers', 'pandas']
-        # super().__init__(settings, requirements)
-        super().__init__(settings)
+        super().__init__(settings, requirements)
         self.outdir = outdir
         self.model_name=model_name
         self.text_key=text_key

@@ -68,5 +68,5 @@ try:
     from .doc_loader import DirectoryLoader, DocumentLoader, UrlLoader
     from .text_to_qa import TextToQA
     from .table_summary import TableSummary
-except:
+except Exception as e:
     pass

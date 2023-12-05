@@ -1,6 +1,5 @@
 from pyrecdp.primitives.operations.base import LLMOPERATORS
 from pyrecdp.primitives.operations.filter.base import BaseFilter
-from profanity_check import predict, predict_prob
 
 
 class ProfanityFilter(BaseFilter):
@@ -13,8 +12,11 @@ class ProfanityFilter(BaseFilter):
         settings = {'threshold': threshold}
         super().__init__(args_dict=settings)
         self.threshold = threshold
+        requirements = ['alt-profanity-check==1.3.0']
+        super().__init__(settings, requirements)
 
     def get_compute_func(self, *args, **kwargs):
+        from profanity_check import predict, predict_prob
         threshold = self.threshold
         predict_func = predict
         if self.threshold != 0:

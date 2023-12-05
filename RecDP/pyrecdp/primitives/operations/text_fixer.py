@@ -1,14 +1,12 @@
 from .base import BaseLLMOperation, LLMOPERATORS
 from ray.data import Dataset
 from pyspark.sql import DataFrame
+from pyrecdp.core.model_utils import prepare_model, get_model
 
 from typing import List, Union
 import re
 from typing import Dict
-from selectolax.parser import HTMLParser
 
-from .constant import VARIOUS_WHITESPACES
-from pyrecdp.core.model_utils import prepare_model, get_model
 
 CPAT = re.compile("copyright", re.IGNORECASE)
 PAT = re.compile("/\\*[^*]*\\*+(?:[^/*][^*]*\\*+)*/")
@@ -21,6 +19,7 @@ class SupportedType:
 
 
 def clean_html(text):
+    from selectolax.parser import HTMLParser
     text = text.replace('<li>', '\n*')
     text = text.replace('</li>', '')
     text = text.replace('<ol>', '\n*')
@@ -245,7 +244,8 @@ class TextFix(BaseLLMOperation):
 
         """
         settings = {'text_key': text_key, 'inplace': inplace, 'text_type': text_type}
-        super().__init__(settings)
+        requirements = []
+        super().__init__(settings, requirements)
         self.text_key = text_key
         self.inplace = inplace
         self.text_type = text_type
@@ -290,7 +290,8 @@ class RAGTextFix(BaseLLMOperation):
 
         """
         settings = {'chars_to_remove': chars_to_remove, 'text_key': text_key, 'language': language}
-        super().__init__(settings)
+        requirements = ["ftfy", "selectolax"]
+        super().__init__(settings, requirements)
         self.support_spark = True
         self.support_ray = True
         self.text_key = text_key
@@ -310,6 +311,7 @@ class RAGTextFix(BaseLLMOperation):
 
     def get_compute_func(self):
         import ftfy
+        from pyrecdp.primitives.operations.constant import VARIOUS_WHITESPACES
         pattern = '[' + '|'.join(self.chars_to_remove) + ']'
         model_key = prepare_model(lang=self.language, model_type='nltk')
         nltk_model = get_model(model_key, lang=self.language, model_type='nltk')

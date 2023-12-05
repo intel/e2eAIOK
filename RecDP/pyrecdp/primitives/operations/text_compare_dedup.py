@@ -1,26 +1,18 @@
 from .base import BaseLLMOperation, LLMOPERATORS, statistics_decorator
 from ray.data import Dataset
 from pyspark.sql import DataFrame
-
-import pyspark.sql.functions as F
-from pyspark.sql import types as T
-from pyspark.sql import Row
-from rouge_score import rouge_scorer
-from pyrecdp.primitives.llmutils.third_party import generate_connected_components
-
 from .logging_utils import logger
 from pyrecdp.core.utils import Timer
 from tqdm import tqdm
-import pandas as pd
-
 
 class BaseCompareDedup(BaseLLMOperation):
     def __init__(self, text_key='text', max_ratio=0.7, batch_size=100, score_store_path='RougeScorefiltered.parquet',
-                 args_dict={}):
+                 args_dict={}, requirements=[]):
         settings = {'text_key': text_key, 'max_ratio': max_ratio, 'batch_size': batch_size,
                     'score_store_path': score_store_path}
         settings.update(args_dict)
-        super().__init__(settings)
+        requirements += ["networkit==10.1"]
+        super().__init__(settings, requirements)
         self.text_key = text_key
         self.max_ratio = max_ratio
         self.batch_size = batch_size
@@ -56,6 +48,12 @@ class BaseCompareDedup(BaseLLMOperation):
 
     @statistics_decorator
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
+        import pyspark.sql.functions as F
+        from pyspark.sql import types as T
+        from pyspark.sql import Row
+        import pandas as pd
+        from pyrecdp.primitives.llmutils.third_party import generate_connected_components
+
         max_ratio = self.max_ratio
         spark_df = spark_df.withColumn('id_1', F.monotonically_increasing_id())
         instruction_df_1 = spark_df.withColumnRenamed(self.text_key, "similarity_left")
@@ -164,6 +162,7 @@ class RougeScoreDedup(BaseCompareDedup):
     def __init__(self, text_key='text', max_ratio=0.7, batch_size=100, score_store_path='RougeScorefiltered.parquet'):
         settings = {'text_key': text_key, 'max_ratio': max_ratio, 'batch_size': batch_size,
                     "score_store_path": score_store_path}
+        requirements = ["rouge-score"]
         """
             Remove similar data by calculating the rough score
 
@@ -172,7 +171,7 @@ class RougeScoreDedup(BaseCompareDedup):
             :param batch_size: How many samples can be used at most per round to calculate rouge score
             :param score_store_path: Samples' rouge score exceeding max_ratio will be saved in this path
         """
-        super().__init__(args_dict=settings)
+        super().__init__(args_dict=settings, requirements=requirements)
         self.text_key = text_key
         self.max_ratio = max_ratio
         self.batch_size = batch_size

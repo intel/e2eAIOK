@@ -1,6 +1,8 @@
 from .base import BaseLLMOperation, LLMOPERATORS, statistics_decorator
 from ray.data import Dataset
 from pyspark.sql import DataFrame
+from loguru import logger
+import os
 
 # This tool is referred from alibaba data juicer project and used for
 # predicting a document score for text samples using
@@ -60,22 +62,7 @@ from pyspark.sql import DataFrame
 #       should_keep label in different running processes. But you should get
 #       same doc_score predictions in different running processes.
 
-import argparse
-import wget
-import zipfile
 
-from pyrecdp.core.utils import Timer
-from pyrecdp.primitives.spark_data_processor.data_processor import DataProcessor as SparkDataProcessor
-from pyrecdp.primitives.llmutils.utils import *
-
-import numpy as np
-import sentencepiece as spm
-
-from loguru import logger
-from pyspark.ml import PipelineModel
-
-from pyspark.sql.functions import col, rand, udf
-from pyspark.sql.types import ArrayType, DoubleType, IntegerType, StringType
 
 
 DEFAULT_CACHE_HOME = '~/.cache'
@@ -108,6 +95,10 @@ BACKUP_MODEL_LINKS = {
 }
 
 def prepare_model(model_name, model_path=RECDP_MODELS_CACHE):
+    import wget, os
+    import zipfile
+    from loguru import logger
+    from pyspark.ml import PipelineModel
     print(f"model_name is {model_name}")
 
     udm = False
@@ -148,6 +139,8 @@ def check_model(model_name, args=(), force=False):
         the model file maybe incomplete for some reason, so need to
         download again forcefully.
     """
+    import wget, os
+    
     if not os.path.exists(RECDP_MODELS_CACHE):
         os.makedirs(RECDP_MODELS_CACHE)
 
@@ -206,6 +199,9 @@ def tokenize_dataset(ds, tokenizer):
     :return: a dataset with an extra column "words" that stores the tokenized
         texts
     """
+    import sentencepiece as spm
+    from pyspark.sql.functions import col, udf
+    from pyspark.sql.types import ArrayType, StringType
     if os.path.exists(tokenizer):
         # if it's a local model
         tkn = spm.SentencePieceProcessor()
@@ -227,6 +223,10 @@ def get_keep_method_udf(keep_method):
     :param keep_method: name of keep method
     :return: a PySpark udf of specified keep method
     """
+    import numpy as np
+    from pyspark.sql.functions import udf
+    from pyspark.sql.types import IntegerType
+    
     if keep_method == 'label':
         return udf(lambda score: int(score > 0.5), IntegerType())
     elif keep_method == 'gpt3':
@@ -249,6 +249,8 @@ def predict(model, ds, tokenizer=None, keep_method='label'):
     :param keep_method: name of keep method to label the "should_keep" column
     :return:
     """
+    from pyspark.sql.functions import col, udf
+    from pyspark.sql.types import DoubleType
     logger.info('Start scoring dataset...')
     if tokenizer:
         # tokenizer is not standard Tokenizer in PySpark, need to apply it
@@ -287,7 +289,8 @@ class TextQualityScorer(BaseLLMOperation):
             can use one of ["gpt3", "chinese", "code"] we provided
         """
         settings = {'text_key': text_key, 'model': model}
-        super().__init__(settings)
+        requirements = ["sentencepiece"]
+        super().__init__(settings, requirements)
         self.text_key = text_key
         self.model = model # model: quality classifier name to apply. It's "gpt3" in default. Youcan use one of ["gpt3", "chinese", "code"] we provided
         self.inplace = False

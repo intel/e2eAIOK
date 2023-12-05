@@ -18,7 +18,8 @@ class TextPerplexityScore(BaseLLMOperation):
             :param language: Sample in which language. Default: en.(en, zh)
         """
         settings = {'language': language, 'text_key': text_key}
-        super().__init__(args_dict=settings)
+        requirements = []
+        super().__init__(settings, requirements)
         self.language = language
         self.text_key = text_key
         self.inplace = False

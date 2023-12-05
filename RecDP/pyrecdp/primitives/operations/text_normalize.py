@@ -1,14 +1,19 @@
 from .base import BaseLLMOperation, LLMOPERATORS
 from ray.data import Dataset
 from pyspark.sql import DataFrame
-import ftfy, re, string
 
 def normalize_str(s):
+    import ftfy
     s = ftfy.fix_text(s, normalization="NFC")
     return s
 
 def clean_str(s):
-    s = normalize_str(s)
+    import string
+    import re
+    try:
+        s = normalize_str(s)
+    except:
+        s = ""
     s = s.lower().translate(str.maketrans("", "", string.punctuation))
     s = re.sub(r"\s+", " ", s.strip())
     return s
@@ -19,7 +24,8 @@ def text_normalization(s):
 class TextNormalize(BaseLLMOperation):
     def __init__(self, text_key = 'text'):
         settings = {'text_key': text_key}
-        super().__init__(settings)
+        requirements = ['ftfy']
+        super().__init__(settings, requirements)
         self.text_key = text_key
         self.inplace = False
         self.support_spark = True

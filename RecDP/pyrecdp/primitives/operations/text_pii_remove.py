@@ -4,9 +4,7 @@ from pyspark.sql import DataFrame
 import os
 from typing import List
 
-from pyrecdp.primitives.llmutils.pii.pii_detection import scan_pii_text
-from pyrecdp.primitives.llmutils.pii.pii_redaction import redact_pii_text, random_replacements
-from pyrecdp.primitives.llmutils.pii.detect.utils import PIIEntityType
+
 
 
 def prepare_pipeline(model_root_path=None):
@@ -19,7 +17,11 @@ def prepare_pipeline(model_root_path=None):
     return pipeline(model=_model_key, task='token-classification', tokenizer=tokenizer, grouped_entities=True)
 
 
-def prepare_func_pii_removal(model_root_path=None, debug_mode=True, entity_types: List[PIIEntityType] = None):
+def prepare_func_pii_removal(model_root_path=None, debug_mode=True, entity_types=None):
+    from pyrecdp.primitives.llmutils.pii.pii_detection import scan_pii_text
+    from pyrecdp.primitives.llmutils.pii.pii_redaction import redact_pii_text, random_replacements
+    from pyrecdp.primitives.llmutils.pii.detect.utils import PIIEntityType
+    
     replacements = random_replacements()
 
     has_name_detection = entity_types is not None and PIIEntityType.NAME in entity_types
@@ -47,10 +49,12 @@ def prepare_func_pii_removal(model_root_path=None, debug_mode=True, entity_types
 
 class PIIRemoval(BaseLLMOperation):
     def __init__(self, text_key='text', inplace=True, model_root_path="", debug_mode=False,
-                 entity_types: List[PIIEntityType] = None):
+                 entity_types=None):
         settings = {'text_key': text_key, 'inplace': inplace, 'model_root_path': model_root_path,
                     'debug_mode': debug_mode, 'entity_types': entity_types}
-        super().__init__(settings)
+        requirements = ['torch', 'transformers', 'Faker', "phonenumbers"]
+        super().__init__(settings, requirements)
+        from pyrecdp.primitives.llmutils.pii.detect.utils import PIIEntityType
         self.text_key = text_key
         self.inplace = inplace
         self.model_root_path = model_root_path

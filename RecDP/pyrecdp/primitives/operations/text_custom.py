@@ -9,7 +9,8 @@ def text_bytesize(s):
 class TextCustomerMap(BaseLLMOperation):
     def __init__(self, func, text_key = 'text'):
         settings = {'func': func, 'text_key': text_key}
-        super().__init__(settings)
+        requirements = []
+        super().__init__(settings, requirements)
         self.support_spark = True
         self.support_ray = True
         self.func = func
@@ -30,7 +31,8 @@ LLMOPERATORS.register(TextCustomerMap)
 class TextCustomerFilter(BaseFilter):
     def __init__(self, func, text_key = 'text'):
         settings = {'func': func, 'text_key': text_key}
-        super().__init__(settings)
+        requirements = []
+        super().__init__(settings, requirements)
         self.support_spark = True
         self.support_ray = True
         self.func = func
