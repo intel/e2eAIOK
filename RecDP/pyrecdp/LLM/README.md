@@ -86,12 +86,14 @@ pipeline.execute()
 
 ```
 from pyrecdp.LLM import TextPipeline
-from pyrecdp.primitives.operations import *
+from pyrecdp.primitives.operations import ParquetReader, TextPrompt, TextToQA, ParquetWriter
 
+text_key = "text_prompt"
 pipeline = TextPipeline()
 ops = [
     ParquetReader(dataset_path),
-    TextToQA(model_name="neural_chat",max_new_tokens=500),
+    TextPrompt(dataset_name="text", prompt_name="generate_qa",new_name=text_key),
+    TextToQA(outdir=result_path,text_key=text_key),
     ParquetWriter(result_path)
 ]
 pipeline.add_operations(ops)
