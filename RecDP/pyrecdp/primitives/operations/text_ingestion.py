@@ -41,6 +41,7 @@ class DocumentStore(ABC):
         self.embeddings_column = embeddings_column
         self.vector_store_args = vector_store_args
         self.override = override
+        check_availability_and_install(["langchain"])
         from langchain.schema.embeddings import Embeddings
         self.embeddings: Optional[Embeddings] = self.create_embeddings(embeddings, **embeddings_args)
 
