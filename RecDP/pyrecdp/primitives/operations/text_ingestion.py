@@ -1,99 +1,25 @@
 import os.path
 from abc import ABC, abstractmethod
-from typing import Optional, List, Dict, Tuple, Union, Iterable
+from typing import Optional, Dict, Union, Iterable
 
 from pyspark.sql import SparkSession, DataFrame
 from ray.data import Dataset
 
-from pyrecdp.core.class_utils import new_instance
-from pyrecdp.core.import_utils import import_langchain, import_faiss, import_sentence_transformers
+from pyrecdp.core.import_utils import check_availability_and_install, import_sentence_transformers
 from pyrecdp.primitives.operations.base import BaseLLMOperation, LLMOPERATORS
 
 
-class TextEmbeddings(ABC):
-    """Interface for embedding models."""
-
-    @abstractmethod
-    def underlying_embeddings(self):
-        """return the underlying embedding model"""
-
-    @abstractmethod
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        """interface for embed texts"""
-
-
-class VectorStore(ABC):
-    """interface for vector store"""
-
-    def __init__(self, text_column: str,
-                 vector_store: str,
-                 text_embeddings: TextEmbeddings,
-                 embeddings_column: str,
-                 vector_store_args: Optional[Dict] = None,
-                 override: bool = False):
-        self.text_column = text_column
-        self.embeddings_column = embeddings_column
-        self.vector_store = vector_store
-        self.text_embeddings = text_embeddings
-        self.vector_store_args = vector_store_args
-        self.override = override
-
-    @abstractmethod
-    def persist(self, ds: Union[Dataset, DataFrame]):
-        """interface for persist embeddings to underlying vector store"""
-
-
-class LangchainVectorStore(VectorStore):
-
-    def __persist_to_faiss(self, ds):
-        import_faiss()
-        text_embeddings: List[Tuple[str, List[float]]] = []
-        if isinstance(ds, Dataset):
-            for row in ds.iter_rows():
-                text_embeddings.append((row[self.text_column], row[self.embeddings_column]))
-        else:
-            for row in ds.collect():
-                text_embeddings.append((row[self.text_column], row[self.embeddings_column]))
-
-        from langchain.vectorstores.faiss import FAISS
-        index_name = self.vector_store_args.get("index", "index")
-        if not self.override and os.path.exists(os.path.join(self.vector_store_args["output_dir"], index_name+".faiss")):
-            db = FAISS.load_local(self.vector_store_args["output_dir"], self.text_embeddings.underlying_embeddings(), index_name)
-            db.add_embeddings(text_embeddings)
-        else:
-            db = FAISS.from_embeddings(text_embeddings, embedding=self.text_embeddings.underlying_embeddings())
-        if "output_dir" not in self.vector_store_args:
-            raise ValueError(f"You must have `output_dir` option specify for vector store {self.vector_store}")
-
-        db.save_local(self.vector_store_args["output_dir"], index_name)
-
-    def persist(self, ds):
-        import_langchain()
-        if self.vector_store == "FAISS":
-            self.__persist_to_faiss(ds)
-        else:
-            raise NotImplementedError(f"persist embeddings to vector store '{self.vector_store}' is not supported yet!")
-
-
-def get_vector_store(text_embeddings: TextEmbeddings,
-                     text_column: str = 'text',
-                     embeddings_column: str = 'embedding',
-                     vector_store: str = 'FAISS',
-                     vector_store_args: Optional[Dict] = None,
-                     ):
-    return LangchainVectorStore(
-        text_column=text_column,
-        embeddings_column=embeddings_column,
-        text_embeddings=text_embeddings,
-        vector_store=vector_store,
-        vector_store_args=vector_store_args
-    )
-
-
-class DocEmbedding:
-    def __init__(self, embeddings: TextEmbeddings, text_column: str = 'text', embeddings_column: str = 'embedding'):
+class TextEmbedding:
+    def __init__(self, embeddings, text_column: str = 'text', embeddings_column: str = 'embedding'):
         # Specify "cuda" to move the model to GPU.
-        self.embeddings = embeddings
+        if embeddings is None:
+            raise ValueError(f"embeddings is required")
+
+        from langchain.schema.embeddings import Embeddings
+        if not isinstance(embeddings, Embeddings):
+            raise ValueError(f"embeddings must a valid implementation of langchain embeddings")
+
+        self.embeddings: Embeddings = embeddings
         self.text_column = text_column
         self.embeddings_column = embeddings_column
 
@@ -102,193 +28,284 @@ class DocEmbedding:
         return {self.text_column: batch[self.text_column], self.embeddings_column: embeddings}
 
 
-class BaseDocumentIngestion(BaseLLMOperation, ABC):
-    def __init__(self,
-                 text_column: str = 'text',
-                 embeddings_column: str = 'embedding',
-                 override: bool = False,
-                 compute_min_size: Optional[int] = None,
-                 compute_max_size: Optional[int] = None,
-                 batch_size: Optional[int] = None,
-                 num_cpus: Optional[int] = None,
-                 num_gpus: Optional[int] = None,
-                 settings: Optional[Dict] = None):
-        """
-            Base class for document ingestion operations.
+class DocumentStore(ABC):
+    """interface for vector store"""
 
-            Args:
-                text_column: The name of the column containing the text of the documents.
-                embeddings_column: The name of the column to store the document embeddings.
-                compute_min_size: The minimum number of size to computing the document embeddings(If embedding with Ray).
-                compute_max_size: The maximum number of size to computing the document embeddings(If embedding with Ray).
-                batch_size: The batch size to use when computing the document embeddings(If embedding with Ray).
-                num_cpus: The number of CPUs to use when computing the document embeddings(If embedding with Ray).
-                num_gpus: The number of GPUs to use when computing the document embeddings(If embedding with Ray).
-                override: Whether to force override the previous vector store data. Default: False,
-
-            """
-        settings = settings or {}
-        settings.update({
-            'text_column': text_column,
-            'compute_min_size': compute_min_size,
-            'compute_max_size': compute_max_size,
-            'batch_size': batch_size,
-            'num_gpus': num_gpus,
-            'num_cpus': num_cpus,
-            'override': override
-        })
-        requirements = []
-        super().__init__(settings, requirements)
-        self.support_ray = True
-        self.support_spark = True
-        self.compute_min_size = compute_min_size
-        self.compute_max_size = compute_max_size
+    def __init__(self, text_column: str,
+                 embeddings_column: Optional[str] = 'embedding',
+                 embeddings: Optional[str] = 'HuggingFaceEmbeddings',
+                 embeddings_args: Optional[Dict] = None,
+                 vector_store_args: Optional[Dict] = None,
+                 override: bool = False):
         self.text_column = text_column
-        self.batch_size = batch_size
-        self.num_cpus = num_cpus
-        self.num_gpus = num_gpus
-        self.override = override
         self.embeddings_column = embeddings_column
-        self.text_embeddings = self._get_text_embeddings()
-        self.vector_store = self._get_vector_store()
+        self.vector_store_args = vector_store_args
+        self.override = override
+        from langchain.schema.embeddings import Embeddings
+        self.embeddings: Optional[Embeddings] = self.create_embeddings(embeddings, **embeddings_args)
+
+    def create_embeddings(self, embeddings, **embeddings_args):
+        """currently we only use langchain embeddings"""
+        if embeddings is None:
+            return None
+
+        if embeddings in ['HuggingFaceEmbeddings', 'HuggingFaceInstructEmbeddings', 'HuggingFaceBgeEmbeddings']:
+            import_sentence_transformers()
+        if 'HuggingFaceInstructEmbeddings' == embeddings:
+            check_availability_and_install("InstructorEmbedding")
+
+        from pyrecdp.core.class_utils import new_instance
+        embeddings = new_instance('langchain.embeddings', embeddings, **embeddings_args)
+        from langchain.schema.embeddings import Embeddings
+        assert isinstance(embeddings, Embeddings)
+        return embeddings
+
+    def persist(self, ds: Union[Dataset, DataFrame], **kwargs):
+        """interface for persist embeddings to underlying vector store"""
+
+        if isinstance(ds, Dataset):
+            ds = self.embedding_with_ray(ds, **kwargs)
+        else:
+            ds = self.embedding_with_spark(ds, **kwargs)
+
+        return self.do_persist(ds, **kwargs)
 
     @abstractmethod
-    def _get_vector_store(self) -> VectorStore:
-        """base interface to get vectoStore"""
+    def do_persist(self, ds: Union[Dataset, DataFrame], **kwargs):
+        """base interface for vector store to persist the text and embeddings"""
 
-    @abstractmethod
-    def _get_text_embeddings(self) -> TextEmbeddings:
-        """base interface to get text embeddings"""
-
-    def process_rayds(self, ds: Dataset = None):
-        from ray.data import ActorPoolStrategy
-        ds = ds.map_batches(
-            DocEmbedding,
-            # Large batch size to maximize GPU utilization.
-            # Too large a batch size may result in GPU running out of memory.
-            # If the chunk size is increased, then decrease batch size.
-            # If the chunk size is decreased, then increase batch size.
-            batch_size=self.batch_size,  # Large batch size to maximize GPU utilization.
-            num_gpus=self.num_gpus,
-            num_cpus=self.num_cpus,
-            compute=ActorPoolStrategy(min_size=self.compute_min_size, max_size=self.compute_max_size),
-            fn_constructor_kwargs={
-                "text_column": self.text_column,
-                'embeddings_column': self.embeddings_column,
-                'embeddings': self.text_embeddings
-            }
-        )
-        self.vector_store.persist(ds)
-        return ds
-
-    def process_spark(self, spark: SparkSession, df: DataFrame = None):
+    def embedding_with_spark(self, df: DataFrame, **kwargs):
         import pandas as pd
         from pyspark.sql import types as T
-
         def batch_embedding(batches: Iterable[pd.DataFrame]) -> Iterable[pd.DataFrame]:
             for pdf in batches:
-                pdf[self.embeddings_column] = self.text_embeddings.embed_documents(pdf[self.text_column])
+                pdf[self.embeddings_column] = self.embeddings.embed_documents(pdf[self.text_column])
                 yield pdf
 
         fields = [field for field in df.schema] + [T.StructField(self.embeddings_column, T.ArrayType(T.FloatType()))]
         df = df.mapInPandas(batch_embedding, T.StructType(fields))
-        self.vector_store.persist(df)
         return df
 
+    def embedding_with_ray(self, ds: Dataset,
+                           batch_size: Optional[int] = None,
+                           num_gpus: Optional[int] = None,
+                           num_cpus: Optional[int] = None,
+                           compute_min_size: Optional[int] = None,
+                           compute_max_size: Optional[int] = None):
+        from ray.data import ActorPoolStrategy
+        ds = ds.map_batches(
+            TextEmbedding,
+            # Large batch size to maximize GPU utilization.
+            # Too large a batch size may result in GPU running out of memory.
+            # If the chunk size is increased, then decrease batch size.
+            # If the chunk size is decreased, then increase batch size.
+            batch_size=batch_size,  # Large batch size to maximize GPU utilization.
+            num_gpus=num_gpus,
+            num_cpus=num_cpus,
+            compute=ActorPoolStrategy(min_size=compute_min_size, max_size=compute_max_size),
+            fn_constructor_kwargs={
+                "text_column": self.text_column,
+                'embeddings_column': self.embeddings_column,
+                'embeddings': self.embeddings
+            }
+        )
+        return ds
 
-class DocumentIngestion(BaseDocumentIngestion, TextEmbeddings):
 
+class LangchainFAAIS(DocumentStore):
+    def do_persist(self, ds, **kwargs):
+        if "output_dir" not in self.vector_store_args:
+            raise ValueError(f"You must have `output_dir` option specify for FAAIS vector store")
+
+        check_availability_and_install(["faiss-cpu", "faiss-gpu", "langchain"])
+
+        faiss_folder_path = self.vector_store_args["output_dir"]
+        index_name = self.vector_store_args.get("index", "index")
+
+        rows = ds.iter_rows() if isinstance(ds, Dataset) else ds.collect()
+        text_embeddings = [(row[self.text_column], row[self.embeddings_column]) for row in rows]
+
+        from langchain.vectorstores.faiss import FAISS
+        if not self.override and os.path.exists(os.path.join(faiss_folder_path, index_name + ".faiss")):
+            db = FAISS.load_local(faiss_folder_path, self.embeddings, index_name)
+            db.add_embeddings(text_embeddings)
+        else:
+            db = FAISS.from_embeddings(text_embeddings, embedding=self.embeddings)
+
+        db.save_local(faiss_folder_path, index_name)
+        return ds
+
+
+class LangchainChroma(DocumentStore):
+    def persist(self, ds, **kwargs):
+        return self.do_persist(ds, **kwargs)
+
+    def do_persist(self, ds, **kwargs):
+        if "output_dir" not in self.vector_store_args:
+            raise ValueError(f"You must have `output_dir` option specify for Chroma vector store")
+
+        check_availability_and_install(["chromadb==0.4.15", "langchain"])
+
+        persist_directory = self.vector_store_args["output_dir"]
+        collection_name = self.vector_store_args.get("collection_name", 'langchain')
+        rows = ds.iter_rows() if isinstance(ds, Dataset) else ds.collect()
+        texts = [row[self.text_column] for row in rows]
+
+        from langchain.vectorstores.chroma import Chroma
+        if not self.override and os.path.exists(persist_directory):
+            chroma = Chroma(collection_name=collection_name,
+                            persist_directory=persist_directory,
+                            embedding_function=self.embeddings)
+            chroma.add_texts(texts)
+        else:
+            chroma = Chroma.from_texts(texts,
+                                       collection_name=collection_name,
+                                       embedding=self.embeddings,
+                                       persist_directory=persist_directory)
+
+        chroma.persist()
+        return ds
+
+
+class HaystackElasticSearch(DocumentStore):
+    def persist(self, ds, **kwargs):
+        return self.do_persist(ds, **kwargs)
+
+    def do_persist(self, ds, **kwargs):
+        check_availability_and_install(["haystack", "elasticsearch-haystack"])
+        es_host = self.vector_store_args.get('host', 'localhost')
+        es_port = int(self.vector_store_args.get('port', 9200))
+        es_search_fields = self.vector_store_args.get('search_fields', ["content", "title"])
+
+        from elasticsearch_haystack import ElasticsearchDocumentStore
+        elasticsearch = ElasticsearchDocumentStore(
+            host=es_host,
+            port=es_port,
+            search_fields=es_search_fields,
+            **self.vector_store_args
+        )
+        rows = ds.iter_rows() if isinstance(ds, Dataset) else ds.collect()
+        from haystack import Document as SDocument
+        documents = [SDocument(content=row[self.text_column]) for row in rows]
+        elasticsearch.write_documents(documents)
+        return ds
+
+
+class DocumentIngestion(BaseLLMOperation):
     def __init__(self,
                  text_column: str = 'text',
-                 embeddings_column: str = 'embedding',
-                 vector_store: str = 'FAISS',
-                 override: bool = False,
-                 vector_store_args: Optional[dict] = None,
-                 embeddings: str = 'HuggingFaceEmbeddings',
+                 rag_framework: Optional[str] = 'langchain',
+                 embeddings_column: Optional[str] = 'embedding',
+                 embeddings: Optional[str] = 'HuggingFaceEmbeddings',
                  embeddings_args: Optional[dict] = None,
+                 vector_store: str = 'FAISS',
+                 vector_store_args: Optional[dict] = None,
+                 override: bool = False,
                  compute_min_size: Optional[int] = None,
                  compute_max_size: Optional[int] = None,
                  batch_size: Optional[int] = None,
                  num_cpus: Optional[int] = None,
                  num_gpus: Optional[int] = None):
         """
-            Base class for document ingestion operations.
-
-            Args:
-                text_column: The name of the column containing the text of the documents.
-                embeddings_column: The name of the column to store the document embeddings.
-                vector_store: The vector store database to use for storing the document embeddings.
-                vector_store_args: A dictionary of arguments to pass to the vector store constructor.
-                embeddings: The class name of langchain embedding under module 'langchain.embeddings' to use for embed documents.
-                embeddings_args: A dictionary of arguments to pass to the langchain embedding constructor.
-                compute_min_size: The minimum number of size to computing the document embeddings(If embedding with Ray).
-                compute_max_size: The maximum number of size to computing the document embeddings(If embedding with Ray).
-                batch_size: The batch size to use when computing the document embeddings(If embedding with Ray).
-                num_cpus: The number of CPUs to use when computing the document embeddings(If embedding with Ray).
-                num_gpus: The number of GPUs to use when computing the document embeddings(If embedding with Ray).
+          Document ingestion operator.
+          Args:
+            text_column: The name of the column containing the text data.
+            rag_framework: The RAG framework to use. The default is 'langchain'.
+            embeddings_column: The name of the column to store the embeddings.
+            embeddings: The type of embeddings to use. The default is 'HuggingFaceEmbeddings'.
+            embeddings_args: Optional arguments for the embeddings.
+            vector_store: The type of vector store to use. The default is 'FAISS'.
+            vector_store_args: Optional arguments for the vector store.
+            override: Whether to override the existing embeddings and vector store.
+            compute_min_size: The minimum size of the document to compute embeddings for.
+            compute_max_size: The maximum size of the document to compute embeddings for.
+            batch_size: The batch size to use when computing embeddings.
+            num_cpus: The number of CPUs to use when computing embeddings.
+            num_gpus: The number of GPUs to use when computing embeddings.
             """
+        if rag_framework is None:
+            raise ValueError(f"rag framework is required")
+
+        if rag_framework.lower() not in ['langchain', 'haystack']:
+            raise ValueError(f"only 'langchain' or 'haystack' rag framework is supported")
+
+        if text_column is None:
+            raise ValueError(f"text column is required")
 
         if vector_store is None:
-            raise ValueError(f"vector_store is required!")
+            raise ValueError(f"vector store is required")
 
-        if not isinstance(vector_store, str):
-            raise ValueError(f"vector_store must be a name of vector store provided in langchain!")
+        settings = {
+            'text_column': text_column,
 
-        if embeddings is None:
-            raise ValueError(f"langchain embeddings is required!")
+            'embeddings_column': embeddings_column,
+            'embeddings': embeddings,
+            'embeddings_args': embeddings_args,
 
-        if not isinstance(embeddings, str):
-            raise ValueError(f"embeddings must be a class name of langchain embedding!")
+            'vector_store': vector_store,
+            'vector_store_args': vector_store_args,
+            'override': override,
 
-        self.vector_store = vector_store
-        self.vector_store_args = vector_store_args or {}
+            'compute_min_size': compute_min_size,
+            'compute_max_size': compute_max_size,
+            'batch_size': batch_size,
+            'num_gpus': num_gpus,
+            'num_cpus': num_cpus,
+
+        }
+        requirements = []
+        super().__init__(settings, requirements)
+        self.support_ray = True
+        self.support_spark = True
+        self.rag_framework = rag_framework.lower()
+        self.text_column = text_column
+        self.embeddings_column = embeddings_column,
         self.embeddings = embeddings
         self.embeddings_args = embeddings_args or {}
 
-        import_langchain()
-        if embeddings == 'HuggingFaceEmbeddings':
-            import_sentence_transformers()
+        self.compute_args = {
+            'compute_min_size': compute_min_size,
+            'compute_max_size': compute_max_size,
+            'batch_size': batch_size,
+            'num_cpus': num_cpus,
+            'num_gpus': num_gpus,
+        }
+        self.vector_store = vector_store.lower()
+        self.vector_store_args = vector_store_args or {}
+        self.override = override
+        self.embeddings_column = embeddings_column
+        self.document_store = self._create_document_store()
 
-        from langchain.schema.embeddings import Embeddings
-        self.embeddings_model: Embeddings = new_instance("langchain.embeddings", embeddings, **embeddings_args)
-        super().__init__(
-            text_column=text_column,
-            embeddings_column=embeddings_column,
-            compute_min_size=compute_min_size,
-            compute_max_size=compute_max_size,
-            override=override,
-            batch_size=batch_size,
-            num_gpus=num_gpus,
-            num_cpus=num_cpus,
-            settings={
-                'vector_store': vector_store,
-                'vector_store_args': self.vector_store_args,
-                'embeddings': embeddings,
-                'embeddings_args': self.embeddings_args,
-            }
-        )
-        self.support_ray = True
-        self.support_spark = True
+    def _create_document_store(self) -> DocumentStore:
+        document_store_ctor_args = {
+            'text_column': self.text_column,
+            'embeddings_column': self.embeddings_column,
+            'embeddings': self.embeddings,
+            'embeddings_args': self.embeddings_args,
+            'vector_store_args': self.vector_store_args,
+            'override': self.override,
+        }
 
-    def _get_vector_store(self) -> VectorStore:
-        """base interface to get vectoStore"""
-        return LangchainVectorStore(
-            text_column=self.text_column,
-            embeddings_column=self.embeddings_column,
-            text_embeddings=self.text_embeddings,
-            vector_store=self.vector_store,
-            vector_store_args=self.vector_store_args,
-            override=self.override
-        )
+        if 'langchain' == self.rag_framework:
+            if 'faiss' == self.vector_store:
+                return LangchainFAAIS(**document_store_ctor_args)
+            elif 'chroma' == self.vector_store:
+                return LangchainChroma(**document_store_ctor_args)
+            else:
+                raise NotImplementedError(
+                    f"vector store {self.vector_store} is not supported yet paired with langchain!")
+        else:
+            if 'elasticsearch' == self.vector_store:
+                return HaystackElasticSearch(**document_store_ctor_args)
+            else:
+                raise NotImplementedError(
+                    f"vector store {self.vector_store} is not supported yet paired with haystack!")
 
-    def _get_text_embeddings(self) -> TextEmbeddings:
-        return self
+    def process_rayds(self, ds: Dataset = None):
+        return self.document_store.persist(ds, **self.compute_args)
 
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        return self.embeddings_model.embed_documents(texts)
-
-    def underlying_embeddings(self):
-        return self.embeddings_model
+    def process_spark(self, spark: SparkSession, df: DataFrame = None):
+        return self.document_store.persist(df)
 
 
 LLMOPERATORS.register(DocumentIngestion)
