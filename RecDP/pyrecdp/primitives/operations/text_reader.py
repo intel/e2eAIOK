@@ -38,6 +38,10 @@ class TextReader(BaseLLMOperation):
         return df
 
     def union_ray_ds(self, ds1, ds2):
+        if (not isinstance(ds1, Dataset)) and (not isinstance(ds2, Dataset)):
+            raise ValueError(f"union_spark_df both arguments are not DataFrame, df1 is {type(ds1)}, df2 is {type(ds2)}")
+        if (not isinstance(ds1, Dataset)) or (not isinstance(ds1, Dataset)):
+            return ds1 if isinstance(ds1, Dataset) else ds2
         def add_new_empty_column(content, column_name):
             content[column_name] = None
             return content
@@ -58,6 +62,10 @@ class TextReader(BaseLLMOperation):
         return ds1.union(ds2)
 
     def union_spark_df(self, df1, df2):
+        if (not isinstance(df1, DataFrame)) and (not isinstance(df1, DataFrame)):
+            raise ValueError(f"union_spark_df both arguments are not DataFrame, df1 is {type(df1)}, df2 is {type(df2)}")
+        if (not isinstance(df1, DataFrame)) or (not isinstance(df1, DataFrame)):
+            return df1 if isinstance(df1, DataFrame) else df2
         from pyspark.sql.functions import lit
         import pyspark.sql.functions as F
         from pyspark.sql.types import NullType, StringType
@@ -315,8 +323,6 @@ class PerfileSourcedJsonlReader(SourcedReader, PerfileReader):
             self.statistics.total_in += ds_count
             self.statistics.total_out += ds_count
             self.cache.append((ds, source_id))
-        if ds is not None:
-            self.cache = self.union_ray_ds(ds, self.cache)
         return self.cache
     
     def process_spark(self, spark, spark_df: DataFrame = None):
@@ -338,8 +344,6 @@ class PerfileSourcedJsonlReader(SourcedReader, PerfileReader):
             if spark_df:
                 df = df.select(F.concat_ws("@", F.monotonically_increasing_id(), F.lit(source_id)).alias("global_id"), "*")
             self.cache.append((df, source_id))
-        if spark_df is not None:
-            self.cache = self.union_spark_df(spark_df, self.cache)
         return self.cache
 
     def summarize(self) -> str:
@@ -368,8 +372,6 @@ class PerfileSourcedParquetReader(SourcedReader, PerfileReader):
             source_id = os.path.join(self.source_prefix, sub_task, os.path.basename(file_path))
             ds = self.rename_ray_ds_columns(rd.read_parquet(file_path).map(lambda x: add_source(x, source_id)))
             self.cache.append((ds, source_id))
-        if ds is not None:
-            self.cache = self.union_ray_ds(ds, self.cache)
         return self.cache
     
     def process_spark(self, spark, spark_df: DataFrame = None):
@@ -384,8 +386,6 @@ class PerfileSourcedParquetReader(SourcedReader, PerfileReader):
             if spark_df:
                 df = df.select(F.concat_ws("@", F.monotonically_increasing_id(), F.lit(source_id)).alias("global_id"), "*")
             self.cache.append((df, source_id))
-        if spark_df is not None:
-            self.cache = self.union_spark_df(spark_df, self.cache)
         return self.cache
     
 LLMOPERATORS.register(PerfileSourcedParquetReader)
