@@ -81,7 +81,7 @@ class TextToQA(BaseLLMOperation):
 
         qa_list = []
         for i in range(pd_df.shape[0]):
-            input_str = pd_df.iloc[i][self.text_key]
+            input_str = pd_df.iloc[i][self.text_key]+"\n\n"
             inputs = tokenizer(input_str, return_tensors="pt")
             outputs = model.generate(**inputs, max_new_tokens=self.max_new_tokens, return_dict_in_generate=True)
             input_length = inputs.input_ids.shape[1]
