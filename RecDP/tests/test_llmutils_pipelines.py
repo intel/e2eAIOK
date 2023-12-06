@@ -29,16 +29,17 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         import os
         import shutil
         output_path = "ResumableTextPipeline_output"
-        try:
-            dir_name_list = [i for i in os.listdir("ResumableTextPipeline_output") if i.endswith('jsonl')]
-            for dir_name in dir_name_list:
-                print(dir_name)
-                tmp_df = pd.read_parquet(os.path.join("ResumableTextPipeline_output", dir_name))
-                print(f"total num_samples is {len(tmp_df)}")
-                display(tmp_df.head())
-            shutil.rmtree("ResumableTextPipeline_output")
-        except Exception as e:
-            print(e)
+        if os.path.exists(output_path):
+            try:
+                dir_name_list = [i for i in os.listdir(output_path) if i.endswith('jsonl')]
+                for dir_name in dir_name_list:
+                    print(dir_name)
+                    tmp_df = pd.read_parquet(os.path.join(output_path, dir_name))
+                    print(f"total num_samples is {len(tmp_df)}")
+                    display(tmp_df.head())
+                shutil.rmtree(output_path)
+            except Exception as e:
+                print(e)
         return super().tearDown()
 
     def test_ResumableTextPipeline(self):
@@ -208,30 +209,14 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         pipeline.execute()
 
     def test_llm_rag_url_pdf_pipeline(self):
-        model_root_path = os.path.join(RECDP_MODELS_CACHE, "huggingface")
-        model_name = f"{model_root_path}/sentence-transformers/all-mpnet-base-v2"
-        faiss_output_dir = 'tests/data/faiss'
         pipeline = TextPipeline()
-        pipeline.add_operation( UrlLoader(["https://www.intc.com/news-events/press-releases/detail/"
-                            "1655/intel-reports-third-quarter-2023-financial-results"],
-                      target_tag='div', target_attrs={'class': 'main-content'}))
-        pipeline.add_operation( UrlLoader(["https://www.intc.com/news-events/press-releases/detail/"
-                            "1655/intel-reports-third-quarter-2023-financial-results"],
-                      target_tag='div', target_attrs={'class': 'main-content'}))
         ops = [
             UrlLoader(["https://www.intc.com/news-events/press-releases/detail/"
                             "1655/intel-reports-third-quarter-2023-financial-results"],
                       target_tag='div', target_attrs={'class': 'main-content'}),
-            DocumentSplit(text_splitter='RecursiveCharacterTextSplitter'),
-            DocumentIngestion(
-                vector_store='FAISS',
-                vector_store_args={
-                    "output_dir": faiss_output_dir,
-                    "index": "test_index"
-                },
-                embeddings='HuggingFaceEmbeddings',
-                embeddings_args={'model_name': model_name}
-            ),
+            DirectoryLoader("tests/data/press_pdf_2", glob="**/*.pdf"),
+            DocumentSplit(text_splitter='RecursiveCharacterTextSplitter')
         ]
         pipeline.add_operations(ops)
-        pipeline.execute()
+        ret = pipeline.execute()
+        display(ret.to_pandas())

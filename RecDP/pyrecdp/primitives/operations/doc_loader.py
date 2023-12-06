@@ -8,10 +8,11 @@ from pyrecdp.core.import_utils import import_langchain, import_markdownify, impo
 from pyrecdp.primitives.llmutils.document.schema import Document
 from pyrecdp.primitives.operations.base import BaseLLMOperation, LLMOPERATORS
 from pyrecdp.primitives.operations.constant import DEFAULT_HEADER
+from pyrecdp.primitives.operations.text_reader import TextReader
 from pyrecdp.primitives.operations.logging_utils import logger
 
 
-class DocumentLoader(BaseLLMOperation):
+class DocumentLoader(TextReader):
     def __init__(self,
                  loader: Optional[str] = None,
                  loader_args: Optional[dict] = None,
@@ -58,10 +59,14 @@ class DocumentLoader(BaseLLMOperation):
     def process_rayds(self, ds=None):
         import ray
         self.cache = ray.data.from_items(self.load_documents())
+        if ds is not None:
+            self.cache = self.union_ray_ds(ds, self.cache)
         return self.cache
 
     def process_spark(self, spark, spark_df=None):
         self.cache = spark.createDataFrame(self.load_documents())
+        if spark_df is not None:
+            self.cache = self.union_spark_df(spark_df, self.cache)
         return self.cache
 
 
@@ -233,7 +238,7 @@ def fetch_data_and_sub_links(sub_url, headers=None, target_tag: str = None, targ
     return sub_links, web_doc
 
 
-class UrlLoader(BaseLLMOperation):
+class UrlLoader(TextReader):
     def __init__(self, urls: list = None, max_depth: int = 0, target_tag: str = None, target_attrs: dict = None,
                  args_dict: Optional[dict] = None, headers: Optional[dict] = None):
         """
@@ -297,10 +302,14 @@ class UrlLoader(BaseLLMOperation):
     def process_rayds(self, ds=None):
         import ray
         self.cache = ray.data.from_items(self.load_documents())
+        if ds is not None:
+            self.cache = self.union_ray_ds(ds, self.cache)
         return self.cache
 
     def process_spark(self, spark, spark_df=None):
         self.cache = spark.createDataFrame(self.load_documents())
+        if spark_df is not None:
+            self.cache = self.union_spark_df(spark_df, self.cache)
         return self.cache
 
 

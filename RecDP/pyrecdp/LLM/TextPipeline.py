@@ -2,7 +2,7 @@ from pyrecdp.core.di_graph import DiGraph
 from pyrecdp.core.pipeline import BasePipeline
 from pyrecdp.primitives.operations import Operation, BaseOperation
 from pyrecdp.primitives.operations.text_reader import DatasetReader, PerfileReader
-from pyrecdp.primitives.operations.text_writer import PerfileParquetWriter, PerfileJsonlWriter
+from pyrecdp.primitives.operations.text_writer import PerfileParquetWriter, PerfileJsonlWriter, ParquetWriter
 import logging
 from pyrecdp.core.utils import Timer, deepcopy
 from IPython.display import display
@@ -67,9 +67,25 @@ class TextPipeline(BasePipeline):
             return 'mixed'
 
     def optimize_execute_plan(self):
-        return
+        # Update Writer
+        output_dir = ""
+        for idx, op in self.pipeline.items():
+            if op.op in ['ParquetWriter', 'PerfileParquetWriter']:
+                output_dir = op.config['output_dir']
+            if op.op in ['JsonlWriter', 'PerfileJsonlWriter']:
+                output_dir = op.config['output_dir']
+        if output_dir == "":
+            output_dir = f"TextPipeline_output_{time.strftime('%Y%m%d%H%M%S')}"
+            self.add_operation(ParquetWriter(output_dir=output_dir))
+        return output_dir
     
     def execute(self, ds=None):
+        output_dir = self.optimize_execute_plan()
+        os.makedirs(output_dir, exist_ok=True)
+        self.export(os.path.join(output_dir, "pipeline.json"))
+        self.plot(os.path.join(output_dir, "pipeline"))
+        logger.add(os.path.join(output_dir, "pipeline.log"))
+
         # prepare pipeline
         if not hasattr(self, 'executable_pipeline') or not hasattr(self, 'executable_sequence'):
             self.executable_pipeline, self.executable_sequence = self.create_executable_pipeline()
