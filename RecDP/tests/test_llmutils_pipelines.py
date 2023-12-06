@@ -213,8 +213,9 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         ops = [
             UrlLoader(["https://www.intc.com/news-events/press-releases/detail/"
                             "1655/intel-reports-third-quarter-2023-financial-results"],
-                      target_tag='div', target_attrs={'class': 'main-content'}),
-            DirectoryLoader("tests/data/press_pdf_2", glob="**/*.pdf"),
+                      max_depth=2, target_tag='div', target_attrs={'class': 'main-content'}),
+            DirectoryLoader("tests/data/press_pdf", glob="**/*.pdf"),
+            RAGTextFix(),
             DocumentSplit(text_splitter='RecursiveCharacterTextSplitter')
         ]
         pipeline.add_operations(ops)
