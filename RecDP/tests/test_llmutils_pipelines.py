@@ -184,22 +184,53 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         ret = pipeline.execute(df)
         display(ret.toPandas())
 
-    def test_llm_rag_pipeline(self):
+    def test_llm_rag_url_pipeline(self):
         model_root_path = os.path.join(RECDP_MODELS_CACHE, "huggingface")
+        model_name = f"{model_root_path}/sentence-transformers/all-mpnet-base-v2"
+        faiss_output_dir = 'tests/data/faiss'
         pipeline = TextPipeline()
         ops = [
-            DirectoryLoader("tests/data/llm_data/document", glob="**/*.pdf"),
-            DocumentSplit(),
+            UrlLoader(["https://www.intc.com/news-events/press-releases/detail/"
+                            "1655/intel-reports-third-quarter-2023-financial-results"],
+                      target_tag='div', target_attrs={'class': 'main-content'}),
+            DocumentSplit(text_splitter='RecursiveCharacterTextSplitter'),
             DocumentIngestion(
                 vector_store='FAISS',
                 vector_store_args={
-                    "output_dir": "ResumableTextPipeline_output",
+                    "output_dir": faiss_output_dir,
                     "index": "test_index"
                 },
                 embeddings='HuggingFaceEmbeddings',
-                embeddings_args={
-                    'model_name': f"{model_root_path}/sentence-transformers/all-mpnet-base-v2"
-                }
+                embeddings_args={'model_name': model_name}
+            ),
+        ]
+        pipeline.add_operations(ops)
+        pipeline.execute()
+
+    def test_llm_rag_url_pdf_pipeline(self):
+        model_root_path = os.path.join(RECDP_MODELS_CACHE, "huggingface")
+        model_name = f"{model_root_path}/sentence-transformers/all-mpnet-base-v2"
+        faiss_output_dir = 'tests/data/faiss'
+        pipeline = TextPipeline()
+        pipeline.add_operation( UrlLoader(["https://www.intc.com/news-events/press-releases/detail/"
+                            "1655/intel-reports-third-quarter-2023-financial-results"],
+                      target_tag='div', target_attrs={'class': 'main-content'}))
+        pipeline.add_operation( UrlLoader(["https://www.intc.com/news-events/press-releases/detail/"
+                            "1655/intel-reports-third-quarter-2023-financial-results"],
+                      target_tag='div', target_attrs={'class': 'main-content'}))
+        ops = [
+            UrlLoader(["https://www.intc.com/news-events/press-releases/detail/"
+                            "1655/intel-reports-third-quarter-2023-financial-results"],
+                      target_tag='div', target_attrs={'class': 'main-content'}),
+            DocumentSplit(text_splitter='RecursiveCharacterTextSplitter'),
+            DocumentIngestion(
+                vector_store='FAISS',
+                vector_store_args={
+                    "output_dir": faiss_output_dir,
+                    "index": "test_index"
+                },
+                embeddings='HuggingFaceEmbeddings',
+                embeddings_args={'model_name': model_name}
             ),
         ]
         pipeline.add_operations(ops)

@@ -4,6 +4,7 @@ import pip
 import importlib
 import pathlib
 import pkg_resources
+from loguru import logger
 
 def list_requirements(requirements_path):
     with pathlib.Path(requirements_path).open() as requirements_txt:
@@ -21,19 +22,36 @@ def fix_package_name(package):
     
     package_name_map = {
         'scikit-learn' : 'sklearn',
-        'pyyaml' : 'yaml'
+        'pyyaml' : 'yaml',
+        'Faker' : 'faker'
     }
     
     if b in package_name_map:
         b = package_name_map[b]
     #print(b)
     return b
-    
-def import_with_auto_install(package):
-    try:
-        return importlib.import_module(fix_package_name(package))
-    except ImportError:
-        pip.main(['install', package])
+
+def check_availability_and_install(package_or_list, verbose=1):
+    def actual_func(package):
+        pip_name = fix_package_name(package)
+        try:
+            return importlib.import_module(pip_name)
+        except ImportError:
+            pip.main(['install', '-q', package])
+            #importlib.import_module(pip_name)
+            
+    if isinstance(package_or_list, list):
+        if verbose == 1 and len(package_or_list) > 0:        
+            logger.info(f"check_availability_and_install {package_or_list}")
+        for pkg in package_or_list:
+            actual_func(pkg)
+    elif isinstance(package_or_list, str):
+        if verbose == 1 and package_or_list != "":        
+            logger.info(f"check_availability_and_install {package_or_list}")
+        actual_func(package_or_list)
+    else:
+        raise ValueError(f"{package_or_list} with type of {type(package_or_list)} is not supported.")
+        
 
 def import_faiss(no_avx2: Optional[bool] = None, install_if_miss: bool = True):
     """
@@ -118,3 +136,27 @@ def import_openai(install_if_missing: bool = True):
                 "openai package not found, please install it with "
                 "`pip install openai`"
             )
+
+def import_pysbd(install_if_missing: bool = True):
+    try:
+        import openai
+    except ImportError:
+        if install_if_missing:
+            os.system("pip install -q pysbd")
+        else:
+            raise ValueError(
+                "pysbd package not found, please install it with "
+                "`pip install pysbd`"
+            )
+
+def import_markdownify():
+    try:
+        import markdownify
+    except ImportError:
+        pip.main(['install', 'markdownify'])
+
+def import_beautiful_soup():
+    try:
+        from bs4 import BeautifulSoup
+    except ImportError:
+        pip.main(['install', 'bs4'])

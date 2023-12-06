@@ -1,0 +1,29 @@
+dataset: text
+templates:
+  1fa10434-e2d9-4724-98ef-352331d13136: !Template
+    answer_choices: null
+    id: 1fa10434-e2d9-4724-98ef-352331d13136
+    jinja: "I will give you a table, please read and give a summary for this table. The summary should be a paragraph within 1000 tokens, which should describe the most details, and emphasize some important information.\n\n###Table###\n{{text}}"
+    metadata: !TemplateMetadata
+      choices_in_prompt: false
+      languages:
+      - en
+      metrics:
+      - Accuracy
+      original_task: false
+    name: table_summary
+    reference: ''
+
+  70a44946-bd9e-45f4-8914-658d24f02819: !Template
+    answer_choices: null
+    id: 70a44946-bd9e-45f4-8914-658d24f02819
+    jinja: "You will be provided an article. After reading, you are asked to come up with 10 question-answer pairs. These question-answer pairs will be given to a GPT model and we will evaluate the GPT model for completing the questions.\n\nHere are the requirements:\n1. All the question-answer pairs should contains two parts: \"question\" and \"answer\". The question field should contains a question realted to the article, while the answer  should be an appropriate answer to this questions.\n2. The type of questions should be diverse. The list should include diverse types of tasks like summary, answer the information mentioned in the article, etc.\n3. A GPT language model should be able to answer the question. For example, do not ask the assistant to create any visual or audio output.\n4. The language should be in English.\n5. The questions and answers should both be 1 to 2 sentences long and no more than 100 words. \n6. All the information should be related to the article provided, either the direct inforamtion or the extended analysis or summary.\n7. Try to include the information in the article as much as possible, especially the important messages.\n\nHere is two examples for your reference:\n1. Question: Please give a summary for the Business Highlights part.###\\n Answer: Intel is on track to achieve its 2025 goals, including five nodes in four years and leadership in transistor performance. Intel 4, the company first extreme ultraviolet (EUV) technology node, is in high-volume manufacturing. The opening of Fab 34 in Ireland contributes to a resilient supply chain, and Intel plans facilities in Germany and Poland. Installation of the world first high-NA EUV tool in Oregon is part of infrastructure expansion. Intel submitted major manufacturing proposals in the U.S., with a customer commitment accelerating plans for chip factories in Arizona. The company emphasizes AI accessibility across its hardware products and outlines progress in processors and accelerators. \\n\n2. Question: How much is the \"Total current assets\" in \"Consolidated Condensed Balance Sheets\", and what percentage of the \"Total assets\" does it account for? ###\\n Answer: The \"Total current assets\" in \"Consolidated Condensed Balance Sheets\" is $43,811, account for 23.2% of the \"Total assets\".\n\nAbove are the requirements, below is the article, after reading, remember to generate 10 diverse question-answer pairs.\n{{text}}\n"
+    metadata: !TemplateMetadata
+      choices_in_prompt: false
+      languages:
+      - en
+      metrics:
+      - Accuracy
+      original_task: false
+    name: generate_qa
+    reference: ''

@@ -1,11 +1,9 @@
-import os
-
 from .base import BaseLLMOperation, LLMOPERATORS, statistics_decorator
 from ray.data import Dataset
 from pyspark.sql import DataFrame
-from detoxify import Detoxify
 
 def prepare_func_text_toxicity(model_type="multilingual", huggingface_config_path=None):
+    from detoxify import Detoxify
     model = Detoxify(model_type, huggingface_config_path=huggingface_config_path)
 
     def generate_toxicity_label(content):
@@ -13,7 +11,6 @@ def prepare_func_text_toxicity(model_type="multilingual", huggingface_config_pat
         return float(result["toxicity"])
 
     return generate_toxicity_label
-
 
 class TextToxicity(BaseLLMOperation):
     def __init__(self, text_key='text', threshold=0, model_type="multilingual", huggingface_config_path=None):
@@ -25,7 +22,8 @@ class TextToxicity(BaseLLMOperation):
         :param huggingface_config_path: the local model config for detoxify model.
         """
         settings = {'text_key': text_key, 'threshold': threshold, 'model_type': model_type, 'huggingface_config_path': huggingface_config_path}
-        super().__init__(settings)
+        requirements = ['detoxify']
+        super().__init__(settings, requirements)
         self.support_spark = True
         self.support_ray = True
         self.actual_func = None

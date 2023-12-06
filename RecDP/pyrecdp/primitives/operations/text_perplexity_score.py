@@ -11,16 +11,17 @@ def text_bytesize(s):
 
 
 class TextPerplexityScore(BaseLLMOperation):
-    def __init__(self, language: str = 'en'):
+    def __init__(self, text_key: str = 'text', language: str = 'en'):
         """
              Generate perplexity score
 
             :param language: Sample in which language. Default: en.(en, zh)
         """
-        settings = {'language': language}
-        super().__init__(args_dict=settings)
+        settings = {'language': language, 'text_key': text_key}
+        requirements = []
+        super().__init__(settings, requirements)
         self.language = language
-        self.text_key = 'text'
+        self.text_key = text_key
         self.inplace = False
         self.sp_model_key = prepare_model(lang=language,
                                           model_type='sentencepiece')
@@ -42,7 +43,7 @@ class TextPerplexityScore(BaseLLMOperation):
             self.statistics.mean = ret.mean(new_name)
             self.statistics.std = ret.std(new_name)
         else:
-            self.statistics.max, self.statistics.min, self.statistics.mean, self.statistics.std =  0, 0, 0, 0
+            self.statistics.max, self.statistics.min, self.statistics.mean, self.statistics.std = 0, 0, 0, 0
         return ret
 
     @statistics_decorator
@@ -57,7 +58,7 @@ class TextPerplexityScore(BaseLLMOperation):
             self.statistics.mean = ret.select(F.mean("perplexity")).collect()[0][0]
             self.statistics.std = ret.select(F.std("perplexity")).collect()[0][0]
         else:
-            self.statistics.max, self.statistics.min, self.statistics.mean, self.statistics.std =  0, 0, 0, 0
+            self.statistics.max, self.statistics.min, self.statistics.mean, self.statistics.std = 0, 0, 0, 0
         return ret
 
     def get_compute_func(self, *args, **kwargs):
@@ -87,12 +88,12 @@ class TextPerplexityScore(BaseLLMOperation):
             "mean": self.statistics.mean,
             "std": self.statistics.std,
         }
-        return (statistics_save, 
-            f"A total of {self.statistics.total_in} rows of data were processed, using {self.statistics.used_time} seconds, "
-            f"Get max perplexity {self.statistics.max}, "
-            f"Get min perplexity {self.statistics.min}, "
-            f"Get average perplexity {self.statistics.mean},"
-            f"Get the std of perplexity {self.statistics.std}")
+        return (statistics_save,
+                f"A total of {self.statistics.total_in} rows of data were processed, using {self.statistics.used_time} seconds, "
+                f"Get max perplexity {self.statistics.max}, "
+                f"Get min perplexity {self.statistics.min}, "
+                f"Get average perplexity {self.statistics.mean},"
+                f"Get the std of perplexity {self.statistics.std}")
 
 
 LLMOPERATORS.register(TextPerplexityScore)

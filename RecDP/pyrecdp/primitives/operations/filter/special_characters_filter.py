@@ -1,8 +1,5 @@
-import sys
-
 from pyrecdp.primitives.operations.base import LLMOPERATORS
 from pyrecdp.primitives.operations.filter.base import BaseFilter
-from pyrecdp.primitives.operations.filter.constant import SPECIAL_CHARACTERS
 
 
 # This filter is referred from alibaba data juicer project
@@ -20,13 +17,14 @@ class SpecialCharactersFilter(BaseFilter):
         self.max_ratio = max_ratio
 
     def get_compute_func(self, *args, **kwargs):
+        from pyrecdp.primitives.operations.constant import SPECIAL_CHARACTERS
         min_ratio = self.min_ratio
         max_ratio = self.max_ratio
 
         def compute(text) -> bool:
             special_char_ratio = (
                     len([c
-                         for c in text if c in SPECIAL_CHARACTERS]) /
+                         for c in text if c in SPECIAL_CHARACTERS.value]) /
                     len(text)) if len(text) != 0 else 0.0
             if min_ratio <= special_char_ratio <= max_ratio:
                 return True

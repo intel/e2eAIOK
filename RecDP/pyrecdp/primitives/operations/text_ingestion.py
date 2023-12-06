@@ -1,3 +1,4 @@
+import os.path
 from abc import ABC, abstractmethod
 from typing import Optional, List, Dict, Tuple, Union, Iterable
 
@@ -28,12 +29,14 @@ class VectorStore(ABC):
                  vector_store: str,
                  text_embeddings: TextEmbeddings,
                  embeddings_column: str,
-                 vector_store_args: Optional[Dict] = None):
+                 vector_store_args: Optional[Dict] = None,
+                 override: bool = False):
         self.text_column = text_column
         self.embeddings_column = embeddings_column
         self.vector_store = vector_store
         self.text_embeddings = text_embeddings
         self.vector_store_args = vector_store_args
+        self.override = override
 
     @abstractmethod
     def persist(self, ds: Union[Dataset, DataFrame]):
@@ -53,11 +56,15 @@ class LangchainVectorStore(VectorStore):
                 text_embeddings.append((row[self.text_column], row[self.embeddings_column]))
 
         from langchain.vectorstores.faiss import FAISS
-        db = FAISS.from_embeddings(text_embeddings, embedding=self.text_embeddings.underlying_embeddings())
+        index_name = self.vector_store_args.get("index", "index")
+        if not self.override and os.path.exists(os.path.join(self.vector_store_args["output_dir"], index_name+".faiss")):
+            db = FAISS.load_local(self.vector_store_args["output_dir"], self.text_embeddings.underlying_embeddings(), index_name)
+            db.add_embeddings(text_embeddings)
+        else:
+            db = FAISS.from_embeddings(text_embeddings, embedding=self.text_embeddings.underlying_embeddings())
         if "output_dir" not in self.vector_store_args:
             raise ValueError(f"You must have `output_dir` option specify for vector store {self.vector_store}")
 
-        index_name = self.vector_store_args.get("index", "index")
         db.save_local(self.vector_store_args["output_dir"], index_name)
 
     def persist(self, ds):
@@ -99,6 +106,7 @@ class BaseDocumentIngestion(BaseLLMOperation, ABC):
     def __init__(self,
                  text_column: str = 'text',
                  embeddings_column: str = 'embedding',
+                 override: bool = False,
                  compute_min_size: Optional[int] = None,
                  compute_max_size: Optional[int] = None,
                  batch_size: Optional[int] = None,
@@ -116,6 +124,8 @@ class BaseDocumentIngestion(BaseLLMOperation, ABC):
                 batch_size: The batch size to use when computing the document embeddings(If embedding with Ray).
                 num_cpus: The number of CPUs to use when computing the document embeddings(If embedding with Ray).
                 num_gpus: The number of GPUs to use when computing the document embeddings(If embedding with Ray).
+                override: Whether to force override the previous vector store data. Default: False,
+
             """
         settings = settings or {}
         settings.update({
@@ -125,8 +135,10 @@ class BaseDocumentIngestion(BaseLLMOperation, ABC):
             'batch_size': batch_size,
             'num_gpus': num_gpus,
             'num_cpus': num_cpus,
+            'override': override
         })
-        super().__init__(settings)
+        requirements = []
+        super().__init__(settings, requirements)
         self.support_ray = True
         self.support_spark = True
         self.compute_min_size = compute_min_size
@@ -135,6 +147,7 @@ class BaseDocumentIngestion(BaseLLMOperation, ABC):
         self.batch_size = batch_size
         self.num_cpus = num_cpus
         self.num_gpus = num_gpus
+        self.override = override
         self.embeddings_column = embeddings_column
         self.text_embeddings = self._get_text_embeddings()
         self.vector_store = self._get_vector_store()
@@ -189,6 +202,7 @@ class DocumentIngestion(BaseDocumentIngestion, TextEmbeddings):
                  text_column: str = 'text',
                  embeddings_column: str = 'embedding',
                  vector_store: str = 'FAISS',
+                 override: bool = False,
                  vector_store_args: Optional[dict] = None,
                  embeddings: str = 'HuggingFaceEmbeddings',
                  embeddings_args: Optional[dict] = None,
@@ -242,6 +256,7 @@ class DocumentIngestion(BaseDocumentIngestion, TextEmbeddings):
             embeddings_column=embeddings_column,
             compute_min_size=compute_min_size,
             compute_max_size=compute_max_size,
+            override=override,
             batch_size=batch_size,
             num_gpus=num_gpus,
             num_cpus=num_cpus,
@@ -262,7 +277,8 @@ class DocumentIngestion(BaseDocumentIngestion, TextEmbeddings):
             embeddings_column=self.embeddings_column,
             text_embeddings=self.text_embeddings,
             vector_store=self.vector_store,
-            vector_store_args=self.vector_store_args
+            vector_store_args=self.vector_store_args,
+            override=self.override
         )
 
     def _get_text_embeddings(self) -> TextEmbeddings:

@@ -1,10 +1,12 @@
 import string
+from pyrecdp.core.import_utils import check_availability_and_install
+
+
+check_availability_and_install("emoji==2.2.0")
 import emoji
-
-
 # special characters
 MAIN_SPECIAL_CHARACTERS = string.punctuation + string.digits \
-                          + string.whitespace
+                        + string.whitespace
 OTHER_SPECIAL_CHARACTERS = (
     "    　    ￼’“”–ー一▬…✦�­£​•€«»°·═"
     "×士＾˘⇓↓↑←→（）§″′´¿−±∈﻿¢ø‚„½¼¾¹²³―⁃，ˌ¸‹›ʺˈʻ¦‐⠀‰‑≤≥‖"
@@ -12,9 +14,6 @@ OTHER_SPECIAL_CHARACTERS = (
     "゜ʼ≖ʼ¤ッツシ℃√！【】‿∞➤～πه۩☛₨➩☻๑٪♥ıॽ《‘©﴿٬？▷Г♫∟™ª₪®「—❖"
     "」﴾》"
 )
+value = set(MAIN_SPECIAL_CHARACTERS + OTHER_SPECIAL_CHARACTERS)
 EMOJI = list(emoji.EMOJI_DATA.keys())
-SPECIAL_CHARACTERS = set(MAIN_SPECIAL_CHARACTERS + OTHER_SPECIAL_CHARACTERS)
-SPECIAL_CHARACTERS.update(EMOJI)
-
-
-HF_TOKENIZER = 'EleutherAI/pythia-6.9b-deduped'
+value.update(EMOJI)

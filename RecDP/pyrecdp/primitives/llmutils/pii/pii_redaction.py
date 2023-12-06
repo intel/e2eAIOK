@@ -1,9 +1,9 @@
 import json
 import random
 import string
-import ipaddress
 
-import faker
+from pyrecdp.core.import_utils import check_availability_and_install
+
 
 # List of random private IP addresses to use as replacements
 REPLACEMENTS_IP = {
@@ -35,8 +35,6 @@ POPULAR_DNS_SERVERS = [
     "94.140.15.15",
 ]
 
-FAKER = faker.Faker()
-
 
 def load_json(sample):
     try:
@@ -55,6 +53,8 @@ def random_replacements(n=10):
 
     TODO: add IPv6 and IPv4 separation
     """
+    import faker
+    FAKER = faker.Faker()
     letters = string.ascii_lowercase
     lettters_digits = string.ascii_lowercase + string.digits
     emails = [
@@ -85,6 +85,7 @@ def random_replacements(n=10):
 
 def replace_ip(value, replacements_dict):
     """Replace an IP address with a synthetic IP address of the same format"""
+    import ipaddress
     try:
         ipaddress.IPv4Address(value)
         return random.choice(replacements_dict["IP_ADDRESS"]["IPv4"])
@@ -100,6 +101,7 @@ def replace_ip(value, replacements_dict):
 
 def is_private_ip(ip):
     """Check if an IP address is allocated for private networks"""
+    import ipaddress
     ip = ipaddress.ip_address(ip)
     return ip.is_private
 

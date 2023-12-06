@@ -1,65 +1,6 @@
-# ****** Functions used in LLM-Ray ****** #
-# Don't remove
-from pyrecdp.primitives.llmutils.third_party import generate_connected_components, generate_duplicates_dict
 import argparse
 from pyrecdp.core.utils import Timer
 
-def generate_hash_values(content, idx, num_perm, ngram_size, hashranges, permutations):
-    from datasketch import MinHash
-    from .utils import clean_str
-    from nltk import ngrams
-    import re
-    NON_ALPHA = re.compile("[^A-Za-z_0-9]")
-    # 0. apply normalization to content
-    content = clean_str(content)
-    tokens = {" ".join(t) for t in ngrams(NON_ALPHA.split(content), ngram_size)}
-    
-    #1. using bigcode impl to calculate minHash
-    m = MinHash(num_perm=num_perm, permutations = permutations )
-    m.update_batch([token.encode('utf8') for token in tokens])
-    
-    #2. map results to each band
-    Hs = [bytes(m.hashvalues[start:end].byteswap().data) for start, end in hashranges]
-    return [(band_idx, H, idx) for band_idx, H in enumerate(Hs)]
-
-def generate_edges(nodes):
-    if len(nodes) <= 1:
-        return []
-
-    min_node = min(nodes)
-    return [(n, min_node) for n in nodes if n != min_node]
-
-def get_hash_ranges(B = None, R = None):
-    HASH_RANGES = [(i * R, (i + 1) * R) for i in range(B)]
-    return HASH_RANGES
-
-def convert_to_slimPJ_fmt(first, second):
-    return [f"{first} :: {second}"]
-
-def minHashLSH_prepare(df, num_perm, ngram_size, B, R):
-    HASH_RANGES = get_hash_ranges(B, R)
-    print(f"num_bands is {B}, ranges is {R}")
-    
-    pipeline = (
-        df.rdd
-        .flatMap(
-            lambda x: generate_hash_values(
-                content=x[1],
-                idx=x[0],
-                num_perm=num_perm,
-                ngram_size=ngram_size,
-                hashranges=HASH_RANGES,
-                permutations = None
-            )
-        )
-        .groupBy(lambda x: (x[0], x[1]))
-        .flatMap(lambda x: generate_edges([(i[2]) for i in x[1]]))
-        .flatMap(lambda x: convert_to_slimPJ_fmt(x[0], x[1]))
-        .distinct()
-    )
-    return pipeline
-
-###########################################
 
 # ****** Functions used in EasyData ****** #
 # Don't remove

@@ -4,24 +4,9 @@ from .base import BaseLLMOperation, LLMOPERATORS
 from ray.data import Dataset
 from pyspark.sql import DataFrame
 
-try:
-    import promptsource
-except ImportError:
-    subprocess.check_call(
-        [sys.executable, "-m", "pip", "install", "git+https://github.com/bigscience-workshop/promptsource.git@main"])
-    import promptsource
-    import pyrecdp
-    promptsource_path = os.path.abspath(os.path.dirname(inspect.getfile(promptsource)))
-    promptsource_templates_path = os.path.join(promptsource_path, "templates")
-    recdp_promptsource = os.path.join(os.path.abspath(os.path.dirname(inspect.getfile(pyrecdp))), "promptsource")
-
-    for dataset in os.listdir(recdp_promptsource):
-        shutil.copytree(src=os.path.join(recdp_promptsource, dataset),
-                        dst=os.path.join(promptsource_templates_path, dataset), dirs_exist_ok=True)
-
-from promptsource.templates import DatasetTemplates
 
 def prepare_func_prompt(dataset_name, prompt_name, subset_name=None):
+    from promptsource.templates import DatasetTemplates
     if subset_name:
         prompts = DatasetTemplates(f"{dataset_name}/{subset_name}")
     else:
@@ -45,13 +30,31 @@ class TextPrompt(BaseLLMOperation):
         :param new_name: the name of output column
         """
         settings = {'dataset_name': dataset_name, 'prompt_name': prompt_name, 'subset_name': subset_name, 'new_name': new_name}
-        super().__init__(settings)
+        requirements = []
+        super().__init__(settings, requirements)
         self.support_spark = True
         self.support_ray = True
         self.dataset_name = dataset_name
         self.prompt_name = prompt_name
         self.subset_name = subset_name
         self.new_name = new_name
+
+        try:
+            import promptsource
+        except ImportError:
+            subprocess.check_call(
+                [sys.executable, "-m", "pip", "install",
+                 "git+https://github.com/bigscience-workshop/promptsource.git@main"])
+            import promptsource
+        finally:
+            import pyrecdp
+            promptsource_path = os.path.abspath(os.path.dirname(inspect.getfile(promptsource)))
+            promptsource_templates_path = os.path.join(promptsource_path, "templates")
+            recdp_promptsource = os.path.join(os.path.abspath(os.path.dirname(inspect.getfile(pyrecdp))),
+                                              "promptsource")
+            for dataset in os.listdir(recdp_promptsource):
+                shutil.copytree(src=os.path.join(recdp_promptsource, dataset),
+                                dst=os.path.join(promptsource_templates_path, dataset), dirs_exist_ok=True)
 
     def process_row(self, sample: dict, new_name, actual_func, *actual_func_args) -> dict:
         sample[new_name] = actual_func(sample, *actual_func_args)

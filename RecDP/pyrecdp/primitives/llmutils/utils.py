@@ -1,29 +1,17 @@
 import os, sys
-from multiprocessing import Pool, cpu_count
-from math import ceil
-import subprocess
-from tqdm import tqdm
-import pandas as pd
-import string
-import re
-import urllib.error
-import ftfy
-
-from pyspark.sql.functions import input_file_name
-from pyspark.sql.types import StructType,StructField, StringType, IntegerType, ArrayType
-import pyspark.sql.functions as F
-from pyspark.sql.window import Window
-from pyspark.sql import Row
-import subprocess
 import time
+from pyrecdp.core.import_utils import check_availability_and_install
 
 def convert_listoflist_to_spk(components, spark):
+    from pyspark.sql import Row
     # convert components to spark df
     R = Row('component')
     components_sdf = spark.createDataFrame([R(c) for c in components])
     return components_sdf
 
 def read_parquet(data_files, spark, rowid = False):
+    from pyspark.sql.window import Window
+    import pyspark.sql.functions as F
     first = True
     dirname_list = [os.path.dirname(f) for f in data_files]
     common = os.path.commonprefix(dirname_list)
@@ -56,6 +44,9 @@ def read_parquet(data_files, spark, rowid = False):
 
 
 def read_json(data_files, spark, rowid = False):
+    from pyspark.sql.window import Window
+    import pyspark.sql.functions as F
+    from pyspark.sql.types import StructType,StructField, StringType
     schema = StructType([ 
         StructField("text",StringType(),True), 
         StructField("meta",StringType(),True)
@@ -93,6 +84,7 @@ def read_json(data_files, spark, rowid = False):
     return ret_df
 
 def global_unique_id(df, col_name):
+    import pyspark.sql.functions as F
     ret_df = df
     if 'filename_docid' in df.schema.names:
         ret_df = ret_df.withColumn(col_name, F.regexp_replace(F.col("filename_docid"), "/", "_"))
@@ -119,6 +111,7 @@ def sub_task_per_folder(file_list):
     return sub_task
 
 def get_target_file_list_from_local(data_dir, file_type):
+    import subprocess
     if not os.path.isdir(data_dir):
         data_dir = os.path.dirname(data_dir)
         cmd = ["find", data_dir, "-name", f"{file_type}"]
@@ -136,6 +129,7 @@ def get_target_file_list_from_local(data_dir, file_type):
         return ret
     
 def get_target_file_list_from_hdfs(data_dir, file_type):
+    import subprocess
     cmd = ["hdfs", "dfs",  "-find", data_dir, "-name", f"*.{file_type}"]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     stdout, stderr = proc.communicate()
@@ -166,6 +160,8 @@ def get_target_file_list(data_dir, file_type, file_system_prefix = ""):
     return file_list    
 
 def get_nchunks_and_nproc(n_tasks, n_part = -1):
+    from multiprocessing import cpu_count
+    from math import ceil
     n_proc = cpu_count()
     if n_part != -1 and n_part < n_proc:
         n_proc = n_part
@@ -176,6 +172,8 @@ def get_nchunks_and_nproc(n_tasks, n_part = -1):
     return n_chunks, n_proc
 
 def launch_mp(n_proc, args, callable):
+    from tqdm import tqdm
+    from multiprocessing import Pool
     print(f"parallelize with {n_proc} processes")
     
     with Pool(processes=n_proc) as pool:
@@ -188,10 +186,13 @@ def launch_mp(n_proc, args, callable):
                 continue
          
 def normalize_str(s):
+    import ftfy
     s = ftfy.fix_text(s, normalization="NFC")
     return s
 
 def clean_str(s):
+    import string
+    import re
     try:
         s = normalize_str(s)
     except:
@@ -205,14 +206,18 @@ def get_llmutils_home():
 
  
 def download_file(remote_path, target_path):
-        os.makedirs(os.path.dirname(target_path), exist_ok=True)
-        try:
-            wget.download(remote_path, out=target_path)
-        except urllib.error.HTTPError as e:
-            print("Failed to download the file. Please check the url and network.")
-            raise e
+    import urllib
+    import wget
+    import os
+    os.makedirs(os.path.dirname(target_path), exist_ok=True)
+    try:
+        wget.download(remote_path, out=target_path)
+    except urllib.error.HTTPError as e:
+        print("Failed to download the file. Please check the url and network.")
+        raise e
 
 def read_parquet_pandas_to_spark(f_name_list, spark):
+    import pandas as pd
     first = True
     for f_name in f_name_list:
         pdf = pd.read_parquet(f_name)
@@ -239,6 +244,8 @@ class MultiProcessManager:
                 
                 
     def launch_cmdline_mp(self, args, mp, script_name):
+        import subprocess
+        from tqdm import tqdm
         pool = {}
         inflight = 0
         base_script_name = os.path.basename(script_name)

@@ -1,19 +1,12 @@
 # This tool is referred from alibaba data juicer project and used for
 # analyzing the verb-noun structure of the SFT dataset and plots its diversity in sunburst format.
 
-import os
-
-import pandas
-import pandas as pd
-import spacy
-from pyrecdp.core.model_utils import MODEL_ZOO, prepare_model
-from pyspark.sql import functions as F
-from pyspark.sql.types import StructType, StructField, StringType, ArrayType
-from pyspark.sql.functions import udf
-
 from .base import BaseLLMOperation, LLMOPERATORS, statistics_decorator
 from ray.data import Dataset
 from pyspark.sql import DataFrame
+from pyrecdp.core.model_utils import MODEL_ZOO, prepare_model
+
+
 
 
 # Modify from self_instruct, please refer to
@@ -92,7 +85,10 @@ class DiversityAnalysis:
             used to load the diversity model
         :return: the analysis result.
         """
-
+        from pyspark.sql import functions as F
+        from pyspark.sql.types import StructType, StructField, StringType, ArrayType
+        from pyspark.sql.functions import udf
+        import spacy
         # load diversity model
         lang_or_model = lang_or_model if lang_or_model else self.lang_or_model
         if isinstance(lang_or_model, str):
@@ -158,6 +154,7 @@ class DiversityAnalysis:
         :param kwargs: extra args
         :return: the diversity results
         """
+        import pandas as pd
         phrases = pd.DataFrame(dataset).dropna()
 
         top_verbs = phrases.groupby(['verb'
@@ -197,7 +194,8 @@ class DiversityAnalysis:
 class TextDiversityIndicate(BaseLLMOperation):
     def __init__(self, text_key='text', language='en', out_dir='', first_sent=True):
         settings = {'text_key': text_key, 'language': language, 'out_dir': out_dir, 'first_sent': first_sent}
-        super().__init__(settings)
+        requirements = ["spacy"]
+        super().__init__(settings, requirements)
         self.text_key = text_key
         self.language = language
         self.output_path = out_dir
@@ -208,6 +206,7 @@ class TextDiversityIndicate(BaseLLMOperation):
 
     @statistics_decorator
     def process_rayds(self, ds: Dataset) -> Dataset:
+        import os
         diversity_analysis = DiversityAnalysis(ds, text_key=self.text_key, lang_or_model=self.language,
                                                first_sent=self.first_sent)
         analyse_df = diversity_analysis.analyse(lang_or_model=self.language)
@@ -217,6 +216,7 @@ class TextDiversityIndicate(BaseLLMOperation):
 
     @statistics_decorator
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
+        import os
         diversity_analysis = DiversityAnalysis(spark_df, text_key=self.text_key, lang_or_model=self.language,
                                                first_sent=self.first_sent)
         analyse_df = diversity_analysis.analyse(lang_or_model=self.language)
@@ -225,6 +225,8 @@ class TextDiversityIndicate(BaseLLMOperation):
         return spark_df
 
     def summarize(self) -> str:
+        import pandas as pd
+        import os
         diversity_result = pd.read_csv(os.path.join(self.output_path, 'diversity.csv'))
         import numpy as np
         self.statistics.max = int(diversity_result["count"].max()) if len(diversity_result) != 0 else np.nan
