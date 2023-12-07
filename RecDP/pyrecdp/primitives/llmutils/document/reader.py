@@ -171,6 +171,7 @@ class AudioReader(FileBaseReader):
         import os
         super().__init__(file, single_text_per_document, page_separator)
         os.system("apt-get -qq -y install ffmpeg")
+        check_availability_and_install("torch")
         import torch
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         check_availability_and_install('transformers>=4.32.0')
