@@ -219,7 +219,6 @@ class FuzzyDeduplicateGenDict(BaseLLMOperation):
                     self.statistics.example = df_with_id.join(for_dedup_duplicates_sdf, 'global_id', 'inner').sort('dup_grpid').select('global_id', self.text_key, 'dup_grpid').toPandas()
                 else:
                     self.statistics.example = None
-                        
             return ret
             
         else:

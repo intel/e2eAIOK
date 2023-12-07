@@ -36,7 +36,17 @@ class SetupSpec:
             "ipywidgets",
             "graphviz",
             "requests",
-            "loguru"
+            "loguru",
+            "distro",
+            "wget==3.2",
+            "pyspark==3.4.0",
+            "ray==2.7.1",
+            "matplotlib",
+            "jsonlines==3.1.0",
+            "regex==2023.6.3",
+            "typer>=0.6.1",
+            "scipy==1.10.1",
+            "tabulate==0.9.0",
         ]
         self.extras: dict = {}
         self.extras['autofe'] = list_requirements("pyrecdp/autofe/requirements.txt")
