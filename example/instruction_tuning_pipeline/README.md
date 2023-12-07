@@ -8,7 +8,7 @@ This example was based upon [Intel® Extension for Transformers](https://github.
 ### 1. Environment​
 - build the docker image
 ```shell
-docker build -f docker/Dockerfile -t chatbot_finetune .
+docker build -f Dockerfile-ubuntu/Dockerfile-v1.2 -t chatbot_finetune .
 ```
 - create docker container
 ```shell
@@ -17,7 +17,7 @@ docker run -it --name chatbot \
     --privileged --network host --ipc=host \
     --device=/dev/dri \
     -v /dev/shm:/dev/shm \
-    -v ~:/home/vmagent/app \
+    -v /path/to/code/and/data:/home/vmagent/app/data \
     -w /home/vmagent/app  \
     chatbot_finetune:latest \
     /bin/bash
@@ -28,18 +28,12 @@ docker run -it --name chatbot \
     --device=/dev/dri \
     --runtime=nvidia \
     -v /dev/shm:/dev/shm \
-    -v /mnt/DP_disk1/dataset:/home/vmagent/app/data \
-    -v /mnt/DP_disk1/yu:/home/vmagent/app \
+    -v /path/to/code/and/data:/home/vmagent/app/data \
     -w /home/vmagent/app/  \
     chatbot_finetune:latest \
     /bin/bash
 ```
-- Or you can direct create from the bare mental env
-```shell
-pip install -r requirements.txt
-```
-
-- Install the `deltatuner` python package
+- Or you can direct create it from the bare mental env
 ```shell
 pip install deltatuner
 ```
@@ -56,17 +50,15 @@ The [Alpaca dataset](https://github.com/tatsu-lab/stanford_alpaca) from Stanford
 
 ## Finetune
 
-### 1. Single Node Fine-tuning in Xeon SPR
-
-#### Lora Fine-tuning with deltatuner
+### Lora Fine-tuning with deltatuner
 
 For [MPT](https://huggingface.co/mosaicml/mpt-7b), use the below command line for finetuning on the Alpaca dataset. This model also requires that trust_remote_code=True be passed to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.
 
 ```bash
-# fine-tune mpt-7b with denas-lora
+# fine-tune with denas-lora
 python example/instruction_tuning_pipeline/finetune_clm.py \
-    --model_name_or_path "/home/vmagent/app/dataset/mpt-7b" \
-    --train_file "/home/vmagent/app/dataset/stanford_alpaca/alpaca_data.json" \
+    --model_name_or_path $model_name_or_path \
+    --train_file $DATA_PATH"/alpaca_data.json" \
     --dataset_concatenation \
     --per_device_train_batch_size 8 \
     --per_device_eval_batch_size 8 \
@@ -80,30 +72,33 @@ python example/instruction_tuning_pipeline/finetune_clm.py \
     --save_total_limit 1 \
     --log_level info \
     --save_strategy epoch \
-    --output_dir models/mpt_denas-lora_model \
+    --output_dir $model_save_path \
     --peft lora \
-    --delta lora \
+    --algo lora \
+    --denas True \
     --trust_remote_code True \
     --no_cuda \
-    --bf16 True 2>&1 | tee log/mpt-denas-lora-run-1epoch.log
+    2>&1 | tee $log_save_path
 ```
 
-Where the `--dataset_concatenation` argument is a way to vastly accelerate the fine-tuning process through training samples concatenation. With several tokenized sentences concatenated into a longer and concentrated sentence as the training sample instead of having several training samples with different lengths, this way is more efficient due to the parallelism characteristic provided by the more concentrated training samples.
+- Where the `--dataset_concatenation` argument is a way to vastly accelerate the fine-tuning process through training samples concatenation. With several tokenized sentences concatenated into a longer and concentrated sentence as the training sample instead of having several training samples with different lengths, this way is more efficient due to the parallelism characteristic provided by the more concentrated training samples.
 
-For finetuning on SPR, add `--bf16` argument will speedup the finetuning process without the loss of model's performance.
+- For model profile, add `--profile` argument, the forward time and backward time will print on the console.
 
-For model profile, add `--profile` argument, the forward time and backward time will print on the console.
+- For target modules of LoRA, use `--lora_target_modules` argument, the default target module of MPT and LLaMa model is `"llama": ["q_proj", "v_proj"],"mpt": ["Wqkv"]`. If you want to adapt to full modules on LLmMa model, please use `--lora_target_modules q_proj v_proj k_proj o_proj up_proj down_proj`, while it is `--lora_target_modules Wqkv out_proj up_proj down_proj` in MPT model.
 
-For target modules of LoRA, use `--lora_target_modules` argument, the default target module of MPT and LLaMa model is `"llama": ["q_proj", "v_proj"],"mpt": ["Wqkv"]`. If you want to adapt to full modules on LLmMa model, please use `--lora_target_modules q_proj v_proj k_proj o_proj up_proj down_proj`, while it is `--lora_target_modules Wqkv out_proj up_proj down_proj` in MPT model.
+- If you are using 4th Xeon or later (SPR etc.), please specify the `--bf16 --no_cuda` args, it will speedup the finetuning process without the loss of model's performance.;
+- If you are using 3th Xeon or before (ICX etc.): please specify the `--no_cuda` args;
+- If you are using GPU server: please specify the `--fp16` args.
 
-#### pure Lora Fine-tuning
+### pure Lora Fine-tuning
 
 For fine-tune with Lora only algorighm, you can try the following command.
 ```bash
-# fine-tune mpt-7b with lora
+# fine-tune with lora
 python example/instruction_tuning_pipeline/finetune_clm.py \
-    --model_name_or_path "/home/vmagent/app/dataset/mpt-7b" \
-    --train_file "/home/vmagent/app/dataset/stanford_alpaca/alpaca_data.json" \
+    --model_name_or_path $model_name_or_path \
+    --train_file $DATA_PATH"/alpaca_data.json" \
     --dataset_concatenation \
     --per_device_train_batch_size 8 \
     --per_device_eval_batch_size 8 \
@@ -117,17 +112,13 @@ python example/instruction_tuning_pipeline/finetune_clm.py \
     --save_total_limit 1 \
     --log_level info \
     --save_strategy epoch \
-    --output_dir models/mpt_lora_model \
+    --output_dir $model_save_path \
     --peft lora \
-    --denas False \
+    --algo "" \
     --trust_remote_code True \
     --no_cuda \
-    --bf16 True 2>&1 | tee log/mpt-lora-run-1epoch.log
+    2>&1 | tee $log_save_path
 ```
-
-- If you are using 4th Xeon or later (SPR etc.), please specify the `--bf16 --no_cuda` args;
-- If you are using 3th Xeon or before (ICX etc.): please specify the `--no_cuda` args;
-- If you are using GPU server: please specify the `--fp16` args.
 
 ## Evaluate the model
 
