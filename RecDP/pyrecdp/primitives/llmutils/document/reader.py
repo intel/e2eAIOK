@@ -4,13 +4,10 @@ from pathlib import Path
 from typing import List, Optional, Dict, Type
 from pyrecdp.core.import_utils import check_availability_and_install
 from pyrecdp.primitives.llmutils.document.schema import Document
+from pyrecdp.core.import_utils import check_availability_and_install
 import time
 import contextlib
 import numpy as np
-
-check_availability_and_install("pydub")
-from pydub import AudioSegment
-
 
 class DocumentReader(ABC):
     """interface for document loader"""
@@ -27,6 +24,13 @@ class FileBaseReader(DocumentReader, ABC):
         self.single_text_per_document = single_text_per_document
         self.page_separator = page_separator or '\n'
         self.file = file
+        
+    @classmethod
+    def setup(cls):
+        for pkg in cls.system_requirements:
+            os.system(f'apt-get install -y {pkg}')
+        for pkg in cls.requirements:
+            check_availability_and_install(pkg, verbose=1)
 
     def get_metadata(self):
         return {"source": str(self.file)}
@@ -63,15 +67,12 @@ class FileBaseReader(DocumentReader, ABC):
 
 class PDFReader(FileBaseReader):
     """PDF parser."""
-
+    system_requirements = []
+    requirements = ['pypdf']
     def __init__(self, file: Path, single_text_per_document: bool = True, page_separator: str = '\n',
                  **load_kwargs):
         super().__init__(file, single_text_per_document, page_separator)
         self.load_kwargs = load_kwargs
-        try:
-            import pypdf
-        except ImportError:
-            os.system("pip install -q pypdf")
         self.file = file
 
     def load_file(self, file: Path) -> List[Document]:
@@ -96,13 +97,10 @@ class PDFReader(FileBaseReader):
 
 class DocxReader(FileBaseReader):
     """Docx parser."""
-
+    system_requirements = []
+    requirements = ['python-docx']
     def __init__(self, file: Path, single_text_per_document: bool = True, page_separator: str = '\n'):
         super().__init__(file, single_text_per_document, page_separator)
-        try:
-            import docx
-        except ImportError:
-            os.system("pip install -q python-docx")
 
     def load_file(self, file: Path) -> List[Document]:
         """Parse file."""
@@ -119,7 +117,8 @@ class ImageReader(FileBaseReader):
     Extract text from images using pytesseract.
 
     """
-
+    system_requirements = ['tesseract-ocr']
+    requirements = ['pillow', 'pytesseract']
     def __init__(
             self,
             file: Path,
@@ -129,18 +128,6 @@ class ImageReader(FileBaseReader):
     ):
         super().__init__(file, single_text_per_document, page_separator)
         self._keep_image = keep_image
-        try:
-            from PIL import Image
-        except ImportError:
-            import os
-            os.system("pip install -q pillow")
-
-        try:
-            from pytesseract import pytesseract
-        except ImportError:
-            import os
-            os.system("apt-get -qq -y install tesseract-ocr")
-            os.system("pip install -q pytesseract")
 
     def load_file(self, file: Path) -> List[Document]:
         """Parse file."""
@@ -160,21 +147,21 @@ class ImageReader(FileBaseReader):
 
 
 class AudioReader(FileBaseReader):
+    system_requirements = ['ffmpeg']
+    requirements = ['transformers', 'pydub', 'datasets', 'zhconv', 'torch']
     def __init__(
             self,
             file: Path,
             single_text_per_document: bool = True,
             page_separator: str = '\n',
             model_name_or_path = "openai/whisper-small",
-            language = None
+            language = None,
+            device = 'cpu'
     ):
         import os
         super().__init__(file, single_text_per_document, page_separator)
-        os.system("apt-get -qq -y install ffmpeg")
-        check_availability_and_install("torch")
-        import torch
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        check_availability_and_install('transformers>=4.32.0')
+        self.device = device
+
         from transformers import WhisperForConditionalGeneration, WhisperProcessor
         try:
             self.model = WhisperForConditionalGeneration.from_pretrained(model_name_or_path).to(self.device)
@@ -202,6 +189,7 @@ class AudioReader(FileBaseReader):
 
     def _convert_audio_type(self, audio_path): # pragma: no cover
         # print("[ASR WARNING] Recommend to use mp3 or wav input audio type!")
+        from pydub import AudioSegment
         audio_file_name = audio_path.split(".")[0]
         AudioSegment.from_file(audio_path).export(f"{audio_file_name}.mp3", format="mp3")
         return f"{audio_file_name}.mp3"
@@ -218,11 +206,11 @@ class AudioReader(FileBaseReader):
             raise Exception("[ASR ERROR] Audio format not supported!")
 
         try:
+            from pydub import AudioSegment
             waveform = AudioSegment.from_file(audio_path).set_frame_rate(16000)
             waveform = self._audiosegment_to_librosawav(waveform)
         except Exception as e:
             print(f"[ASR] audiosegment to librosa wave fail: {e}")
-            check_availability_and_install('datasets')
             from datasets import Audio, Dataset
             audio_dataset = Dataset.from_dict({"audio": [audio_path]}).cast_column("audio", Audio(sampling_rate=16000))
             waveform = audio_dataset[0]["audio"]['array']
@@ -244,7 +232,6 @@ class AudioReader(FileBaseReader):
         result = self.processor.tokenizer.batch_decode(
             predicted_ids, skip_special_tokens=True, normalize=True)[0]
         if self.language == "auto" or self.language == "cn":
-            check_availability_and_install('zhconv')
             from zhconv import convert
             result = convert(result, 'zh-cn')
         print(f"generated text in {time.time() - start} seconds, and the result is: {result}")
@@ -335,6 +322,14 @@ class DirectoryReader(DocumentReader):
             self.use_multithreading = False
 
         self.single_text_per_document = single_text_per_document
+        
+    def setup(self):
+        suffix_list = set(input_file.suffix.lower() for input_file in self.input_files)
+        for file_suffix in suffix_list:
+            if file_suffix in CUSTOMIZE_SUPPORTED_SUFFIX:
+                if file_suffix not in self.file_extractor:
+                    file_base_reader_cls: Type[FileBaseReader] = CUSTOMIZE_SUPPORTED_SUFFIX[file_suffix]
+                    file_base_reader_cls.setup()
 
     def _add_files(self, input_dir: Path) -> List[Path]:
         all_files = set()
@@ -384,7 +379,7 @@ class DirectoryReader(DocumentReader):
     def _load_file(self, input_file: Path, pbar):
         try:
             file_suffix = input_file.suffix.lower()
-            if file_suffix in CUSTOMIZE_SUPPORTED_SUFFIX:
+            if file_suffix in CUSTOMIZE_SUPPORTED_SUFFIX:                    
                 if file_suffix not in self.file_extractor:
                     file_base_reader_cls: Type[FileBaseReader] = CUSTOMIZE_SUPPORTED_SUFFIX[file_suffix]
                     self.file_extractor[file_suffix] = file_base_reader_cls(

@@ -23,7 +23,9 @@ def fix_package_name(package):
     package_name_map = {
         'scikit-learn' : 'sklearn',
         'pyyaml' : 'yaml',
-        'Faker' : 'faker'
+        'Faker' : 'faker',
+        'python-docx': 'docx',
+        'Pillow': 'pillow'
     }
     
     if b in package_name_map:

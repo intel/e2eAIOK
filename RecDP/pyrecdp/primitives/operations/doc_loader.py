@@ -134,6 +134,8 @@ class DirectoryLoader(DocumentLoader):
         super().__init__(loader='DirectoryLoader', args_dict=settings)
 
     def _get_loader(self) -> Callable[[], List[Document]]:
+        print("_get_loader")
+        self.directory_loader.setup()
         return lambda: self.directory_loader.load()
 
 
