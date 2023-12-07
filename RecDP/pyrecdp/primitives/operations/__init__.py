@@ -58,7 +58,7 @@ try:
     )
     from .text_qualityscorer import TextQualityScorer
     from .text_diversityindicate import TextDiversityIndicate
-    from .text_custom import TextCustomerMap, TextCustomerFilter
+    from .text_custom import TextCustomerMap, TextCustomerFilter, TextCustomerFlatMap
     from .text_toxicity import TextToxicity
     from .text_prompt import TextPrompt
     from .text_compare_dedup import RougeScoreDedup

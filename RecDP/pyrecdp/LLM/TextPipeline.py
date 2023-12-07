@@ -176,6 +176,9 @@ class TextPipeline(BasePipeline):
             if function_type == 'map':
                 self.pipeline[cur_idx] = Operation(
                     cur_idx, children, output=None, op="TextCustomerMap", config=config)
+            elif function_type == 'flatmap':
+                self.pipeline[cur_idx] = Operation(
+                    cur_idx, children, output=None, op="TextCustomerFlatMap", config=config)
             elif function_type == 'filter':
                 self.pipeline[cur_idx] = Operation(
                     cur_idx, children, output=None, op="TextCustomerFilter", config=config)
@@ -338,6 +341,8 @@ class ResumableTextPipeline(TextPipeline):
         op_chain = []
 
         if engine_name == 'ray':
+            if ray.is_initialized():
+                ray.shutdown()
             if not ray.is_initialized():
                 print(f"init ray with total mem of {total_mem}")
                 try:
