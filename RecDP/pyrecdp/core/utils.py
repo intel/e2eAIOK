@@ -113,6 +113,7 @@ def sample_read(file_path):
         raise NotImplementedError("now sample read only support csv and parquet")
 
 def dump_fix(x):
+    import json
     if isinstance(x, dict):
         for k, v in x.items():
             x[k] = dump_fix(v)
@@ -129,7 +130,11 @@ def dump_fix(x):
         import inspect
         x = inspect.getsource(x)
     else:
-        x = x
+        try:
+            json.dumps(x)
+            x = x
+        except:
+            x = str(x)
     return x
 
 def class_name_fix(s):

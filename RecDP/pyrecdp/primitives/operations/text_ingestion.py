@@ -69,7 +69,11 @@ class DocumentStore(ABC):
         else:
             ds = self.embedding_with_spark(ds, **kwargs)
 
-        return self.do_persist(ds, **kwargs)
+        db = self.do_persist(ds, **kwargs)
+        if self.vector_store_args["return_db_handler"]:
+            return db
+        else:
+            return ds
 
     @abstractmethod
     def do_persist(self, ds: Union[Dataset, DataFrame], **kwargs):
@@ -115,18 +119,22 @@ class DocumentStore(ABC):
 
 class LangchainFAAIS(DocumentStore):
     def do_persist(self, ds, **kwargs):
-        if "output_dir" not in self.vector_store_args:
-            raise ValueError(f"You must have `output_dir` option specify for FAAIS vector store")
-
         check_availability_and_install(["faiss-cpu", "faiss-gpu", "langchain"])
 
-        faiss_folder_path = self.vector_store_args["output_dir"]
+        db = self.vector_store_args["db_handler"]
         index_name = self.vector_store_args.get("index", "index")
 
         rows = ds.iter_rows() if isinstance(ds, Dataset) else ds.collect()
         text_embeddings = [(row[self.text_column], row[self.embeddings_column]) for row in rows]
 
         from langchain.vectorstores.faiss import FAISS
+        if db is not None:
+            db.add_embeddings(text_embeddings)
+            return db
+
+        if "output_dir" not in self.vector_store_args:
+            raise ValueError(f"You must have `output_dir` option specify for FAAIS vector store")
+        faiss_folder_path = self.vector_store_args["output_dir"]
         if not self.override and os.path.exists(os.path.join(faiss_folder_path, index_name + ".faiss")):
             db = FAISS.load_local(faiss_folder_path, self.embeddings, index_name)
             db.add_embeddings(text_embeddings)
@@ -134,7 +142,7 @@ class LangchainFAAIS(DocumentStore):
             db = FAISS.from_embeddings(text_embeddings, embedding=self.embeddings)
 
         db.save_local(faiss_folder_path, index_name)
-        return ds
+        return db
 
 
 class LangchainChroma(DocumentStore):
@@ -142,17 +150,20 @@ class LangchainChroma(DocumentStore):
         return self.do_persist(ds, **kwargs)
 
     def do_persist(self, ds, **kwargs):
-        if "output_dir" not in self.vector_store_args:
-            raise ValueError(f"You must have `output_dir` option specify for Chroma vector store")
-
         check_availability_and_install(["chromadb==0.4.15", "langchain"])
+        chroma = self.vector_store_args["db_handler"]
 
-        persist_directory = self.vector_store_args["output_dir"]
         collection_name = self.vector_store_args.get("collection_name", 'langchain')
         rows = ds.iter_rows() if isinstance(ds, Dataset) else ds.collect()
         texts = [row[self.text_column] for row in rows]
 
         from langchain.vectorstores.chroma import Chroma
+        if chroma is not None:
+            chroma.add_texts(texts)
+            return chroma
+        if "output_dir" not in self.vector_store_args:
+            raise ValueError(f"You must have `output_dir` option specify for Chroma vector store")
+        persist_directory = self.vector_store_args["output_dir"]
         if not self.override and os.path.exists(persist_directory):
             chroma = Chroma(collection_name=collection_name,
                             persist_directory=persist_directory,
@@ -163,9 +174,8 @@ class LangchainChroma(DocumentStore):
                                        collection_name=collection_name,
                                        embedding=self.embeddings,
                                        persist_directory=persist_directory)
-
         chroma.persist()
-        return ds
+        return chroma
 
 
 class HaystackElasticSearch(DocumentStore):
@@ -177,19 +187,21 @@ class HaystackElasticSearch(DocumentStore):
         es_host = self.vector_store_args.get('host', 'localhost')
         es_port = int(self.vector_store_args.get('port', 9200))
         es_search_fields = self.vector_store_args.get('search_fields', ["content", "title"])
+        elasticsearch = self.vector_store_args["db_handler"]
 
         from elasticsearch_haystack import ElasticsearchDocumentStore
-        elasticsearch = ElasticsearchDocumentStore(
-            host=es_host,
-            port=es_port,
-            search_fields=es_search_fields,
-            **self.vector_store_args
-        )
+        if elasticsearch is None:
+            elasticsearch = ElasticsearchDocumentStore(
+                host=es_host,
+                port=es_port,
+                search_fields=es_search_fields,
+                **self.vector_store_args
+            )
         rows = ds.iter_rows() if isinstance(ds, Dataset) else ds.collect()
         from haystack import Document as SDocument
         documents = [SDocument(content=row[self.text_column]) for row in rows]
         elasticsearch.write_documents(documents)
-        return ds
+        return elasticsearch
 
 
 class DocumentIngestion(BaseLLMOperation):
@@ -206,7 +218,9 @@ class DocumentIngestion(BaseLLMOperation):
                  compute_max_size: Optional[int] = None,
                  batch_size: Optional[int] = None,
                  num_cpus: Optional[int] = None,
-                 num_gpus: Optional[int] = None):
+                 num_gpus: Optional[int] = None,
+                 return_db_handler = False,
+                 db_handler = None):
         """
           Document ingestion operator.
           Args:
@@ -223,6 +237,8 @@ class DocumentIngestion(BaseLLMOperation):
             batch_size: The batch size to use when computing embeddings.
             num_cpus: The number of CPUs to use when computing embeddings.
             num_gpus: The number of GPUs to use when computing embeddings.
+            return_db_handler: If false, return dataset; If True, return created vectorDB handler.
+            db_handler: Use pre-created db_handler as input.
             """
         if rag_framework is None:
             raise ValueError(f"rag framework is required")
@@ -253,6 +269,8 @@ class DocumentIngestion(BaseLLMOperation):
             'num_gpus': num_gpus,
             'num_cpus': num_cpus,
 
+            'return_db_handler': return_db_handler,
+            'db_handler': db_handler,
         }
         requirements = []
         super().__init__(settings, requirements)
@@ -276,6 +294,8 @@ class DocumentIngestion(BaseLLMOperation):
         self.override = override
         self.embeddings_column = embeddings_column
         self.document_store = self._create_document_store()
+        self.vector_store_args['return_db_handler'] = return_db_handler
+        self.vector_store_args['db_handler'] = db_handler
 
     def _create_document_store(self) -> DocumentStore:
         document_store_ctor_args = {
@@ -306,7 +326,7 @@ class DocumentIngestion(BaseLLMOperation):
         return self.document_store.persist(ds, **self.compute_args)
 
     def process_spark(self, spark: SparkSession, df: DataFrame = None):
-        return self.document_store.persist(df)
+        return self.document_store.persist(df, **self.compute_args)
 
 
 LLMOPERATORS.register(DocumentIngestion)

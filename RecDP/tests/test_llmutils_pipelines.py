@@ -37,9 +37,12 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
                     tmp_df = pd.read_parquet(os.path.join(output_path, dir_name))
                     print(f"total num_samples is {len(tmp_df)}")
                     display(tmp_df.head())
-                shutil.rmtree(output_path)
             except Exception as e:
                 print(e)
+            try:
+                shutil.rmtree(output_path)
+            except:
+                pass
         return super().tearDown()
 
     def test_ResumableTextPipeline(self):
@@ -221,3 +224,57 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         pipeline.add_operations(ops)
         ret = pipeline.execute()
         display(ret.to_pandas())
+
+    def test_llm_rag_pdf_return_db_pipeline(self):
+        model_root_path = os.path.join(RECDP_MODELS_CACHE, "huggingface")
+        model_name = f"{model_root_path}/sentence-transformers/all-mpnet-base-v2"
+        faiss_output_dir = 'tests/data/faiss'
+        pipeline = TextPipeline()
+        ops = [
+            DirectoryLoader("tests/data/press_pdf", glob="**/*.pdf"),
+            DocumentSplit(text_splitter='RecursiveCharacterTextSplitter'),
+            DocumentIngestion(
+                vector_store='FAISS',
+                vector_store_args={
+                    "output_dir": faiss_output_dir,
+                    "index": "test_index"
+                },
+                embeddings='HuggingFaceEmbeddings',
+                embeddings_args={'model_name': model_name},
+                return_db_handler=True
+            ),
+        ]
+        pipeline.add_operations(ops)
+        ret = pipeline.execute()
+        display(ret)
+
+    def test_llm_rag_pdf_use_existing_db_pipeline(self):
+        from pyrecdp.core.import_utils import import_sentence_transformers
+        ## Pretent that someone else already define the handler ##
+        model_root_path = os.path.join(RECDP_MODELS_CACHE, "huggingface")
+        model_name = f"{model_root_path}/sentence-transformers/all-mpnet-base-v2"
+        faiss_output_dir = 'tests/data/faiss'
+        embeddings='HuggingFaceEmbeddings'
+        embeddings_args={'model_name': model_name}
+
+        import_sentence_transformers()
+        from pyrecdp.core.class_utils import new_instance
+        from langchain.vectorstores.faiss import FAISS
+        embeddings = new_instance('langchain.embeddings', embeddings, **embeddings_args)
+        db = FAISS.load_local(faiss_output_dir, embeddings, 'test_index')
+
+        pipeline = TextPipeline()
+        ops = [
+            DirectoryLoader("tests/data/press_pdf", glob="**/*.pdf"),
+            DocumentSplit(text_splitter='RecursiveCharacterTextSplitter'),
+            DocumentIngestion(
+                vector_store='FAISS',
+                db_handler = db,
+                return_db_handler = True,
+                embeddings='HuggingFaceEmbeddings',
+                embeddings_args={'model_name': model_name},
+            ),
+        ]
+        pipeline.add_operations(ops)
+        ret = pipeline.execute()
+        display(ret)
