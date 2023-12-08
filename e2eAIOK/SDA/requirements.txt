@@ -1,5 +1,0 @@
-pyyaml
-sigopt
-xgboost
-scikit-learn
-six
