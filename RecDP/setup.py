@@ -32,7 +32,6 @@ class SetupSpec:
             "pandas",
             "numpy",
             "pyarrow",
-            "pandas_flavor",
             "ipywidgets",
             "graphviz",
             "requests",

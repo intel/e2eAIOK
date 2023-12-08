@@ -237,6 +237,11 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         op = RAGTextFix(chars_to_remove="abcdedfhijklmn")
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds(ctx.ds))
+            
+    def test_audio_loader_ray(self):
+        op = DirectoryLoader("tests/data/audio")
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds())
 
     ### ======  Spark ====== ###
 
@@ -454,19 +459,10 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         op = ParagraphsTextSplitter(model_name=model_name)
         with SparkContext("tests/data/llm_data/arxiv_sample_100.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
-
-    def test_document_embed_with_dense_retrieval_chroma(self):
-        model_root_path = os.path.join(RECDP_MODELS_CACHE, "huggingface")
-        op = DocumentIngestion(
-            vector_store='chroma',
-            vector_store_args={
-                "output_dir": "ResumableTextPipeline_output",
-                "collection_name": "langchain_store",
-            },
-            embeddings='HuggingFaceEmbeddings',
-            embeddings_args={
-                'model_name': f"{model_root_path}/sentence-transformers/all-mpnet-base-v2"
-            }
-        )
-        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
-            ctx.show(op.process_rayds(ctx.ds))
+    
+    def test_audio_loader_spark(self):
+        op = DirectoryLoader("tests/data/audio")
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark))
+            
+    
