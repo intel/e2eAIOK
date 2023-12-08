@@ -147,7 +147,11 @@ class LangchainFAAIS(DocumentStore):
 
 class LangchainChroma(DocumentStore):
     def persist(self, ds, **kwargs):
-        return self.do_persist(ds, **kwargs)
+        db = self.do_persist(ds, **kwargs)
+        if self.vector_store_args["return_db_handler"]:
+            return db
+        else:
+            return ds
 
     def do_persist(self, ds, **kwargs):
         check_availability_and_install(["chromadb==0.4.15", "langchain"])
@@ -180,7 +184,11 @@ class LangchainChroma(DocumentStore):
 
 class HaystackElasticSearch(DocumentStore):
     def persist(self, ds, **kwargs):
-        return self.do_persist(ds, **kwargs)
+        db = self.do_persist(ds, **kwargs)
+        if self.vector_store_args["return_db_handler"]:
+            return db
+        else:
+            return ds
 
     def do_persist(self, ds, **kwargs):
         check_availability_and_install(["haystack", "elasticsearch-haystack"])
