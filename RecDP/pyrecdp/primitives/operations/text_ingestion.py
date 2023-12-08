@@ -196,6 +196,8 @@ class HaystackElasticSearch(DocumentStore):
         es_port = int(self.vector_store_args.get('port', 9200))
         es_search_fields = self.vector_store_args.get('search_fields', ["content", "title"])
         elasticsearch = self.vector_store_args["db_handler"]
+        exclude_keys = ['db_handler', 'return_db_handler']
+        vector_store_args = dict((k, v) for k, v in self.vector_store_args.items() if k not in exclude_keys)
 
         from elasticsearch_haystack import ElasticsearchDocumentStore
         if elasticsearch is None:
@@ -203,7 +205,7 @@ class HaystackElasticSearch(DocumentStore):
                 host=es_host,
                 port=es_port,
                 search_fields=es_search_fields,
-                **self.vector_store_args
+                **vector_store_args
             )
         rows = ds.iter_rows() if isinstance(ds, Dataset) else ds.collect()
         from haystack import Document as SDocument
