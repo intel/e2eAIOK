@@ -46,7 +46,7 @@ try:
     from .filter import *
     from .text_fixer import TextFix, RAGTextFix
     from .text_language_identify import LanguageIdentify
-    from .text_split import DocumentSplit, ParagraphsTextSplitter
+    from .text_split import DocumentSplit, ParagraphsTextSplitter, CustomerDocumentSplit
     from .text_pii_remove import PIIRemoval
     from .text_deduplication import (
         FuzzyDeduplicate,

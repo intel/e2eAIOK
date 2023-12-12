@@ -37,7 +37,7 @@ LLMOPERATORS.register(TextCustomerMap)
 
 class TextCustomerFlatMap(BaseLLMOperation):
     def __init__(self, func, text_key='text', inplace: bool = False, **func_args):
-        settings = {'func': func, 'text_key': text_key, 'inplace': inplace }
+        settings = {'func': func, 'text_key': text_key, 'inplace': inplace}
         settings.update(**func_args)
         requirements = []
         super().__init__(settings, requirements)
@@ -49,20 +49,16 @@ class TextCustomerFlatMap(BaseLLMOperation):
         self.new_key = text_key if inplace else f"{func.__name__}_text"
 
     def process_rayds(self, ds: Dataset) -> Dataset:
-        def flap_map(sample, flat_map_func, func_args):
+        def flap_map(sample, text_key, flat_map_func, func_args):
             result = []
-            texts = flat_map_func(sample[self.text_key], **func_args) if func_args else flat_map_func(
-                sample[self.text_key])
+            texts = flat_map_func(sample[text_key], **func_args) if func_args else flat_map_func(sample[text_key])
             for text in texts:
                 row = dict(**sample)
                 row[self.new_key] = text
                 result.append(row)
             return result
 
-        return ds.flat_map(partial(
-            flap_map,
-            flat_map_func=self.func,
-            func_args=self.func_args))
+        return ds.flat_map(lambda sample: flap_map(sample, self.text_key, self.func, self.func_args))
 
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
         import pyspark.sql.functions as F

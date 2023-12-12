@@ -1,10 +1,9 @@
 import math
-from typing import List, Dict, Any, Optional, Callable, cast
+from typing import List, Dict, Any, Optional, Callable, cast, Union
 
 import numpy as np
 from pyspark.sql import DataFrame
 from ray.data import Dataset
-
 
 from pyrecdp.core.import_utils import import_langchain, import_sentence_transformers, import_pysbd
 from pyrecdp.core.model_utils import prepare_model
@@ -86,13 +85,13 @@ class DocumentSplit(BaseDocumentSplit):
             self,
             text_key: str = 'text',
             inplace: bool = True,
-            text_splitter: Optional[Any] = 'NLTKTextSplitter',
+            text_splitter: Optional[str] = 'NLTKTextSplitter',
             text_splitter_args: Optional[Dict] = None,
     ):
         """
         Args:
             text_key: The key of the text.
-            text_splitter(str): The class name of langchain text splitter.
+            text_splitter(str): The class name of langchain text splitter or a callable function.
             text_splitter_args: A dictionary of arguments to pass to the langchain text splitter.
         """
         if text_splitter is None:
@@ -266,3 +265,42 @@ class ParagraphsTextSplitter(BaseDocumentSplit):
 
 
 LLMOPERATORS.register(ParagraphsTextSplitter)
+
+
+class CustomerDocumentSplit(BaseDocumentSplit):
+    def __init__(
+            self,
+            func: Callable[[str, Any], List[str]],
+            inplace=True,
+            text_key: str = 'text',
+            **func_kwargs
+    ):
+        """
+            Initialize the `CustomerDocumentSplit` class.
+
+            Args:
+                func: The Callable that will be used to split the text.
+                inplace: Whether to perform split text in place.
+                text_key: The key in the dictionary that contains the text to be tokenized.
+                **func_kwargs: Keyword arguments to pass to the tokenization function.
+        """
+        if func is None:
+            raise ValueError(f"func must be provide")
+        self.split_func = func
+        settings = {
+            'func': func,
+        }
+        settings.update(func_kwargs or {})
+        self.func_kwargs = func_kwargs
+        super().__init__(text_key=text_key,
+                         inplace=inplace,
+                         args_dict=settings)
+
+    def get_text_split_func(self) -> Callable[[str], List[str]]:
+        def process(text):
+            return self.split_func(text, **self.func_kwargs)
+
+        return process
+
+
+LLMOPERATORS.register(CustomerDocumentSplit)
