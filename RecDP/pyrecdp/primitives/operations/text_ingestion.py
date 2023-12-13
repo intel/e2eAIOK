@@ -200,7 +200,8 @@ class DocumentIngestion(BaseLLMOperation):
                  compute_max_size: Optional[int] = None,
                  batch_size: Optional[int] = None,
                  num_cpus: Optional[int] = None,
-                 num_gpus: Optional[int] = None):
+                 num_gpus: Optional[int] = None,
+                 requirements=[]):
         """
           Document ingestion operator.
           Args:
@@ -247,9 +248,10 @@ class DocumentIngestion(BaseLLMOperation):
             'batch_size': batch_size,
             'num_gpus': num_gpus,
             'num_cpus': num_cpus,
+            'requirements': requirements,
 
         }
-        requirements = []
+        requirements = requirements
         super().__init__(settings, requirements)
         self.support_ray = True
         self.support_spark = True

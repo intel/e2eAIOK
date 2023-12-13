@@ -37,13 +37,15 @@ class BaseDocumentSplit(BaseLLMOperation):
             text_key: str = 'text',
             inplace: bool = True,
             args_dict: Optional[Dict] = None,
+            requirements=[]
     ):
         settings = {
             'text_key': text_key,
             'inplace': inplace,
+            'requirements': requirements,
         }
         settings.update(args_dict or {})
-        requirements = []
+        requirements = requirements
         super().__init__(settings, requirements)
         self.support_spark = True
         self.support_ray = True
@@ -87,6 +89,7 @@ class DocumentSplit(BaseDocumentSplit):
             inplace: bool = True,
             text_splitter: Optional[str] = 'NLTKTextSplitter',
             text_splitter_args: Optional[Dict] = None,
+            requirements=[],
     ):
         """
         Args:
@@ -103,11 +106,13 @@ class DocumentSplit(BaseDocumentSplit):
         settings = {
             'text_key': text_key,
             'text_splitter': text_splitter,
-            'text_splitter_args': text_splitter_args
+            'text_splitter_args': text_splitter_args,
+            'requirements': requirements,
         }
         super().__init__(text_key=text_key,
                          inplace=inplace,
-                         args_dict=settings)
+                         args_dict=settings,
+                         requirements=requirements)
 
     def get_text_split_func(self) -> Callable[[str], List[str]]:
         return prepare_text_split(self.text_splitter,
@@ -232,7 +237,8 @@ class ParagraphsTextSplitter(BaseDocumentSplit):
                  inplace: bool = False,
                  model_name: Optional[str] = 'sentence-transformers/all-mpnet-base-v2',
                  language: Optional[str] = 'en',
-                 paragraph_size: Optional[int] = 10):
+                 paragraph_size: Optional[int] = 10,
+                 requirements=[]):
         """
           Initializes the ParagraphsTextSplitter class.
 
@@ -249,10 +255,12 @@ class ParagraphsTextSplitter(BaseDocumentSplit):
             'model_name': model_name,
             'language': language,
             'paragraph_size': paragraph_size,
+            'requirements': requirements,
         }
         super().__init__(text_key=text_key,
                          inplace=inplace,
-                         args_dict=settings)
+                         args_dict=settings,
+                         requirements=requirements)
 
     def get_text_split_func(self) -> Callable[[str], List[str]]:
         import_sentence_transformers()
@@ -273,6 +281,7 @@ class CustomerDocumentSplit(BaseDocumentSplit):
             func: Callable[[str, Any], List[str]],
             inplace=True,
             text_key: str = 'text',
+            requirements=[],
             **func_kwargs
     ):
         """
@@ -289,12 +298,14 @@ class CustomerDocumentSplit(BaseDocumentSplit):
         self.split_func = func
         settings = {
             'func': func,
+            'requirements': requirements,
         }
         settings.update(func_kwargs or {})
         self.func_kwargs = func_kwargs
         super().__init__(text_key=text_key,
                          inplace=inplace,
-                         args_dict=settings)
+                         args_dict=settings,
+                         requirements=requirements)
 
     def get_text_split_func(self) -> Callable[[str], List[str]]:
         def process(text):
