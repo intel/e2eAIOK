@@ -74,6 +74,8 @@ class TextPipeline(BasePipeline):
                 output_dir = op.config['output_dir']
             if op.op in ['JsonlWriter', 'PerfileJsonlWriter']:
                 output_dir = op.config['output_dir']
+            if op.op in ['DocumentIngestion']:
+                output_dir = f"TextPipeline_vectordatabase_{time.strftime('%Y%m%d%H%M%S')}"
         if output_dir == "":
             output_dir = f"TextPipeline_output_{time.strftime('%Y%m%d%H%M%S')}"
             self.add_operation(ParquetWriter(output_dir=output_dir))
@@ -291,6 +293,8 @@ class ResumableTextPipeline(TextPipeline):
             if op.op in ['JsonlWriter', 'PerfileJsonlWriter']:
                 op.op = 'PerfileJsonlWriter'
                 output_dir = op.config['output_dir']
+            if op.op in ['DocumentIngestion']:
+                output_dir = f"ResumableTextPipeline_vectordatabase_{time.strftime('%Y%m%d%H%M%S')}"
         if output_dir == "":
             output_dir = f"ResumableTextPipeline_output_{time.strftime('%Y%m%d%H%M%S')}"
             self.add_operation(PerfileParquetWriter(output_dir=output_dir))
