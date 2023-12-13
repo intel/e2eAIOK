@@ -276,7 +276,7 @@ LLMOPERATORS.register(TextFix)
 
 class RAGTextFix(BaseLLMOperation):
     def __init__(self, text_key='text', chars_to_remove: Union[str, List[str]] = '◆●■►▼▲▴∆▻▷❖♡□', language: str = 'en',
-                 str_to_replace: Optional[dict] = None, remove_extra_whitespace: bool = False, re_sentence: bool = False):
+                 str_to_replace: Optional[dict] = {}, remove_extra_whitespace: bool = False, re_sentence: bool = False):
         """
             Clean up text for LLM RAG to use.
             Step 1: Fix unicode errors in text using ftfy
