@@ -278,7 +278,7 @@ LLMOPERATORS.register(ParagraphsTextSplitter)
 class CustomerDocumentSplit(BaseDocumentSplit):
     def __init__(
             self,
-            func: Callable[[str, Any], List[str]],
+            func,
             inplace=True,
             text_key: str = 'text',
             requirements=[],
