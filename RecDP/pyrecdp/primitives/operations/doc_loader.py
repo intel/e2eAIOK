@@ -16,7 +16,7 @@ class DocumentLoader(TextReader):
     def __init__(self,
                  loader: Optional[str] = None,
                  loader_args: Optional[dict] = None,
-                 args_dict: Optional[dict] = None):
+                 args_dict: Optional[dict] = None, requirements=[]):
         """
         Args:
            loader: The class name of the langchain document loader to use.
@@ -37,10 +37,11 @@ class DocumentLoader(TextReader):
         settings = {
             'loader': self.loader,
             'loader_args': self.loader_args,
+            'requirements' : requirements,
         }
         settings.update(args_dict or {})
 
-        super().__init__(settings)
+        super().__init__(settings, requirements=requirements)
         self.doc_loader_func = self._get_loader()
 
         self.support_ray = True
@@ -80,6 +81,7 @@ class DirectoryLoader(DocumentLoader):
                  exclude: Optional[List] = None, exclude_hidden: bool = True, silent_errors: bool = False,
                  encoding: str = "utf-8", required_exts: Optional[List[str]] = None,
                  page_separator: Optional[str] = '\n',
+                 requirements=[],
                  **kwargs):
         """
         Loads documents from a directory or a list of files.
@@ -131,7 +133,7 @@ class DirectoryLoader(DocumentLoader):
             required_exts=required_exts,
             page_separator=page_separator,
         )
-        super().__init__(loader='DirectoryLoader', args_dict=settings)
+        super().__init__(loader='DirectoryLoader', args_dict=settings,requirements=requirements)
 
     def _get_loader(self) -> Callable[[], List[Document]]:
         print("_get_loader")

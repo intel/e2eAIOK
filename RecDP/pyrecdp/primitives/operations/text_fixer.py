@@ -3,10 +3,9 @@ from ray.data import Dataset
 from pyspark.sql import DataFrame
 from pyrecdp.core.model_utils import prepare_model, get_model
 
-from typing import List, Union
+from typing import List, Union, Optional
 import re
 from typing import Dict
-
 
 CPAT = re.compile("copyright", re.IGNORECASE)
 PAT = re.compile("/\\*[^*]*\\*+(?:[^/*][^*]*\\*+)*/")
@@ -276,20 +275,35 @@ LLMOPERATORS.register(TextFix)
 
 
 class RAGTextFix(BaseLLMOperation):
-    def __init__(self, text_key='text', chars_to_remove: Union[str, List[str]] = '◆●■►▼▲▴∆▻▷❖♡□', language: str = 'en'):
+    def __init__(self, text_key='text', chars_to_remove: Union[str, List[str]] = '◆●■►▼▲▴∆▻▷❖♡□', language: str = 'en',
+                 str_to_replace: Optional[dict] = {}, remove_extra_whitespace: bool = False, re_sentence: bool = False):
         """
             Clean up text for LLM RAG to use.
             Step 1: Fix unicode errors in text using ftfy
+
             Step 2: Normalize different kinds of whitespaces to whitespace ' ' (0x20) in text
             Different kinds of whitespaces can be found here:
                 https://en.wikipedia.org/wiki/Whitespace_character
+
             Step 3: Clean specific chars in text.
-            Step 4: Re segment sentences in the text to avoid sentence segmentation errors caused by unnecessary line breaks
+
+            Step 4: Replace the specified string.
+
+            Step 5: Remove extra whitespaces.
+
+            Step 6: Re segment sentences in the text to avoid sentence segmentation errors caused by unnecessary line breaks.
+
             :param language: Supported language. Default: en. (en)
+            :param re_sentence: If re-segment sentences. Default: False.
+            :param remove_extra_whitespace: If remove extra whitespace. Default: False.
             :param chars_to_remove: Chars to remove. Default: '◆●■►▼▲▴∆▻▷❖♡□'
+            :param str_to_replace: Stings to replace. Default:None.
+                {'recdp':'RecDP', 'josn':'json'}
 
         """
-        settings = {'chars_to_remove': chars_to_remove, 'text_key': text_key, 'language': language}
+        settings = {'chars_to_remove': chars_to_remove, 'text_key': text_key, 'language': language,
+                    'str_to_replace': str_to_replace, 'remove_extra_whitespace': remove_extra_whitespace,
+                    're_sentence': re_sentence}
         requirements = ["ftfy", "selectolax"]
         super().__init__(settings, requirements)
         self.support_spark = True
@@ -298,6 +312,9 @@ class RAGTextFix(BaseLLMOperation):
         self.inplace = True
         self.chars_to_remove = chars_to_remove
         self.language = language
+        self.re_sentence = re_sentence
+        self.str_to_replace = str_to_replace
+        self.remove_extra_whitespace = remove_extra_whitespace
 
     def process_rayds(self, ds: Dataset) -> Dataset:
         remover = self.get_compute_func()
@@ -312,10 +329,12 @@ class RAGTextFix(BaseLLMOperation):
     def get_compute_func(self):
         import ftfy
         from pyrecdp.primitives.operations.constant import VARIOUS_WHITESPACES
-        pattern = '[' + '|'.join(self.chars_to_remove) + ']'
+        pattern = '[' + ''.join(self.chars_to_remove) + ']'
         model_key = prepare_model(lang=self.language, model_type='nltk')
         nltk_model = get_model(model_key, lang=self.language, model_type='nltk')
-
+        str_to_replace = self.str_to_replace
+        remove_extra_whitespace = self.remove_extra_whitespace
+        re_sentence = self.re_sentence
         def compute(text):
             # fix unicode errors
             text = ftfy.fix_text(text)
@@ -324,18 +343,28 @@ class RAGTextFix(BaseLLMOperation):
                 char if char not in VARIOUS_WHITESPACES else ' ' for char in text
             ])
             # clean specific chars in text.
-            text = re.sub(pattern=pattern, repl=r'',
-                          string=text, flags=re.DOTALL)
+            if len(pattern) > 2:
+                text = re.sub(pattern=pattern, repl=r'',
+                              string=text, flags=re.DOTALL)
+            # replace some strings.
+            for key, value in str_to_replace.items():
+                text = text.replace(str(key), str(value))
+            # remove extra whitespaces
+            if remove_extra_whitespace:
+                text = re.sub(r"\s+", " ", text)
             # Re segment sentences
-            paragraph_break_pattern = "\\n\s*\\n"
-            replace_str = '*^*^*'
-            text = re.sub(pattern=paragraph_break_pattern, repl=replace_str,
-                          string=text, flags=re.DOTALL)
-            sentences = nltk_model.tokenize(text)
-            new_sentences = []
-            for sentence in sentences:
-                new_sentences.append(sentence.replace("\n", " "))
-            new_text = ' '.join(new_sentences).replace(replace_str, "\n\n")
+            if re_sentence:
+                paragraph_break_pattern = "\\n\s*\\n"
+                replace_str = '*^*^*'
+                text = re.sub(pattern=paragraph_break_pattern, repl=replace_str,
+                              string=text, flags=re.DOTALL)
+                sentences = nltk_model.tokenize(text)
+                new_sentences = []
+                for sentence in sentences:
+                    new_sentences.append(sentence.replace("\n", " "))
+                new_text = ' '.join(new_sentences).replace(replace_str, "\n\n")
+            else:
+                new_text = text
             return new_text
 
         return compute

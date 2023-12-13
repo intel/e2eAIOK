@@ -173,16 +173,10 @@ class HaystackElasticSearch(DocumentStore):
         return self.do_persist(ds, **kwargs)
 
     def do_persist(self, ds, **kwargs):
-        check_availability_and_install(["haystack", "elasticsearch-haystack"])
-        es_host = self.vector_store_args.get('host', 'localhost')
-        es_port = int(self.vector_store_args.get('port', 9200))
-        es_search_fields = self.vector_store_args.get('search_fields', ["content", "title"])
+        check_availability_and_install(["farm-haystack", "farm-haystack[elasticsearch7]"])
 
-        from elasticsearch_haystack import ElasticsearchDocumentStore
+        from haystack.document_stores import ElasticsearchDocumentStore
         elasticsearch = ElasticsearchDocumentStore(
-            host=es_host,
-            port=es_port,
-            search_fields=es_search_fields,
             **self.vector_store_args
         )
         rows = ds.iter_rows() if isinstance(ds, Dataset) else ds.collect()
@@ -206,7 +200,8 @@ class DocumentIngestion(BaseLLMOperation):
                  compute_max_size: Optional[int] = None,
                  batch_size: Optional[int] = None,
                  num_cpus: Optional[int] = None,
-                 num_gpus: Optional[int] = None):
+                 num_gpus: Optional[int] = None,
+                 requirements=[]):
         """
           Document ingestion operator.
           Args:
@@ -238,6 +233,7 @@ class DocumentIngestion(BaseLLMOperation):
 
         settings = {
             'text_column': text_column,
+            'rag_framework': rag_framework,
 
             'embeddings_column': embeddings_column,
             'embeddings': embeddings,
@@ -252,9 +248,10 @@ class DocumentIngestion(BaseLLMOperation):
             'batch_size': batch_size,
             'num_gpus': num_gpus,
             'num_cpus': num_cpus,
+            'requirements': requirements,
 
         }
-        requirements = []
+        requirements = requirements
         super().__init__(settings, requirements)
         self.support_ray = True
         self.support_spark = True
@@ -297,6 +294,7 @@ class DocumentIngestion(BaseLLMOperation):
                     f"vector store {self.vector_store} is not supported yet paired with langchain!")
         else:
             if 'elasticsearch' == self.vector_store:
+                document_store_ctor_args['embeddings'] = None
                 return HaystackElasticSearch(**document_store_ctor_args)
             else:
                 raise NotImplementedError(

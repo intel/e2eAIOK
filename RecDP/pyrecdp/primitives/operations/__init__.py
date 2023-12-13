@@ -46,7 +46,7 @@ try:
     from .filter import *
     from .text_fixer import TextFix, RAGTextFix
     from .text_language_identify import LanguageIdentify
-    from .text_split import DocumentSplit, ParagraphsTextSplitter
+    from .text_split import DocumentSplit, ParagraphsTextSplitter, CustomerDocumentSplit
     from .text_pii_remove import PIIRemoval
     from .text_deduplication import (
         FuzzyDeduplicate,
@@ -58,7 +58,7 @@ try:
     )
     from .text_qualityscorer import TextQualityScorer
     from .text_diversityindicate import TextDiversityIndicate
-    from .text_custom import TextCustomerMap, TextCustomerFilter
+    from .text_custom import TextCustomerMap, TextCustomerFilter, TextCustomerFlatMap
     from .text_toxicity import TextToxicity
     from .text_prompt import TextPrompt
     from .text_compare_dedup import RougeScoreDedup
