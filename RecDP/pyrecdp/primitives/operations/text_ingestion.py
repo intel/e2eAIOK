@@ -191,28 +191,21 @@ class HaystackElasticSearch(DocumentStore):
             return ds
 
     def do_persist(self, ds, **kwargs):
-        check_availability_and_install(["haystack", "elasticsearch-haystack"])
-        es_host = self.vector_store_args.get('host', 'localhost')
-        es_port = int(self.vector_store_args.get('port', 9200))
-        es_search_fields = self.vector_store_args.get('search_fields', ["content", "title"])
+        check_availability_and_install(["farm-haystack", "farm-haystack[elasticsearch7]"])
         elasticsearch = self.vector_store_args["db_handler"]
         exclude_keys = ['db_handler', 'return_db_handler']
         vector_store_args = dict((k, v) for k, v in self.vector_store_args.items() if k not in exclude_keys)
-
-        from elasticsearch_haystack import ElasticsearchDocumentStore
+        from haystack.document_stores import ElasticsearchDocumentStore
         if elasticsearch is None:
-            elasticsearch = ElasticsearchDocumentStore(
-                host=es_host,
-                port=es_port,
-                search_fields=es_search_fields,
-                **vector_store_args
-            )
+              elasticsearch = ElasticsearchDocumentStore(
+                  **vector_store_args
+              )
+
         rows = ds.iter_rows() if isinstance(ds, Dataset) else ds.collect()
         from haystack import Document as SDocument
         documents = [SDocument(content=row[self.text_column]) for row in rows]
         elasticsearch.write_documents(documents)
         return elasticsearch
-
 
 class DocumentIngestion(BaseLLMOperation):
     def __init__(self,
@@ -230,7 +223,8 @@ class DocumentIngestion(BaseLLMOperation):
                  num_cpus: Optional[int] = None,
                  num_gpus: Optional[int] = None,
                  return_db_handler = False,
-                 db_handler = None):
+                 db_handler = None,
+                 requirements=[]):
         """
           Document ingestion operator.
           Args:
@@ -264,6 +258,7 @@ class DocumentIngestion(BaseLLMOperation):
 
         settings = {
             'text_column': text_column,
+            'rag_framework': rag_framework,
 
             'embeddings_column': embeddings_column,
             'embeddings': embeddings,
@@ -278,11 +273,12 @@ class DocumentIngestion(BaseLLMOperation):
             'batch_size': batch_size,
             'num_gpus': num_gpus,
             'num_cpus': num_cpus,
+            'requirements': requirements,
 
             'return_db_handler': return_db_handler,
             'db_handler': db_handler,
         }
-        requirements = []
+        requirements = requirements
         super().__init__(settings, requirements)
         self.support_ray = True
         self.support_spark = True
@@ -327,6 +323,7 @@ class DocumentIngestion(BaseLLMOperation):
                     f"vector store {self.vector_store} is not supported yet paired with langchain!")
         else:
             if 'elasticsearch' == self.vector_store:
+                document_store_ctor_args['embeddings'] = None
                 return HaystackElasticSearch(**document_store_ctor_args)
             else:
                 raise NotImplementedError(
