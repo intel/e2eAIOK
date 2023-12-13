@@ -16,7 +16,7 @@ class DocumentLoader(TextReader):
     def __init__(self,
                  loader: Optional[str] = None,
                  loader_args: Optional[dict] = None,
-                 args_dict: Optional[dict] = None,requirements=[]):
+                 args_dict: Optional[dict] = None, requirements=[]):
         """
         Args:
            loader: The class name of the langchain document loader to use.
