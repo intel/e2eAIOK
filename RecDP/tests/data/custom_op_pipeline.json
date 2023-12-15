@@ -1,0 +1,36 @@
+{
+    "0": {
+        "children": null,
+        "op": "DatasetReader",
+        "config": {}
+    },
+    "1": {
+        "children": [
+            0
+        ],
+        "op": "PerfileSourcedJsonlReader",
+        "config": {
+            "input_dir": "tests/data/llm_data/",
+            "column_rename_dict": {}
+        }
+    },
+    "2": {
+        "children": [
+            1
+        ],
+        "op": "TextCustomerMap",
+        "config": {
+            "func": "tests/data/8891ae9c-1216-4fa4-9171-b38c8f2fe1c2.bin",
+            "text_key": "text"
+        }
+    },
+    "3": {
+        "children": [
+            2
+        ],
+        "op": "PerfileParquetWriter",
+        "config": {
+            "output_dir": "ResumableTextPipeline_output"
+        }
+    }
+}
