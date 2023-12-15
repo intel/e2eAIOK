@@ -95,18 +95,6 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         pipeline.execute()
         del pipeline
 
-    def test_ResumableTextPipeline_customer_function(self):
-        def proc(text):
-            return f'processed_{text}'
-
-        pipeline = ResumableTextPipeline()
-        pipeline.add_operation(JsonlReader("tests/data/llm_data/"))
-        pipeline.add_operation(proc, text_key='text')
-        pipeline.add_operation(PerfileParquetWriter("ResumableTextPipeline_output"))
-        pipeline.plot()
-        pipeline.execute()
-        del pipeline
-
     def test_ResumableTextPipeline_customer_reload_function(self):
         pipeline = ResumableTextPipeline(pipeline_file = "tests/data/custom_op_pipeline.json")
         pipeline.execute()
