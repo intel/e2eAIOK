@@ -176,6 +176,7 @@ class YoutubeLoader(TextReader):
         try:
             import_langchain()
             from langchain.document_loaders.blob_loaders.youtube_audio import YoutubeAudioLoader
+            check_availability_and_install('yt_dlp')
             loader = YoutubeAudioLoader(self.urls, save_dir)
             audio_paths = {}
             for url, blob in zip(self.urls[::-1], loader.yield_blobs()):
