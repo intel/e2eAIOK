@@ -227,6 +227,12 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         op = UrlLoader(["https://www.intc.com/news-events/press-releases?year=2023&category=all"], max_depth=1)
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds())
+            
+    def test_youtube_load_ray(self):
+        urls = ["https://www.youtube.com/watch?v=EocDUxtPmN4", "https://www.youtube.com/watch?v=DLONB9Sy1Rk"]
+        op = YoutubeLoader(urls)
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds())
 
     def test_document_split_ray(self):
         op = DocumentSplit()
@@ -462,6 +468,12 @@ class Test_LLMUtils_Operations(unittest.TestCase):
     
     def test_audio_loader_spark(self):
         op = DirectoryLoader("tests/data/audio")
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark))
+            
+    def test_youtube_load_spark(self):
+        urls = ["https://www.youtube.com/watch?v=EocDUxtPmN4", "https://www.youtube.com/watch?v=DLONB9Sy1Rk"]
+        op = YoutubeLoader(urls)
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark))
             
