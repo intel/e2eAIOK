@@ -21,8 +21,8 @@ class TextContractionRemove(BaseLLMOperation):
         self.text_key = text_key
 
     def process_rayds(self, ds: Dataset) -> Dataset:
-        contractions = self.get_compute_func()
-        return ds.map(lambda x: self.process_row(x, self.text_key, self.text_key, contractions))
+        custom_udf = self.get_compute_func()
+        return ds.map(lambda x: self.process_row(x, self.text_key, self.text_key, custom_udf))
 
     def process_spark(self, spark, spark_df: DataFrame) -> DataFrame:
         import pyspark.sql.functions as F
