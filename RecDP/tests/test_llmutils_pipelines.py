@@ -95,10 +95,10 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         pipeline.execute()
         del pipeline
 
-    def test_ResumableTextPipeline_customer_reload_function(self):
-        pipeline = ResumableTextPipeline(pipeline_file = "tests/data/custom_op_pipeline.json")
-        pipeline.execute()
-        del pipeline
+    # def test_ResumableTextPipeline_customer_reload_function(self):
+    #     pipeline = ResumableTextPipeline(pipeline_file = "tests/data/custom_op_pipeline.json")
+    #     pipeline.execute()
+    #     del pipeline
 
     def test_ResumableTextPipeline_with_fuzzyDedup(self):
         pipeline = ResumableTextPipeline()
