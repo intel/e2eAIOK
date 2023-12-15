@@ -37,6 +37,7 @@ class SetupSpec:
             "requests",
             "loguru",
             "distro",
+            "cloudpickle",
             "wget==3.2",
             "pyspark==3.4.0",
             "ray==2.7.1",

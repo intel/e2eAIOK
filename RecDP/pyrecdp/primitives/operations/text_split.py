@@ -295,7 +295,15 @@ class CustomerDocumentSplit(BaseDocumentSplit):
         """
         if func is None:
             raise ValueError(f"func must be provide")
-        self.split_func = func
+        if not callable(func):
+            import os
+            if not os.path.exists(func):
+                raise FileNotFoundError(f'Reload {func} object but not exists')
+            import pickle
+            with open(func, 'rb') as f:
+                self.split_func = pickle.load(f)
+        else:
+            self.split_func = func
         settings = {
             'func': func,
             'requirements': requirements,
