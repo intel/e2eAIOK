@@ -10,7 +10,7 @@ from pyrecdp.primitives.operations.base import BaseLLMOperation, LLMOPERATORS
 from pyrecdp.primitives.operations.constant import DEFAULT_HEADER
 from pyrecdp.primitives.operations.text_reader import TextReader
 from pyrecdp.primitives.operations.logging_utils import logger
-
+from pyrecdp.core.import_utils import check_availability_and_install
 
 class DocumentLoader(TextReader):
     def __init__(self,
@@ -183,8 +183,7 @@ class YoutubeLoader(TextReader):
                 audio_paths[url] = str(blob.path)
             import os 
             os.system("apt-get -qq -y install ffmpeg")
-            from pyrecdp.core.import_utils import check_availability_and_install
-            check_availability_and_install('whisper')
+            check_availability_and_install('openai-whisper')
             import whisper
             model = whisper.load_model(self.model_name)
             for url, audio_path in audio_paths.items():
