@@ -1,6 +1,6 @@
 import os.path
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Union, Iterable
+from typing import Optional, Dict, Union, Iterable, Any, cast
 
 from pyspark.sql import SparkSession, DataFrame
 from ray.data import Dataset
@@ -192,20 +192,49 @@ class HaystackElasticSearch(DocumentStore):
 
     def do_persist(self, ds, **kwargs):
         check_availability_and_install(["farm-haystack", "farm-haystack[elasticsearch7]"])
-        elasticsearch = self.vector_store_args["db_handler"]
         exclude_keys = ['db_handler', 'return_db_handler']
         vector_store_args = dict((k, v) for k, v in self.vector_store_args.items() if k not in exclude_keys)
-        from haystack.document_stores import ElasticsearchDocumentStore
-        if elasticsearch is None:
-              elasticsearch = ElasticsearchDocumentStore(
-                  **vector_store_args
-              )
+        if isinstance(ds, Dataset):
+            class BatchIndexer:
+                def __init__(self, text_column: str, vector_store_args: Optional[Dict[str, Any]]):
+                    from haystack.document_stores import ElasticsearchDocumentStore
+                    self.text_column = text_column
+                    self.vector_store_args = vector_store_args
+                    self.elasticsearch = ElasticsearchDocumentStore(
+                        **vector_store_args
+                    )
 
-        rows = ds.iter_rows() if isinstance(ds, Dataset) else ds.collect()
-        from haystack import Document as SDocument
-        documents = [SDocument(content=row[self.text_column]) for row in rows]
-        elasticsearch.write_documents(documents)
+                def __call__(self, batch):
+                    from haystack import Document as SDocument
+                    documents = [SDocument(content=text) for text in batch[self.text_column]]
+                    self.elasticsearch.write_documents(documents)
+
+            ds.map_batches(BatchIndexer, fn_constructor_kwargs=vector_store_args)
+        else:
+            def batch_index_with_var(batch, bv_value):
+                from haystack import Document as SDocument
+                text_column, vector_store_args = bv_value.value
+                from haystack.document_stores import ElasticsearchDocumentStore
+                elasticsearch = ElasticsearchDocumentStore(
+                    **vector_store_args
+                )
+                documents = [SDocument(content=row[text_column]) for row in batch]
+                elasticsearch.write_documents(documents)
+
+            ds = cast(DataFrame, ds)
+
+            bv = ds.sparkSession.sparkContext.broadcast((self.text_column, self.vector_store_args))
+            ds.foreachPartition(lambda p: batch_index_with_var(p, bv))
+
+        # share this document store only when rag retrieval want to use document store created from index stage
+        elasticsearch = self.vector_store_args["db_handler"]
+        if elasticsearch is None:
+            from haystack.document_stores import ElasticsearchDocumentStore
+            elasticsearch = ElasticsearchDocumentStore(
+                **vector_store_args
+            )
         return elasticsearch
+
 
 class DocumentIngestion(BaseLLMOperation):
     def __init__(self,
@@ -222,8 +251,8 @@ class DocumentIngestion(BaseLLMOperation):
                  batch_size: Optional[int] = None,
                  num_cpus: Optional[int] = None,
                  num_gpus: Optional[int] = None,
-                 return_db_handler = False,
-                 db_handler = None,
+                 return_db_handler=False,
+                 db_handler=None,
                  requirements=[]):
         """
           Document ingestion operator.

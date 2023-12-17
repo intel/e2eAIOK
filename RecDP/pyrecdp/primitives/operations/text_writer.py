@@ -32,7 +32,7 @@ class JsonlWriter(BaseLLMOperation):
         super().__init__(settings, requirements)
         self.support_ray = True
         self.support_spark = True
-        self.output_dir = output_dir
+        self.output_dir = os.path.join(output_dir, 'output')
 
     def process_rayds(self, ds: Dataset) -> Dataset:
         if os.path.exists(self.output_dir) and os.path.isdir(self.output_dir):

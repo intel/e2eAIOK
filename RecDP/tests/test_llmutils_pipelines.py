@@ -95,16 +95,8 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         pipeline.execute()
         del pipeline
 
-    # comment this function due to online CI/CD failing
-    # def test_ResumableTextPipeline_customer_function(self):
-    #     def proc(text):
-    #         return f'processed_{text}'
-
-    #     pipeline = ResumableTextPipeline()
-    #     pipeline.add_operation(JsonlReader("tests/data/llm_data/"))
-    #     pipeline.add_operation(proc, text_key='text')
-    #     pipeline.add_operation(PerfileParquetWriter("ResumableTextPipeline_output"))
-    #     pipeline.plot()
+    # def test_ResumableTextPipeline_customer_reload_function(self):
+    #     pipeline = ResumableTextPipeline(pipeline_file = "tests/data/custom_op_pipeline.json")
     #     pipeline.execute()
     #     del pipeline
 
@@ -279,3 +271,55 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         pipeline.add_operations(ops)
         ret = pipeline.execute()
         display(ret)
+
+    def test_llm_rag_pipeline_cnvrg(self):
+        from pyrecdp.primitives.operations import DocumentLoader,RAGTextFix,CustomerDocumentSplit,TextCustomerFilter,JsonlWriter
+        from pyrecdp.LLM import TextPipeline
+
+        urls = ['https://app.cnvrg.io/docs/',
+                'https://app.cnvrg.io/docs/core_concepts/python_sdk_v2.html',
+                'https://app.cnvrg.io/docs/cli_v2/cnvrgv2_cli.html',
+                'https://app.cnvrg.io/docs/collections/tutorials.html']
+
+        def custom_filter(text):
+            from nltk.tokenize import word_tokenize
+            ret_txt = None
+            if len(word_tokenize(text)) >10:
+                if text.split(' ')[0].lower()!='version':
+                    ret_txt = text
+            return ret_txt != None
+
+        def chunk_doc(text,max_num_of_words):
+            from nltk.tokenize import word_tokenize,sent_tokenize
+            text= text.strip()
+            if len(word_tokenize(text)) <= max_num_of_words:
+                return [text]
+            else:
+                chunks = []
+                # split by sentence
+                sentences = sent_tokenize(text)
+                # print('number of sentences: ', len(sentences))
+                words_count = 0
+                temp_chunk = ""
+                for s in sentences:
+                    temp_chunk+=(s+" ")
+                    words_count += len(word_tokenize(s))
+                    if len(word_tokenize(temp_chunk))> max_num_of_words:
+                        chunks.append(temp_chunk)
+                        words_count = 0
+                        temp_chunk = ""
+
+                return chunks
+
+        pipeline = TextPipeline()
+        ops = [
+            DocumentLoader(loader='UnstructuredURLLoader', loader_args={'urls': urls}, requirements=['unstructured']),
+            RAGTextFix(str_to_replace={'\n###': '', '\n##': '', '\n#': ''}, remove_extra_whitespace=True),
+            CustomerDocumentSplit(func=lambda text: text.split('# ')[1:]),
+            TextCustomerFilter(custom_filter),
+            CustomerDocumentSplit(func=chunk_doc, max_num_of_words=50),
+            JsonlWriter("TextPipeline_output_jsonl")
+        ]
+        pipeline.add_operations(ops)
+        ds = pipeline.execute()
+        display(ds.to_pandas())

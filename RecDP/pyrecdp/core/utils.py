@@ -112,23 +112,35 @@ def sample_read(file_path):
     else:
         raise NotImplementedError("now sample read only support csv and parquet")
 
-def dump_fix(x):
+def dump_fix(x, base_dir):
     import json
+    import cloudpickle
+    import hashlib
+    import os
+    import inspect
+
     if isinstance(x, dict):
         for k, v in x.items():
-            x[k] = dump_fix(v)
+            x[k] = dump_fix(v, base_dir)
     elif isinstance(x, list) or isinstance(x, np.ndarray):
         for idx in range(len(x)):
-            x[idx] = dump_fix(x[idx])
+            x[idx] = dump_fix(x[idx], base_dir)
     elif isinstance(x, type):
         x = (x.__module__, x.__name__)
     elif isinstance(x, tuple):
-        x = [dump_fix(i) for i in x]
+        x = [dump_fix(i, base_dir) for i in x]
     elif hasattr(x, 'mydump'):
         x = x.mydump()
     elif callable(x):
-        import inspect
-        x = inspect.getsource(x)
+        func_str = callable_string_fix(inspect.getsource(x))
+        #print(func_str)
+        md5 = hashlib.md5(func_str.encode('utf-8')).hexdigest()
+        uuid_name = f"{md5}.bin"
+        uuid_name = os.path.join(base_dir, uuid_name)
+        with open(uuid_name, 'wb') as f:
+            ret = cloudpickle.dumps(x)
+            f.write(ret)
+        x = uuid_name
     else:
         try:
             json.dumps(x)
