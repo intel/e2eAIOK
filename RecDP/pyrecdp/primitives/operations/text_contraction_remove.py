@@ -1,4 +1,4 @@
-from datasets import Dataset
+from ray.data import Dataset
 from pyspark.sql import DataFrame
 
 from pyrecdp.primitives.operations.base import BaseLLMOperation, LLMOPERATORS
