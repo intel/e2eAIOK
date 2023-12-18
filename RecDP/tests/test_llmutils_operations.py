@@ -235,12 +235,12 @@ class Test_LLMUtils_Operations(unittest.TestCase):
 
     def test_contraction_remove_ray(self):
         op = TextContractionRemove()
-        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+        with RayContext("tests/data/llm_data/tiny_c4_sample_10.jsonl") as ctx:
             ctx.show(op.process_rayds(ctx.ds))
 
     def test_spell_correct_ray(self):
         op = TextSpellCorrect()
-        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+        with RayContext("tests/data/llm_data/tiny_c4_sample_10.jsonl") as ctx:
             ctx.show(op.process_rayds(ctx.ds))
 
     def test_rag_text_fix_ray(self):
@@ -478,11 +478,11 @@ class Test_LLMUtils_Operations(unittest.TestCase):
 
     def test_contraction_remove_spark(self):
         op = TextContractionRemove()
-        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+        with SparkContext("tests/data/llm_data/tiny_c4_sample_10.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
 
     def test_spell_correct_spark(self):
         op = TextSpellCorrect()
-        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+        with SparkContext("tests/data/llm_data/tiny_c4_sample_10.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
     
