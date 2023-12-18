@@ -229,7 +229,7 @@ class Test_LLMUtils_Operations(unittest.TestCase):
             ctx.show(op.process_rayds())
             
     def test_youtube_load_ray(self):
-        urls = ["https://www.youtube.com/watch?v=EocDUxtPmN4", "https://www.youtube.com/watch?v=DLONB9Sy1Rk"]
+        urls = ["https://www.youtube.com/watch?v=J31r79uUi9M", "https://www.youtube.com/watch?v=w9kq1BjqrfE"]
         op = YoutubeLoader(urls)
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds())
@@ -472,7 +472,7 @@ class Test_LLMUtils_Operations(unittest.TestCase):
             ctx.show(op.process_spark(ctx.spark))
             
     def test_youtube_load_spark(self):
-        urls = ["https://www.youtube.com/watch?v=EocDUxtPmN4", "https://www.youtube.com/watch?v=DLONB9Sy1Rk"]
+        urls = ["https://www.youtube.com/watch?v=J31r79uUi9M", "https://www.youtube.com/watch?v=w9kq1BjqrfE"]
         op = YoutubeLoader(urls)
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark))
