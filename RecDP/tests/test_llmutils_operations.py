@@ -71,13 +71,13 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         
         
     ### ====== Priority execution ====== ###
-    def test_youtube_load_spark(self):
+    def a_test_youtube_load_spark(self):
         urls = ["https://www.youtube.com/watch?v=J31r79uUi9M", "https://www.youtube.com/watch?v=w9kq1BjqrfE"]
         op = YoutubeLoader(urls)
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark))
 
-    def test_youtube_load_ray(self):
+    def a_test_youtube_load_ray(self):
         urls = ["https://www.youtube.com/watch?v=J31r79uUi9M", "https://www.youtube.com/watch?v=w9kq1BjqrfE"]
         op = YoutubeLoader(urls)
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:

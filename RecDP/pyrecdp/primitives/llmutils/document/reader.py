@@ -144,7 +144,7 @@ class ImageReader(FileBaseReader):
 
 class AudioReader(FileBaseReader):
     system_requirements = ['ffmpeg']
-    requirements = ['whisper']
+    requirements = ['openai-whisper']
     def __init__(
             self,
             file: Path,
