@@ -5,7 +5,6 @@ import importlib
 import pathlib
 import pkg_resources
 from loguru import logger
-import ray
 
 FORCE_INSTALL=True
 

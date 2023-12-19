@@ -8,9 +8,8 @@ import requests
 from pyrecdp.primitives.llmutils.document.schema import Document
 from pyrecdp.primitives.operations.base import LLMOPERATORS
 from pyrecdp.primitives.operations.constant import DEFAULT_HEADER
-from pyrecdp.primitives.operations.logging_utils import logger
 from pyrecdp.primitives.operations.text_reader import TextReader
-
+from loguru import logger
 
 class DocumentLoader(TextReader):
     def __init__(self,
@@ -155,8 +154,9 @@ class YoutubeLoader(TextReader):
                 save_dir: The directory to save loaded Youtube audio, will remove the tmp file if save_dir is None.
                 model: The name of the whisper model, check the available ones using whisper.available_models().
         """
-
-        requirements = ['langchain']    
+        requirements = ['langchain', 'yt_dlp', 'openai-whisper']
+        from pyrecdp.core.import_utils import system_install
+        system_install('ffmpeg')
         settings = {
             'urls': urls,
             'save_dir': save_dir,
@@ -179,14 +179,11 @@ class YoutubeLoader(TextReader):
         docs = []
         try:
             from langchain.document_loaders.blob_loaders.youtube_audio import YoutubeAudioLoader
-            check_availability_and_install('yt_dlp')
             loader = YoutubeAudioLoader(self.urls, save_dir)
             audio_paths = {}
             for url, blob in zip(self.urls[::-1], loader.yield_blobs()):
                 audio_paths[url] = str(blob.path)
-            import os
-            os.system("apt-get -qq -y install ffmpeg")
-            check_availability_and_install('openai-whisper')
+
             import whisper
             model = whisper.load_model(self.model_name)
             for url, audio_path in audio_paths.items():
@@ -310,7 +307,7 @@ def fetch_data_and_sub_links(sub_url, headers=None, target_tag: str = None, targ
 
 class UrlLoader(TextReader):
     def __init__(self, urls: list = None, max_depth: int = 0, target_tag: str = None, target_attrs: dict = None,
-                 args_dict: Optional[dict] = None, headers: Optional[dict] = None, requirements = []):
+                 args_dict: Optional[dict] = None, headers: Optional[dict] = None):
         """
             Loads documents from a directory or a list of files.
 
@@ -321,7 +318,7 @@ class UrlLoader(TextReader):
                 target_attrs: A dictionary of filters on attribute values. Default: None
                 headers: Dictionary of HTTP Headers to send with the :class:`Request`.
         """
-        requirements += []
+        requirements = ['markdownify', 'bs4']
         settings = {
             'urls': urls,
             'max_depth': max_depth,
