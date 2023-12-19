@@ -32,6 +32,8 @@ def fix_package_name(package):
         'alt-profanity-check': 'profanity_check',
         'faiss-cpu': 'faiss',
         'faiss-gpu': 'faiss',
+        'python-docx': 'docx',
+        'openai-whisper': 'whisper',
     }
     
     if b in package_name_map:

@@ -155,12 +155,14 @@ class YoutubeLoader(TextReader):
                 save_dir: The directory to save loaded Youtube audio, will remove the tmp file if save_dir is None.
                 model: The name of the whisper model, check the available ones using whisper.available_models().
         """
+
+        requirements = ['langchain']    
         settings = {
             'urls': urls,
             'save_dir': save_dir,
             'model': model
         }
-        super().__init__(settings)
+        super().__init__(settings, requirements)
         self.urls = urls
         self.save_dir = save_dir
         self.model_name = model
@@ -176,7 +178,6 @@ class YoutubeLoader(TextReader):
             save_dir = tempfile.mkdtemp()
         docs = []
         try:
-            import_langchain()
             from langchain.document_loaders.blob_loaders.youtube_audio import YoutubeAudioLoader
             check_availability_and_install('yt_dlp')
             loader = YoutubeAudioLoader(self.urls, save_dir)
@@ -326,11 +327,10 @@ class UrlLoader(TextReader):
             'max_depth': max_depth,
             'target_tag': target_tag,
             'target_attrs': target_attrs,
-            'headers': headers,
-            'requirements': requirements
+            'headers': headers
         }
         settings.update(args_dict or {})
-        super().__init__(settings)
+        super().__init__(settings, requirements)
         self.urls = urls
         self.target_tag = target_tag
         self.target_attrs = target_attrs

@@ -119,7 +119,7 @@ class DocumentStore(ABC):
 
 class LangchainFAAIS(DocumentStore):
     def do_persist(self, ds, **kwargs):
-        pip_install(["faiss-cpu", "faiss-gpu", "langchain"])
+        pip_install(["faiss-cpu", "langchain"])
 
         db = self.vector_store_args["db_handler"]
         index_name = self.vector_store_args.get("index", "index")
