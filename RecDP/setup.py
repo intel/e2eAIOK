@@ -47,6 +47,7 @@ class SetupSpec:
             "typer>=0.6.1",
             "scipy==1.10.1",
             "tabulate==0.9.0",
+            "virtualenv"
         ]
         self.extras: dict = {}
         self.extras['autofe'] = list_requirements("pyrecdp/autofe/requirements.txt")

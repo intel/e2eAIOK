@@ -44,8 +44,11 @@ class TextPipeline(BasePipeline):
             if hasattr(self, 'engine_name') and self.engine_name == 'ray':
                 if ray.is_initialized():
                     ray.shutdown()
-        from pyrecdp.core.import_utils import SessionENV
-        SessionENV.clean()
+        try:
+            from pyrecdp.core.import_utils import SessionENV
+            SessionENV.clean()
+        except:
+            pass
 
     def check_platform(self, executable_sequence):
         is_spark = True
