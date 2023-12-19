@@ -4,15 +4,11 @@ from typing import List, Dict, Any, Optional, Callable, cast, Union
 import numpy as np
 from pyspark.sql import DataFrame
 from ray.data import Dataset
-
-from pyrecdp.core.import_utils import import_langchain, import_sentence_transformers, import_pysbd
 from pyrecdp.core.model_utils import prepare_model
 from pyrecdp.primitives.operations.base import BaseLLMOperation, LLMOPERATORS
 
 
 def prepare_text_split(text_splitter: Optional[str] = None, **text_splitter_args) -> Callable[[str], List[str]]:
-    import_langchain()
-
     if 'NLTKTextSplitter' == text_splitter:
         """we have to download nltk model before we use it"""
 
@@ -103,6 +99,7 @@ class DocumentSplit(BaseDocumentSplit):
         text_splitter_args = text_splitter_args or {}
         self.text_splitter = text_splitter
         self.text_splitter_args = text_splitter_args
+        requirements += ['langchain']
         settings = {
             'text_key': text_key,
             'text_splitter': text_splitter,
@@ -251,6 +248,7 @@ class ParagraphsTextSplitter(BaseDocumentSplit):
         self.model_name = model_name
         self.p_size = paragraph_size
         self.language = language
+        requirements += ['sentence_transformers', 'pysbd']
         settings = {
             'model_name': model_name,
             'language': language,
@@ -263,8 +261,6 @@ class ParagraphsTextSplitter(BaseDocumentSplit):
                          requirements=requirements)
 
     def get_text_split_func(self) -> Callable[[str], List[str]]:
-        import_sentence_transformers()
-        import_pysbd()
         from sentence_transformers import SentenceTransformer
         import pysbd
         model = SentenceTransformer(self.model_name)

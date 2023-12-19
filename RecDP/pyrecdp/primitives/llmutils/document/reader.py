@@ -2,8 +2,9 @@ import os
 from abc import abstractmethod, ABC
 from pathlib import Path
 from typing import List, Optional, Dict, Type
-from pyrecdp.core.import_utils import check_availability_and_install
+from pyrecdp.core.import_utils import pip_install
 from pyrecdp.primitives.llmutils.document.schema import Document
+from pyrecdp.core.import_utils import pip_install, system_install
 
 class DocumentReader(ABC):
     """interface for document loader"""
@@ -24,9 +25,9 @@ class FileBaseReader(DocumentReader, ABC):
     @classmethod
     def setup(cls):
         for pkg in cls.system_requirements:
-            os.system(f'apt-get install -y {pkg}')
+            system_install(pkg, verbose=1)
         for pkg in cls.requirements:
-            check_availability_and_install(pkg, verbose=1)
+            pip_install(pkg)
 
     def get_metadata(self):
         return {"source": str(self.file)}

@@ -242,7 +242,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         display(ret)
 
     def test_llm_rag_pdf_use_existing_db_pipeline(self):
-        from pyrecdp.core.import_utils import import_sentence_transformers
+        from pyrecdp.core.import_utils import pip_install
         ## Pretent that someone else already define the handler ##
         model_root_path = os.path.join(RECDP_MODELS_CACHE, "huggingface")
         model_name = f"{model_root_path}/sentence-transformers/all-mpnet-base-v2"
@@ -250,7 +250,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         embeddings='HuggingFaceEmbeddings'
         embeddings_args={'model_name': model_name}
 
-        import_sentence_transformers()
+        pip_install("sentence_transformers")
         from pyrecdp.core.class_utils import new_instance
         from langchain.vectorstores.faiss import FAISS
         embeddings = new_instance('langchain.embeddings', embeddings, **embeddings_args)

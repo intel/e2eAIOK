@@ -1,8 +1,8 @@
 import string
-from pyrecdp.core.import_utils import check_availability_and_install
+from pyrecdp.core.import_utils import pip_install
 
 
-check_availability_and_install("emoji==2.2.0")
+pip_install("emoji==2.2.0")
 import emoji
 # special characters
 MAIN_SPECIAL_CHARACTERS = string.punctuation + string.digits \

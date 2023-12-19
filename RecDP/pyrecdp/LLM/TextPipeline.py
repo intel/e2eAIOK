@@ -23,13 +23,10 @@ total_cores = psutil.cpu_count(logical=False)
 
 
 class TextPipeline(BasePipeline):
-    def __init__(self, engine_name='ray', pipeline_file=None, ray_head='', spark_head=''):
+    def __init__(self, engine_name='ray', pipeline_file=None, spark_head=''):
         super().__init__()
         self.engine_name = engine_name
-        if ray_head != '':
-            self.engine_name = 'ray'
-            self.cluster_head = ray_head
-        elif spark_head != '':
+        if spark_head != '':
             self.engine_name = 'spark'
             self.cluster_head = spark_head
         self.ray_start_by_us = False
@@ -47,6 +44,8 @@ class TextPipeline(BasePipeline):
             if hasattr(self, 'engine_name') and self.engine_name == 'ray':
                 if ray.is_initialized():
                     ray.shutdown()
+        from pyrecdp.core.import_utils import SessionENV
+        SessionENV.clean()
 
     def check_platform(self, executable_sequence):
         is_spark = True
@@ -102,20 +101,22 @@ class TextPipeline(BasePipeline):
 
         engine_name = self.check_platform(executable_sequence)
 
+        from pyrecdp.core.import_utils import SessionENV, local_pip_install, local_system_install
+        runtime_env = {'pip': SessionENV.get_pip_list()} if len(SessionENV.get_pip_list()) > 0 else None
+        system_env = SessionENV.get_system_list() if len(SessionENV.get_system_list()) > 0 else None
+        logger.info(f'pip dependencies are {runtime_env}, system dependencies are {system_env}')
+
         if engine_name == 'ray':
             print("init ray")
-            # runtime_env = {"pip": ['langchain', 'faiss-cpu', 'langchain-community']}
-            runtime_env = {}
-            if hasattr(self, 'cluster_head') and self.cluster_head != '':
-                ray.init(self.cluster_head, runtime_env=runtime_env)
-                self.ray_client_mode = True
-            elif not ray.is_initialized():
-                print(f"init ray with total mem of {total_mem}, total core of {total_cores}")
+            if not ray.is_initialized():
+                logger.info(f"init ray with total mem of {total_mem}, total core of {total_cores}")
                 try:
                     ray.init(object_store_memory=total_mem, num_cpus=total_cores, runtime_env=runtime_env)
                 except:
                     ray.init(runtime_env=runtime_env)
                 self.ray_start_by_us = True
+            else:
+                logger.info("Ray is initialized, so we won't be able init it")
 
             # execute
             with Timer(f"execute with ray"):
@@ -245,8 +246,8 @@ class TextPipeline(BasePipeline):
 
 class ResumableTextPipeline(TextPipeline):
     # Provide a pipeline for large dir. We will handle files one by one and resume when pipeline broken.
-    def __init__(self, engine_name='ray', pipeline_file=None, ray_head='', spark_head=''):
-        super().__init__(engine_name, pipeline_file, ray_head='', spark_head='')
+    def __init__(self, engine_name='ray', pipeline_file=None, spark_head=''):
+        super().__init__(engine_name, pipeline_file, spark_head=spark_head)
         # Enabling this option will result in a decrease in execution speed
         self.statistics_flag = False
 
@@ -355,19 +356,22 @@ class ResumableTextPipeline(TextPipeline):
         global_data = None
         op_chain = []
 
+        from pyrecdp.core.import_utils import SessionENV
+        runtime_env = {'pip': SessionENV.get_pip_list()} if len(SessionENV.get_pip_list()) > 0 else None
+        system_env = SessionENV.get_system_list() if len(SessionENV.get_system_list()) > 0 else None
+        logger.info(f'pip dependencies are {runtime_env}, system dependencies are {system_env}')
+
         if engine_name == 'ray':
-            # runtime_env = {"pip": ['langchain', 'faiss-cpu', 'langchain-community']}
-            runtime_env = {}
-            if hasattr(self, 'cluster_head') and self.cluster_head != '':
-                ray.init(self.cluster_head, runtime_env = runtime_env)
-                self.ray_client_mode = True
-            elif not ray.is_initialized():
-                print(f"init ray with total mem of {total_mem}")
+            print("init ray")
+            if not ray.is_initialized():
+                logger.info(f"init ray with total mem of {total_mem}, total core of {total_cores}")
                 try:
-                    ray.init(object_store_memory=total_mem, num_cpus=total_cores, runtime_env = runtime_env)
+                    ray.init(object_store_memory=total_mem, num_cpus=total_cores, runtime_env=runtime_env)
                 except:
-                    ray.init(runtime_env = runtime_env)
+                    ray.init(runtime_env=runtime_env)
                 self.ray_start_by_us = True
+            else:
+                logger.info("Ray is initialized, so we won't be able init it")
 
             for op in executable_sequence:
                 if isinstance(op, PerfileReader):

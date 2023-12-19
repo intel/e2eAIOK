@@ -5,7 +5,7 @@ from typing import Optional, Dict, Union, Iterable, Any, cast
 from pyspark.sql import SparkSession, DataFrame
 from ray.data import Dataset
 
-from pyrecdp.core.import_utils import check_availability_and_install, import_sentence_transformers
+from pyrecdp.core.import_utils import pip_install
 from pyrecdp.primitives.operations.base import BaseLLMOperation, LLMOPERATORS
 
 
@@ -41,7 +41,7 @@ class DocumentStore(ABC):
         self.embeddings_column = embeddings_column
         self.vector_store_args = vector_store_args
         self.override = override
-        check_availability_and_install(["langchain"])
+        pip_install(["langchain"])
         from langchain.schema.embeddings import Embeddings
         self.embeddings: Optional[Embeddings] = self.create_embeddings(embeddings, **embeddings_args)
 
@@ -51,9 +51,9 @@ class DocumentStore(ABC):
             return None
 
         if embeddings in ['HuggingFaceEmbeddings', 'HuggingFaceInstructEmbeddings', 'HuggingFaceBgeEmbeddings']:
-            import_sentence_transformers()
+            pip_install(["sentence_transformers"])
         if 'HuggingFaceInstructEmbeddings' == embeddings:
-            check_availability_and_install("InstructorEmbedding")
+            pip_install("InstructorEmbedding")
 
         from pyrecdp.core.class_utils import new_instance
         embeddings = new_instance('langchain.embeddings', embeddings, **embeddings_args)
@@ -119,7 +119,7 @@ class DocumentStore(ABC):
 
 class LangchainFAAIS(DocumentStore):
     def do_persist(self, ds, **kwargs):
-        check_availability_and_install(["faiss-cpu", "faiss-gpu", "langchain"])
+        pip_install(["faiss-cpu", "faiss-gpu", "langchain"])
 
         db = self.vector_store_args["db_handler"]
         index_name = self.vector_store_args.get("index", "index")
@@ -154,7 +154,7 @@ class LangchainChroma(DocumentStore):
             return ds
 
     def do_persist(self, ds, **kwargs):
-        check_availability_and_install(["chromadb==0.4.15", "langchain"])
+        pip_install(["chromadb==0.4.15", "langchain"])
         chroma = self.vector_store_args["db_handler"]
 
 
@@ -198,7 +198,7 @@ class HaystackElasticSearch(DocumentStore):
             return ds
 
     def do_persist(self, ds, **kwargs):
-        check_availability_and_install(["farm-haystack", "farm-haystack[elasticsearch7]"])
+        pip_install(["farm-haystack", "farm-haystack[elasticsearch7]"])
         exclude_keys = ['db_handler', 'return_db_handler']
         vector_store_args = dict((k, v) for k, v in self.vector_store_args.items() if k not in exclude_keys)
         if isinstance(ds, Dataset):

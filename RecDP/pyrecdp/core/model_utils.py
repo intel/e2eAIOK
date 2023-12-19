@@ -7,7 +7,7 @@ from typing import Callable, Any
 from loguru import logger
 
 from .cache_utils import RECDP_MODELS_CACHE
-from .import_utils import check_availability_and_install
+from .import_utils import pip_install
 
 # Default directory to store models
 MODEL_PATH = RECDP_MODELS_CACHE
@@ -94,7 +94,7 @@ def prepare_fasttext_model(model_name):
     :param model_name: input model name
     :return: model instance.
     """
-    check_availability_and_install("fasttext==0.9.2")
+    pip_install("fasttext==0.9.2")
     import fasttext
     logger.info('Loading fasttext language identification model...')
     try:
@@ -112,7 +112,7 @@ def prepare_sentencepiece_model(model_name, lang):
     :param lang: language to render model name
     :return: model instance.
     """
-    check_availability_and_install("sentencepiece")
+    pip_install("sentencepiece")
     import sentencepiece
     logger.info('Loading sentencepiece model...')
     sentencepiece_model = sentencepiece.SentencePieceProcessor()
@@ -131,7 +131,7 @@ def prepare_kenlm_model(model_name, lang):
     :param lang: language to render model name
     :return: model instance.
     """
-    check_availability_and_install("kenlm")
+    pip_install("kenlm")
     import kenlm
     logger.info('Loading kenlm language model...')
     try:
@@ -149,7 +149,7 @@ def prepare_nltk_model(model_name, lang):
     :param lang: language to render model name
     :return: model instance.
     """
-    check_availability_and_install("nltk")
+    pip_install("nltk")
     nltk_to_punkt = {
         'en': 'english',
         'fr': 'french',

@@ -1,6 +1,6 @@
 import os, sys
 import time
-from pyrecdp.core.import_utils import check_availability_and_install
+from pyrecdp.core.import_utils import pip_install
 
 def convert_listoflist_to_spk(components, spark):
     from pyspark.sql import Row

@@ -2,7 +2,7 @@ import json
 import random
 import string
 
-from pyrecdp.core.import_utils import check_availability_and_install
+from pyrecdp.core.import_utils import pip_install
 
 
 # List of random private IP addresses to use as replacements

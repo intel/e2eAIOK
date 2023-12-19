@@ -216,7 +216,8 @@ class LanguageIdentify(BaseLLMOperation):
         self.classifier = construct_classifier(fasttext_model_dir, text_key, self.new_name, threshold)
 
     def __del__(self):
-        del self.classifier
+        if hasattr(self, 'classifier') and self.classifier is not None:
+            del self.classifier
         
     def process_rayds(self, ds: Dataset) -> Dataset:
         if self.actual_func is None:

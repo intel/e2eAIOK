@@ -5,8 +5,6 @@ from urllib.parse import urlparse, urlunparse, urljoin
 
 import requests
 
-from pyrecdp.core.import_utils import check_availability_and_install
-from pyrecdp.core.import_utils import import_langchain, import_markdownify, import_beautiful_soup
 from pyrecdp.primitives.llmutils.document.schema import Document
 from pyrecdp.primitives.operations.base import LLMOPERATORS
 from pyrecdp.primitives.operations.constant import DEFAULT_HEADER
@@ -36,6 +34,7 @@ class DocumentLoader(TextReader):
 
         self.loader_args = loader_args or {}
         self.loader = loader
+        requirements += ['langchain']
         settings = {
             'loader': self.loader,
             'loader_args': self.loader_args,
@@ -50,7 +49,6 @@ class DocumentLoader(TextReader):
         self.support_spark = True
 
     def _get_loader(self) -> Callable[[], List[Document]]:
-        import_langchain()
         from pyrecdp.core.class_utils import new_instance
         from langchain.document_loaders.base import BaseLoader
         langchain_loader: BaseLoader = new_instance("langchain.document_loaders", self.loader, **self.loader_args)
@@ -103,6 +101,7 @@ class DirectoryLoader(DocumentLoader):
             required_exts: A list of file extensions that are required for documents.
                            default extensions are [.pdf, .docx, .jpeg, .jpg, .png]
         """
+        requirements += ['markdownify', 'bs4']
         settings = {
             'input_dir': input_dir,
             'glob': glob,
@@ -117,6 +116,7 @@ class DirectoryLoader(DocumentLoader):
             'encoding': encoding,
             'required_exts': required_exts,
             'page_separator': page_separator,
+            'requirements': requirements,
         }
         from pyrecdp.primitives.llmutils.document.reader import DirectoryReader
 
@@ -138,7 +138,6 @@ class DirectoryLoader(DocumentLoader):
         super().__init__(loader='DirectoryLoader', args_dict=settings, requirements=requirements)
 
     def _get_loader(self) -> Callable[[], List[Document]]:
-        print("_get_loader")
         self.directory_loader.setup()
         return lambda: self.directory_loader.load()
 
@@ -219,7 +218,6 @@ LLMOPERATORS.register(YoutubeLoader)
 
 
 def create_doc_from_html_to_md(page_url, html_text):
-    import_markdownify()
     import markdownify
     markdown_text = markdownify.markdownify(html_text)
     return Document(
@@ -239,7 +237,6 @@ def get_base_url(url):
 
 
 def web_parse(html_data, target_tag: str = None, target_attrs: dict = None):
-    import_beautiful_soup()
     from bs4 import BeautifulSoup
     soup = BeautifulSoup(html_data, "html.parser")
     if target_tag:
@@ -312,7 +309,7 @@ def fetch_data_and_sub_links(sub_url, headers=None, target_tag: str = None, targ
 
 class UrlLoader(TextReader):
     def __init__(self, urls: list = None, max_depth: int = 0, target_tag: str = None, target_attrs: dict = None,
-                 args_dict: Optional[dict] = None, headers: Optional[dict] = None):
+                 args_dict: Optional[dict] = None, headers: Optional[dict] = None, requirements = []):
         """
             Loads documents from a directory or a list of files.
 
@@ -323,12 +320,14 @@ class UrlLoader(TextReader):
                 target_attrs: A dictionary of filters on attribute values. Default: None
                 headers: Dictionary of HTTP Headers to send with the :class:`Request`.
         """
+        requirements += []
         settings = {
             'urls': urls,
             'max_depth': max_depth,
             'target_tag': target_tag,
             'target_attrs': target_attrs,
-            'headers': headers
+            'headers': headers,
+            'requirements': requirements
         }
         settings.update(args_dict or {})
         super().__init__(settings)
