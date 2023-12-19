@@ -92,9 +92,9 @@ class DiGraph(dict):
             ret = list(self.keys())
         return ret
 
-    def json_dump(self):
+    def json_dump(self, base_dir = ""):
         import json
-        to_dump = dict((node_id, op.dump()) for node_id, op in self.items())
+        to_dump = dict((node_id, op.dump(base_dir)) for node_id, op in self.items())
         return json.dumps(to_dump, indent=4)
 
     def copy(self):

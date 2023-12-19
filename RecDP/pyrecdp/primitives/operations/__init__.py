@@ -68,5 +68,7 @@ try:
     from .doc_loader import DirectoryLoader, DocumentLoader, UrlLoader, YoutubeLoader
     from .text_to_qa import TextToQA
     from .table_summary import TableSummary
+    from .text_spell_correct import TextSpellCorrect
+    from .text_contraction_remove import TextContractionRemove
 except Exception as e:
     pass

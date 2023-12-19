@@ -20,8 +20,10 @@ class BasePipeline:
 
     def export(self, file_path = None):
         import copy
+        import os
+        base_dir = os.path.dirname(file_path) if file_path else ""
         pipeline_deepcopy = copy.deepcopy(self.pipeline)
-        json_object = pipeline_deepcopy.json_dump()
+        json_object = pipeline_deepcopy.json_dump(base_dir)
         if file_path:
             # Writing to sample.json
             with open(file_path, "w") as outfile:

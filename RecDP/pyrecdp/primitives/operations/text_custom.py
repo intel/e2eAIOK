@@ -6,7 +6,6 @@ from ray.data import Dataset
 from pyspark.sql import DataFrame
 from .filter import BaseFilter
 
-
 def text_bytesize(s):
     return len(s.encode('utf-8'))
 
@@ -18,9 +17,17 @@ class TextCustomerMap(BaseLLMOperation):
         super().__init__(settings, requirements)
         self.support_spark = True
         self.support_ray = True
-        self.func = func
+        if not callable(func):
+            import os
+            if not os.path.exists(func):
+                raise FileNotFoundError(f'Reload {func} object but not exists')
+            import pickle
+            with open(func, 'rb') as f:
+                self.func = pickle.load(f)
+        else:
+            self.func = func
         self.text_key = text_key
-        self.new_key = text_key if inplace else f"{func.__name__}_text"
+        self.new_key = text_key if inplace else f"{self.func.__name__}_text"
 
     def process_rayds(self, ds: Dataset) -> Dataset:
         return ds.map(lambda x: self.process_row(x, self.text_key, self.new_key, self.func))
@@ -43,10 +50,19 @@ class TextCustomerFlatMap(BaseLLMOperation):
         super().__init__(settings, requirements)
         self.support_spark = True
         self.support_ray = True
+        if not callable(func):
+            import os
+            if not os.path.exists(func):
+                raise FileNotFoundError(f'Reload {func} object but not exists')
+            import pickle
+            with open(func, 'rb') as f:
+                self.func = pickle.load(f)
+        else:
+            self.func = func
         self.func = func
         self.text_key = text_key
         self.func_args = func_args
-        self.new_key = text_key if inplace else f"{func.__name__}_text"
+        self.new_key = text_key if inplace else f"{self.func.__name__}_text"
 
     def process_rayds(self, ds: Dataset) -> Dataset:
         def flap_map(sample, text_key, flat_map_func, func_args):
@@ -80,7 +96,15 @@ class TextCustomerFilter(BaseFilter):
         super().__init__(settings, requirements)
         self.support_spark = True
         self.support_ray = True
-        self.func = func
+        if not callable(func):
+            import os
+            if not os.path.exists(func):
+                raise FileNotFoundError(f'Reload {func} object but not exists')
+            import pickle
+            with open(func, 'rb') as f:
+                self.func = pickle.load(f)
+        else:
+            self.func = func
         self.text_key = text_key
 
     @statistics_decorator

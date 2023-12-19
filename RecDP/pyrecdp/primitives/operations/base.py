@@ -23,16 +23,21 @@ class Operation:
         self.config = config  # operation config
 
     def __repr__(self):
-        return repr(self.dump())
+        if hasattr(self, 'dump_dict'):
+            return repr(self.dump_dict)
+        from copy import deepcopy
+        dpcpy_obj = deepcopy(self)
+        return repr(dpcpy_obj.dump())
 
-    def dump(self):
+    def dump(self, base_dir = ''):
         dump_dict = {
             # 'idx': self.idx,
             'children': self.children,
             # 'output': self.output,
             'op': self.op,
-            'config': dump_fix(self.config)
+            'config': dump_fix(self.config, base_dir)
         }
+        self.dump_dict = dump_dict
         return dump_dict
 
     def instantiate(self):
