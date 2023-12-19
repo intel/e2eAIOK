@@ -1,6 +1,6 @@
 import os
 from typing import Optional, List, Callable
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse, urlunparse, urljoin
 
 import requests
 
@@ -37,7 +37,7 @@ class DocumentLoader(TextReader):
         settings = {
             'loader': self.loader,
             'loader_args': self.loader_args,
-            'requirements' : requirements,
+            'requirements': requirements,
         }
         settings.update(args_dict or {})
 
@@ -133,7 +133,7 @@ class DirectoryLoader(DocumentLoader):
             required_exts=required_exts,
             page_separator=page_separator,
         )
-        super().__init__(loader='DirectoryLoader', args_dict=settings,requirements=requirements)
+        super().__init__(loader='DirectoryLoader', args_dict=settings, requirements=requirements)
 
     def _get_loader(self) -> Callable[[], List[Document]]:
         print("_get_loader")
@@ -200,6 +200,7 @@ def get_hyperlink(soup, url):
     sub_links = set()
     for links in soup.find_all('a'):
         link = str(links.get('href'))
+        absolute_link = None
         if link.startswith('#') or link is None or link == 'None' or link == base_path:
             continue
         if link.startswith("/") and base_path not in link:
@@ -214,27 +215,20 @@ def get_hyperlink(soup, url):
             # keep crawler works in the same domain
             if link_parse.netloc != base_url_parse.netloc:
                 continue
-            sub_links.add(link)
+            absolute_link = link
         else:
-            if base_path not in link:
-                link_path = os.path.normpath(f"{base_url_parse.path}/{link_parse.path}")
-            else:
-                link_path = link_parse.path
-            if link_path.startswith(base_path):
-                sub_links.add(urlunparse((base_url_parse.scheme,
-                                          base_url_parse.netloc,
-                                          link_path,
-                                          link_parse.params,
-                                          link_parse.query,
-                                          link_parse.fragment)))
-
+            new_link = urljoin(url, link)
+            if new_link.startswith(base_url):
+                absolute_link = new_link
+        if absolute_link:
+            sub_links.add(absolute_link)
     return sub_links
 
 
 def fetch_data_and_sub_links(sub_url, headers=None, target_tag: str = None, target_attrs: dict = None):
     response = web_fetch(sub_url, headers)
     if response is None:
-        return []
+        return None, None
     soup = web_parse(response.text, target_tag, target_attrs)
 
     sub_links = get_hyperlink(soup, response.url)
@@ -294,8 +288,9 @@ class UrlLoader(TextReader):
                         self.fetched_pool.add(sub_url)
                         sub_links, web_doc = fetch_data_and_sub_links(sub_url, self.headers, self.target_tag,
                                                                       self.target_attrs)
-                        docs.append(web_doc)
-                        next_urls.update(sub_links)
+                        if sub_url and web_doc:
+                            docs.append(web_doc)
+                            next_urls.update(sub_links)
 
                 depth += 1
         return docs
