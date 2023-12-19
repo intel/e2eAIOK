@@ -68,7 +68,20 @@ class SparkContext:
 class Test_LLMUtils_Operations(unittest.TestCase):
     def setUp(self):
         print(f"\n******\nTesting Method Name: {self._testMethodName}\n******")
+        
+        
+    ### ====== Priority execution ====== ###
+    def a_test_youtube_load_spark(self):
+        urls = ["https://www.youtube.com/watch?v=J31r79uUi9M", "https://www.youtube.com/watch?v=w9kq1BjqrfE"]
+        op = YoutubeLoader(urls)
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark))
 
+    def a_test_youtube_load_ray(self):
+        urls = ["https://www.youtube.com/watch?v=J31r79uUi9M", "https://www.youtube.com/watch?v=w9kq1BjqrfE"]
+        op = YoutubeLoader(urls)
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds())
     ### ======  Ray ====== ###
 
     def test_bytesize_ray(self):
@@ -227,6 +240,7 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         op = UrlLoader(["https://www.intc.com/news-events/press-releases?year=2023&category=all"], max_depth=1)
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds())
+            
 
     def test_document_split_ray(self):
         op = DocumentSplit()
@@ -254,7 +268,8 @@ class Test_LLMUtils_Operations(unittest.TestCase):
             ctx.show(op.process_rayds())
 
     ### ======  Spark ====== ###
-
+    
+            
     def test_bytesize_spark(self):
         op = TextBytesize()
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
@@ -475,7 +490,6 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark))
 
-
     def test_contraction_remove_spark(self):
         op = TextContractionRemove()
         with SparkContext("tests/data/llm_data/tiny_c4_sample_10.jsonl") as ctx:
@@ -485,4 +499,3 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         op = TextSpellCorrect()
         with SparkContext("tests/data/llm_data/tiny_c4_sample_10.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
-    

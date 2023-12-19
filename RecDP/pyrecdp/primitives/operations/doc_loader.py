@@ -10,7 +10,7 @@ from pyrecdp.primitives.operations.base import BaseLLMOperation, LLMOPERATORS
 from pyrecdp.primitives.operations.constant import DEFAULT_HEADER
 from pyrecdp.primitives.operations.text_reader import TextReader
 from pyrecdp.primitives.operations.logging_utils import logger
-
+from pyrecdp.core.import_utils import check_availability_and_install
 
 class DocumentLoader(TextReader):
     def __init__(self,
@@ -143,6 +143,75 @@ class DirectoryLoader(DocumentLoader):
 
 LLMOPERATORS.register(DirectoryLoader)
 
+class YoutubeLoader(TextReader):
+    def __init__(self, urls: List[str], save_dir: str = None, model = 'small', **kwargs):
+        """
+            Loads documents from a directory or a list of Youtube URLs.
+
+            Args:
+                urls: The list of Youtube video urls.
+                save_dir: The directory to save loaded Youtube audio, will remove the tmp file if save_dir is None.
+                model: The name of the whisper model, check the available ones using whisper.available_models().
+        """    
+        settings = {
+            'urls': urls,
+            'save_dir': save_dir,
+            'model': model
+        }
+        super().__init__(settings)
+        self.urls = urls
+        self.save_dir = save_dir
+        self.model_name = model
+        
+    def _load(self):
+        import os
+        import tempfile
+        import shutil
+        use_temp_dir = False
+        save_dir = self.save_dir
+        if save_dir is None or not os.path.isdir(save_dir):
+            use_temp_dir = True
+            save_dir = tempfile.mkdtemp()
+        docs = []
+        try:
+            import_langchain()
+            from langchain.document_loaders.blob_loaders.youtube_audio import YoutubeAudioLoader
+            check_availability_and_install('yt_dlp')
+            loader = YoutubeAudioLoader(self.urls, save_dir)
+            audio_paths = {}
+            for url, blob in zip(self.urls[::-1], loader.yield_blobs()):
+                audio_paths[url] = str(blob.path)
+            import os 
+            os.system("apt-get -qq -y install ffmpeg")
+            check_availability_and_install('openai-whisper')
+            import whisper
+            model = whisper.load_model(self.model_name)
+            for url, audio_path in audio_paths.items():
+                result = model.transcribe(audio_path)
+                docs.append(Document(text=result['text'], metadata={"source": url, 'language': result['language']}))
+        finally:
+            if use_temp_dir:
+                shutil.rmtree(save_dir)
+        
+        return docs
+        
+    def load_documents(self):
+        return [{'text': doc.text, 'metadata': doc.metadata} for doc in self._load()]
+
+    def process_rayds(self, ds=None):
+        import ray
+        self.cache = ray.data.from_items(self.load_documents())
+        if ds is not None:
+            self.cache = self.union_ray_ds(ds, self.cache)
+        return self.cache
+
+    def process_spark(self, spark, spark_df=None):
+        self.cache = spark.createDataFrame(self.load_documents())
+        if spark_df is not None:
+            self.cache = self.union_spark_df(spark_df, self.cache)
+        return self.cache
+
+LLMOPERATORS.register(YoutubeLoader)
 
 def create_doc_from_html_to_md(page_url, html_text):
     import_markdownify()
