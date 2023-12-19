@@ -23,9 +23,15 @@ total_cores = psutil.cpu_count(logical=False)
 
 
 class TextPipeline(BasePipeline):
-    def __init__(self, engine_name='ray', pipeline_file=None):
+    def __init__(self, engine_name='ray', pipeline_file=None, ray_head='', spark_head=''):
         super().__init__()
         self.engine_name = engine_name
+        if ray_head != '':
+            self.engine_name = 'ray'
+            self.cluster_head = ray_head
+        elif spark_head != '':
+            self.engine_name = 'spark'
+            self.cluster_head = spark_head
         self.ray_start_by_us = False
         if pipeline_file != None:
             self.import_from_json(pipeline_file) if pipeline_file.endswith(
@@ -98,12 +104,17 @@ class TextPipeline(BasePipeline):
 
         if engine_name == 'ray':
             print("init ray")
-            if not ray.is_initialized():
+            # runtime_env = {"pip": ['langchain', 'faiss-cpu', 'langchain-community']}
+            runtime_env = {}
+            if hasattr(self, 'cluster_head') and self.cluster_head != '':
+                ray.init(self.cluster_head, runtime_env=runtime_env)
+                self.ray_client_mode = True
+            elif not ray.is_initialized():
                 print(f"init ray with total mem of {total_mem}, total core of {total_cores}")
                 try:
-                    ray.init(object_store_memory=total_mem, num_cpus=total_cores)
+                    ray.init(object_store_memory=total_mem, num_cpus=total_cores, runtime_env=runtime_env)
                 except:
-                    ray.init()
+                    ray.init(runtime_env=runtime_env)
                 self.ray_start_by_us = True
 
             # execute
@@ -234,8 +245,8 @@ class TextPipeline(BasePipeline):
 
 class ResumableTextPipeline(TextPipeline):
     # Provide a pipeline for large dir. We will handle files one by one and resume when pipeline broken.
-    def __init__(self, engine_name='ray', pipeline_file=None):
-        super().__init__(engine_name, pipeline_file)
+    def __init__(self, engine_name='ray', pipeline_file=None, ray_head='', spark_head=''):
+        super().__init__(engine_name, pipeline_file, ray_head='', spark_head='')
         # Enabling this option will result in a decrease in execution speed
         self.statistics_flag = False
 
@@ -345,12 +356,17 @@ class ResumableTextPipeline(TextPipeline):
         op_chain = []
 
         if engine_name == 'ray':
-            if not ray.is_initialized():
+            # runtime_env = {"pip": ['langchain', 'faiss-cpu', 'langchain-community']}
+            runtime_env = {}
+            if hasattr(self, 'cluster_head') and self.cluster_head != '':
+                ray.init(self.cluster_head, runtime_env = runtime_env)
+                self.ray_client_mode = True
+            elif not ray.is_initialized():
                 print(f"init ray with total mem of {total_mem}")
                 try:
-                    ray.init(object_store_memory=total_mem, num_cpus=total_cores)
+                    ray.init(object_store_memory=total_mem, num_cpus=total_cores, runtime_env = runtime_env)
                 except:
-                    ray.init()
+                    ray.init(runtime_env = runtime_env)
                 self.ray_start_by_us = True
 
             for op in executable_sequence:

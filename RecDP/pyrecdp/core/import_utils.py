@@ -5,6 +5,9 @@ import importlib
 import pathlib
 import pkg_resources
 from loguru import logger
+import ray
+
+FORCE_INSTALL=True
 
 def list_requirements(requirements_path):
     with pathlib.Path(requirements_path).open() as requirements_txt:
@@ -33,26 +36,40 @@ def fix_package_name(package):
     #print(b)
     return b
 
-def check_availability_and_install(package_or_list, verbose=1):
-    def actual_func(package):
-        pip_name = fix_package_name(package)
-        try:
-            return importlib.import_module(pip_name)
-        except ImportError:
-            pip.main(['install', '-q', package])
-            #importlib.import_module(pip_name)
-            
-    if isinstance(package_or_list, list):
-        if verbose == 1 and len(package_or_list) > 0:        
-            logger.info(f"check_availability_and_install {package_or_list}")
-        for pkg in package_or_list:
-            actual_func(pkg)
-    elif isinstance(package_or_list, str):
-        if verbose == 1 and package_or_list != "":        
-            logger.info(f"check_availability_and_install {package_or_list}")
-        actual_func(package_or_list)
+def check_availability_and_install(package_or_list, verbose=1, force_install = FORCE_INSTALL):
+    if verbose == 1 and package_or_list != "":
+        logger.info(f"check_availability_and_install {package_or_list}")
+    if force_install:
+        if isinstance(package_or_list, list):
+            @ray.remote
+            def f(package_or_list, verbose, force_install):
+                import socket
+                host_name = socket.gethostname()
+                print(host_name)
+                for package in package_or_list:
+                    pip_name = fix_package_name(package)
+                    try:
+                        return importlib.import_module(pip_name)
+                    except ImportError:
+                        pip.main(['install', '-q', package])
+            ray.get(f.remote(package_or_list, verbose, force_install))
+        elif isinstance(package_or_list, str):
+            @ray.remote
+            def f(package_or_list, verbose, force_install):
+                import socket
+                host_name = socket.gethostname()
+                print(host_name)
+                package = package_or_list
+                pip_name = fix_package_name(package)
+                try:
+                    return importlib.import_module(pip_name)
+                except ImportError:
+                    pip.main(['install', '-q', package])
+            ray.get(f.remote(package_or_list, verbose, force_install))
+        else:
+            raise ValueError(f"{package_or_list} with type of {type(package_or_list)} is not supported.")
     else:
-        raise ValueError(f"{package_or_list} with type of {type(package_or_list)} is not supported.")
+        logger.info(f"To run this operator, you need to pip install {package_or_list}")
         
 
 def import_faiss(no_avx2: Optional[bool] = None, install_if_miss: bool = True):

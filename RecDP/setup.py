@@ -40,7 +40,7 @@ class SetupSpec:
             "cloudpickle",
             "wget==3.2",
             "pyspark==3.4.0",
-            "ray==2.7.1",
+            "ray==2.7.1[default]",
             "matplotlib",
             "jsonlines==3.1.0",
             "regex==2023.6.3",

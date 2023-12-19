@@ -179,3 +179,24 @@ sparkdf = … # Spark Dataframe
 op = LengthFilter()
 op.process_spark(sparkdf)
 ```
+
+## Frequent Asked Questions
+
+### 1. Best practise to setup a Ray Cluster for distributed data process
+```
+# prepare a docker on all your nodes
+$ git clone e2eAIOK; cd e2eAIOK;
+$ cd RecDP/Dockerfile && docker build -t pyrecdp-test-env . -f DockerfileUbuntu --build-arg https_proxy=${https_proxy} && cd .. && yes | docker container prune && yes | docker image prune
+$ cd RecDP && docker run -it --rm --name unittest-pyrecdp-autofe-pandas --shm-size=300g --privileged --network host --device=/dev/dri -e RECDP_MODELS_CACHE=/home/vmagent/models  -v `pwd`:/home/vmagent/app/ -v `pwd`/../../models:/home/vmagent/models/ -w /home/vmagent/app/ pyrecdp-test-env /bin/bash
+
+# Install RecDP[LLM]
+$ pip install -e .[LLM]
+
+# start ray head on one of the nodes
+$ ray start --head --port=${port} --dashboard-host=0.0.0.0
+
+# start ray worker on all of your nodes
+$ ray start --address=<head-node-address:port>
+
+
+```
