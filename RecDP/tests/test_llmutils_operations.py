@@ -231,9 +231,14 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds(ctx.ds))
 
-    def test_document_load_ray(self):
+    def test_document_load_pdf_ray(self):
         op = DirectoryLoader("tests/data/llm_data/document", glob="**/*.pdf")
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds())
+
+    def test_document_load_ray(self):
+        op = DirectoryLoader("data/llm_data/document")
+        with RayContext("data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds())
 
     def test_url_load_ray(self):

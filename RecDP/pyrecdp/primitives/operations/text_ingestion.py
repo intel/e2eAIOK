@@ -157,6 +157,7 @@ class LangchainChroma(DocumentStore):
         check_availability_and_install(["chromadb==0.4.15", "langchain"])
         chroma = self.vector_store_args["db_handler"]
 
+
         collection_name = self.vector_store_args.get("collection_name", 'langchain')
         rows = ds.iter_rows() if isinstance(ds, Dataset) else ds.collect()
         texts = [row[self.text_column] for row in rows]
@@ -165,9 +166,15 @@ class LangchainChroma(DocumentStore):
         if chroma is not None:
             chroma.add_texts(texts)
             return chroma
-        if "output_dir" not in self.vector_store_args:
-            raise ValueError(f"You must have `output_dir` option specify for Chroma vector store")
-        persist_directory = self.vector_store_args["output_dir"]
+        if "output_dir" not in self.vector_store_args and 'persist_directory' not in self.vector_store_args:
+            raise ValueError(
+                f"You must have `output_dir` or `persist_directory` option specify for Chroma vector store")
+
+        if 'output_dir' in self.vector_store_args:
+            persist_directory = self.vector_store_args["output_dir"]
+        else:
+            persist_directory = self.vector_store_args["persist_directory"]
+
         if not self.override and os.path.exists(persist_directory):
             chroma = Chroma(collection_name=collection_name,
                             persist_directory=persist_directory,

@@ -312,17 +312,7 @@ class DirectoryReader(DocumentReader):
                 loader = self.file_extractor[file_suffix]
                 return loader.load()
             else:
-                from pyrecdp.core.import_utils import import_langchain
-                import_langchain()
-                from langchain.document_loaders import UnstructuredFileLoader
-                loader = UnstructuredFileLoader(str(input_file))
-                docs = [Document(text=doc.text, metadata=doc.metadata) for doc in loader.load()]
-                docs = list(filter(lambda d: (d.pa.strip() != ""), docs))
-                if self.single_text_per_document:
-                    text = self.page_separator.join([doc.text for doc in docs])
-                    return [Document(text=text, metadata={"source": str(input_file)})]
-                else:
-                    return docs
+                return []
         finally:
             if pbar:
                 pbar.update(1)
@@ -336,7 +326,8 @@ class DirectoryReader(DocumentReader):
                 from concurrent.futures import ThreadPoolExecutor
                 with ThreadPoolExecutor(self.max_concurrency) as executor:
                     for docs in executor.map(lambda i: self._load_file(i, pbar), self.input_files):
-                        docs_result.extend(docs)
+                        if len(docs)>0:
+                            docs_result.extend(docs)
             else:
                 for file in self.input_files:
                     docs = self._load_file(file, pbar)
