@@ -1,16 +1,18 @@
 import os
-from typing import Optional, List, Callable
+import re
+from typing import Optional, List, Callable, Union, Sequence
 from urllib.parse import urlparse, urlunparse, urljoin
 
 import requests
 
+from pyrecdp.core.import_utils import check_availability_and_install
 from pyrecdp.core.import_utils import import_langchain, import_markdownify, import_beautiful_soup
 from pyrecdp.primitives.llmutils.document.schema import Document
-from pyrecdp.primitives.operations.base import BaseLLMOperation, LLMOPERATORS
+from pyrecdp.primitives.operations.base import LLMOPERATORS
 from pyrecdp.primitives.operations.constant import DEFAULT_HEADER
-from pyrecdp.primitives.operations.text_reader import TextReader
 from pyrecdp.primitives.operations.logging_utils import logger
-from pyrecdp.core.import_utils import check_availability_and_install
+from pyrecdp.primitives.operations.text_reader import TextReader
+
 
 class DocumentLoader(TextReader):
     def __init__(self,
@@ -143,8 +145,9 @@ class DirectoryLoader(DocumentLoader):
 
 LLMOPERATORS.register(DirectoryLoader)
 
+
 class YoutubeLoader(TextReader):
-    def __init__(self, urls: List[str], save_dir: str = None, model = 'small', **kwargs):
+    def __init__(self, urls: List[str], save_dir: str = None, model='small', **kwargs):
         """
             Loads documents from a directory or a list of Youtube URLs.
 
@@ -152,7 +155,7 @@ class YoutubeLoader(TextReader):
                 urls: The list of Youtube video urls.
                 save_dir: The directory to save loaded Youtube audio, will remove the tmp file if save_dir is None.
                 model: The name of the whisper model, check the available ones using whisper.available_models().
-        """    
+        """
         settings = {
             'urls': urls,
             'save_dir': save_dir,
@@ -162,7 +165,7 @@ class YoutubeLoader(TextReader):
         self.urls = urls
         self.save_dir = save_dir
         self.model_name = model
-        
+
     def _load(self):
         import os
         import tempfile
@@ -181,7 +184,7 @@ class YoutubeLoader(TextReader):
             audio_paths = {}
             for url, blob in zip(self.urls[::-1], loader.yield_blobs()):
                 audio_paths[url] = str(blob.path)
-            import os 
+            import os
             os.system("apt-get -qq -y install ffmpeg")
             check_availability_and_install('openai-whisper')
             import whisper
@@ -192,9 +195,9 @@ class YoutubeLoader(TextReader):
         finally:
             if use_temp_dir:
                 shutil.rmtree(save_dir)
-        
+
         return docs
-        
+
     def load_documents(self):
         return [{'text': doc.text, 'metadata': doc.metadata} for doc in self._load()]
 
@@ -211,7 +214,9 @@ class YoutubeLoader(TextReader):
             self.cache = self.union_spark_df(spark_df, self.cache)
         return self.cache
 
+
 LLMOPERATORS.register(YoutubeLoader)
+
 
 def create_doc_from_html_to_md(page_url, html_text):
     import_markdownify()
@@ -382,3 +387,108 @@ class UrlLoader(TextReader):
 
 
 LLMOPERATORS.register(UrlLoader)
+
+
+class RecursiveUrlLoader(TextReader):
+    def __init__(
+            self,
+            urls: Union[str | List[str]],
+            max_depth: Optional[int] = 2,
+            use_async: Optional[bool] = None,
+            extractor: Optional[Callable[[str], str]] = None,
+            metadata_extractor: Optional[Callable[[str, str], str]] = None,
+            exclude_dirs: Optional[Sequence[str]] = (),
+            timeout: Optional[int] = 10,
+            prevent_outside: bool = True,
+            link_regex: Union[str, re.Pattern, None] = None,
+            headers: Optional[dict] = None,
+            check_response_status: bool = False,
+            requirements=None,
+    ) -> None:
+        """Initialize with URL to crawl and any subdirectories to exclude.
+
+        Args:
+            urls: The URLS to crawl.
+            max_depth: The max depth of the recursive loading.
+            use_async: Whether to use asynchronous loading.
+                If True, this function will not be lazy, but it will still work in the
+                expected way, just not lazy.
+            extractor: A function to extract document contents from raw html.
+                When extract function returns an empty string, the document is
+                ignored. Default extractor will attempt to use BeautifulSoup4 to extract the text
+            metadata_extractor: A function to extract metadata from raw html and the
+                source url (args in that order). Default extractor will attempt
+                to use BeautifulSoup4 to extract the title, description and language
+                of the page.
+            exclude_dirs: A list of subdirectories to exclude.
+            timeout: The timeout for the requests, in the unit of seconds. If None then
+                connection will not timeout.
+            prevent_outside: If True, prevent loading from urls which are not children
+                of the root url.
+            link_regex: Regex for extracting sub-links from the raw html of a web page.
+            check_response_status: If True, check HTTP response status and skip
+                URLs with error responses (400-599).
+        """
+        if requirements is None:
+            requirements = []
+
+        if extractor is None:
+            from bs4 import BeautifulSoup
+            extractor = lambda x: BeautifulSoup(x, "html.parser").text
+
+        settings = {
+            'urls': urls,
+            'max_depth': max_depth,
+            'use_async': use_async,
+            'extractor': extractor,
+            'metadata_extractor': metadata_extractor,
+            'exclude_dirs': exclude_dirs,
+            'timeout': timeout,
+            'prevent_outside': prevent_outside,
+            'link_regex': link_regex,
+            'headers': headers,
+            'check_response_status': check_response_status,
+        }
+        super().__init__(settings, requirements=['bs4', 'langchain'])
+        self.support_spark = True
+        self.support_ray = True
+
+        from langchain.document_loaders import RecursiveUrlLoader as LCRecursiveURLLoader
+        if isinstance(urls, str):
+            urls = [urls]
+
+        urls = set(urls)
+
+        self.loaders = [LCRecursiveURLLoader(
+            url,
+            max_depth=max_depth,
+            use_async=use_async,
+            extractor=extractor,
+            metadata_extractor=metadata_extractor,
+            exclude_dirs=exclude_dirs,
+            timeout=timeout,
+            prevent_outside=prevent_outside,
+            link_regex=link_regex,
+            headers=headers,
+            check_response_status=check_response_status,
+        ) for url in urls]
+
+    def load_documents(self):
+        return [{'text': doc.page_content, 'metadata': doc.metadata} for loader in self.loaders for doc in
+                loader.load()]
+
+    def process_rayds(self, ds=None):
+        import ray
+        self.cache = ray.data.from_items(self.load_documents())
+        if ds is not None:
+            self.cache = self.union_ray_ds(ds, self.cache)
+        return self.cache
+
+    def process_spark(self, spark, spark_df=None):
+        self.cache = spark.createDataFrame(self.load_documents())
+        if spark_df is not None:
+            self.cache = self.union_spark_df(spark_df, self.cache)
+        return self.cache
+
+
+LLMOPERATORS.register(RecursiveUrlLoader)

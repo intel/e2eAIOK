@@ -273,7 +273,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         display(ret)
 
     def test_llm_rag_pipeline_cnvrg(self):
-        from pyrecdp.primitives.operations import DocumentLoader,RAGTextFix,CustomerDocumentSplit,TextCustomerFilter,JsonlWriter
+        from pyrecdp.primitives.operations import RecursiveUrlLoader,RAGTextFix,CustomerDocumentSplit,TextCustomerFilter,JsonlWriter
         from pyrecdp.LLM import TextPipeline
 
         urls = ['https://app.cnvrg.io/docs/',
@@ -313,7 +313,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
 
         pipeline = TextPipeline()
         ops = [
-            DocumentLoader(loader='UnstructuredURLLoader', loader_args={'urls': urls}, requirements=['unstructured']),
+            RecursiveUrlLoader(urls, max_depth=2),
             RAGTextFix(str_to_replace={'\n###': '', '\n##': '', '\n#': ''}, remove_extra_whitespace=True),
             CustomerDocumentSplit(func=lambda text: text.split('# ')[1:]),
             TextCustomerFilter(custom_filter),

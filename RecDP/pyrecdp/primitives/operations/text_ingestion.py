@@ -195,21 +195,17 @@ class HaystackElasticSearch(DocumentStore):
         exclude_keys = ['db_handler', 'return_db_handler']
         vector_store_args = dict((k, v) for k, v in self.vector_store_args.items() if k not in exclude_keys)
         if isinstance(ds, Dataset):
-            class BatchIndexer:
-                def __init__(self, text_column: str, vector_store_args: Optional[Dict[str, Any]]):
-                    from haystack.document_stores import ElasticsearchDocumentStore
-                    self.text_column = text_column
-                    self.vector_store_args = vector_store_args
-                    self.elasticsearch = ElasticsearchDocumentStore(
-                        **vector_store_args
-                    )
+            def batch_index(batch, text_column,vector_store_args: Optional[Dict[str, Any]]):
+                from haystack.document_stores import ElasticsearchDocumentStore
+                elasticsearch = ElasticsearchDocumentStore(
+                    **vector_store_args
+                )
+                from haystack import Document as SDocument
+                documents = [SDocument(content=text) for text in batch[text_column]]
+                elasticsearch.write_documents(documents)
 
-                def __call__(self, batch):
-                    from haystack import Document as SDocument
-                    documents = [SDocument(content=text) for text in batch[self.text_column]]
-                    self.elasticsearch.write_documents(documents)
-
-            ds.map_batches(BatchIndexer, fn_constructor_kwargs=vector_store_args)
+                return {}
+            ds.map_batches(lambda batch: batch_index(batch,self.text_column, vector_store_args)).count()
         else:
             def batch_index_with_var(batch, bv_value):
                 from haystack import Document as SDocument
@@ -223,7 +219,7 @@ class HaystackElasticSearch(DocumentStore):
 
             ds = cast(DataFrame, ds)
 
-            bv = ds.sparkSession.sparkContext.broadcast((self.text_column, self.vector_store_args))
+            bv = ds.sparkSession.sparkContext.broadcast((self.text_column, vector_store_args))
             ds.foreachPartition(lambda p: batch_index_with_var(p, bv))
 
         # share this document store only when rag retrieval want to use document store created from index stage

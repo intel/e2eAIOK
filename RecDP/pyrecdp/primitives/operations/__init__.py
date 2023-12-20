@@ -65,7 +65,7 @@ try:
     from .text_perplexity_score import TextPerplexityScore
     from .random_select import RandomSelect
     from .text_ingestion import DocumentIngestion
-    from .doc_loader import DirectoryLoader, DocumentLoader, UrlLoader, YoutubeLoader
+    from .doc_loader import DirectoryLoader, DocumentLoader, UrlLoader, RecursiveUrlLoader, YoutubeLoader
     from .text_to_qa import TextToQA
     from .table_summary import TableSummary
     from .text_spell_correct import TextSpellCorrect
