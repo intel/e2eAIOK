@@ -23,7 +23,7 @@ jobs:
 
     - name: RUN Unittests
       run: |
-        cd RecDP && docker run --rm --name unittest-pyrecdp-autofe-pandas --shm-size=300g --privileged --network host --device=/dev/dri -e RECDP_MODELS_CACHE=/home/vmagent/models  -v `pwd`:/home/vmagent/app/ -v `pwd`/../../models:/home/vmagent/models/ -w /home/vmagent/app/ pyrecdp-test-env /bin/bash -c "sh tests/cicd/bashrun_unittest_llmutilspipeline.sh"
+        cd RecDP && docker run --rm --name unittest-pyrecdp-autofe-pandas --shm-size=300g --privileged --network host --device=/dev/dri -e https_proxy=${https_proxy} -e RECDP_MODELS_CACHE=/home/vmagent/models  -v `pwd`:/home/vmagent/app/ -v `pwd`/../../models:/home/vmagent/models/ -w /home/vmagent/app/ pyrecdp-test-env /bin/bash -c "sh tests/cicd/bashrun_unittest_llmutilspipeline.sh"
 
     - name: Clean env
       run: |
