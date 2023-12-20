@@ -280,7 +280,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
             import nltk
             nltk.download('punkt')
 
-        from build.lib.pyrecdp.core.model_utils import prepare_model
+        from pyrecdp.core.model_utils import prepare_model
         prepare_model(model_type="nltk", model_key="nltk_rag_cnvrg", prepare_model_func=prepare_nltk_model)
         urls = ['https://app.cnvrg.io/docs/',
                 'https://app.cnvrg.io/docs/core_concepts/python_sdk_v2.html',
