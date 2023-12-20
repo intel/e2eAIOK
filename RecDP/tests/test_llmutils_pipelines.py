@@ -188,8 +188,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         pipeline = TextPipeline()
         ops = [
             UrlLoader(["https://www.intc.com/news-events/press-releases/detail/"
-                            "1655/intel-reports-third-quarter-2023-financial-results"],
-                      target_tag='div', target_attrs={'class': 'main-content'}),
+                            "1655/intel-reports-third-quarter-2023-financial-results"]),
             DocumentSplit(text_splitter='RecursiveCharacterTextSplitter'),
             DocumentIngestion(
                 vector_store='FAISS',
@@ -209,7 +208,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         ops = [
             UrlLoader(["https://www.intc.com/news-events/press-releases/detail/"
                             "1655/intel-reports-third-quarter-2023-financial-results"],
-                      max_depth=2, target_tag='div', target_attrs={'class': 'main-content'}),
+                      max_depth=2),
             DirectoryLoader("tests/data/press_pdf", glob="**/*.pdf"),
             RAGTextFix(),
             DocumentSplit(text_splitter='RecursiveCharacterTextSplitter')
@@ -273,7 +272,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         display(ret)
 
     def test_llm_rag_pipeline_cnvrg(self):
-        from pyrecdp.primitives.operations import RecursiveUrlLoader,RAGTextFix,CustomerDocumentSplit,TextCustomerFilter,JsonlWriter
+        from pyrecdp.primitives.operations import UrlLoader,RAGTextFix,CustomerDocumentSplit,TextCustomerFilter,JsonlWriter
         from pyrecdp.LLM import TextPipeline
 
         def prepare_nltk_model(model, lang):
@@ -319,7 +318,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
 
         pipeline = TextPipeline()
         ops = [
-            RecursiveUrlLoader(urls, max_depth=2),
+            UrlLoader(urls, max_depth=2),
             RAGTextFix(str_to_replace={'\n###': '', '\n##': '', '\n#': ''}, remove_extra_whitespace=True),
             CustomerDocumentSplit(func=lambda text: text.split('# ')[1:]),
             TextCustomerFilter(custom_filter),
