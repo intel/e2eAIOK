@@ -499,3 +499,22 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         op = TextSpellCorrect()
         with SparkContext("tests/data/llm_data/tiny_c4_sample_10.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
+
+    def test_recursive_url_loader_spark(self):
+        urls = ['https://app.cnvrg.io/docs/',
+                'https://app.cnvrg.io/docs/core_concepts/python_sdk_v2.html',
+                'https://app.cnvrg.io/docs/cli_v2/cnvrgv2_cli.html',
+                'https://app.cnvrg.io/docs/collections/tutorials.html']
+        op = RecursiveUrlLoader(urls, max_depth=2)
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark))
+
+    def test_recursive_url_loader_ray(self):
+        urls = ['https://app.cnvrg.io/docs/',
+                'https://app.cnvrg.io/docs/core_concepts/python_sdk_v2.html',
+                'https://app.cnvrg.io/docs/cli_v2/cnvrgv2_cli.html',
+                'https://app.cnvrg.io/docs/collections/tutorials.html']
+        op = RecursiveUrlLoader(urls, max_depth=2)
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds())
