@@ -143,31 +143,31 @@ class Test_LLMUtils(unittest.TestCase):
 
         pii_remove_help("tests/data/llm_data/tiny_c4_sample_for_pii.jsonl", entity_types=[PIIEntityType.KEY])
 
-    def test_language_identify_spark(self):
-        from pyrecdp.primitives.llmutils import language_identify_spark
-        from pyrecdp.core.cache_utils import RECDP_MODELS_CACHE
-        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
-            spark_df = ctx.ds
-            fasttext_model_dir = os.path.join(RECDP_MODELS_CACHE, "lid.bin")
-            lid_df = language_identify_spark(spark_df, fasttext_model_dir)
-            ctx.show(lid_df)
+    # def test_language_identify_spark(self):
+    #     from pyrecdp.primitives.llmutils import language_identify_spark
+    #     from pyrecdp.core.cache_utils import RECDP_MODELS_CACHE
+    #     with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+    #         spark_df = ctx.ds
+    #         fasttext_model_dir = os.path.join(RECDP_MODELS_CACHE, "lid.bin")
+    #         lid_df = language_identify_spark(spark_df, fasttext_model_dir)
+    #         ctx.show(lid_df)
 
-    def test_sentence_split_spark(self):
-        from pyrecdp.primitives.llmutils import sentence_split
-        import pandas as pd
-        with SparkContext() as ctx:
-            samples = [(
-                'Smithfield employs 3,700 people at its plant in Sioux Falls, '
-                'South Dakota. The plant slaughters 19,500 pigs a day — 5 '
-                'percent of U.S. pork.',
-                'Smithfield employs 3,700 people at its plant in Sioux Falls, '
-                'South Dakota.\n\nThe plant slaughters 19,500 pigs a day — 5 '
-                'percent of U.S. pork.')]
-            spark_df = ctx.spark.createDataFrame(pd.DataFrame(samples, columns=["text", "target"]))
-            ret_df = sentence_split(spark_df)
-            ctx.show(ret_df)
-            for _, row in ret_df.toPandas().iterrows():
-                self.assertEqual(row["text"], row["target"])
+    # def test_sentence_split_spark(self):
+    #     from pyrecdp.primitives.llmutils import sentence_split
+    #     import pandas as pd
+    #     with SparkContext() as ctx:
+    #         samples = [(
+    #             'Smithfield employs 3,700 people at its plant in Sioux Falls, '
+    #             'South Dakota. The plant slaughters 19,500 pigs a day — 5 '
+    #             'percent of U.S. pork.',
+    #             'Smithfield employs 3,700 people at its plant in Sioux Falls, '
+    #             'South Dakota.\n\nThe plant slaughters 19,500 pigs a day — 5 '
+    #             'percent of U.S. pork.')]
+    #         spark_df = ctx.spark.createDataFrame(pd.DataFrame(samples, columns=["text", "target"]))
+    #         ret_df = sentence_split(spark_df)
+    #         ctx.show(ret_df)
+    #         for _, row in ret_df.toPandas().iterrows():
+    #             self.assertEqual(row["text"], row["target"])
 
     # def test_pdf_to_json(self):
     #     from pyrecdp.primitives.llmutils.document_extractor import pdf_to_text

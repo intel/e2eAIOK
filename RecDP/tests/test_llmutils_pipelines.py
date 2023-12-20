@@ -169,6 +169,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         df = pd.read_parquet("tests/data/PILE/NIH_sample.parquet")
         ret = pipeline.execute(df)
         display(ret.to_pandas())
+        del pipeline
 
     def test_pipeline_execute_pandasdf_spark(self):
         import pandas as pd
@@ -180,6 +181,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         df = pd.read_parquet("tests/data/PILE/NIH_sample.parquet")
         ret = pipeline.execute(df)
         display(ret.toPandas())
+        del pipeline
 
     def test_llm_rag_url_pipeline(self):
         model_root_path = os.path.join(RECDP_MODELS_CACHE, "huggingface")
@@ -203,6 +205,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         ]
         pipeline.add_operations(ops)
         pipeline.execute()
+        del pipeline
 
     def test_llm_rag_url_pdf_pipeline(self):
         pipeline = TextPipeline()
@@ -217,6 +220,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         pipeline.add_operations(ops)
         ret = pipeline.execute()
         display(ret.to_pandas())
+        del pipeline
 
     def test_llm_rag_pdf_return_db_pipeline(self):
         model_root_path = os.path.join(RECDP_MODELS_CACHE, "huggingface")
@@ -240,6 +244,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         pipeline.add_operations(ops)
         ret = pipeline.execute()
         display(ret)
+        del pipeline
 
     def test_llm_rag_pdf_use_existing_db_pipeline(self):
         from pyrecdp.core.import_utils import pip_install
@@ -271,6 +276,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         pipeline.add_operations(ops)
         ret = pipeline.execute()
         display(ret)
+        del pipeline
 
     def test_llm_rag_pipeline_cnvrg(self):
         from pyrecdp.primitives.operations import RecursiveUrlLoader,RAGTextFix,CustomerDocumentSplit,TextCustomerFilter,JsonlWriter
@@ -329,3 +335,4 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         pipeline.add_operations(ops)
         ds = pipeline.execute()
         display(ds.to_pandas())
+        del pipeline
