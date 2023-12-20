@@ -21,7 +21,6 @@ from pyrecdp.core import SparkDataProcessor
 total_mem = int(psutil.virtual_memory().total * 0.5)
 total_cores = psutil.cpu_count(logical=False)
 
-
 class RayContext:
     def __init__(self, dataset_path):
         self.dataset_path = dataset_path

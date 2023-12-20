@@ -24,4 +24,4 @@ pip install -e .[LLM]
 #     exit 1
 # fi
 
-python -m unittest tests.test_llmutils.Test_LLMUtils
+TEST_MODE=1 python -m unittest tests.test_llmutils.Test_LLMUtils

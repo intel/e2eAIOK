@@ -21,6 +21,9 @@ import json
 total_mem = int(psutil.virtual_memory().total * 0.6)
 total_cores = psutil.cpu_count(logical=False)
 
+TEST_MODE = os.getenv("TEST_MODE") == '1'
+if TEST_MODE:
+    print("THIS IS TEST MODE")
 
 class TextPipeline(BasePipeline):
     def __init__(self, engine_name='ray', pipeline_file=None, spark_head=''):
@@ -113,10 +116,16 @@ class TextPipeline(BasePipeline):
             print("init ray")
             if not ray.is_initialized():
                 logger.info(f"init ray with total mem of {total_mem}, total core of {total_cores}")
-                try:
-                    ray.init(object_store_memory=total_mem, num_cpus=total_cores, runtime_env=runtime_env)
-                except:
-                    ray.init(runtime_env=runtime_env)
+                if not TEST_MODE:
+                    try:
+                        ray.init(object_store_memory=total_mem, num_cpus=total_cores, runtime_env=runtime_env)
+                    except:
+                        ray.init(runtime_env=runtime_env)
+                else:
+                    try:
+                        ray.init(object_store_memory=total_mem, num_cpus=total_cores)
+                    except:
+                        ray.init()
                 self.ray_start_by_us = True
             else:
                 logger.info("Ray is initialized, so we won't be able init it")
@@ -368,10 +377,16 @@ class ResumableTextPipeline(TextPipeline):
             print("init ray")
             if not ray.is_initialized():
                 logger.info(f"init ray with total mem of {total_mem}, total core of {total_cores}")
-                try:
-                    ray.init(object_store_memory=total_mem, num_cpus=total_cores, runtime_env=runtime_env)
-                except:
-                    ray.init(runtime_env=runtime_env)
+                if not TEST_MODE:
+                    try:
+                        ray.init(object_store_memory=total_mem, num_cpus=total_cores, runtime_env=runtime_env)
+                    except:
+                        ray.init(runtime_env=runtime_env)
+                else:
+                    try:
+                        ray.init(object_store_memory=total_mem, num_cpus=total_cores)
+                    except:
+                        ray.init()
                 self.ray_start_by_us = True
             else:
                 logger.info("Ray is initialized, so we won't be able init it")

@@ -17,7 +17,6 @@ from pyrecdp.LLM import TextPipeline, ResumableTextPipeline
 from pyrecdp.core.cache_utils import RECDP_MODELS_CACHE
 from pyrecdp.core import SparkDataProcessor
 
-
 class Test_LLMUtils_Pipeline(unittest.TestCase):
 
     def setUp(self) -> None:
@@ -281,6 +280,9 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
     def test_llm_rag_pipeline_cnvrg(self):
         from pyrecdp.primitives.operations import RecursiveUrlLoader,RAGTextFix,CustomerDocumentSplit,TextCustomerFilter,JsonlWriter
         from pyrecdp.LLM import TextPipeline
+        from pyrecdp.core.import_utils import pip_install
+
+        pip_install(['nltk'])
 
         def prepare_nltk_model(model, lang):
             import nltk

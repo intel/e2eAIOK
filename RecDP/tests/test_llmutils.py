@@ -16,7 +16,6 @@ from pyrecdp.primitives.operations import JsonlReader
 
 cur_dir = str(Path(__file__).parent.resolve())
 
-
 class SparkContext:
     def __init__(self, dataset_path=None):
         self.dataset_path = dataset_path

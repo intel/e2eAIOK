@@ -4,7 +4,7 @@ failed_tests=""
 echo "Setup pyrecdp latest package"
 pip install -e .[LLM]
 
-python -m unittest tests.test_llmutils_operations.Test_LLMUtils_Operations
+TEST_MODE=1 python -m unittest tests.test_llmutils_operations.Test_LLMUtils_Operations
 
 # echo "test_llmutils_pipeline.Test_LLMUtils_Pipeline.test_TextGlobalDeduplicate"
 # python -m unittest tests.test_llmutils_pipeline.Test_LLMUtils_Pipeline.test_TextGlobalDeduplicate

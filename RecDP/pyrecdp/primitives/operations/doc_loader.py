@@ -388,7 +388,7 @@ LLMOPERATORS.register(UrlLoader)
 class RecursiveUrlLoader(TextReader):
     def __init__(
             self,
-            urls: Union[str | List[str]],
+            urls: Union[str , List[str]],
             max_depth: Optional[int] = 2,
             use_async: Optional[bool] = None,
             extractor: Optional[Callable[[str], str]] = None,

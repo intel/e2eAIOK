@@ -16,7 +16,7 @@ class ParquetWriter(BaseLLMOperation):
     def process_rayds(self, ds: Dataset) -> Dataset:
         if os.path.exists(self.output_dir) and os.path.isdir(self.output_dir):
             shutil.rmtree(self.output_dir)
-        ds.write_parquet(self.output_dir)
+        ds.write_parquet(self.output_dir, try_create_dir=True)
         return ds
     
     def process_spark(self, spark, spark_df: DataFrame = None) -> DataFrame:
@@ -37,7 +37,7 @@ class JsonlWriter(BaseLLMOperation):
     def process_rayds(self, ds: Dataset) -> Dataset:
         if os.path.exists(self.output_dir) and os.path.isdir(self.output_dir):
             shutil.rmtree(self.output_dir)
-        ds.write_json(self.output_dir)
+        ds.write_json(self.output_dir, try_create_dir=True)
         return ds
 
     def process_spark(self, spark, spark_df: DataFrame = None) -> DataFrame:
@@ -99,7 +99,7 @@ class PerfileParquetWriter(BaseLLMOperation):
         to_save = os.path.join(self.output_dir, source_id)
         if os.path.exists(to_save) and os.path.isdir(to_save):
             shutil.rmtree(to_save)
-        ds.write_parquet(to_save)
+        ds.write_parquet(to_save, try_create_dir=True)
         return ds
 
     def execute_spark(self, pipeline, source_id):
@@ -138,7 +138,7 @@ class PerfileJsonlWriter(BaseLLMOperation):
         to_save = os.path.join(self.output_dir, source_id)
         if os.path.exists(to_save) and os.path.isdir(to_save):
             shutil.rmtree(to_save)
-        ds.write_json(to_save)
+        ds.write_json(to_save, try_create_dir=True)
         return ds
     
     def execute_spark(self, pipeline, source_id):
