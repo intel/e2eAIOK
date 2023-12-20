@@ -273,9 +273,15 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         display(ret)
 
     def test_llm_rag_pipeline_cnvrg(self):
-        from pyrecdp.primitives.operations import DocumentLoader,RAGTextFix,CustomerDocumentSplit,TextCustomerFilter,JsonlWriter
+        from pyrecdp.primitives.operations import RecursiveUrlLoader,RAGTextFix,CustomerDocumentSplit,TextCustomerFilter,JsonlWriter
         from pyrecdp.LLM import TextPipeline
 
+        def prepare_nltk_model(model, lang):
+            import nltk
+            nltk.download('punkt')
+
+        from pyrecdp.core.model_utils import prepare_model
+        prepare_model(model_type="nltk", model_key="nltk_rag_cnvrg", prepare_model_func=prepare_nltk_model)
         urls = ['https://app.cnvrg.io/docs/',
                 'https://app.cnvrg.io/docs/core_concepts/python_sdk_v2.html',
                 'https://app.cnvrg.io/docs/cli_v2/cnvrgv2_cli.html',
@@ -313,7 +319,7 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
 
         pipeline = TextPipeline()
         ops = [
-            DocumentLoader(loader='UnstructuredURLLoader', loader_args={'urls': urls}, requirements=['unstructured']),
+            RecursiveUrlLoader(urls, max_depth=2),
             RAGTextFix(str_to_replace={'\n###': '', '\n##': '', '\n#': ''}, remove_extra_whitespace=True),
             CustomerDocumentSplit(func=lambda text: text.split('# ')[1:]),
             TextCustomerFilter(custom_filter),
