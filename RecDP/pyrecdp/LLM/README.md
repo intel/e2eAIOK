@@ -37,6 +37,16 @@ RecDP LLM is a set of python components that enables quick and easy establish of
 | ![diversity](/RecDP/resources/diversity_analysis.png) | ![quality](/RecDP/resources/quality_scoring.png) | ![toxicity](/RecDP/resources/toxicity_analysis.png)| ![perxicity](/RecDP/resources/perplexity.png) |
 | [learn more](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/data_diversity_control.ipynb) | [learn more](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/text_quality_assessment.ipynb) | [learn more](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/toxicity_bias_control.ipynb) | [learn more](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/text_perplexity.ipynb) |
 
+
+## RAG Operators
+| Type                                                                                                        | notebook                                                                                                                                                                                                   | Description                 | 
+|-------------------------------------------------------------------------------------------------------------| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |-----------------------------|
+| [ UrlLoader ](https://github.com/intel/e2eAIOK/blob/main/RecDP/pyrecdp/primitives/operations/doc_loader.py) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/url_loader.ipynb)            | extract text from web pages | 
+| [ RAGTextFix ](https://github.com/intel/e2eAIOK/blob/main/RecDP/pyrecdp/primitives/operations/text_fixer.py)        | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/rag_text_fix.ipynb)            | Clean up text for LLM RAG to use. |
+| [ TextContractionRemove ](https://github.com/intel/e2eAIOK/blob/main/RecDP/pyrecdp/primitives/operations/text_contraction_remove.py)        | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/contraction_remove.ipynb)            | Expand contractions in the text using the contractions library. |
+| [ TextSpellCorrect ](https://github.com/intel/e2eAIOK/blob/main/RecDP/pyrecdp/primitives/operations/text_spell_correct.py)        | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/spelling_correction.ipynb)            | pelling correction for text using library [textblog](https://textblob.readthedocs.io/en/dev/) |
+
+
 ## Getting Start
 
 ### Deploy
