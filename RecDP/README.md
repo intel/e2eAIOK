@@ -2,14 +2,16 @@
 
 We provide intel optimized solution for
 
-* [**Tabular**](pyrecdp/autofe/README.md) - Auto Feature Engineering Pipeline, 50+ essential primitives for feature engineering.
-* [**LLM Text**](pyrecdp/LLM/README.md) - 10+ essential primitives for text clean, fixing, deduplication, 4 quality control module, 2 built-in high quality data pipelines.
+* [**Auto Feature Engineering**](pyrecdp/autofe/README.md) -  Provides an automatical way to generate new features for any tabular dataset which containing numericals, categoricals and text features. It only takes 3 lines of codes to automatically enrich features based on data analysis, statistics, clustering and multi-feature interacting.
+* [**LLM Data Preparation**](pyrecdp/LLM/README.md) - Provides a parallelled easy-to-use data pipeline for LLM data processing. It supports multiple data source such as jsonlines, pdfs, images, audio/vides. Users will be able to perform data extraction, deduplication(near dedup, rouge, exact), splitting, special_character fixing, types of filtering(length, perplexity, profanity, etc), quality analysis(diversity, GPT3 quality, toxicity, perplexity, etc). This tool also support to save output as jsonlines, parquets, or insertion into VectorStores(FaissStore, ChromaStore, ElasticSearchStore).
 
-## Getting Started
+## How it works
+
+Install this tool through pip. 
 
 ```
 DEBIAN_FRONTEND=noninteractive apt-get install -y openjdk-8-jre graphviz
-pip install pyrecdp --pre
+pip install pyrecdp[all] --pre
 ```
 
 ## RecDP - Tabular
@@ -35,26 +37,17 @@ transformed_train_df = pipeline.fit_transform()
 * Low-code Fault-tolerant Auto-scaling Parallel Pipeline
 ![LLM Pipeline](resources/llm_pipeline.jpg)
 
-Low Code to build your own pipeline
-```
-from pyrecdp.LLM import ResumableTextPipeline
-pipeline = ResumableTextPipeline("usecase/finetune_pipeline.yaml")
-ret = pipeline.execute()
-```
-or
 ```
 from pyrecdp.primitives.operations import *
 from pyrecdp.LLM import ResumableTextPipeline
 
 pipeline = ResumableTextPipeline()
 ops = [
-    JsonlReader("data/"),
-    URLFilter(),
-    LengthFilter(),
+    UrlLoader(urls, max_depth=2),
+    DocumentSplit(),
     ProfanityFilter(),
-    TextFix(),
-    LanguageIdentify(),
     PIIRemoval(),
+    ...
     PerfileParquetWriter("ResumableTextPipeline_output")
 ]
 pipeline.add_operations(ops)
