@@ -2,8 +2,8 @@
 
 We provide intel optimized solution for
 
-* [**Auto Feature Engineering**](pyrecdp/autofe/README.md) - Automatical Feature Engineering for Tabular input including 50+ essential primitives. Supporting numerical features, categorical features, text features, time series features, distributed process based on Spark. Feature Importance Analysis based on LightGBM.
-* [**LLM Data Preparation**](pyrecdp/LLM/README.md) - 50+ essential operators for RAG data preparation, Finetune Data preparation, Foundation Model text prepration. Supporting text from PDF, words, crawl from URLs, distributed text process based on Ray or Spark, Quality Evaluation based on GPT-3, Divesity, Toxicity, Rouge-similarity, Perplexity.
+* [**Auto Feature Engineering**](pyrecdp/autofe/README.md) -  Provides an automatical way to generate new features for any tabular dataset which containing numericals, categoricals and text features. It only takes 3 lines of codes to automatically enrich features based on data analysis, statistics, clustering and multi-feature interacting.
+* [**LLM Data Preparation**](pyrecdp/LLM/README.md) - Provides a parallelled easy-to-use data pipeline for LLM data processing. It supports multiple data source such as jsonlines, pdfs, images, audio/vides. Users will be able to perform data extraction, deduplication(near dedup, rouge, exact), splitting, special_character fixing, types of filtering(length, perplexity, profanity, etc), quality analysis(diversity, GPT3 quality, toxicity, perplexity, etc). This tool also support to save output as jsonlines, parquets, or insertion into VectorStores(FaissStore, ChromaStore, ElasticSearchStore).
 
 ## How it works
 
@@ -43,7 +43,7 @@ from pyrecdp.LLM import ResumableTextPipeline
 
 pipeline = ResumableTextPipeline()
 ops = [
-    Url_Loader(urls="your_url"),
+    RecursiveUrlLoader(urls, max_depth=2),
     DocumentSplit(),
     ProfanityFilter(),
     PIIRemoval(),
