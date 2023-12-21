@@ -43,7 +43,7 @@ from pyrecdp.LLM import ResumableTextPipeline
 
 pipeline = ResumableTextPipeline()
 ops = [
-    RecursiveUrlLoader(urls, max_depth=2),
+    UrlLoader(urls, max_depth=2),
     DocumentSplit(),
     ProfanityFilter(),
     PIIRemoval(),
