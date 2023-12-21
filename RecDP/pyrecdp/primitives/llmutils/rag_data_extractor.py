@@ -40,7 +40,7 @@ def rag_data_prepare(
     if bool(files_path):
         loader = DirectoryLoader(files_path, glob="**/*.pdf")
     elif bool(target_urls):
-        loader = UrlLoader(urls=target_urls, target_tag='div')
+        loader = UrlLoader(urls=target_urls)
     else:
         logger.error("You must specify at least one parameter in files_path and target_urls")
         exit(1)
