@@ -261,12 +261,15 @@ class UrlLoader(TextReader):
             requirements = ['bs4', 'markdownify', 'langchain']
 
         if text_to_markdown:
-            import markdownify
-            extractor = lambda x: markdownify.markdownify(x)
-        else:
-            if extractor is None:
+            def extractor_with_markdownify(x):
+                import markdownify
+                return markdownify.markdownify(x)
+            extractor = lambda x: extractor_with_markdownify(x)
+        elif extractor is None:
+            def extractor_with_bs4(x):
                 from bs4 import BeautifulSoup
-                extractor = lambda x: BeautifulSoup(x, "html.parser").text
+                return BeautifulSoup(x, "html.parser").text
+            extractor = lambda x: extractor_with_bs4(x)
 
         settings = {
             'urls': urls,
