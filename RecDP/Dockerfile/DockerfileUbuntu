@@ -6,3 +6,4 @@ RUN pip install --upgrade pip
 RUN pip install pyspark
 RUN pip install graphviz jupyterlab
 RUN apt-get install -y tesseract-ocr
+RUN apt-get update && apt-get install -y ffmpeg
