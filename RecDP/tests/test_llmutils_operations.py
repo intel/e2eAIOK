@@ -237,7 +237,7 @@ class Test_LLMUtils_Operations(unittest.TestCase):
             ctx.show(op.process_rayds())
 
     def test_document_load_ray(self):
-        op = DirectoryLoader("data/llm_data/document")
+        op = DirectoryLoader("tests/data/llm_data/document")
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds())
 
