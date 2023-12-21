@@ -28,7 +28,9 @@ Intel® End-to-End AI Optimization Kit is a composable toolkits for E2E AI optim
 
 ## The key components are
 
-* [RecDP](RecDP/README.md):  An one stop toolkit for AI data process. Providing two intel optimized solutions - [Auto Feature Engineering](RecDP/pyrecdp/autofe/README.md) and [LLM Data Preparation](RecDP/pyrecdp/LLM/README.md). Leverage Ray and Spark for distributed data processing.
+* [RecDP](RecDP/README.md):  An one stop toolkit for AI data process. This toolkit provides LLM data processing and Machine Learning Feature Engineering lib in scalable fashion on top of Ray and Spark. It provides simple to use API for data scientists, delivers optimized performance, and can be easily integrated to third party solutions.
+  * [Auto Feature Engineering](RecDP/pyrecdp/autofe/README.md): Provides an automatical way to generate new features for any tabular dataset which containing numericals, categoricals and text features. It only takes 3 lines of codes to automatically enrich features based on data analysis, statistics, clustering and multi-feature interacting.
+  * [LLM Data Preparation](RecDP/pyrecdp/LLM/README.md). Provides a parallelled easy-to-use data pipeline for LLM data processing. It supports multiple data source such as jsonlines, pdfs, images, audio/vides. Users will be able to perform data extraction, deduplication(near dedup, rouge, exact), splitting, special_character fixing, types of filtering(length, perplexity, profanity, etc), quality analysis(diversity, GPT3 quality, toxicity, perplexity, etc). This tool also support to save output as jsonlines, parquets, or insertion into VectorStores(FaissStore, ChromaStore, ElasticSearchStore).
 
 * [Smart Democratization Advisor (SDA)](e2eAIOK/SDA/README.md): A user-guided tool to facilitate automation of built-in model democratization via parameterized models, it generates yaml files based on user choice, provided build-in intelligence through parameterized models and leverage SigOpt for HPO. SDA converts the manual model tuning and optimization to assisted autoML and autoHPO. SDA provides a list of build-in optimized models ranging from RecSys, CV, NLP, ASR and RL.
 
