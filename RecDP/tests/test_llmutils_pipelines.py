@@ -4,6 +4,7 @@ import pandas as pd
 from pathlib import Path
 import os
 from IPython.display import display
+from pyspark.sql import DataFrame
 
 pathlib = str(Path(__file__).parent.parent.resolve())
 print(pathlib)
@@ -323,8 +324,9 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
             CustomerDocumentSplit(func=lambda text: text.split('# ')[1:]),
             TextCustomerFilter(custom_filter),
             CustomerDocumentSplit(func=chunk_doc, max_num_of_words=50),
+            GlobalDeduplicate(),
             JsonlWriter("TextPipeline_output_jsonl")
         ]
         pipeline.add_operations(ops)
-        ds = pipeline.execute()
-        display(ds.to_pandas())
+        ds:DataFrame = pipeline.execute()
+        display(ds.toPandas())
