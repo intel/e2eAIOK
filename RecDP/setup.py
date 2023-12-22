@@ -59,34 +59,36 @@ class SetupSpec:
 
 setup_spec = SetupSpec()
 
-setuptools.setup(
-    name="pyrecdp",
-    version=setup_spec.version,
-    author="INTEL BDF AIOK",
-    author_email="bdf.aiok@intel.com",
-    description=
-    "A data processing bundle for spark based recommender system operations",
-    long_description=long_description,
-    long_description_content_type="text/markdown",
-    url = "https://github.com/intel/e2eAIOK/",
-    project_urls={
-        "Bug Tracker": "https://github.com/intel/e2eAIOK/",
-    },
-    keywords=(
-        "pyrecdp recdp distributed parallel auto-feature-engineering autofe LLM python"
-    ),
-    classifiers=[
-        "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: Apache Software License",
-        "Operating System :: OS Independent",
-    ],
-    include_package_data=True,
-    package_dir={},
-    packages=setup_spec.get_packages(),
-    package_data={"": ["*.jar"], "pyrecdp": ["version"]},
-    python_requires=">=3.6",
-    #cmdclass={'install': post_install},
-    zip_safe=False,
-    install_requires=setup_spec.install_requires,
-    extras_require=setup_spec.extras,
-)
+name_list = ["pyrecdp", "e2eAIOK-recdp"]
+for name in name_list:
+    setuptools.setup(
+        name=name,
+        version=setup_spec.version,
+        author="INTEL BDF AIOK",
+        author_email="bdf.aiok@intel.com",
+        description=
+        "A data processing bundle for spark based recommender system operations",
+        long_description=long_description,
+        long_description_content_type="text/markdown",
+        url = "https://github.com/intel/e2eAIOK/",
+        project_urls={
+            "Bug Tracker": "https://github.com/intel/e2eAIOK/",
+        },
+        keywords=(
+            "pyrecdp recdp distributed parallel auto-feature-engineering autofe LLM python"
+        ),
+        classifiers=[
+            "Programming Language :: Python :: 3",
+            "License :: OSI Approved :: Apache Software License",
+            "Operating System :: OS Independent",
+        ],
+        include_package_data=True,
+        package_dir={},
+        packages=setup_spec.get_packages(),
+        package_data={"": ["*.jar"], "pyrecdp": ["version"]},
+        python_requires=">=3.6",
+        #cmdclass={'install': post_install},
+        zip_safe=False,
+        install_requires=setup_spec.install_requires,
+        extras_require=setup_spec.extras,
+    )
