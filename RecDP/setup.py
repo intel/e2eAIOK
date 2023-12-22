@@ -2,6 +2,7 @@ import setuptools
 import pkg_resources
 import pathlib
 from itertools import chain
+import sys
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
@@ -57,10 +58,15 @@ class SetupSpec:
     def get_packages(self):
         return setuptools.find_packages()
 
-setup_spec = SetupSpec()
 
-name_list = ["pyrecdp", "e2eAIOK-recdp"]
-for name in name_list:
+if __name__ == '__main__':
+    if "--with_prefix" in sys.argv:
+        name = 'e2eAIOK-recdp'
+    else:
+        name = 'pyrecdp'
+
+    setup_spec = SetupSpec()
+
     setuptools.setup(
         name=name,
         version=setup_spec.version,
