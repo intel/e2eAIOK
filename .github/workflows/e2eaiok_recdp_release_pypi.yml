@@ -28,7 +28,7 @@ jobs:
         release_version=$(cat e2eAIOK/version | head -1)
         cd RecDP
         echo $release_version > version
-        python3 setup.py sdist
+        python3 setup.py sdist --with_prefix
 
     - name: Upload Package
       uses: pypa/gh-action-pypi-publish@master

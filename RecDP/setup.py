@@ -60,8 +60,10 @@ class SetupSpec:
 
 
 if __name__ == '__main__':
+
     if "--with_prefix" in sys.argv:
         name = 'e2eAIOK-recdp'
+        sys.argv.remove("--with_prefix")
     else:
         name = 'pyrecdp'
 
