@@ -59,7 +59,7 @@ class SetupSpec:
 
 setup_spec = SetupSpec()
 
-name_list = ["pyrecdp", "e2eAIOK-pyrecdp"]
+name_list = ["pyrecdp", "e2eAIOK-recdp"]
 for name in name_list:
     setuptools.setup(
         name=name,
