@@ -1,0 +1,37 @@
+name: Publish RecDP Stable Release to PyPI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  e2eaiok-release-python-pypi:
+    runs-on: self-hosted
+    if: ${{ github.repository_owner == 'intel' }}
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.7'
+
+    - name: Build Package
+      run: |
+        pip install build wheel
+        release_version=$(cat e2eAIOK/version | head -1)
+        cd RecDP
+        echo $release_version > version
+        python3 setup.py sdist
+
+    - name: Upload Package
+      uses: pypa/gh-action-pypi-publish@master
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN_PYRECDP }}
+        packages_dir: RecDP/dist
