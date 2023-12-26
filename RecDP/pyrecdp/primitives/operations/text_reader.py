@@ -99,7 +99,7 @@ class TextReader(BaseLLMOperation):
                     df2_fields_dict[column_name] == NullType() or df1_fields_dict[column_name] == NullType()):
                 df1 = df1.withColumn(column_name, F.col(column_name).cast(StringType()))
                 df2 = df2.withColumn(column_name, F.col(column_name).cast(StringType()))
-        return df1.union(df2)
+        return df1.unionByName(df2, allowMissingColumns=True)
 
 class JsonlReader(TextReader):
     def __init__(self, input_dir = "", column_rename_dict = {}):

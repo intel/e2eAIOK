@@ -57,14 +57,18 @@ class DocumentStore(ABC):
         self.embeddings_column = embeddings_column
         self.vector_store_args = vector_store_args
         self.override = override
-        check_availability_and_install(["langchain"])
+        check_availability_and_install('langchain')
+
         from langchain.schema.embeddings import Embeddings
         self.embeddings: Optional[Embeddings] = self.create_embeddings(embeddings, **embeddings_args)
+
+    def is_vector_store(self):
+        return True
 
     def create_embeddings(self, embeddings, **embeddings_args):
         """currently we only use langchain embeddings"""
         if embeddings is None:
-            return None
+            embeddings = 'HuggingFaceEmbeddings'
 
         if embeddings in ['HuggingFaceEmbeddings', 'HuggingFaceInstructEmbeddings', 'HuggingFaceBgeEmbeddings']:
             import_sentence_transformers()
@@ -80,10 +84,12 @@ class DocumentStore(ABC):
     def persist(self, ds: Union[Dataset, DataFrame], **kwargs):
         """interface for persist embeddings to underlying vector store"""
 
-        if isinstance(ds, Dataset):
-            ds = self.embedding_with_ray(ds, **kwargs)
-        else:
-            ds = self.embedding_with_spark(ds, **kwargs)
+        if self.is_vector_store():
+            check_availability_and_install(["langchain"])
+            if isinstance(ds, Dataset):
+                ds = self.embedding_with_ray(ds, **kwargs)
+            else:
+                ds = self.embedding_with_spark(ds, **kwargs)
 
         db = self.do_persist(ds, **kwargs)
         if self.vector_store_args["return_db_handler"]:
@@ -133,6 +139,12 @@ class DocumentStore(ABC):
         return ds
 
 
+class EmbeddingsOnlyStore(DocumentStore):
+
+    def do_persist(self, ds: Union[Dataset, DataFrame], **kwargs):
+        return ds
+
+
 class LangchainFAAIS(DocumentStore):
     def do_persist(self, ds, **kwargs):
         check_availability_and_install(["faiss-cpu", "faiss-gpu", "langchain"])
@@ -173,7 +185,6 @@ class LangchainChroma(DocumentStore):
         check_availability_and_install(["chromadb==0.4.15", "langchain"])
         chroma = self.vector_store_args["db_handler"]
 
-
         collection_name = self.vector_store_args.get("collection_name", 'langchain')
         rows = ds.iter_rows() if isinstance(ds, Dataset) else ds.collect()
         texts = [row[self.text_column] for row in rows]
@@ -206,19 +217,15 @@ class LangchainChroma(DocumentStore):
 
 
 class HaystackElasticSearch(DocumentStore):
-    def persist(self, ds, **kwargs):
-        db = self.do_persist(ds, **kwargs)
-        if self.vector_store_args["return_db_handler"]:
-            return db
-        else:
-            return ds
+    def is_vector_store(self):
+        return False
 
     def do_persist(self, ds, **kwargs):
         check_availability_and_install(["farm-haystack", "farm-haystack[elasticsearch7]"])
         exclude_keys = ['db_handler', 'return_db_handler']
         vector_store_args = dict((k, v) for k, v in self.vector_store_args.items() if k not in exclude_keys)
         if isinstance(ds, Dataset):
-            def batch_index(batch, text_column,vector_store_args: Optional[Dict[str, Any]]):
+            def batch_index(batch, text_column, vector_store_args: Optional[Dict[str, Any]]):
                 from haystack.document_stores import ElasticsearchDocumentStore
                 elasticsearch = ElasticsearchDocumentStore(
                     **vector_store_args
@@ -228,7 +235,8 @@ class HaystackElasticSearch(DocumentStore):
                 elasticsearch.write_documents(documents)
 
                 return {}
-            ds.map_batches(lambda batch: batch_index(batch,self.text_column, vector_store_args)).count()
+
+            ds.map_batches(lambda batch: batch_index(batch, self.text_column, vector_store_args)).count()
         else:
             def batch_index_with_var(batch, bv_value):
                 from haystack import Document as SDocument
@@ -258,11 +266,10 @@ class HaystackElasticSearch(DocumentStore):
 class DocumentIngestion(BaseLLMOperation):
     def __init__(self,
                  text_column: str = 'text',
-                 rag_framework: Optional[str] = 'langchain',
                  embeddings_column: Optional[str] = 'embedding',
-                 embeddings: Optional[str] = 'HuggingFaceEmbeddings',
+                 embeddings: Optional[str] = None,
                  embeddings_args: Optional[dict] = None,
-                 vector_store: str = 'FAISS',
+                 vector_store: str = None,
                  vector_store_args: Optional[dict] = None,
                  override: bool = False,
                  compute_min_size: Optional[int] = None,
@@ -272,16 +279,19 @@ class DocumentIngestion(BaseLLMOperation):
                  num_gpus: Optional[int] = None,
                  return_db_handler=False,
                  db_handler=None,
-                 requirements=[]):
+                 requirements=None,
+                 **kwargs):
         """
           Document ingestion operator.
           Args:
             text_column: The name of the column containing the text data.
             rag_framework: The RAG framework to use. The default is 'langchain'.
             embeddings_column: The name of the column to store the embeddings.
-            embeddings: The type of embeddings to use. The default is 'HuggingFaceEmbeddings'.
-            embeddings_args: Optional arguments for the embeddings.
-            vector_store: The type of vector store to use. The default is 'FAISS'.
+            embeddings: The type of embeddings to use.
+                     
+            embeddings_args: Optional arguments for the embeddings. Examples: 'OpenAIEmbeddings', 'HuggingFaceEmbeddings'.
+                      If the embeddings property is specified, then the documents and their embeddings will be written to the vector database.
+            vector_store: The type of vector store or document store to use. Current we support 'faiss' and 'chroma' for vector store, and 'elasticsearch' for document store.
             vector_store_args: Optional arguments for the vector store.
             override: Whether to override the existing embeddings and vector store.
             compute_min_size: The minimum size of the document to compute embeddings for.
@@ -292,11 +302,8 @@ class DocumentIngestion(BaseLLMOperation):
             return_db_handler: If false, return dataset; If True, return created vectorDB handler.
             db_handler: Use pre-created db_handler as input.
             """
-        if rag_framework is None:
-            raise ValueError(f"rag framework is required")
-
-        if rag_framework.lower() not in ['langchain', 'haystack']:
-            raise ValueError(f"only 'langchain' or 'haystack' rag framework is supported")
+        if requirements is None:
+            requirements = []
 
         if text_column is None:
             raise ValueError(f"text column is required")
@@ -306,7 +313,6 @@ class DocumentIngestion(BaseLLMOperation):
 
         settings = {
             'text_column': text_column,
-            'rag_framework': rag_framework,
 
             'embeddings_column': embeddings_column,
             'embeddings': embeddings,
@@ -330,7 +336,6 @@ class DocumentIngestion(BaseLLMOperation):
         super().__init__(settings, requirements)
         self.support_ray = True
         self.support_spark = True
-        self.rag_framework = rag_framework.lower()
         self.text_column = text_column
         self.embeddings_column = embeddings_column,
         self.embeddings = embeddings
@@ -361,21 +366,23 @@ class DocumentIngestion(BaseLLMOperation):
             'override': self.override,
         }
 
-        if 'langchain' == self.rag_framework:
+        if not self.embeddings and not self.vector_store:
+            return EmbeddingsOnlyStore(**document_store_ctor_args)
+
+        if self.embeddings:
             if 'faiss' == self.vector_store:
                 return LangchainFAAIS(**document_store_ctor_args)
             elif 'chroma' == self.vector_store:
                 return LangchainChroma(**document_store_ctor_args)
             else:
                 raise NotImplementedError(
-                    f"vector store {self.vector_store} is not supported yet paired with langchain!")
+                    f"vector store {self.vector_store} is not supported yet!")
         else:
             if 'elasticsearch' == self.vector_store:
-                document_store_ctor_args['embeddings'] = None
                 return HaystackElasticSearch(**document_store_ctor_args)
             else:
                 raise NotImplementedError(
-                    f"vector store {self.vector_store} is not supported yet paired with haystack!")
+                    f"document store {self.vector_store} is not supported yet!")
 
     def process_rayds(self, ds: Dataset = None):
         return self.document_store.persist(ds, **self.compute_args)
