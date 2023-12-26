@@ -17,6 +17,7 @@
 from dataclasses import dataclass, asdict
 import json
 
+
 @dataclass
 class Document:
     """Class for storing a piece of text and associated metadata."""

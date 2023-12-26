@@ -99,7 +99,7 @@ class TextReader(BaseLLMOperation):
                     df2_fields_dict[column_name] == NullType() or df1_fields_dict[column_name] == NullType()):
                 df1 = df1.withColumn(column_name, F.col(column_name).cast(StringType()))
                 df2 = df2.withColumn(column_name, F.col(column_name).cast(StringType()))
-        return df1.union(df2)
+        return df1.unionByName(df2, allowMissingColumns=True)
 
 class JsonlReader(TextReader):
     def __init__(self, input_dir = "", column_rename_dict = {}):
@@ -118,7 +118,7 @@ class JsonlReader(TextReader):
         if ds is not None:
             self.cache = self.union_ray_ds(ds, self.cache)
         return self.cache
-    
+
     def process_spark(self, spark, spark_df: DataFrame = None) -> DataFrame:
         df = self.rename_spark_df_columns(spark.read.json(self.input_dir).cache())
         self.statistics.total_in = df.count()
@@ -150,7 +150,7 @@ class SourcedReader(TextReader):
         self.input_dir = input_dir
         self.source_prefix = source_prefix
         self.column_rename_dict = column_rename_dict
-        
+
     def get_files_with_subtask(self, file_type):
         from pyrecdp.primitives.llmutils.utils import get_target_file_list_from_local, sub_task_per_folder
         file_name = None
@@ -162,11 +162,11 @@ class SourcedReader(TextReader):
         files_with_subtask = sub_task_per_folder(get_target_file_list_from_local(self.input_dir, file_name if file_name is not None else file_type))
         logger.info(f"Load {files_with_subtask} as subtasks from {self.input_dir}")
         return files_with_subtask, input_dir
-    
+
 class SourcedJsonlReader(SourcedReader):
     def __init__(self, input_dir = "", source_prefix = "", column_rename_dict = {}):
         super().__init__(input_dir = input_dir, source_prefix = source_prefix, column_rename_dict = column_rename_dict)
-        
+
     def process_rayds(self, ds=None) -> Dataset:
         import ray.data as rd
         files_with_subtask, input_dir = self.get_files_with_subtask("jsonl")
@@ -241,14 +241,14 @@ class ParquetReader(TextReader):
         self.support_spark = True
         self.input_dir = input_dir
         self.column_rename_dict = column_rename_dict
-        
+
     def process_rayds(self, ds=None) -> Dataset:
         import ray.data as rd
         self.cache = self.rename_ray_ds_columns(rd.read_parquet(self.input_dir))
         if ds is not None:
             self.cache = self.union_ray_ds(ds, self.cache)
         return self.cache
-    
+
     def process_spark(self, spark, spark_df: DataFrame = None) -> DataFrame:
         self.cache = self.rename_spark_df_columns(spark.read.parquet(self.input_dir))
         if spark_df is not None:
@@ -259,11 +259,11 @@ LLMOPERATORS.register(ParquetReader)
 class SourcedParquetReader(SourcedReader):
     def __init__(self, input_dir = "", source_prefix = "", column_rename_dict = {}):
         super().__init__(input_dir = input_dir, source_prefix = source_prefix, column_rename_dict = column_rename_dict)
-        
+
     def process_rayds(self, ds=None) -> Dataset:
         import ray.data as rd
         def add_source(s, source_str):
-            s['source_id'] = source_str  
+            s['source_id'] = source_str
             return s
         files_with_subtask, input_dir = self.get_files_with_subtask("parquet")
         to_read_list = [(sub_task, os.path.join(input_dir, f)) for sub_task, file_list in files_with_subtask.items() for f in file_list]
@@ -273,7 +273,7 @@ class SourcedParquetReader(SourcedReader):
         if ds is not None:
             self.cache = self.union_ray_ds(ds, self.cache)
         return self.cache
-    
+
     def process_spark(self, spark, spark_df: DataFrame = None) -> DataFrame:
         import pyspark.sql.functions as F
         files_with_subtask, input_dir = self.get_files_with_subtask("parquet")
@@ -320,7 +320,7 @@ class PerfileSourcedJsonlReader(SourcedReader, PerfileReader):
         super().__init__(input_dir = input_dir, source_prefix = source_prefix, column_rename_dict = column_rename_dict)
         self.support_spark = True
         self.support_ray = True
-        
+
     def process_rayds(self, ds=None):
         import ray.data as rd
         files_with_subtask, input_dir = self.get_files_with_subtask("jsonl")
@@ -339,7 +339,7 @@ class PerfileSourcedJsonlReader(SourcedReader, PerfileReader):
             self.statistics.total_out += ds_count
             self.cache.append((ds, source_id))
         return self.cache
-    
+
     def process_spark(self, spark, spark_df: DataFrame = None):
         files_with_subtask, input_dir = self.get_files_with_subtask("jsonl")
         to_read_list = [(sub_task, os.path.join(input_dir, f)) for sub_task, file_list in files_with_subtask.items() for f in file_list]
@@ -368,17 +368,17 @@ class PerfileSourcedJsonlReader(SourcedReader, PerfileReader):
             f"with {self.statistics.total_changed} rows read corrupted, {self.statistics.total_out} rows of data remaining.")
 
 LLMOPERATORS.register(PerfileSourcedJsonlReader)
-    
+
 class PerfileSourcedParquetReader(SourcedReader, PerfileReader):
     def __init__(self, input_dir = "", source_prefix = "", column_rename_dict = {}):
         super().__init__(input_dir = input_dir, source_prefix = source_prefix, column_rename_dict = column_rename_dict)
         self.support_spark = True
         self.support_ray = True
-        
+
     def process_rayds(self, ds=None) -> Dataset:
         import ray.data as rd
         def add_source(s, source_str):
-            s['source_id'] = source_str  
+            s['source_id'] = source_str
             return s
         files_with_subtask, input_dir = self.get_files_with_subtask("parquet")
         to_read_list = [(sub_task, os.path.join(input_dir, f)) for sub_task, file_list in files_with_subtask.items() for f in file_list]
@@ -388,7 +388,7 @@ class PerfileSourcedParquetReader(SourcedReader, PerfileReader):
             ds = self.rename_ray_ds_columns(rd.read_parquet(file_path).map(lambda x: add_source(x, source_id)))
             self.cache.append((ds, source_id))
         return self.cache
-    
+
     def process_spark(self, spark, spark_df: DataFrame = None):
         import pyspark.sql.functions as F
         files_with_subtask, input_dir = self.get_files_with_subtask("parquet")
@@ -402,5 +402,5 @@ class PerfileSourcedParquetReader(SourcedReader, PerfileReader):
                 df = df.select(F.concat_ws("@", F.monotonically_increasing_id(), F.lit(source_id)).alias("global_id"), "*")
             self.cache.append((df, source_id))
         return self.cache
-    
+
 LLMOPERATORS.register(PerfileSourcedParquetReader)
