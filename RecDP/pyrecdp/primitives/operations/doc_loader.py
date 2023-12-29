@@ -96,7 +96,7 @@ class DirectoryLoader(DocumentLoader):
                  input_files: Optional[List] = None, single_text_per_document: bool = True,
                  exclude: Optional[List] = None, exclude_hidden: bool = True, silent_errors: bool = False,
                  encoding: str = "utf-8", required_exts: Optional[List[str]] = None,
-                 page_separator: Optional[str] = '\n',
+                 page_separator: Optional[str] = '\n', pdf_ocr: bool = False,
                  requirements=[],
                  **kwargs):
         """
@@ -131,6 +131,7 @@ class DirectoryLoader(DocumentLoader):
             'encoding': encoding,
             'required_exts': required_exts,
             'page_separator': page_separator,
+            "pdf_ocr": pdf_ocr,
         }
         from pyrecdp.primitives.llmutils.document.reader import DirectoryReader
 
@@ -148,6 +149,7 @@ class DirectoryLoader(DocumentLoader):
             encoding=encoding,
             required_exts=required_exts,
             page_separator=page_separator,
+            pdf_ocr=pdf_ocr,
         )
         super().__init__(loader='DirectoryLoader', args_dict=settings, requirements=requirements)
 

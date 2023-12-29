@@ -36,7 +36,7 @@ class FileBaseReader(DocumentReader, ABC):
         self.single_text_per_document = single_text_per_document
         self.page_separator = page_separator or '\n'
         self.file = file
-        
+
     @classmethod
     def setup(cls):
         for pkg in cls.system_requirements:
@@ -81,6 +81,7 @@ class PDFReader(FileBaseReader):
     """PDF parser."""
     system_requirements = []
     requirements = ['pypdf']
+
     def __init__(self, file: Path, single_text_per_document: bool = True, page_separator: str = '\n',
                  **load_kwargs):
         super().__init__(file, single_text_per_document, page_separator)
@@ -107,10 +108,44 @@ class PDFReader(FileBaseReader):
         return docs
 
 
+class PDFOcrReader(FileBaseReader):
+    """PDF parser."""
+    system_requirements = ['tesseract-ocr']
+    requirements = ['PyMuPDF', 'pillow', 'pytesseract']
+
+    def __init__(self, file: Path, single_text_per_document: bool = True, page_separator: str = '\n',
+                 **load_kwargs):
+        super().__init__(file, single_text_per_document, page_separator)
+        self.load_kwargs = load_kwargs
+        self.file = file
+
+    def load_file(self, file: Path) -> List[Document]:
+        import fitz
+        from PIL import Image
+        import tempfile
+        from pytesseract import pytesseract
+        docs = []
+        pdf_document = fitz.open(file)
+        for page_number in range(pdf_document.page_count):
+            page = pdf_document[page_number]
+            page_label = page.get_label()
+            pix = page.get_pixmap()
+            image = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+            with tempfile.TemporaryDirectory() as td:
+                img_tmp = os.path.join(td, 'recdp_tmp.png')
+                image.save(img_tmp)
+                page_text = pytesseract.image_to_string(image)
+                metadata = {"page_label": page_label, "source": str(file)}
+                docs.append(Document(text=page_text, metadata=metadata))
+        pdf_document.close()
+        return docs
+
+
 class DocxReader(FileBaseReader):
     """Docx parser."""
     system_requirements = []
     requirements = ['python-docx']
+
     def __init__(self, file: Path, single_text_per_document: bool = True, page_separator: str = '\n'):
         super().__init__(file, single_text_per_document, page_separator)
 
@@ -161,12 +196,13 @@ class ImageReader(FileBaseReader):
 class AudioReader(FileBaseReader):
     system_requirements = ['ffmpeg']
     requirements = ['openai-whisper']
+
     def __init__(
             self,
             file: Path,
             single_text_per_document: bool = True,
             page_separator: str = '\n',
-            model = 'small',
+            model='small',
     ):
         super().__init__(file, single_text_per_document, page_separator)
         import whisper
@@ -174,6 +210,7 @@ class AudioReader(FileBaseReader):
 
     def transcribe(self, file):
         return self.model.transcribe(file)
+
     def load_file(self, file: Path) -> List[Document]:
         file = str(file)
         result = self.transcribe(file)
@@ -210,6 +247,7 @@ class DirectoryReader(DocumentReader):
             encoding: str = "utf-8",
             required_exts: Optional[List[str]] = CUSTOMIZE_SUPPORTED_SUFFIX.keys(),
             page_separator: Optional[str] = '\n',
+            pdf_ocr: bool = False,
     ) -> None:
         """
        Loads documents from a directory or a list of files.
@@ -228,6 +266,7 @@ class DirectoryReader(DocumentReader):
            encoding: The encoding to use when loading documents.
            required_exts: A list of file extensions that are required for documents.
                           default extensions are [.pdf, .docx, .jpeg, .jpg, .png]
+           pdf_ocr: Whether to use ocr to load pdf.
        """
         if not input_dir and not input_files:
             raise ValueError("Must provide either `path` or `input_files`.")
@@ -242,6 +281,8 @@ class DirectoryReader(DocumentReader):
         self.required_exts = required_exts
         self.page_separator = page_separator
         self.file_extractor = {}
+        if pdf_ocr:
+            CUSTOMIZE_SUPPORTED_SUFFIX[".pdf"] = PDFOcrReader
         if input_files:
             self.input_files = []
             for path in input_files:
@@ -259,8 +300,9 @@ class DirectoryReader(DocumentReader):
         if len(self.input_files) == 1:
             self.use_multithreading = False
 
+
         self.single_text_per_document = single_text_per_document
-        
+
     def setup(self):
         suffix_list = set(input_file.suffix.lower() for input_file in self.input_files)
         for file_suffix in suffix_list:
@@ -317,7 +359,7 @@ class DirectoryReader(DocumentReader):
     def _load_file(self, input_file: Path, pbar):
         try:
             file_suffix = input_file.suffix.lower()
-            if file_suffix in CUSTOMIZE_SUPPORTED_SUFFIX:                    
+            if file_suffix in CUSTOMIZE_SUPPORTED_SUFFIX:
                 if file_suffix not in self.file_extractor:
                     file_base_reader_cls: Type[FileBaseReader] = CUSTOMIZE_SUPPORTED_SUFFIX[file_suffix]
                     self.file_extractor[file_suffix] = file_base_reader_cls(
@@ -342,7 +384,7 @@ class DirectoryReader(DocumentReader):
                 from concurrent.futures import ThreadPoolExecutor
                 with ThreadPoolExecutor(self.max_concurrency) as executor:
                     for docs in executor.map(lambda i: self._load_file(i, pbar), self.input_files):
-                        if len(docs)>0:
+                        if len(docs) > 0:
                             docs_result.extend(docs)
             else:
                 for file in self.input_files:
