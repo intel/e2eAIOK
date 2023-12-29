@@ -23,6 +23,7 @@ from ray.data import Dataset
 
 from pyrecdp.core.import_utils import check_availability_and_install, import_sentence_transformers
 from pyrecdp.primitives.operations.base import BaseLLMOperation, LLMOPERATORS
+from pyrecdp.primitives.operations.logging_utils import logger
 
 
 def create_embeddings(embeddings_cls: Optional[str] = None, embeddings_construct_args: Optional[dict[str, Any]] = None):
@@ -132,7 +133,9 @@ class LangchainFAAIS(DocumentStore):
 
         rows = ds.iter_rows() if isinstance(ds, Dataset) else ds.collect()
         text_embeddings = [(row[self.text_column], row[self.embeddings_column]) for row in rows]
-
+        if not bool(text_embeddings):
+            logger.error("Text embeddings is empty, no data to store!")
+            return db
         from langchain.vectorstores.faiss import FAISS
         if db is not None:
             db.add_embeddings(text_embeddings)
