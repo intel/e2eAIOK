@@ -81,7 +81,6 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         op = YoutubeLoader(urls)
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds())
-
     ### ======  Ray ====== ###
 
     def test_bytesize_ray(self):
@@ -238,6 +237,11 @@ class Test_LLMUtils_Operations(unittest.TestCase):
 
     def test_directory_loader_spark(self):
         op = DirectoryLoader("tests/data/llm_data/document")
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds())
+
+    def test_document_load_scanned_pdf_ray(self):
+        op = DirectoryLoader("tests/data/llm_data/document", glob="**/*.pdf", pdf_ocr=True)
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds())
 
@@ -545,7 +549,8 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         with SparkContext("tests/data/llm_data/tiny_c4_sample_10.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
 
-    def test_url_loader_spark(self):
+
+    def test_recursive_url_loader_spark(self):
         urls = ['https://app.cnvrg.io/docs/',
                 'https://app.cnvrg.io/docs/core_concepts/python_sdk_v2.html',
                 'https://app.cnvrg.io/docs/cli_v2/cnvrgv2_cli.html',
@@ -554,8 +559,11 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark))
 
-    def test_document_loader_spark(self):
-        url = 'https://app.cnvrg.io/docs/'
-        op = DocumentLoader(loader='RecursiveUrlLoader', loader_args={'url': url})
-        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
-            ctx.show(op.process_spark(ctx.spark))
+    def test_recursive_url_loader_ray(self):
+        urls = ['https://app.cnvrg.io/docs/',
+                'https://app.cnvrg.io/docs/core_concepts/python_sdk_v2.html',
+                'https://app.cnvrg.io/docs/cli_v2/cnvrgv2_cli.html',
+                'https://app.cnvrg.io/docs/collections/tutorials.html']
+        op = UrlLoader(urls, max_depth=2)
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds())
