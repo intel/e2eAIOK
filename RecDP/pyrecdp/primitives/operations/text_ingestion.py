@@ -87,6 +87,7 @@ class DocumentStore(ABC):
         import pandas as pd
         from pyspark.sql import types as T
         def batch_embedding(batches: Iterable[pd.DataFrame]) -> Iterable[pd.DataFrame]:
+
             lc_embedding = create_embeddings(self.embeddings, self.embeddings_args)
             for pdf in batches:
                 pdf[self.embeddings_column] = lc_embedding.embed_documents(pdf[self.text_column])
