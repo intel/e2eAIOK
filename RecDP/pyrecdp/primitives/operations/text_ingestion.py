@@ -161,8 +161,8 @@ class LangchainChroma(DocumentStore):
             return ds
 
     def do_persist(self, ds):
-        check_availability_and_install(["chromadb==0.4.15"])
-        chroma = self.vector_store_args["langchain", "db_handler"]
+        check_availability_and_install(["chromadb==0.4.15", "langchain"])
+        chroma = self.vector_store_args["db_handler"]
 
         collection_name = self.vector_store_args.get("collection_name", 'langchain')
         rows = ds.iter_rows() if isinstance(ds, Dataset) else ds.collect()
