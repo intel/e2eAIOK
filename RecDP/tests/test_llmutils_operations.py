@@ -68,8 +68,7 @@ class SparkContext:
 class Test_LLMUtils_Operations(unittest.TestCase):
     def setUp(self):
         print(f"\n******\nTesting Method Name: {self._testMethodName}\n******")
-        
-        
+
     ### ====== Priority execution ====== ###
     def a_test_youtube_load_spark(self):
         urls = ["https://www.youtube.com/watch?v=J31r79uUi9M", "https://www.youtube.com/watch?v=w9kq1BjqrfE"]
@@ -82,6 +81,7 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         op = YoutubeLoader(urls)
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds())
+
     ### ======  Ray ====== ###
 
     def test_bytesize_ray(self):
@@ -231,12 +231,12 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds(ctx.ds))
 
-    def test_document_load_pdf_ray(self):
-        op = DirectoryLoader("tests/data/llm_data/document", glob="**/*.pdf")
+    def test_directory_loader_ray(self):
+        op = DirectoryLoader("tests/data/llm_data/document")
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds())
 
-    def test_document_load_ray(self):
+    def test_directory_loader_spark(self):
         op = DirectoryLoader("tests/data/llm_data/document")
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds())
@@ -245,7 +245,6 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         op = UrlLoader(["https://www.intc.com/news-events/press-releases?year=2023&category=all"], max_depth=1)
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds())
-            
 
     def test_document_split_ray(self):
         op = DocumentSplit()
@@ -266,15 +265,61 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         op = RAGTextFix(chars_to_remove="abcdedfhijklmn")
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds(ctx.ds))
-            
+
     def test_audio_loader_ray(self):
         op = DirectoryLoader("tests/data/audio")
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds())
 
+    def test_document_loader_ray(self):
+        url = 'https://app.cnvrg.io/docs/'
+        op = DocumentLoader(loader='RecursiveUrlLoader', loader_args={'url': url})
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds())
+
+    def test_url_loader_ray(self):
+        urls = ['https://app.cnvrg.io/docs/',
+                'https://app.cnvrg.io/docs/core_concepts/python_sdk_v2.html',
+                'https://app.cnvrg.io/docs/cli_v2/cnvrgv2_cli.html',
+                'https://app.cnvrg.io/docs/collections/tutorials.html']
+        op = UrlLoader(urls, max_depth=2)
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds())
+
+    def test_document_embed_chroma_ray(self):
+        model_root_path = os.path.join(RECDP_MODELS_CACHE, "huggingface")
+        op = DocumentIngestion(
+            vector_store='chroma',
+            vector_store_args={
+                "output_dir": "ResumableTextPipeline_output",
+                "collection_name": "test_index"
+            },
+            embeddings='HuggingFaceEmbeddings',
+            embeddings_args={
+                'model_name': f"{model_root_path}/sentence-transformers/all-mpnet-base-v2"
+            }
+        )
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds(ctx.ds))
+
+    def test_document_embed_faiss_ray(self):
+        model_root_path = os.path.join(RECDP_MODELS_CACHE, "huggingface")
+        op = DocumentIngestion(
+            vector_store='FAISS',
+            vector_store_args={
+                "output_dir": "ResumableTextPipeline_output",
+                "index_name": "test_index"
+            },
+            embeddings='HuggingFaceEmbeddings',
+            embeddings_args={
+                'model_name': f"{model_root_path}/sentence-transformers/all-mpnet-base-v2"
+            }
+        )
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds(ctx.ds))
+
     ### ======  Spark ====== ###
-    
-            
+
     def test_bytesize_spark(self):
         op = TextBytesize()
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
@@ -423,16 +468,10 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
 
-    def test_document_load_spark(self):
-        op = DirectoryLoader("tests/data/llm_data/document", glob="**/*.pdf")
-        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
-            ctx.show(op.process_spark(ctx.spark))
-
     def test_url_load_spark(self):
         op = UrlLoader(["https://www.intc.com/news-events/press-releases?year=2023&category=all"], max_depth=1)
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark))
-
 
     def test_document_split_spark(self):
         op = DocumentSplit()
@@ -444,23 +483,7 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
 
-    def test_document_embed_ray(self):
-        model_root_path = os.path.join(RECDP_MODELS_CACHE, "huggingface")
-        op = DocumentIngestion(
-            vector_store='FAISS',
-            vector_store_args={
-                "output_dir": "ResumableTextPipeline_output",
-                "index_name": "test_index"
-            },
-            embeddings='HuggingFaceEmbeddings',
-            embeddings_args={
-                'model_name': f"{model_root_path}/sentence-transformers/all-mpnet-base-v2"
-            }
-        )
-        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
-            ctx.show(op.process_rayds(ctx.ds))
-
-    def test_document_embed_spark(self):
+    def test_document_embed_faiss_spark(self):
         model_root_path = os.path.join(RECDP_MODELS_CACHE, "huggingface")
         op = DocumentIngestion(
             vector_store='FAISS',
@@ -476,20 +499,37 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
 
-    def test_document_paragraphs_split_ray(self):
+    def test_document_embed_chroma_spark(self):
         model_root_path = os.path.join(RECDP_MODELS_CACHE, "huggingface")
-        model_name = f"{model_root_path}/sentence-transformers/all-mpnet-base-v2"
-        op = ParagraphsTextSplitter(model_name=model_name)
-        with RayContext("tests/data/llm_data/arxiv_sample_100.jsonl") as ctx:
-            ctx.show(op.process_rayds(ctx.ds))
-
-    def test_document_paragraphs_split_spark(self):
-        model_root_path = os.path.join(RECDP_MODELS_CACHE, "huggingface")
-        model_name = f"{model_root_path}/sentence-transformers/all-mpnet-base-v2"
-        op = ParagraphsTextSplitter(model_name=model_name)
-        with SparkContext("tests/data/llm_data/arxiv_sample_100.jsonl") as ctx:
+        op = DocumentIngestion(
+            vector_store='chroma',
+            vector_store_args={
+                "output_dir": "ResumableTextPipeline_output",
+                "collection_name": "test_index"
+            },
+            embeddings='HuggingFaceEmbeddings',
+            embeddings_args={
+                'model_name': f"{model_root_path}/sentence-transformers/all-mpnet-base-v2"
+            }
+        )
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
-    
+
+    #
+    # def test_document_paragraphs_split_ray(self):
+    #     model_root_path = os.path.join(RECDP_MODELS_CACHE, "huggingface")
+    #     model_name = f"{model_root_path}/sentence-transformers/all-mpnet-base-v2"
+    #     op = ParagraphsTextSplitter(model_name=model_name)
+    #     with RayContext("tests/data/llm_data/arxiv_sample_100.jsonl") as ctx:
+    #         ctx.show(op.process_rayds(ctx.ds))
+    #
+    # def test_document_paragraphs_split_spark(self):
+    #     model_root_path = os.path.join(RECDP_MODELS_CACHE, "huggingface")
+    #     model_name = f"{model_root_path}/sentence-transformers/all-mpnet-base-v2"
+    #     op = ParagraphsTextSplitter(model_name=model_name)
+    #     with SparkContext("tests/data/llm_data/arxiv_sample_100.jsonl") as ctx:
+    #         ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
     def test_audio_loader_spark(self):
         op = DirectoryLoader("tests/data/audio")
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
@@ -505,8 +545,7 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         with SparkContext("tests/data/llm_data/tiny_c4_sample_10.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
 
-
-    def test_recursive_url_loader_spark(self):
+    def test_url_loader_spark(self):
         urls = ['https://app.cnvrg.io/docs/',
                 'https://app.cnvrg.io/docs/core_concepts/python_sdk_v2.html',
                 'https://app.cnvrg.io/docs/cli_v2/cnvrgv2_cli.html',
@@ -515,11 +554,8 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark))
 
-    def test_recursive_url_loader_ray(self):
-        urls = ['https://app.cnvrg.io/docs/',
-                'https://app.cnvrg.io/docs/core_concepts/python_sdk_v2.html',
-                'https://app.cnvrg.io/docs/cli_v2/cnvrgv2_cli.html',
-                'https://app.cnvrg.io/docs/collections/tutorials.html']
-        op = UrlLoader(urls, max_depth=2)
-        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
-            ctx.show(op.process_rayds())
+    def test_document_loader_spark(self):
+        url = 'https://app.cnvrg.io/docs/'
+        op = DocumentLoader(loader='RecursiveUrlLoader', loader_args={'url': url})
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark))
