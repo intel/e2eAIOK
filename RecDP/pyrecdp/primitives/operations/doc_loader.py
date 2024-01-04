@@ -13,17 +13,13 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  """
-
 import os
 import re
-from typing import Optional, List, Callable, Union, Sequence
-from urllib.parse import urlparse, urlunparse, urljoin
-
-import requests
+from pathlib import Path
+from typing import Optional, List, Callable, Union, Sequence, Any
 
 from pyrecdp.core.import_utils import check_availability_and_install
-from pyrecdp.core.import_utils import import_langchain
-from pyrecdp.primitives.llmutils.document.schema import Document
+from pyrecdp.primitives.document.schema import Document
 from pyrecdp.primitives.operations.base import LLMOPERATORS
 from pyrecdp.primitives.operations.text_reader import TextReader
 
@@ -32,13 +28,16 @@ class DocumentLoader(TextReader):
     def __init__(self,
                  loader: Optional[str] = None,
                  loader_args: Optional[dict] = None,
-                 args_dict: Optional[dict] = None, requirements=[]):
+                 args_dict: Optional[dict] = None, requirements=None):
         """
         Args:
            loader: The class name of the langchain document loader to use.
            loader_args: A dictionary of arguments to pass to the langchain document
                loader.
         """
+        if requirements is None:
+            requirements = []
+
         if loader is None or not isinstance(loader, str):
             raise ValueError(f"loader must be provide!")
 
@@ -58,20 +57,13 @@ class DocumentLoader(TextReader):
         settings.update(args_dict or {})
 
         super().__init__(settings, requirements=requirements)
-        self.doc_loader_func = self._get_loader()
 
         self.support_ray = True
         self.support_spark = True
 
-    def _get_loader(self) -> Callable[[], List[Document]]:
-        import_langchain()
-        from pyrecdp.core.class_utils import new_instance
-        from langchain.document_loaders.base import BaseLoader
-        langchain_loader: BaseLoader = new_instance("langchain.document_loaders", self.loader, **self.loader_args)
-        return lambda: [Document(text=doc.page_content, metadata=doc.metadata) for doc in langchain_loader.load()]
-
     def load_documents(self):
-        return [{'text': doc.text, 'metadata': doc.metadata} for doc in self.doc_loader_func()]
+        from pyrecdp.primitives.document.reader import read_from_langchain
+        return read_from_langchain(self.loader, self.loader_args)
 
     def process_rayds(self, ds=None):
         import ray
@@ -90,14 +82,17 @@ class DocumentLoader(TextReader):
 LLMOPERATORS.register(DocumentLoader)
 
 
-class DirectoryLoader(DocumentLoader):
-    def __init__(self, input_dir: Optional[str] = None, glob: str = "**/[!.]*", recursive: bool = False,
-                 use_multithreading: bool = True, max_concurrency: Optional[int] = None,
-                 input_files: Optional[List] = None, single_text_per_document: bool = True,
-                 exclude: Optional[List] = None, exclude_hidden: bool = True, silent_errors: bool = False,
-                 encoding: str = "utf-8", required_exts: Optional[List[str]] = None,
-                 page_separator: Optional[str] = '\n',
-                 requirements=[],
+class DirectoryLoader(TextReader):
+    def __init__(self, input_dir: Optional[Union[str, List[str]]] = None,
+                 glob: str = "**/[!.]*",
+                 recursive: bool = False,
+                 input_files: Optional[List] = None,
+                 exclude: Optional[List] = None,
+                 exclude_hidden: bool = True,
+                 max_concurrency: Optional[int] = None,
+                 required_exts: Optional[List[str]] = None,
+                 file_loaders: Optional[dict[str, Callable[[Path], List[Document]]]] = None,
+                 requirements=None,
                  **kwargs):
         """
         Loads documents from a directory or a list of files.
@@ -106,114 +101,57 @@ class DirectoryLoader(DocumentLoader):
             input_dir: The input directory.
             glob: A glob pattern to match files.
             recursive: Whether to recursively search the input directory.
-            use_multithreading: Whether to use multithreading to load documents.
-            max_concurrency: The maximum number of concurrent threads to use.
             input_files: A list of input files.
             single_text_per_document: Whether to load each file as a single document.
             exclude: A list of file patterns to exclude from loading.
             exclude_hidden: Whether to exclude hidden files from loading.
-            silent_errors: Whether to silently ignore errors when loading documents.
-            encoding: The encoding to use when loading documents.
+            file_loaders:  customize file loader.
             required_exts: A list of file extensions that are required for documents.
-                           default extensions are [.pdf, .docx, .jpeg, .jpg, .png]
         """
+
+        if requirements is None:
+            requirements = []
+
+        if not input_dir and not input_files:
+            raise ValueError("Must provide either `input_dir` or `input_files`.")
+
         settings = {
             'input_dir': input_dir,
             'glob': glob,
             'input_files': input_files,
             'recursive': recursive,
-            'use_multithreading': use_multithreading,
-            'max_concurrency': max_concurrency,
-            'single_text_per_document': single_text_per_document,
             'exclude': exclude,
             'exclude_hidden': exclude_hidden,
-            'silent_errors': silent_errors,
-            'encoding': encoding,
+            'max_concurrency': max_concurrency,
             'required_exts': required_exts,
-            'page_separator': page_separator,
+            'file_loaders': file_loaders,
         }
-        from pyrecdp.primitives.llmutils.document.reader import DirectoryReader
 
-        self.directory_loader = DirectoryReader(
-            input_dir=input_dir,
-            glob=glob,
-            input_files=input_files,
-            recursive=recursive,
-            use_multithreading=use_multithreading,
-            max_concurrency=max_concurrency,
-            single_text_per_document=single_text_per_document,
-            exclude=exclude,
-            exclude_hidden=exclude_hidden,
-            silent_errors=silent_errors,
-            encoding=encoding,
-            required_exts=required_exts,
-            page_separator=page_separator,
-        )
-        super().__init__(loader='DirectoryLoader', args_dict=settings, requirements=requirements)
+        self.input_files = input_files
+        self.input_dir = input_dir
+        self.glob = glob
+        self.recursive = recursive
+        self.exclude = exclude
+        self.exclude_hidden = exclude_hidden
+        self.max_concurrency = max_concurrency
+        self.required_exts = required_exts
+        self.file_loaders = file_loaders
 
-    def _get_loader(self) -> Callable[[], List[Document]]:
-        print("_get_loader")
-        self.directory_loader.setup()
-        return lambda: self.directory_loader.load()
-
-
-LLMOPERATORS.register(DirectoryLoader)
-
-
-class YoutubeLoader(TextReader):
-    def __init__(self, urls: List[str], save_dir: str = None, model='small', **kwargs):
-        """
-            Loads documents from a directory or a list of Youtube URLs.
-
-            Args:
-                urls: The list of Youtube video urls.
-                save_dir: The directory to save loaded Youtube audio, will remove the tmp file if save_dir is None.
-                model: The name of the whisper model, check the available ones using whisper.available_models().
-        """
-        settings = {
-            'urls': urls,
-            'save_dir': save_dir,
-            'model': model
-        }
-        super().__init__(settings)
-        self.urls = urls
-        self.save_dir = save_dir
-        self.model_name = model
-
-    def _load(self):
-        import os
-        import tempfile
-        import shutil
-        use_temp_dir = False
-        save_dir = self.save_dir
-        if save_dir is None or not os.path.isdir(save_dir):
-            use_temp_dir = True
-            save_dir = tempfile.mkdtemp()
-        docs = []
-        try:
-            import_langchain()
-            from langchain.document_loaders.blob_loaders.youtube_audio import YoutubeAudioLoader
-            check_availability_and_install('yt_dlp')
-            loader = YoutubeAudioLoader(self.urls, save_dir)
-            audio_paths = {}
-            for url, blob in zip(self.urls[::-1], loader.yield_blobs()):
-                audio_paths[url] = str(blob.path)
-            import os
-            os.system("apt-get -qq -y install ffmpeg")
-            check_availability_and_install('openai-whisper')
-            import whisper
-            model = whisper.load_model(self.model_name)
-            for url, audio_path in audio_paths.items():
-                result = model.transcribe(audio_path)
-                docs.append(Document(text=result['text'], metadata={"source": url, 'language': result['language']}))
-        finally:
-            if use_temp_dir:
-                shutil.rmtree(save_dir)
-
-        return docs
+        super().__init__(args_dict=settings, requirements=requirements)
 
     def load_documents(self):
-        return [{'text': doc.text, 'metadata': doc.metadata} for doc in self._load()]
+        from pyrecdp.primitives.document.reader import read_from_directory
+        return read_from_directory(
+            self.input_dir,
+            input_files=self.input_files,
+            glob=self.glob,
+            recursive=self.recursive,
+            exclude=self.exclude,
+            exclude_hidden=self.exclude_hidden,
+            max_concurrency=self.max_concurrency,
+            required_exts=self.required_exts,
+            loaders=self.file_loaders,
+        )
 
     def process_rayds(self, ds=None):
         import ray
@@ -226,6 +164,68 @@ class YoutubeLoader(TextReader):
         self.cache = spark.createDataFrame(self.load_documents())
         if spark_df is not None:
             self.cache = self.union_spark_df(spark_df, self.cache)
+        return self.cache
+
+
+LLMOPERATORS.register(DirectoryLoader)
+
+
+class YoutubeLoader(TextReader):
+    def __init__(self, urls: List[str], save_dir: str = None, model='small',
+                 num_cpus: Optional[int] = None, **kwargs):
+        """
+            Loads documents from a directory or a list of Youtube URLs.
+
+            Args:
+                urls: The list of Youtube video urls.
+                save_dir: The directory to save loaded Youtube audio, will remove the tmp file if save_dir is None.
+                model: The name of the whisper model, check the available ones using whisper.available_models().
+        """
+        settings = {
+            'urls': urls,
+            'save_dir': save_dir,
+            'model': model,
+            'num_cpus': num_cpus,
+        }
+        super().__init__(settings)
+        self.urls = urls
+        self.save_dir = save_dir
+        self.model_name = model
+        self.num_cpus = num_cpus
+        os.system("apt-get -qq -y install ffmpeg")
+        check_availability_and_install(['langchain', 'yt_dlp', 'openai-whisper'])
+
+    def process_rayds(self, ds=None):
+        import ray
+        url_ds = ray.data.from_items([{'url': url} for url in self.urls])
+        from pyrecdp.primitives.document.reader import read_youtube_audio
+        self.cache = url_ds.flat_map(lambda record: read_youtube_audio(record['url'], self.save_dir, self.model_name),
+                                     num_cpus=self.num_cpus)
+        if ds is not None:
+            self.cache = self.union_ray_ds(ds, self.cache)
+        return self.cache
+
+    def process_spark(self, spark, spark_df=None):
+        from pyspark.sql import DataFrame
+        from pyspark.sql import types as T
+        urls_df: DataFrame = spark.createDataFrame(self.urls, T.StringType())
+
+        schema = T.StructType([
+            T.StructField("text", T.StringType()),
+            T.StructField('metadata', T.StructType([
+                T.StructField('source', T.StringType()),
+                T.StructField('language', T.StringType()),
+            ]))
+        ])
+
+        from pyrecdp.primitives.document.reader import read_youtube_audio
+        docs_rdd = urls_df.rdd.flatMap(
+            lambda row: read_youtube_audio(row['value'], self.save_dir, self.model_name))
+
+        self.cache = spark.createDataFrame(docs_rdd, schema)
+        if spark_df is not None:
+            self.cache = self.union_spark_df(spark_df, self.cache)
+
         return self.cache
 
 
@@ -248,6 +248,7 @@ class UrlLoader(TextReader):
             check_response_status: bool = False,
             text_to_markdown: bool = True,
             requirements=None,
+            num_cpus: Optional[int] = None,
     ) -> None:
         """Initialize with URL to crawl and any subdirectories to exclude.
 
@@ -272,23 +273,12 @@ class UrlLoader(TextReader):
             link_regex: Regex for extracting sub-links from the raw html of a web page.
             check_response_status: If True, check HTTP response status and skip
                 URLs with error responses (400-599).
+            num_cpus: The number of CPUs to reserve for each parallel url read worker.
         """
         if requirements is None:
             requirements = ['bs4', 'markdownify', 'langchain']
 
-        if text_to_markdown:
-            def extractor_with_markdownify(x):
-                import markdownify
-                return markdownify.markdownify(x)
-            extractor = lambda x: extractor_with_markdownify(x)
-        elif extractor is None:
-            def extractor_with_bs4(x):
-                from bs4 import BeautifulSoup
-                return BeautifulSoup(x, "html.parser").text
-            extractor = lambda x: extractor_with_bs4(x)
-
-        settings = {
-            'urls': urls,
+        self.loader_kwargs = {
             'max_depth': max_depth,
             'use_async': use_async,
             'extractor': extractor,
@@ -300,43 +290,52 @@ class UrlLoader(TextReader):
             'headers': headers,
             'check_response_status': check_response_status,
         }
+        settings = self.loader_kwargs.copy()
+        settings.update({'urls': urls, 'text_to_markdown': text_to_markdown, 'num_cpus': num_cpus})
+        self.text_to_markdown = text_to_markdown
         super().__init__(settings, requirements=requirements)
         self.support_spark = True
         self.support_ray = True
+        self.num_cpus = num_cpus
 
-        from langchain.document_loaders import RecursiveUrlLoader as LCRecursiveURLLoader
         if isinstance(urls, str):
             urls = [urls]
 
-        urls = set(urls)
-
-        self.loaders = [LCRecursiveURLLoader(
-            url,
-            max_depth=max_depth,
-            use_async=use_async,
-            extractor=extractor,
-            metadata_extractor=metadata_extractor,
-            exclude_dirs=exclude_dirs,
-            timeout=timeout,
-            prevent_outside=prevent_outside,
-            link_regex=link_regex,
-            headers=headers,
-            check_response_status=check_response_status,
-        ) for url in urls]
-
-    def load_documents(self):
-        return [{'text': doc.page_content, 'metadata': doc.metadata} for loader in self.loaders for doc in
-                loader.load()]
+        self.urls = set(urls)
 
     def process_rayds(self, ds=None):
         import ray
-        self.cache = ray.data.from_items(self.load_documents())
+        urls_ds = ray.data.from_items([{'url': url} for url in self.urls])
+
+        from pyrecdp.primitives.document.reader import read_from_url
+        self.cache = urls_ds.flat_map(
+            lambda record: read_from_url(record['url'], self.text_to_markdown, **self.loader_kwargs),
+            num_cpus=self.num_cpus)
+
         if ds is not None:
             self.cache = self.union_ray_ds(ds, self.cache)
         return self.cache
 
     def process_spark(self, spark, spark_df=None):
-        self.cache = spark.createDataFrame(self.load_documents())
+        from pyspark.sql import DataFrame
+        from pyspark.sql import types as T
+        urls_df: DataFrame = spark.createDataFrame(self.urls, T.StringType())
+
+        doc_schema = T.StructType([
+            T.StructField("text", T.StringType()),
+            T.StructField('metadata', T.StructType([
+                T.StructField('title', T.StringType()),
+                T.StructField('description', T.StringType()),
+                T.StructField('language', T.StringType()),
+            ]))
+        ])
+
+        from pyrecdp.primitives.document.reader import read_from_url
+        docs_rdd = urls_df.rdd.flatMap(
+            lambda row: read_from_url(row['value'], self.text_to_markdown, **self.loader_kwargs))
+
+        self.cache = spark.createDataFrame(docs_rdd, doc_schema)
+
         if spark_df is not None:
             self.cache = self.union_spark_df(spark_df, self.cache)
         return self.cache
