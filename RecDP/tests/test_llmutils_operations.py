@@ -228,6 +228,11 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds())
 
+    def test_document_load_scanned_pdf_ray(self):
+        op = DirectoryLoader("tests/data/llm_data/document", glob="**/*.pdf", pdf_ocr=True)
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds())
+
     def test_url_load_ray(self):
         op = UrlLoader(["https://www.intc.com/news-events/press-releases?year=2023&category=all"], max_depth=1)
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
@@ -537,6 +542,7 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         op = TextSpellCorrect()
         with SparkContext("tests/data/llm_data/tiny_c4_sample_10.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
 
     def test_url_loader_spark(self):
         urls = ['https://app.cnvrg.io/docs/',
