@@ -93,6 +93,7 @@ class DirectoryLoader(TextReader):
                  required_exts: Optional[List[str]] = None,
                  file_loaders: Optional[dict[str, Callable[[Path], List[Document]]]] = None,
                  requirements=None,
+                 pdf_ocr: bool = False,
                  **kwargs):
         """
         Loads documents from a directory or a list of files.
@@ -107,6 +108,7 @@ class DirectoryLoader(TextReader):
             exclude_hidden: Whether to exclude hidden files from loading.
             file_loaders:  customize file loader.
             required_exts: A list of file extensions that are required for documents.
+            pdf_ocr: Whether to use ocr to load pdf.
         """
 
         if requirements is None:
@@ -125,6 +127,7 @@ class DirectoryLoader(TextReader):
             'max_concurrency': max_concurrency,
             'required_exts': required_exts,
             'file_loaders': file_loaders,
+            'pdf_ocr': pdf_ocr
         }
 
         self.input_files = input_files
@@ -136,6 +139,7 @@ class DirectoryLoader(TextReader):
         self.max_concurrency = max_concurrency
         self.required_exts = required_exts
         self.file_loaders = file_loaders
+        self.pdf_ocr = pdf_ocr
 
         super().__init__(args_dict=settings, requirements=requirements)
 
@@ -151,6 +155,7 @@ class DirectoryLoader(TextReader):
             max_concurrency=self.max_concurrency,
             required_exts=self.required_exts,
             loaders=self.file_loaders,
+            pdf_ocr=self.pdf_ocr,
         )
 
     def process_rayds(self, ds=None):

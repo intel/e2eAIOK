@@ -81,7 +81,6 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         op = YoutubeLoader(urls)
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds())
-
     ### ======  Ray ====== ###
 
     def test_bytesize_ray(self):
@@ -238,6 +237,11 @@ class Test_LLMUtils_Operations(unittest.TestCase):
 
     def test_directory_loader_spark(self):
         op = DirectoryLoader("tests/data/llm_data/document")
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds())
+
+    def test_document_load_scanned_pdf_ray(self):
+        op = DirectoryLoader("tests/data/llm_data/document", glob="**/*.pdf", pdf_ocr=True)
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds())
 
@@ -544,6 +548,7 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         op = TextSpellCorrect()
         with SparkContext("tests/data/llm_data/tiny_c4_sample_10.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark, ctx.ds))
+
 
     def test_url_loader_spark(self):
         urls = ['https://app.cnvrg.io/docs/',

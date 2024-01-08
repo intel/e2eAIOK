@@ -113,6 +113,39 @@ class PDFReader(FileBaseReader):
         return docs
 
 
+class PDFOcrReader(FileBaseReader):
+    """PDF parser."""
+    system_requirements = ['tesseract-ocr']
+    requirements = ['PyMuPDF', 'pillow', 'pytesseract']
+
+    def __init__(self, file: Path, single_text_per_document: bool = True, page_separator: str = '\n',
+                 **load_kwargs):
+        super().__init__(file, single_text_per_document, page_separator)
+        self.load_kwargs = load_kwargs
+        self.file = file
+
+    def load_file(self, file: Path) -> List[Document]:
+        import fitz
+        from PIL import Image
+        import tempfile
+        from pytesseract import pytesseract
+        docs = []
+        pdf_document = fitz.open(file)
+        for page_number in range(pdf_document.page_count):
+            page = pdf_document[page_number]
+            page_label = page.get_label()
+            pix = page.get_pixmap()
+            image = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+            with tempfile.TemporaryDirectory() as td:
+                img_tmp = os.path.join(td, 'recdp_tmp.png')
+                image.save(img_tmp)
+                page_text = pytesseract.image_to_string(image)
+                metadata = {"page_label": page_label, "source": str(file)}
+                docs.append(Document(text=page_text, metadata=metadata))
+        pdf_document.close()
+        return docs
+
+
 class DocxReader(FileBaseReader):
     """Docx parser."""
     system_requirements = []
@@ -212,7 +245,28 @@ def read_from_directory(input_dirs: Optional[Union[str, List[str]]] = None,
                         exclude_hidden: bool = True,
                         max_concurrency: Optional[int] = None,
                         loaders: Optional[dict[str, Callable[[Path], List[Document]]]] = None,
-                        required_exts: Optional[List[str]] = None):
+                        required_exts: Optional[List[str]] = None,
+                        pdf_ocr: bool = False,
+                        ):
+    """
+   Loads documents from a directory or a list of files.
+
+   Args:
+       input_dirs: The input directory.
+       input_files: A list of input files.
+       glob: A glob pattern to match files.
+       recursive: Whether to recursively search the input directory.
+       exclude: A list of file patterns to exclude from loading.
+       exclude_hidden: Whether to exclude hidden files from loading.
+       max_concurrency: The maximum number of concurrent threads to use.
+       loaders: Text Loader user what to use.
+       required_exts: A list of file extensions that are required for documents.
+                      default extensions are [.pdf, .docx, .jpeg, .jpg, .png]
+       pdf_ocr: Whether to use ocr to load pdf.
+   """
+    if pdf_ocr:
+        _default_file_readers['.pdf'] = PDFOcrReader
+
     def read_file(file_to_load, par):
         try:
             # use customer loader first if possible
