@@ -69,18 +69,6 @@ class Test_LLMUtils_Operations(unittest.TestCase):
     def setUp(self):
         print(f"\n******\nTesting Method Name: {self._testMethodName}\n******")
 
-    ### ====== Priority execution ====== ###
-    def a_test_youtube_load_spark(self):
-        urls = ["https://www.youtube.com/watch?v=J31r79uUi9M", "https://www.youtube.com/watch?v=w9kq1BjqrfE"]
-        op = YoutubeLoader(urls)
-        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
-            ctx.show(op.process_spark(ctx.spark))
-
-    def a_test_youtube_load_ray(self):
-        urls = ["https://www.youtube.com/watch?v=J31r79uUi9M", "https://www.youtube.com/watch?v=w9kq1BjqrfE"]
-        op = YoutubeLoader(urls)
-        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
-            ctx.show(op.process_rayds())
     ### ======  Ray ====== ###
 
     def test_bytesize_ray(self):
@@ -321,6 +309,12 @@ class Test_LLMUtils_Operations(unittest.TestCase):
         )
         with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_rayds(ctx.ds))
+            
+    def test_youtube_load_ray(self):
+        urls = ["https://www.youtube.com/watch?v=J31r79uUi9M", "https://www.youtube.com/watch?v=w9kq1BjqrfE"]
+        op = YoutubeLoader(urls)
+        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_rayds())
 
     ### ======  Spark ====== ###
 
@@ -562,5 +556,11 @@ class Test_LLMUtils_Operations(unittest.TestCase):
     def test_document_loader_spark(self):
         url = 'https://app.cnvrg.io/docs/'
         op = DocumentLoader(loader='RecursiveUrlLoader', loader_args={'url': url})
+        with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+            ctx.show(op.process_spark(ctx.spark))
+    
+    def test_youtube_load_spark(self):
+        urls = ["https://www.youtube.com/watch?v=J31r79uUi9M", "https://www.youtube.com/watch?v=w9kq1BjqrfE"]
+        op = YoutubeLoader(urls)
         with SparkContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
             ctx.show(op.process_spark(ctx.spark))

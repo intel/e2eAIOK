@@ -412,17 +412,50 @@ def read_from_langchain(loader: str, loader_kwargs: Optional[dict[str, Any]] = N
     return [{'text': doc.page_content, 'metadata': doc.metadata} for doc in loader.load()]
 
 
-def read_youtube_audio(url: Union[str, List[str]], save_dir: Optional[str] = None, model_name: Optional[str] = None):
-    import os
+def transcribe_youtube_video(url: Union[str, List[str]], save_dir: Optional[str] = None, model_name: Optional[str] = None):
+    """Load from YouTube transcript (if available) or audio.
+
+    Args:
+        url (Union[str, List[str]]): YouTube URL or list of URLs.
+        save_dir (Optional[str]): Directory to save the audio files.
+        model_name (Optional[str]): Model name for the transcription service.
+
+    Returns:
+        List[Dict]: List of documents with text and metadata.
+    """
+    urls = [url] if isinstance(url, str) else url
+    
+    # Try to load transcript from YouTube
+    from langchain_community.document_loaders import YoutubeLoader
+    pending_urls = []
+    doc_list = []
+    
+    # Try to load transcript from YouTube
+    for url in urls:
+        try:
+            loader = YoutubeLoader.from_youtube_url(url, add_video_info=True)
+            docs = loader.load()
+            if not docs:
+                logger.info(f'No transcript available for URL: {url}. Defaulting to audio transcription.')
+                pending_urls.append(url)
+                continue
+            for doc in docs:
+                doc_list.append({'text': doc.page_content, 'metadata': doc.metadata})
+        except Exception as e:
+            logger.warning(f'Warning: Failed to load transcript from URL {url}. This may be due to language mismatch. Defaulting to audio transcription.')
+            pending_urls.append(url)
+    if len(pending_urls) == 0:
+        return doc_list
+    
+    # If transcripts are not available, use Whisper for audio to text conversion
     import tempfile
     import shutil
-
-    urls = [url] if isinstance(url, str) else url
-    use_temp_dir = False
-    if save_dir is None or not os.path.isdir(save_dir):
-        use_temp_dir = True
+    use_temp_dir = save_dir is None
+    if use_temp_dir:
         save_dir = tempfile.mkdtemp()
-    docs = []
+    else:
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
     try:
         from langchain.document_loaders.blob_loaders.youtube_audio import YoutubeAudioLoader
         loader = YoutubeAudioLoader(urls, save_dir)
@@ -431,11 +464,16 @@ def read_youtube_audio(url: Union[str, List[str]], save_dir: Optional[str] = Non
             audio_paths[url] = str(blob.path)
         import whisper
         model = whisper.load_model(model_name)
-        for url, audio_path in audio_paths.items():
-            result = model.transcribe(audio_path)
-            docs.append({'text': result['text'], 'metadata': {"source": url, 'language': result['language']}})
+        from pytube import Youtube
+        audio_paths = {}
+        for url in urls:
+            video = YouTube(url)
+            audio = video.streams.filter(only_audio=True, file_extension='mp4').first()
+            audio_path = audio.download(output_path=save_dir)
+            transcribe_result = model.transcribe(audio_path)
+            doc_list.append({'text': transcribe_result['text'], 'metadata': {'source': url, 'language': transcribe_result['language']}})
     finally:
         if use_temp_dir:
             shutil.rmtree(save_dir)
 
-    return docs
+    return doc_list

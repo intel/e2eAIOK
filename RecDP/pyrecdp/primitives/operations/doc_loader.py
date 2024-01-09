@@ -198,13 +198,13 @@ class YoutubeLoader(TextReader):
         self.model_name = model
         self.num_cpus = num_cpus
         os.system("apt-get -qq -y install ffmpeg")
-        check_availability_and_install(['langchain', 'yt_dlp', 'openai-whisper'])
+        check_availability_and_install(['langchain', 'pytube', 'openai-whisper', 'youtube-transcript-api'])
 
     def process_rayds(self, ds=None):
         import ray
         url_ds = ray.data.from_items([{'url': url} for url in self.urls])
-        from pyrecdp.primitives.document.reader import read_youtube_audio
-        self.cache = url_ds.flat_map(lambda record: read_youtube_audio(record['url'], self.save_dir, self.model_name),
+        from pyrecdp.primitives.document.reader import transcribe_youtube_video
+        self.cache = url_ds.flat_map(lambda record: transcribe_youtube_video(record['url'], self.save_dir, self.model_name),
                                      num_cpus=self.num_cpus)
         if ds is not None:
             self.cache = self.union_ray_ds(ds, self.cache)
@@ -223,9 +223,9 @@ class YoutubeLoader(TextReader):
             ]))
         ])
 
-        from pyrecdp.primitives.document.reader import read_youtube_audio
+        from pyrecdp.primitives.document.reader import transcribe_youtube_video
         docs_rdd = urls_df.rdd.flatMap(
-            lambda row: read_youtube_audio(row['value'], self.save_dir, self.model_name))
+            lambda row: transcribe_youtube_video(row['value'], self.save_dir, self.model_name))
 
         self.cache = spark.createDataFrame(docs_rdd, schema)
         if spark_df is not None:
