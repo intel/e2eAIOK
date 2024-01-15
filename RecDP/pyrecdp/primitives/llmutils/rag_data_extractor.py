@@ -21,7 +21,8 @@ from pyrecdp.core.utils import Timer
 from pyrecdp.primitives.operations.logging_utils import logger
 
 from pyrecdp.LLM import TextPipeline
-from pyrecdp.primitives.operations import UrlLoader, DocumentSplit, DocumentIngestion, RAGTextFix, DirectoryLoader
+from pyrecdp.primitives.operations import UrlLoader, DocumentSplit, DocumentIngestion, RAGTextFix, DirectoryLoader, \
+    YoutubeLoader
 
 
 def rag_data_prepare(
@@ -54,9 +55,12 @@ def rag_data_prepare(
     :return:
     """
     if bool(files_path):
-        loader = DirectoryLoader(files_path, glob="**/*.pdf")
+        loader = DirectoryLoader(files_path)
     elif bool(target_urls):
-        loader = UrlLoader(urls=target_urls)
+        if "youtube.com" in target_urls[0]:
+            loader = YoutubeLoader(urls=target_urls)
+        else:
+            loader = UrlLoader(urls=target_urls)
     else:
         logger.error("You must specify at least one parameter in files_path and target_urls")
         exit(1)
@@ -122,12 +126,11 @@ class ParseKwargs(argparse.Action):
             key, value = value.split('=')
             getattr(namespace, self.dest)[key] = value
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    # data_files, dup_dir, ngram_size, num_perm, bands, ranges
-    # pipeline = minHashLSH_prepare(df, num_perm = 256, ngram_size = 6, bands = 9, ranges = 13)
     parser.add_argument("--files_path", dest="files_path", type=str)
-    parser.add_argument("--text_column", dest="text_column", type=str,default='text')
+    parser.add_argument("--text_column", dest="text_column", type=str, default='text')
     parser.add_argument("--target_urls", dest="target_urls", type=str)
     parser.add_argument("--rag_framework", dest="rag_framework", type=str, default='langchain')
     parser.add_argument("--text_splitter", dest="text_splitter", type=str, default='RecursiveCharacterTextSplitter')
