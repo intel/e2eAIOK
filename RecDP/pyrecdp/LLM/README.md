@@ -123,17 +123,17 @@ Here are some RAG examples:
   **_Question 1_**: As of 2024, what model of CPU is considered the most powerful for AI in data centers?
 
   _Answer without RAG_:
-  ![YouTube 1](.\doc\image\youtube_1.png)
+  ![YouTube 1](./doc/image/youtube_1.png)
   _Answer with RAG_:
-  ![YouTube 1 RAG](.\doc\image\youtube_rag_1.png)
+  ![YouTube 1 RAG](./doc/image/youtube_rag_1.png)
 
 
   **_Question 2_**: Ahat is the percentage of performance improvement that Gaudi 2 delivers over NVIDIA's H100 for training the 175 billion parameter GPT-3 model, based on the most recent ML perf training benchmarks?
 
   _Answer without RAG_:
-  ![YouTube 2](.\doc\image\youtube_2.png)
+  ![YouTube 2](./doc/image/youtube_2.png)
   _Answer with RAG_:
-  ![YouTube 2 RAG](.\doc\image\youtube_rag_2.png)
+  ![YouTube 2 RAG](./doc/image/youtube_rag_2.png)
 
 
 ####  **PDF**: [The Gluten Open-Source Software Project: Modernizing Java-based Query Engines for the Lakehouse Era](https://ceur-ws.org/Vol-3462/CDMS8.pdf)
@@ -141,17 +141,17 @@ Here are some RAG examples:
   **_Question 1_**: Can you give me a brief introduction about Gluten?
 
   _Answer without RAG_:
-  ![gluten 1](.\doc\image\gluten_1.png)
+  ![gluten 1](./doc/image/gluten_1.png)
   **_Answer with RAG_**:
-  ![gluten 1 RAG](.\doc\image\gluten_rag_1.png)
+  ![gluten 1 RAG](./doc/image/gluten_rag_1.png)
 
 
   **_Question 2_**: What are the advantages of Gluten?
 
   _Answer without RAG_:
-  ![gluten 2](.\doc\image\gluten_2.png)
+  ![gluten 2](./doc/image/gluten_2.png)
   **_Answer with RAG_**:
-  ![gluten 2 RAG](.\doc\image\gluten_rag_2.png)
+  ![gluten 2 RAG](./doc/image/gluten_rag_2.png)
 
 
 ####  **Web Url**: [Intel Reports Third-Quarter 2023 Financial Results](https://www.intc.com/news-events/press-releases/detail/1655/intel-reports-third-quarter-2023-financial-results)
@@ -159,17 +159,17 @@ Here are some RAG examples:
   **_Question 1_**: What AI accelerators can Intel currently provide to compete with NVIDIA in the AI field?
 
   _Answer without RAG_:
-  ![Financial Result 1](.\doc\image\fin_1.png)
+  ![Financial Result 1](./doc/image/fin_1.png)
   **_Answer with RAG_**:
-  ![Financial Result 1 RAG](.\doc\image\fin_rag_1.png)
+  ![Financial Result 1 RAG](./doc/image/fin_rag_1.png)
 
 
   **_Question 2_**: Has Intel made any organizational structure adjustments?
 
   _Answer without RAG_:
-  ![Financial Result 2](.\doc\image\fin_2.png)
+  ![Financial Result 2](./doc/image/fin_2.png)
   **_Answer with RAG_**:
-  ![Financial Result 2 RAG](.\doc\image\fin_rag_2.png)
+  ![Financial Result 2 RAG](./doc/image/fin_rag_2.png)
 
  
 
