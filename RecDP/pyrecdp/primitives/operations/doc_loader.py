@@ -240,7 +240,7 @@ LLMOPERATORS.register(YoutubeLoader)
 class UrlLoader(TextReader):
     def __init__(
             self,
-            urls: Union[str, List[str]],
+            urls: Union[str, List[str]] = None,
             max_depth: Optional[int] = 1,
             use_async: Optional[bool] = None,
             extractor: Optional[Callable[[str], str]] = None,
@@ -254,6 +254,7 @@ class UrlLoader(TextReader):
             text_to_markdown: bool = True,
             requirements=None,
             num_cpus: Optional[int] = None,
+            text_key: str = None,
     ) -> None:
         """Initialize with URL to crawl and any subdirectories to exclude.
 
@@ -279,6 +280,7 @@ class UrlLoader(TextReader):
             check_response_status: If True, check HTTP response status and skip
                 URLs with error responses (400-599).
             num_cpus: The number of CPUs to reserve for each parallel url read worker.
+            text_key: text key to process.
         """
         if requirements is None:
             requirements = ['bs4', 'markdownify', 'langchain']
@@ -296,28 +298,31 @@ class UrlLoader(TextReader):
             'check_response_status': check_response_status,
         }
         settings = self.loader_kwargs.copy()
-        settings.update({'urls': urls, 'text_to_markdown': text_to_markdown, 'num_cpus': num_cpus})
+        settings.update({'urls': urls, 'text_to_markdown': text_to_markdown, 'num_cpus': num_cpus, 'text_key': text_key})
         self.text_to_markdown = text_to_markdown
+        self.text_key = text_key
         super().__init__(settings, requirements=requirements)
         self.support_spark = True
         self.support_ray = True
         self.num_cpus = num_cpus
-
-        if isinstance(urls, str):
-            urls = [urls]
-
-        self.urls = set(urls)
+        if urls:
+            if isinstance(urls, str):
+                urls = [urls]
+            self.urls = set(urls)
 
     def process_rayds(self, ds=None):
         import ray
-        urls_ds = ray.data.from_items([{'url': url} for url in self.urls])
+        if self.text_key:
+            urls_ds = ds.select_columns(['url'])
+        else:
+            urls_ds = ray.data.from_items([{'url': url} for url in self.urls])
 
         from pyrecdp.primitives.document.reader import read_from_url
         self.cache = urls_ds.flat_map(
             lambda record: read_from_url(record['url'], self.text_to_markdown, **self.loader_kwargs),
             num_cpus=self.num_cpus)
 
-        if ds is not None:
+        if ds is not None and not self.text_key:
             self.cache = self.union_ray_ds(ds, self.cache)
         return self.cache
 
