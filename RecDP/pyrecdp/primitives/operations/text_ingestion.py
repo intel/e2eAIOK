@@ -129,7 +129,7 @@ class LangchainFAAIS(DocumentStore):
         check_availability_and_install(["langchain", "faiss-cpu"])
 
         db = self.vector_store_args["db_handler"]
-        in_memory = self.vector_store_args["in_memory"]
+        in_memory = self.vector_store_args.get("in_memory", False)
         index_name = self.vector_store_args.get("index", "index")
 
         rows = ds.iter_rows() if isinstance(ds, Dataset) else ds.collect()
