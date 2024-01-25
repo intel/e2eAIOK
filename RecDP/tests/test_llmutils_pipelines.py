@@ -247,8 +247,10 @@ class Test_LLMUtils_Pipeline(unittest.TestCase):
         del pipeline
 
     def test_llm_rag_pdf_use_existing_db_pipeline(self):
-        from pyrecdp.core.import_utils import import_sentence_transformers
-        ## Pretent that someone else already define the handler ##
+        from pyrecdp.core.import_utils import import_sentence_transformers, check_availability_and_install
+        check_availability_and_install(["langchain", "faiss-cpu"])
+
+        # Present that someone else already define the handler ##
         model_root_path = os.path.join(RECDP_MODELS_CACHE, "huggingface")
         model_name = f"{model_root_path}/sentence-transformers/all-mpnet-base-v2"
         faiss_output_dir = 'tests/data/faiss'
