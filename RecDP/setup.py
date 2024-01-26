@@ -26,11 +26,11 @@ class SetupSpec:
         self.version = find_version()
         self.files_to_include: list = []
         self.install_requires: list = [
-            "scikit-learn",
+            "scikit-learn==1.3.2",
             "psutil",
             "tqdm",
             "pyyaml",
-            "pandas",
+            "pandas==2.1.4",
             "numpy",
             "pyarrow",
             "ipywidgets",
@@ -48,6 +48,7 @@ class SetupSpec:
             "typer>=0.6.1",
             "scipy==1.10.1",
             "tabulate==0.9.0",
+            "grpcio",
         ]
         self.extras: dict = {}
         self.extras['autofe'] = list_requirements("pyrecdp/autofe/requirements.txt")
