@@ -129,6 +129,7 @@ class LangchainFAAIS(DocumentStore):
         check_availability_and_install(["langchain", "faiss-cpu"])
 
         db = self.vector_store_args["db_handler"]
+        in_memory = self.vector_store_args.get("in_memory", False)
         index_name = self.vector_store_args.get("index", "index")
 
         rows = ds.iter_rows() if isinstance(ds, Dataset) else ds.collect()
@@ -140,11 +141,14 @@ class LangchainFAAIS(DocumentStore):
         if db is not None:
             db.add_embeddings(text_embeddings)
             return db
+        embeddings = create_embeddings(self.embeddings, self.embeddings_args)
+        if in_memory:
+            db = FAISS.from_embeddings(text_embeddings, embedding=embeddings)
+            return db
 
         if "output_dir" not in self.vector_store_args:
             raise ValueError(f"You must have `output_dir` option specify for FAAIS vector store")
         faiss_folder_path = self.vector_store_args["output_dir"]
-        embeddings = create_embeddings(self.embeddings, self.embeddings_args)
         if not self.override and os.path.exists(os.path.join(faiss_folder_path, index_name + ".faiss")):
             db = FAISS.load_local(faiss_folder_path, embeddings, index_name)
             db.add_embeddings(text_embeddings)

@@ -68,7 +68,7 @@ class PIIRemoval(BaseLLMOperation):
                  entity_types=None):
         settings = {'text_key': text_key, 'inplace': inplace, 'model_root_path': model_root_path,
                     'debug_mode': debug_mode, 'entity_types': entity_types}
-        requirements = ['torch', 'transformers', 'Faker', "phonenumbers"]
+        requirements = ['torch', 'transformers', 'Faker', "phonenumbers", 'gibberish_detector']
         super().__init__(settings, requirements)
         from pyrecdp.primitives.llmutils.pii.detect.utils import PIIEntityType
         self.text_key = text_key

@@ -70,5 +70,6 @@ try:
     from .table_summary import TableSummary
     from .text_spell_correct import TextSpellCorrect
     from .text_contraction_remove import TextContractionRemove
+    from .search_tool import GoogleSearchTool
 except Exception as e:
     pass
