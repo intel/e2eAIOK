@@ -198,7 +198,7 @@ class YoutubeLoader(TextReader):
         self.model_name = model
         self.num_cpus = num_cpus
         os.system("apt-get -qq -y install ffmpeg")
-        check_availability_and_install(['langchain', 'pytube', 'openai-whisper', 'youtube-transcript-api'])
+        check_availability_and_install(['langchain', 'pytube', 'openai-whisper', 'youtube-transcript-api', 'yt_dlp'])
 
     def process_rayds(self, ds=None):
         import ray
