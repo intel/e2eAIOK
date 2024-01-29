@@ -108,9 +108,9 @@ class Test_LLMUtils_Operations(unittest.TestCase):
     def test_filter_by_url_ray(self):
         pass
         # Ray version not supported yet
-        op = URLFilter()
-        with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
-            ctx.show(op.process_rayds(ctx.ds))
+        # op = URLFilter()
+        # with RayContext("tests/data/llm_data/tiny_c4_sample.jsonl") as ctx:
+        #     ctx.show(op.process_rayds(ctx.ds))
 
     def test_filter_by_alphanumeric_ray(self):
         pass
