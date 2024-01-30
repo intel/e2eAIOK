@@ -111,6 +111,66 @@ pipeline.add_operations(ops)
 pipeline.execute()
 ```
 
+
+### Integrate with LLM-on-Rag WebUI Demo
+
+Currently, the [LLM-on-Ray](https://github.com/intel/llm-on-ray/tree/main) project leverages the RAG capability of Recdp, and users can refer to the **LLM-on-Ray** [documentation](https://github.com/intel/llm-on-ray/blob/main/docs/web_ui.md) to deploy web services.
+![rag_ui](./doc/image/rag_ui.png)
+
+Currently, Recdp RAG pipeline supports a variety of different file types, including: 
+  + Web URL
+  + YouTube link
+  + pdf
+  + doxc
+  + jpg/ jped/ png
+  + mp3/ wav/ flac
+
+Here are some RAG examples:
+
+####  **YouTube Video**: [Intel’s ‘AI Everywhere’ Event (Replay)](https://www.youtube.com/watch?v=843OFFzqp3k)
+
+  **_Question 1_**: As of 2024, what model of CPU is considered the most powerful for AI in data centers?
+
+  _Answer without RAG_:
+  > As of 2024, the most powerful CPU models for AI in data centers are those from NVIDIA, specifically their Tesla V100 and Tesla P40 GPUs. These GPUs are designed for high-performance computing and are optimized for deep learning and AI workloads. They offer a significant increase in performance compared to traditional CPUs, making them the go-to choice for many data centers and AI workloads.However, it's worth noting that CPUs from other manufacturers, such as AMD and Intel, are also...
+  
+  _Answer with RAG_:
+  > Based on the information provided in the conversation, as of 2024, the 5th Gen Xeon is considered the most powerful CPU for AI in data centers. The speaker mentions that it offers increased confidentiality and security with trust domain extensions, and that AI accelerators have been built into every one of the processor's 64 cores, giving users up to 42% higher inference performance versus the prior gen. This suggests that the 5th Gen Xeon offers the best performance for AI workloads in data centers, as of 2024.
+
+
+  **_Question 2_**: What is the percentage of performance improvement that Gaudi 2 delivers over NVIDIA's H100 for training the 175 billion parameter GPT-3 model, based on the most recent ML perf training benchmarks?
+
+  _Answer without RAG_:
+  > The most recent ML perf training benchmarks for Gaudi 2 and H100 are not yet available, as both are relatively new and have only recently been released. However, based on the available information and benchmarks, it is estimated that Gaudi 2 delivers a performance improvement of around 2-3x over H100 for training large language models like GPT-3.Specifically, a recent benchmark by the MLPerf organization showed that Gaudi 2 achieved a training speed of 7.64 TOPS (tera-operations per second) for the GPT-...
+  
+  _Answer with RAG_:
+  > Based on the conversation, Gaudi 2 delivers between 40 to 50% better price performance than NVIDIA's H100 for training the 175 billion parameter GPT-3 model. This means that Gaudi 2 provides a performance improvement of 40-50% compared to H100 for this specific AI workload.
+
+
+
+####  **PDF**: [The Gluten Open-Source Software Project: Modernizing Java-based Query Engines for the Lakehouse Era](https://ceur-ws.org/Vol-3462/CDMS8.pdf)
+
+  **_Question 1_**: Can you give me a brief introduction about Gluten?
+
+  _Answer without RAG_:
+  > Certainly! Gluten is a type of protein found in certain grains, including wheat, barley, and rye. It gives dough its elasticity and helps it rise, making it an essential component of bread, pasta, and other baked goods. However, for some people, gluten can be problematic, as it can cause an immune response and lead to conditions like celiac disease or non-celiac gluten sensitivity.Here are some key points to know about gluten:1. Gluten is a protein composite: Gluten is made up of two main prote
+
+  **_Answer with RAG_**:
+  > Sure, I'd be happy to help! Gluten is a software framework that aims to improve the performance of database query engines by providing a modular and composable architecture for query optimization.In traditional query optimization, a query is executed on a single query engine, and any optimization is applied directly to the query. However, this can lead to inefficient query execution when the query is executed on different query engines, as each engine may have its phylogenetic optimization techniques.Gluten addresses this problem by introducing a new layer of abstraction between the query and the query engine. The Gluten framework
+
+
+  **_Question 2_**: What are the advantages of Gluten?
+
+  _Answer without RAG_:
+  > Gluten is a protein found in certain grains, including wheat, barley, and rye. It has several advantages, including:1. Elasticity: Gluten gives dough its elasticity, which allows it to stretch and hold its shape, making it ideal for baking.2. Structure: Gluten helps create the structure of bread and other baked goods, giving them their texture and consistency.3. Flavor: Gluten can enhance the flavor of bread and other baked goods, particularly when combined with other ingredients like yeast and sugar
+
+  **_Answer with RAG_**:
+  > Based on the conversation, the advantages of Gluten are:1. Removes JVM/JDK version dependency: Gluten allows for optimizing Java-based query engines without worrying about the version of JVM/JDK being used, as it can work with any version that supports the Java Virtual Machine (JVM).2. Enables efficient query engine vectorization: With Gluten, query engines can be optimized for vectorization, which can lead to faster execution and better performance. This is achieved through the use of SIMD-based Vector API capabilities in JDK 17, which is not available in earlier
+
+
+
+
+
 ### * Finetune Data Pipeline - Build finetune dataset from Plain Text to QA [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/intel/e2eAIOK/blob/main/RecDP/examples/notebooks/llmutils/text_to_qa.ipynb)
 
 ```

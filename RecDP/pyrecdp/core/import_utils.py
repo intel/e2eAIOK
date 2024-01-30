@@ -120,7 +120,7 @@ def import_sentence_transformers(install_if_missing: bool = True):
 
     except ImportError as exc:
         if install_if_missing:
-            os.system("pip install -q sentence_transformers")
+            os.system("pip install -q sentence_transformers==2.2.2")
         else:
             raise ImportError(
                 "Could not import sentence_transformers python package. "
