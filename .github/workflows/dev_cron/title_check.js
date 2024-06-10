@@ -35,7 +35,7 @@ async function commentOpenISSUESIssue(github, context, pullRequestNumber) {
   if (comments.length > 0) {
     return;
   }
-  const commentPath = ".github/workflows/dev_cron/title_check.md";
+  const commentPath = ".github/workflows/dev_cron/";
   const comment = fs.readFileSync(commentPath).toString();
   await github.issues.createComment({
     owner: context.repo.owner,
