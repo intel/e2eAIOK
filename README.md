@@ -76,7 +76,7 @@ Intel® End-to-End AI Optimization Kit provides step-by-step demos. Once complet
   * [WND](demo/builtin/wnd/WND_DEMO.ipynb) - RecSys, TensorFlow
   * [RNNT](demo/builtin/rnnt/RNNT_DEMO.ipynb) - Speech Recognition, PyTorch
   * [RESNET](demo/builtin/resnet/RESNET_DEMO.ipynb) - Computer vision, TensorFlow
-  * [BERT](demo/builtin/bert/BERT_DEMO.ipynb) - Natual Language Processing, TensorFlow
+  * [BERT](demo/builtin/bert/BERT_DEMO.ipynb) - Natural Language Processing, TensorFlow
   * [MiniGo](demo/builtin/minigo/MiniGo_DEMO.ipynb) - Minimalist engine modeled after AlphaGo Zero, TensorFlow
 
 * Neural network constructor 
