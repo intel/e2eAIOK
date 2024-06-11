@@ -44,15 +44,3 @@ jobs:
             const script = require(`${process.env.GITHUB_WORKSPACE}/.github/workflows/dev_cron/issues_link.js`);
             script({github, context});
 
-      - name: Check title
-        if: |
-          github.event_name == 'pull_request_target' &&
-            (github.event.action == 'opened' ||
-             github.event.action == 'edited')
-        uses: actions/github-script@v3
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const script = require(`${process.env.GITHUB_WORKSPACE}/.github/workflows/dev_cron/title_check.js`);
-            script({github, context});
-
