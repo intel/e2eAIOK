@@ -30,17 +30,9 @@ jobs:
     name: Process
     runs-on: self-hosted
     steps:
+      - name: Checkout code
       - uses: actions/checkout@v2
 
-      - name: Comment Issues link
-        if: |
-          github.event_name == 'pull_request_target' &&
-            (github.event.action == 'opened' ||
-             github.event.action == 'edited')
-        uses: actions/github-script@v3
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const script = require(`${process.env.GITHUB_WORKSPACE}/.github/workflows/dev_cron/issues_link.js`);
-            script({github, context});
-
+      - name : Test cmd
+        run: |
+            echo "wow"
