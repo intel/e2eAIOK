@@ -20,6 +20,9 @@ on:
     - 'tests/cicd/Jenkinsfile*'
     - 'tests/cicd/jenkins_resnet_test*.sh'
 
+permissions:
+  contents: read
+
 jobs:
   integration_test:
     name: Integration Test Workload ResNet

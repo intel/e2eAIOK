@@ -12,6 +12,9 @@ on:
     - 'tests/cicd/jenkins_ma_adapter_test.sh'
     - 'modelzoo/unet/**'
 
+permissions:
+  contents: read
+
 jobs:
   integration_test:
     name: Integration Test Model Adapter domain adapter

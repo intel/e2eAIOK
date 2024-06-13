@@ -10,6 +10,9 @@ on:
     - 'example/instruction_tuning_pipeline/finetune_clm.py'
     - 'tests/deltatuner/cicd/**'
 
+permissions:
+  contents: read
+
 jobs:
   integration_test:
     name: Integration Test Deltatuner

@@ -13,6 +13,9 @@ on:
       - 'Dockerfile-ubuntu/DockerfilePytorch'
       - '.github/workflows/release_docker_pytorch.yml'
 
+permissions:
+  contents: read
+
 jobs:
   e2eaiok-release-docker:
     runs-on: self-hosted

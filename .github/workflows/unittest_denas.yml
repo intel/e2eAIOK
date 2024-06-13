@@ -14,6 +14,9 @@ on:
     - 'tests/unittest/denas/**'
     - 'setup.py'
 
+permissions:
+  contents: read
+
 jobs:
   unit_tests:
     name: Unit Test DENAS

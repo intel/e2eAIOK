@@ -11,6 +11,9 @@ on:
     - 'tests/unittest/utils/**'
     - 'setup.py'
 
+permissions:
+  contents: read
+
 jobs:
   unit_tests:
     name: Unit Test Util

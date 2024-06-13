@@ -13,6 +13,9 @@ on:
     - 'RecDP/tests/cicd/bashrun_unittest_autofe.sh'
     - 'RecDP/tests/test_autofe.py'
 
+permissions:
+  contents: read
+
 jobs:
   unittest:
     name: Unittest AutoFE

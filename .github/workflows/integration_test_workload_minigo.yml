@@ -19,6 +19,9 @@ on:
     - 'tests/cicd/Jenkinsfile*'
     - 'tests/cicd/jenkins_minigo_test*.sh'
 
+permissions:
+  contents: read
+
 jobs:
   integration_test:
     name: Integration Test Workload MiniGo

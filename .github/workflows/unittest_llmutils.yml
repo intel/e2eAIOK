@@ -8,6 +8,9 @@ on:
     - 'RecDP/tests/cicd/bashrun_unittest_llmutils.sh'
     - 'RecDP/tests/test_llmutils.py'
 
+permissions:
+  contents: read
+
 jobs:
   unittest:
     name: Unittest LLMUtils
