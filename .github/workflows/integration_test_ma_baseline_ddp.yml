@@ -13,6 +13,9 @@ on:
     - 'tests/cicd/ModelAdapterJenkinsfile'
     - 'tests/cicd/jenkins_ma_baseline_ddp_test.sh'
 
+permissions:
+  contents: read
+
 jobs:
   integration_test:
     name: Integration Test Model Adapter baseline DDP

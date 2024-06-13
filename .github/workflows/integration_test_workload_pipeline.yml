@@ -21,6 +21,9 @@ on:
     - 'tests/cicd/docker_horovod_test.sh'
     - 'tests/cicd/docker_torchccl_test'
 
+permissions:
+  contents: read
+
 jobs:
   integration_test:
     name: Integration Test Workload Basic Pipeline

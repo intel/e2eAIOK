@@ -15,6 +15,9 @@ on:
     - 'tests/cicd/test_denas.bats'
     - 'tests/cicd/jenkins_denas_bert.sh'
 
+permissions:
+  contents: read
+
 jobs:
   integration_test:
     name: Integration Test DeNas NLP

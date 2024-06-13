@@ -3,6 +3,9 @@ name: Publish E2EAIOK Deltatuner Release to PyPI
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   e2eaiok-dtuner-nightly-python-pypi:
     runs-on: ubuntu-latest

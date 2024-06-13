@@ -15,6 +15,9 @@ on:
     - 'tests/unittest/ma/**'
     - 'setup.py'
 
+permissions:
+  contents: read
+
 jobs:
   unit_tests:
     name: Unit Test MA

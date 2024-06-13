@@ -9,6 +9,9 @@ on:
       - 'e2eAIOK/deltatuner/version'
 
 
+permissions:
+  contents: read
+
 jobs:
   e2eaiok-dtuner-nightly-python-pypi:
     runs-on: ubuntu-latest
