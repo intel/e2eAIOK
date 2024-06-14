@@ -13,6 +13,9 @@ on:
     - 'tests/cicd/ModelAdapterJenkinsfile'
     - 'tests/cicd/jenkins_ma_distiller_test.sh'
 
+permissions:
+  contents: read
+
 jobs:
   integration_test:
     name: Integration Test Model Adapter distiller

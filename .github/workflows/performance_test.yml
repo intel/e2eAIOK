@@ -6,6 +6,9 @@ on:
     branches:
     - RecDP_v2.0
 
+permissions:
+  contents: read
+
 jobs:
   perf-test:
     name: Performance test AutoFE
